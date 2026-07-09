@@ -1,0 +1,187 @@
+version: '1.0'
+name: loomloom-cli-release-gitee-v1
+displayName: LoomLoom-CLI-Release-Gitee-V1
+
+triggers:
+  trigger: auto
+  push:
+    tags:
+      include:
+        - ^v.*
+        - ^gitee-release-test\..*
+
+variables:
+  global:
+    - LOOMLOOM_GITEE_TOKEN
+
+stages:
+  - name: release
+    displayName: Release
+    strategy: naturally
+    trigger: auto
+    steps:
+      - step: build@golang
+        name: build_and_publish_gitee_release
+        displayName: Build and Publish Gitee Release
+        golangVersion: 1.23
+        commands:
+          - |
+            set -euo pipefail
+
+            git fetch --tags --force
+
+            tag_name="${GITEE_TAG:-${GITEE_REF_NAME:-}}"
+
+            if [ -z "$tag_name" ]; then
+              tag_name="$(git tag --points-at "${GITEE_COMMIT:-HEAD}" | grep -E '^(v.*|gitee-release-test\..*)$' | head -n 1 || true)"
+            fi
+
+            if [ -z "$tag_name" ]; then
+              echo "failed to resolve release tag" >&2
+              echo "tags on HEAD:" >&2
+              git tag --points-at "${GITEE_COMMIT:-HEAD}" >&2 || true
+              exit 1
+            fi
+
+            if ! echo "$tag_name" | grep -Eq '^(v.*|gitee-release-test\..*)$'; then
+              echo "resolved tag '$tag_name' is not a release tag" >&2
+              exit 1
+            fi
+
+            echo "$tag_name" > .release-tag
+            echo "release tag: $tag_name"
+
+            go env -w GOPROXY=https://goproxy.cn,direct
+            go env -w GOSUMDB=sum.golang.google.cn
+            go env -w GONOSUMDB=
+
+            go version
+            go env GOVERSION GOROOT GOPROXY GOSUMDB
+
+            cd cli
+            go test ./...
+            cd ..
+
+            scripts/package-release-assets.sh --version "$tag_name"
+
+            echo "release assets:"
+            find release -maxdepth 1 -type f -print | sort
+
+            if [ -z "${LOOMLOOM_GITEE_TOKEN:-}" ]; then
+              echo "LOOMLOOM_GITEE_TOKEN is required" >&2
+              exit 1
+            fi
+
+            OWNER="cogfoundry"
+            REPO="loomloom"
+            API_BASE="https://gitee.com/api/v5"
+            TARGET_COMMITISH="${GITEE_COMMIT:-main}"
+
+            prerelease="false"
+            if echo "$tag_name" | grep -Eq '-(beta|rc|internal)\.[0-9]+$'; then
+              prerelease="true"
+            fi
+
+            release_body="LoomLoom ${tag_name} CogFoundry Gitee distribution."
+
+            json_top_level_id() {
+              local json_file parser_file
+              json_file="$(mktemp)"
+              parser_file="$(mktemp).go"
+              cat > "$json_file"
+              cat > "$parser_file" <<'GO'
+            package main
+
+            import (
+            	"encoding/json"
+            	"fmt"
+            	"os"
+            )
+
+            func main() {
+            	body, err := os.ReadFile(os.Args[1])
+            	if err != nil {
+            		os.Exit(1)
+            	}
+            	var payload struct {
+            		ID int64 `json:"id"`
+            	}
+            	if err := json.Unmarshal(body, &payload); err != nil || payload.ID == 0 {
+            		os.Exit(1)
+            	}
+            	fmt.Println(payload.ID)
+            }
+            GO
+              go run "$parser_file" "$json_file"
+              rm -f "$json_file" "$parser_file"
+            }
+
+            echo "publishing Gitee release: $OWNER/$REPO $tag_name"
+
+            set +x
+
+            release_json="$(
+              curl --retry 3 --retry-delay 2 --retry-connrefused -fsS \
+                "$API_BASE/repos/$OWNER/$REPO/releases/tags/$tag_name?access_token=$LOOMLOOM_GITEE_TOKEN" || true
+            )"
+
+            release_id="$(printf '%s' "$release_json" | json_top_level_id || true)"
+
+            if [ -z "$release_id" ]; then
+              release_json="$(
+                curl --retry 3 --retry-delay 2 --retry-connrefused -fsS \
+                  -X POST "$API_BASE/repos/$OWNER/$REPO/releases?access_token=$LOOMLOOM_GITEE_TOKEN" \
+                  --data-urlencode "tag_name=$tag_name" \
+                  --data-urlencode "target_commitish=$TARGET_COMMITISH" \
+                  --data-urlencode "name=$tag_name" \
+                  --data-urlencode "body=$release_body" \
+                  --data-urlencode "prerelease=$prerelease"
+              )"
+
+              release_id="$(printf '%s' "$release_json" | json_top_level_id || true)"
+            fi
+
+            if [ -z "$release_id" ]; then
+              echo "failed to resolve Gitee release id" >&2
+              printf '%s\n' "$release_json" >&2
+              exit 1
+            fi
+
+            echo "Gitee release id resolved"
+
+            upload_url="$API_BASE/repos/$OWNER/$REPO/releases/$release_id/attach_files"
+
+            while IFS= read -r asset; do
+              echo "uploading: $(basename "$asset")"
+              response_file="$(mktemp)"
+              status="$(
+                curl --retry 3 --retry-delay 2 --retry-connrefused -sS \
+                  -o "$response_file" \
+                  -w '%{http_code}' \
+                  -X POST "$upload_url" \
+                  -F "access_token=$LOOMLOOM_GITEE_TOKEN" \
+                  -F "file=@${asset}"
+              )"
+
+              if ! echo "$status" | grep -Eq '^2'; then
+                echo "failed to upload asset: $(basename "$asset") status=$status" >&2
+                cat "$response_file" >&2
+                rm -f "$response_file"
+                exit 1
+              fi
+
+              rm -f "$response_file"
+            done < <(find release -maxdepth 1 -type f | sort)
+
+            set -x
+
+            echo "published Gitee release: https://gitee.com/$OWNER/$REPO/releases/tag/$tag_name"
+
+        artifacts:
+          - name: LOOMLOOM_CLI_RELEASE
+            path:
+              - release
+              - .release-tag
+
+        caches:
+          - /go/pkg/mod

@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "name": "Product Image Generation",
+    "description": "Generate product images in batches from product information",
+    "scenario": "product-image",
+    "inputSummary": "Product name and image style",
+    "displayOutputType": "Image",
+    "primaryOutputType": "image"
+  },
+  "steps": [
+    {
+      "stepId": "stp_prompt",
+      "displayName": "Prompt preparation",
+      "executionUnit": "text-generate",
+      "instruction": "Prepare an image prompt from the product name and style requirements.",
+      "defaultModelRef": {
+        "modelKey": "google/gemini-2.5-flash"
+      },
+      "allowModelOverride": true
+    },
+    {
+      "stepId": "stp_image1",
+      "displayName": "Image generation",
+      "executionUnit": "image-generate",
+      "instruction": "Generate an image from the prepared prompt.",
+      "dependsOn": ["stp_prompt"],
+      "upstreamBindings": [
+        {
+          "inputPort": "prompt",
+          "sourceType": "step_output",
+          "sourceStepId": "stp_prompt",
+          "sourcePort": "output"
+        }
+      ],
+      "defaultModelRef": {
+        "modelKey": "google/gemini-2.5-flash-image"
+      },
+      "allowModelOverride": true,
+      "staticParams": {
+        "aspect_ratio": "1:1"
+      }
+    }
+  ],
+  "inputSchema": {
+    "fields": [
+      {
+        "key": "product_name",
+        "label": "Product name",
+        "required": true,
+        "valueType": "string",
+        "order": 1
+      },
+      {
+        "key": "style",
+        "label": "Image style",
+        "valueType": "enum",
+        "enumValues": ["Minimal studio shot", "E-commerce white background", "Lifestyle photography"],
+        "order": 2
+      },
+      {
+        "key": "text_model",
+        "label": "Prompt model (optional)",
+        "valueType": "string",
+        "order": 3
+      },
+      {
+        "key": "image_model",
+        "label": "Image model (optional)",
+        "valueType": "string",
+        "order": 4
+      }
+    ],
+    "instructions": [
+      "Each row generates one product image.",
+      "Model columns may be left blank; blank values use the template defaults."
+    ],
+    "sampleRows": [
+      {
+        "values": {
+          "product_name": "A futuristic desk lamp",
+          "style": "Minimal studio shot"
+        }
+      }
+    ]
+  },
+  "fieldBindings": [
+    {
+      "fieldKey": "text_model",
+      "stepId": "stp_prompt",
+      "paramKey": "model",
+      "bindMode": "shared"
+    },
+    {
+      "fieldKey": "image_model",
+      "stepId": "stp_image1",
+      "paramKey": "model",
+      "bindMode": "shared"
+    }
+  ],
+  "paramBindings": [
+    {
+      "stepId": "stp_prompt",
+      "paramKey": "prompt",
+      "bindMode": "shared",
+      "separator": " ",
+      "sources": [
+        {
+          "kind": "literal",
+          "literal": "Generate an image prompt for this product: "
+        },
+        {
+          "kind": "field_ref",
+          "fieldKey": "product_name"
+        },
+        {
+          "kind": "literal",
+          "literal": "Style: "
+        },
+        {
+          "kind": "field_ref",
+          "fieldKey": "style"
+        }
+      ]
+    }
+  ]
+}

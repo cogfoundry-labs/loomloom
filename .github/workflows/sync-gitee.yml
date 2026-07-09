@@ -1,0 +1,52 @@
+name: sync-gitee
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-gitee-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release tag
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc|internal)\.[0-9]+)?$ ]]; then
+            echo "unsupported release tag: $tag" >&2
+            echo "expected vX.Y.Z or vX.Y.Z-beta.N / vX.Y.Z-rc.N / vX.Y.Z-internal.N" >&2
+            exit 1
+          fi
+
+      - name: Sync main and release tag to Gitee
+        env:
+          GITEE_SYNC_TOKEN: ${{ secrets.GITEE_SYNC_TOKEN }}
+          GITEE_REPOSITORY: cogfoundry/loomloom
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GITEE_SYNC_TOKEN:-}" ]; then
+            echo "GITEE_SYNC_TOKEN is required" >&2
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git remote add gitee "https://oauth2:${GITEE_SYNC_TOKEN}@gitee.com/${GITEE_REPOSITORY}.git"
+          git push --force gitee "HEAD:refs/heads/main"
+          git push gitee "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+
+          echo "synced main and ${GITHUB_REF_NAME} to https://gitee.com/${GITEE_REPOSITORY}"

@@ -1,0 +1,85 @@
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+permissions:
+  contents: write
+
+jobs:
+  package-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+          cache-dependency-path: cli/go.sum
+      - name: Package release assets
+        run: scripts/package-release-assets.sh --version "${{ github.ref_name }}"
+      - name: Upload packaged assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: release/*
+      - name: Classify release channel
+        id: release_channel
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-(beta|rc|internal)\.[0-9]+$ ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "make_latest=false" >> "$GITHUB_OUTPUT"
+            echo "homebrew=false" >> "$GITHUB_OUTPUT"
+            echo "release channel: prerelease"
+          elif [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "make_latest=true" >> "$GITHUB_OUTPUT"
+            echo "homebrew=true" >> "$GITHUB_OUTPUT"
+            echo "release channel: stable"
+          else
+            echo "unsupported release tag: $tag" >&2
+            echo "expected vX.Y.Z or vX.Y.Z-beta.N / vX.Y.Z-rc.N / vX.Y.Z-internal.N" >&2
+            exit 1
+          fi
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          prerelease: ${{ steps.release_channel.outputs.prerelease }}
+          make_latest: ${{ steps.release_channel.outputs.make_latest }}
+      - name: Update Homebrew tap
+        if: startsWith(github.ref, 'refs/tags/v') && steps.release_channel.outputs.homebrew == 'true'
+        env:
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_GITHUB_TOKEN" ]; then
+            echo "HOMEBREW_TAP_GITHUB_TOKEN not configured; skipping Homebrew tap update." >&2
+            exit 0
+          fi
+
+          tap_dir="$RUNNER_TEMP/homebrew-tap"
+          git clone "https://x-access-token:${HOMEBREW_TAP_GITHUB_TOKEN}@github.com/Cogfoundry-ai/homebrew-tap.git" "$tap_dir"
+          ./scripts/render-homebrew-formula.sh --tag "$RELEASE_TAG" --checksums release/checksums.txt > "$tap_dir/Formula/loomloom.rb"
+          rm -f "$tap_dir/Formula/batchjob-cli.rb"
+
+          cd "$tap_dir"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [[ -z "$(git status --short -- Formula/loomloom.rb Formula/batchjob-cli.rb)" ]]; then
+            echo "Formula/loomloom.rb is already up to date"
+            exit 0
+          fi
+
+          git add -A Formula
+          git commit -m "loomloom ${RELEASE_TAG}"
+          git push origin main
