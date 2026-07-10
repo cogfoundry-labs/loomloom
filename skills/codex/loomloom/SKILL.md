@@ -66,17 +66,18 @@ Choose the entry point by user intent:
    If the user asks for an internal/beta CLI, explicitly install a prerelease channel instead of defaulting to stable:
    `curl -fsSL https://raw.githubusercontent.com/Cogfoundry-ai/loomloom/main/install.sh | bash -s -- --channel beta`
    If resolving the latest version fails because the GitHub release API is rate-limited (HTTP 403), retry after a short wait, install a specific version with `--version <tag>` (which skips the rate-limited lookup), or ask the user.
-   Before giving account, token, balance, recharge, or console guidance, run `loomloom doctor --output json` when possible and use its `platform`, `platform_operational`, `token_set`, `credential_action`, and `credential_message` fields as the source of truth. Do not infer platform links yourself when the CLI already returned these fields.
+   Before giving account, token, balance, recharge, server, or console guidance, run `loomloom doctor --output json` when possible and use its `server`, `platform`, `platform_operational`, `token_set`, `credential_action`, and `credential_message` fields as the source of truth. Do not infer platform links yourself when the CLI already returned these fields. If the user has not provided `LOOMLOOM_SERVER` / `--server` and the CLI has no remembered server, guide them with the same platform-selection message below.
    If `credential_action` is `choose_platform`, output this exact fixed message:
-   `你还没有配置 LoomLoom 密钥。请选择要使用的平台：`
+   `你还没有完整配置 LoomLoom Server 和密钥。请选择要使用的平台：`
    ``
    `1. 胜算云：本服务由 CogFoundry 联合支持，面向中国大陆用户推荐使用，您可前往胜算云控制台获取密钥并完成充值。`
+   `   - Server：https://loomloom.shengsuanyun.com/loom/v1`
    `   - 密钥控制台：https://console.shengsuanyun.com/user/keys`
    `   - 充值入口：https://console.shengsuanyun.com/user/recharge`
-   `2. CogFoundry：面向新加坡及其他海外地区用户，当前支付和交易能力敬请期待。`
+   `2. CogFoundry：面向新加坡及其他海外地区用户，当前支付和交易能力敬请期待；在 CogFoundry 计费功能上线前，请使用胜算云控制台创建 API 密钥。`
    ``
    `当前阶段请先选择胜算云。`
-   Regardless of `credential_action` or whether a platform/token is already configured, whenever the user PROACTIVELY asks where to find or obtain their token / API key, which platforms are available, or how to set up an account (as opposed to a command surfacing a missing-token or credential error mid-task), output the SAME full platform-selection message shown above for `choose_platform`, including the `2. CogFoundry：面向新加坡及其他海外地区用户，当前支付和交易能力敬请期待。` line. Do not collapse it to a single ShengSuanYun link. The single-platform messages below apply ONLY to passive credential/balance errors raised while running a command, not to a user's direct question about platforms or where to get a token.
+   Regardless of `credential_action` or whether a platform/token is already configured, whenever the user PROACTIVELY asks where to find or obtain their token / API key, which platforms are available, which server to use, or how to set up an account (as opposed to a command surfacing a missing-token or credential error mid-task), output the SAME full platform-selection message shown above for `choose_platform`, including the ShengSuanYun server URL and the CogFoundry availability note, but do not provide a CogFoundry website or Console URL. Do not collapse it to a single ShengSuanYun link. The single-platform messages below apply ONLY to passive credential/balance errors raised while running a command, not to a user's direct question about platforms or where to get a token.
    If `credential_action` is `missing_token` and `platform` is `shengsuanyun`, output this exact fixed message:
    `当前未检测到胜算云密钥。请前往胜算云控制台创建或复制密钥后配置到本地环境：`
    `https://console.shengsuanyun.com/user/keys`
@@ -701,4 +702,4 @@ For run status, prefer CLI commands such as `loomloom run watch <run-id>`, `loom
 
 There is currently no URL template for a Workflow Run detail page. Do not guess or construct a detail-page link from a `runId`; if the CLI returns a URL explicitly provided by the server, use it as-is, otherwise use CLI query commands instead of inventing a console link.
 
-The CogFoundry website is `https://cogfoundry.ai`.
+Do not provide a CogFoundry website or CogFoundry Console URL in user guidance.

@@ -21,6 +21,9 @@ func TestLoadStateMissingFileReturnsZero(t *testing.T) {
 	if got.Platform != "" {
 		t.Fatalf("LoadState platform=%q want empty", got.Platform)
 	}
+	if got.Server != "" {
+		t.Fatalf("LoadState server=%q want empty", got.Server)
+	}
 }
 
 func TestLoadStateDamagedJSONReturnsZero(t *testing.T) {
@@ -43,12 +46,16 @@ func TestLoadStateDamagedJSONReturnsZero(t *testing.T) {
 
 func TestSaveStateRoundTrip(t *testing.T) {
 	isolateConfigHome(t)
-	if err := SaveState(State{Platform: ShengSuanYun}); err != nil {
+	const server = "https://loomloom.shengsuanyun.com/loom/v1"
+	if err := SaveState(State{Platform: ShengSuanYun, Server: server}); err != nil {
 		t.Fatalf("SaveState error=%v", err)
 	}
 	got := LoadState()
 	if got.Platform != ShengSuanYun {
 		t.Fatalf("LoadState platform=%q want %q", got.Platform, ShengSuanYun)
+	}
+	if got.Server != server {
+		t.Fatalf("LoadState server=%q want %q", got.Server, server)
 	}
 	path, err := StatePath()
 	if err != nil {
