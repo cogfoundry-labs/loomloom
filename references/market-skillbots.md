@@ -91,14 +91,14 @@ Market Skill wrappers bind to the Listing. The installed listing version is reco
 loomloom listing publish <template-id> \
   --template-version-id <version-id> \
   --display-name "My SkillBot" \
-  --task-fixed-fee-t 1000000
+  --task-fixed-fee 0.1
 
 # Confirm, then submit a new version for an existing listing
 loomloom listing publish <template-id> \
   --listing-id <listing-id> \
   --template-version-id <new-version-id> \
   --display-name "My SkillBot" \
-  --task-fixed-fee-t 1000000
+  --task-fixed-fee 0.1
 
 # 2. Track listings and reviews
 loomloom listing list
@@ -127,5 +127,5 @@ loomloom creator transactions
 - For Market SkillBots, `market quote` estimates the buyer payable amount before execution. The platform takes 10% from each call fee; creator net earnings are 90% of the call fee.
 - Reuse the same `--client-request-id` only when retrying the identical paid Market payload. Use a new ID when any input changes.
 - Workbook `content` is sent as base64 inside JSON requests; do not print the full base64. `accessUrl` values in result rows are temporary signed URLs; do not put them in long-lived logs or docs.
-- Monetary `*FeeT` / `*AmountT` / `*PayableT` values are in API units where 10,000,000 units equal 1 currency unit.
-- If a response does not include `currency`, do not guess CNY or USD; preserve the raw `*T` value and show the currency as unknown.
+- User-facing monetary inputs and default text output use normal currency units, for example `--task-fixed-fee 0.1` and `CNY 0.1000000`. JSON output preserves raw `*FeeT` / `*AmountT` / `*PayableT` API fields where 10,000,000 units equal 1 currency unit.
+- If a response does not include `currency`, do not guess CNY or USD; show the currency as unknown and preserve the raw `*T` value in that display.

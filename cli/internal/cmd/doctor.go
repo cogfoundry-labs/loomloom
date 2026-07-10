@@ -24,6 +24,9 @@ func newDoctorCmd(opts *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if strings.TrimSpace(opts.server) == "" {
+				return writeDoctorCredentialOutput(cmd, opts, platform.UnknownPlatform())
+			}
 			if strings.TrimSpace(opts.token) == "" ||
 				(resolvedPlatform.ID != platform.Unknown && !resolvedPlatform.Operational) {
 				return writeDoctorCredentialOutput(cmd, opts, resolvedPlatform)

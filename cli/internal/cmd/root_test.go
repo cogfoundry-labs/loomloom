@@ -36,6 +36,70 @@ func isolateCmdConfigHome(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(temp, ".config"))
 }
 
+func TestRootReadsServerFromStoredConfig(t *testing.T) {
+	isolateCmdConfigHome(t)
+	const server = "https://loomloom.shengsuanyun.com/loom/v1"
+	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun, Server: server}); err != nil {
+		t.Fatalf("SaveState error=%v", err)
+	}
+	cmd := NewRootCmd()
+	flag := cmd.PersistentFlags().Lookup("server")
+	if flag == nil || flag.Value.String() != server {
+		t.Fatalf("server default=%v want %q from stored config", flag, server)
+	}
+}
+
+func TestRootEnvironmentServerOverridesStoredConfig(t *testing.T) {
+	isolateCmdConfigHome(t)
+	if err := platform.SaveState(platform.State{
+		Platform: platform.ShengSuanYun,
+		Server:   "https://stored.shengsuanyun.com/loom/v1",
+	}); err != nil {
+		t.Fatalf("SaveState error=%v", err)
+	}
+	const envServer = "https://env.shengsuanyun.com/loom/v1"
+	t.Setenv("LOOMLOOM_SERVER", envServer)
+	cmd := NewRootCmd()
+	flag := cmd.PersistentFlags().Lookup("server")
+	if flag == nil || flag.Value.String() != envServer {
+		t.Fatalf("server default=%v want %q from environment", flag, envServer)
+	}
+}
+
+func TestRootLegacyEnvironmentServerOverridesStoredConfig(t *testing.T) {
+	isolateCmdConfigHome(t)
+	if err := platform.SaveState(platform.State{
+		Platform: platform.ShengSuanYun,
+		Server:   "https://stored.shengsuanyun.com/loom/v1",
+	}); err != nil {
+		t.Fatalf("SaveState error=%v", err)
+	}
+	const envServer = "https://batchjob.shengsuanyun.com/loom/v1"
+	t.Setenv("BATCHJOB_SERVER", envServer)
+	cmd := NewRootCmd()
+	flag := cmd.PersistentFlags().Lookup("server")
+	if flag == nil || flag.Value.String() != envServer {
+		t.Fatalf("server default=%v want %q from legacy environment", flag, envServer)
+	}
+}
+
+func TestRootBlankEnvironmentServerFallsBackToStoredConfig(t *testing.T) {
+	isolateCmdConfigHome(t)
+	const storedServer = "https://stored.shengsuanyun.com/loom/v1"
+	if err := platform.SaveState(platform.State{
+		Platform: platform.ShengSuanYun,
+		Server:   storedServer,
+	}); err != nil {
+		t.Fatalf("SaveState error=%v", err)
+	}
+	t.Setenv("LOOMLOOM_SERVER", "  ")
+	cmd := NewRootCmd()
+	flag := cmd.PersistentFlags().Lookup("server")
+	if flag == nil || flag.Value.String() != storedServer {
+		t.Fatalf("server default=%v want %q from stored config", flag, storedServer)
+	}
+}
+
 func TestValidateTokenPlatformBlocksCogFoundry(t *testing.T) {
 	isolateCmdConfigHome(t)
 	opts := &rootOptions{
@@ -94,12 +158,16 @@ func TestMaybePersistVerifiedPlatformRequiresVerification(t *testing.T) {
 		t.Fatalf("platform=%q want empty without verification", got.Platform)
 	}
 	maybePersistVerifiedPlatform(opts, true)
-	if got := platform.LoadState(); got.Platform != platform.ShengSuanYun {
+	got := platform.LoadState()
+	if got.Platform != platform.ShengSuanYun {
 		t.Fatalf("platform=%q want %q", got.Platform, platform.ShengSuanYun)
+	}
+	if got.Server != opts.server {
+		t.Fatalf("server=%q want %q", got.Server, opts.server)
 	}
 }
 
-func TestMaybePersistVerifiedPlatformSkipsRewriteWhenAlreadyBound(t *testing.T) {
+func TestMaybePersistVerifiedPlatformSkipsRewriteWhenAlreadyBoundWithSameServer(t *testing.T) {
 	isolateCmdConfigHome(t)
 	path, err := platform.StatePath()
 	if err != nil {
@@ -108,7 +176,7 @@ func TestMaybePersistVerifiedPlatformSkipsRewriteWhenAlreadyBound(t *testing.T) 
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		t.Fatalf("MkdirAll error=%v", err)
 	}
-	original := []byte("{\n  \"platform\": \"shengsuanyun\",\n  \"kept\": true\n}\n")
+	original := []byte("{\n  \"platform\": \"shengsuanyun\",\n  \"server\": \"https://loomloom.shengsuanyun.com/loom/v1\",\n  \"kept\": true\n}\n")
 	if err := os.WriteFile(path, original, 0o600); err != nil {
 		t.Fatalf("WriteFile error=%v", err)
 	}

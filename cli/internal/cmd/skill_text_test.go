@@ -23,11 +23,13 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 			for _, want := range []string{
 				"loomloom doctor --output json",
 				"credential_action",
-				"你还没有配置 LoomLoom 密钥。请选择要使用的平台：",
+				"你还没有完整配置 LoomLoom Server 和密钥。请选择要使用的平台：",
+				"https://loomloom.shengsuanyun.com/loom/v1",
 				"https://console.shengsuanyun.com/user/keys",
 				"当前未检测到胜算云密钥。请前往胜算云控制台创建或复制密钥后配置到本地环境：",
 				"当前胜算云账户余额不足，请前往胜算云控制台充值后再继续：",
 				"https://console.shengsuanyun.com/user/recharge",
+				"在 CogFoundry 计费功能上线前，请使用胜算云控制台创建 API 密钥",
 				"CogFoundry 面向新加坡及其他海外地区用户，当前支付和交易能力仍在建设中，敬请期待。当前阶段请继续使用胜算云。",
 			} {
 				if !strings.Contains(text, want) {
@@ -35,6 +37,7 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 				}
 			}
 			for _, forbidden := range []string{
+				"https://cogfoundry.ai",
 				"https://console-dev.cogfoundry",
 				"https://console.cogfoundry",
 			} {

@@ -62,7 +62,7 @@ Once a private template version has at least one successful run, publish it to t
 loomloom listing publish <template-id> \
   --template-version-id <version-id> \
   --display-name "My SkillBot" \
-  --task-fixed-fee-t 1000000
+  --task-fixed-fee 0.1
 loomloom creator review list
 ```
 

@@ -116,20 +116,18 @@ func printUsageList(w io.Writer, resp marketUsagesListResponse) error {
 		return err
 	}
 	tw := newTabWriter(w)
-	if _, err := fmt.Fprintln(tw, "run_transaction_id\tlisting_id\tskill_name\ttask_fixed_fee\ttask_fixed_fee_t\tfinal_payable\tfinal_payable_t\tstatus"); err != nil {
+	if _, err := fmt.Fprintln(tw, "run_transaction_id\tlisting_id\tskill_name\ttask_fixed_fee\tfinal_payable\tstatus"); err != nil {
 		return err
 	}
 	for _, item := range resp.Items {
 		if _, err := fmt.Fprintf(
 			tw,
-			"%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.RunTransactionID,
 			item.ListingID,
 			oneLine(item.SkillName),
 			formatMoneyT(int64(item.TaskFixedFeeT), item.Currency),
-			int64(item.TaskFixedFeeT),
 			formatMoneyT(int64(item.FinalBuyerPayableT), item.Currency),
-			int64(item.FinalBuyerPayableT),
 			oneLine(item.TransactionStatus),
 		); err != nil {
 			return err
@@ -161,19 +159,15 @@ func printUsageDetail(w io.Writer, usage marketUsageSummary) error {
 	}
 	for _, field := range []struct {
 		label  string
-		rawKey string
 		amount int64
 	}{
-		{"task_fixed_fee", "task_fixed_fee_t", int64(usage.TaskFixedFeeT)},
-		{"estimated_execution_cost", "estimated_execution_cost_t", int64(usage.EstimatedExecutionCostT)},
-		{"estimated_payable", "estimated_payable_t", int64(usage.EstimatedBuyerPayableT)},
-		{"actual_execution_cost", "actual_execution_cost_t", int64(usage.ActualExecutionCostT)},
-		{"final_payable", "final_payable_t", int64(usage.FinalBuyerPayableT)},
+		{"task_fixed_fee", int64(usage.TaskFixedFeeT)},
+		{"estimated_execution_cost", int64(usage.EstimatedExecutionCostT)},
+		{"estimated_payable", int64(usage.EstimatedBuyerPayableT)},
+		{"actual_execution_cost", int64(usage.ActualExecutionCostT)},
+		{"final_payable", int64(usage.FinalBuyerPayableT)},
 	} {
 		if _, err := fmt.Fprintf(tw, "%s\t%s\n", field.label, formatMoneyT(field.amount, usage.Currency)); err != nil {
-			return err
-		}
-		if _, err := fmt.Fprintf(tw, "%s\t%d\n", field.rawKey, field.amount); err != nil {
 			return err
 		}
 	}

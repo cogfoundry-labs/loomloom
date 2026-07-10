@@ -86,13 +86,36 @@ func TestDoctorWithoutTokenAndUnknownPlatformShowsChoosePlatform(t *testing.T) {
 		t.Fatalf("output=%s want choose_platform", out.String())
 	}
 	for _, want := range []string{
-		"你还没有配置 LoomLoom 密钥",
+		"你还没有完整配置 LoomLoom Server 和密钥",
+		"https://loomloom.shengsuanyun.com/loom/v1",
 		"https://console.shengsuanyun.com/user/keys",
-		"CogFoundry：面向新加坡及其他海外地区用户，当前支付和交易能力敬请期待。",
+		"在 CogFoundry 计费功能上线前，请使用胜算云控制台创建 API 密钥",
 	} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output=%s want %q", out.String(), want)
 		}
+	}
+}
+
+func TestDoctorWithTokenButNoServerShowsChoosePlatform(t *testing.T) {
+	isolateCmdConfigHome(t)
+	opts := &rootOptions{
+		token:   "token-1",
+		timeout: time.Second,
+		output:  "json",
+	}
+	cmd := newDoctorCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("doctor command error = %v", err)
+	}
+	if !strings.Contains(out.String(), `"credential_action": "choose_platform"`) {
+		t.Fatalf("output=%s want choose_platform", out.String())
+	}
+	if !strings.Contains(out.String(), "https://loomloom.shengsuanyun.com/loom/v1") {
+		t.Fatalf("output=%s want ShengSuanYun server guidance", out.String())
 	}
 }
 
@@ -198,6 +221,9 @@ func TestDoctorSuccessfulAuthenticatedProbePersistsPlatform(t *testing.T) {
 	got := platform.LoadState()
 	if got.Platform != platform.ShengSuanYun {
 		t.Fatalf("platform=%q want %q", got.Platform, platform.ShengSuanYun)
+	}
+	if got.Server != opts.server {
+		t.Fatalf("server=%q want %q", got.Server, opts.server)
 	}
 }
 

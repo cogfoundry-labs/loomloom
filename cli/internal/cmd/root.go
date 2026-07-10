@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/client"
+	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/version"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +25,7 @@ type rootOptions struct {
 
 func NewRootCmd() *cobra.Command {
 	opts := &rootOptions{
-		server:  envOrDefault("LOOMLOOM_SERVER", os.Getenv("BATCHJOB_SERVER")),
+		server:  configuredServer(),
 		token:   envOrDefault("LOOMLOOM_TOKEN", os.Getenv("BATCHJOB_TOKEN")),
 		timeout: 30 * time.Second,
 		output:  "text",
@@ -101,6 +102,13 @@ func envOrDefault(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func configuredServer() string {
+	if value := strings.TrimSpace(envOrDefault("LOOMLOOM_SERVER", os.Getenv("BATCHJOB_SERVER"))); value != "" {
+		return value
+	}
+	return strings.TrimSpace(platform.LoadState().Server)
 }
 
 func envBool(key string) bool {

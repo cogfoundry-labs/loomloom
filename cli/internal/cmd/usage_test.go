@@ -38,19 +38,14 @@ func TestUsageListTextShowsFormattedAmounts(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("usage list command error = %v", err)
 	}
-	for _, want := range []string{
+	assertContainsAll(t, out.String(),
 		"CNY 0.5000000",
 		"CNY 0.5052000",
-		"5000000",
-		"5052000",
 		"rt-1",
 		"listing-1",
 		"settled",
-	} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output=%s missing %q", out.String(), want)
-		}
-	}
+	)
+	assertContainsNone(t, out.String(), "task_fixed_fee_t", "final_payable_t")
 	if strings.Contains(out.String(), "{") {
 		t.Fatalf("output=%s must not be raw JSON", out.String())
 	}
@@ -132,17 +127,10 @@ func TestUsageGetTextShowsFormattedAmounts(t *testing.T) {
 	if requestedPath != "/loom/v1/users/me/marketUsages/rt-1" {
 		t.Fatalf("path=%q want usage get endpoint", requestedPath)
 	}
-	for _, want := range []string{
+	assertContainsAll(t, out.String(),
 		"CNY 0.5000000",
 		"CNY 0.5052000",
-		"5000000",
-		"5052000",
 		"currency",
-		"task_fixed_fee_t",
-		"final_payable_t",
-	} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output=%s missing %q", out.String(), want)
-		}
-	}
+	)
+	assertContainsNone(t, out.String(), "task_fixed_fee_t", "final_payable_t")
 }

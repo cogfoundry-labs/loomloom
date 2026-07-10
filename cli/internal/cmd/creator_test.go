@@ -75,18 +75,13 @@ func TestCreatorTransactionsTextShowsFormattedAmountsWithoutEarnings(t *testing.
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("creator transactions command error = %v", err)
 	}
-	for _, want := range []string{
+	assertContainsAll(t, out.String(),
 		"CNY 0.5000000",
 		"CNY 0.9800000",
-		"5000000",
-		"9800000",
 		"rt-1",
 		"settled",
-	} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output=%s missing %q", out.String(), want)
-		}
-	}
+	)
+	assertContainsNone(t, out.String(), "task_fixed_fee_t", "final_payable_t")
 	if strings.Contains(out.String(), "4500000") {
 		t.Fatalf("output=%s must not show creator net earning to buyers", out.String())
 	}

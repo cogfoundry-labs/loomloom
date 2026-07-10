@@ -170,8 +170,8 @@ func TestRunSubmitInsufficientBalanceUsesCurrencyFormat(t *testing.T) {
 	if err == nil {
 		t.Fatal("run submit error = nil, want insufficient balance")
 	}
-	if !strings.Contains(err.Error(), "estimated_cost=CNY 0.0119") ||
-		!strings.Contains(err.Error(), "available=CNY 0.0001") {
+	if !strings.Contains(err.Error(), "estimated_cost=CNY 0.0119350") ||
+		!strings.Contains(err.Error(), "available=CNY 0.0001000") {
 		t.Fatalf("error=%q want currency-aware amounts", err)
 	}
 	if strings.Contains(err.Error(), "¥") {

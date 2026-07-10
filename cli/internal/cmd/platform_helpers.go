@@ -71,18 +71,22 @@ func maybePersistVerifiedPlatform(opts *rootOptions, verified bool) {
 	if !verified {
 		return
 	}
+	server := strings.TrimSpace(opts.server)
+	if server == "" {
+		return
+	}
 	inferred := platform.InferFromServer(opts.server)
 	if inferred.ID == platform.Unknown || !inferred.Operational {
 		return
 	}
 	state := platform.LoadState()
-	if state.Platform == inferred.ID {
+	if state.Platform == inferred.ID && strings.TrimSpace(state.Server) == server {
 		return
 	}
 	if state.Platform != "" && state.Platform != platform.Unknown && state.Platform != inferred.ID {
 		return
 	}
-	_ = platform.SaveState(platform.State{Platform: inferred.ID})
+	_ = platform.SaveState(platform.State{Platform: inferred.ID, Server: server})
 }
 
 func isAuthenticatedProductPath(meta client.SuccessMeta) bool {
