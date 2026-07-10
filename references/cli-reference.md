@@ -51,15 +51,15 @@ All monetary fields like `taskFixedFeeT` and `amountT` use:
 
 #### Human-readable mode (default)
 - Prices are shown as normal currency: `USD 0.5000000`
-- Raw values (*T) are also shown for traceability
-- If a response does not include `currency`, the CLI must not guess CNY or USD; keep the raw `*T` value and show the currency as unknown.
+- Raw `*T` fields are not shown as primary text output
+- If a response does not include `currency`, the CLI must not guess CNY or USD; keep the raw `*T` value in the currency-unknown display.
 
 #### JSON mode (`--output json`)
 - Returns raw backend values only
 - No conversion is applied
 
 - Market and usage-related commands automatically convert `*T` fields into currency values (e.g. `USD 0.5000000`)
-- The original `*T` values are still shown for reconciliation
+- The original `*T` values remain available in JSON output for reconciliation
 
 ### Affected commands
 
@@ -194,7 +194,7 @@ Typical flow
 
 | Command | Description |
 |---|---|
-| `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee-t <fee>` | Submit a template version for Market review after confirmation. |
+| `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee <amount>` | Submit a template version for Market review after confirmation. Use normal currency units such as `--task-fixed-fee 0.5`. |
 | `loomloom listing publish <template-id> --listing-id <listing-id> --template-version-id <new-id> ...` | Submit a new version for an existing listing after confirmation. |
 | `loomloom listing list` | List my Market listings. |
 | `loomloom listing show <listing-id>` | Show one of my listings. |

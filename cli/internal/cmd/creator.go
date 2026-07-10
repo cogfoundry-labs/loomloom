@@ -119,20 +119,18 @@ func printCreatorTransactions(w io.Writer, resp creatorTransactionsListResponse)
 		return err
 	}
 	tw := newTabWriter(w)
-	if _, err := fmt.Fprintln(tw, "run_transaction_id\tlisting_id\tskill_name\ttask_fixed_fee\ttask_fixed_fee_t\tfinal_payable\tfinal_payable_t\tstatus"); err != nil {
+	if _, err := fmt.Fprintln(tw, "run_transaction_id\tlisting_id\tskill_name\ttask_fixed_fee\tfinal_payable\tstatus"); err != nil {
 		return err
 	}
 	for _, item := range resp.Items {
 		if _, err := fmt.Fprintf(
 			tw,
-			"%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.RunTransactionID,
 			item.ListingID,
 			oneLine(item.SkillName),
 			formatMoneyT(int64(item.TaskFixedFeeT), item.Currency),
-			int64(item.TaskFixedFeeT),
 			formatMoneyT(int64(item.FinalBuyerPayableT), item.Currency),
-			int64(item.FinalBuyerPayableT),
 			oneLine(item.TransactionStatus),
 		); err != nil {
 			return err

@@ -38,7 +38,7 @@ func TestMarketPublishBuildsRequestWithoutGeneratedFields(t *testing.T) {
 		"--template-version-id", "version-1",
 		"--display-name", "PRD Review Bot",
 		"--description", "Review PRD docs",
-		"--task-fixed-fee-t", "0",
+		"--task-fixed-fee", "0.5",
 	})
 
 	if err := cmd.Execute(); err != nil {
@@ -50,8 +50,8 @@ func TestMarketPublishBuildsRequestWithoutGeneratedFields(t *testing.T) {
 	if _, ok := body["creator_user_id"]; ok {
 		t.Fatalf("publish body should not include creator_user_id: %#v", body)
 	}
-	if body["taskFixedFeeT"] != float64(0) {
-		t.Fatalf("taskFixedFeeT=%v want 0", body["taskFixedFeeT"])
+	if body["taskFixedFeeT"] != float64(5_000_000) {
+		t.Fatalf("taskFixedFeeT=%v want 5000000", body["taskFixedFeeT"])
 	}
 	if body["displayName"] != "PRD Review Bot" {
 		t.Fatalf("displayName=%v want PRD Review Bot", body["displayName"])
@@ -73,6 +73,105 @@ func TestMarketPublishBuildsRequestWithoutGeneratedFields(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `"id": "listing-1"`) {
 		t.Fatalf("unexpected output: %s", out.String())
+	}
+}
+
+func TestMarketPublishTaskFixedFeeConvertsCurrencyUnits(t *testing.T) {
+	tests := []struct {
+		name string
+		fee  string
+		want float64
+	}{
+		{name: "one currency unit", fee: "1", want: 10_000_000},
+		{name: "micro amount", fee: "0.000001", want: 10},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var body map[string]any
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+					t.Fatalf("decode request body: %v", err)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				_, _ = w.Write([]byte(`{"id":"listing-1"}`))
+			}))
+			defer server.Close()
+
+			opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+			cmd := newListingPublishCmd(opts)
+			cmd.SetArgs([]string{
+				"template-1",
+				"--template-version-id", "version-1",
+				"--display-name", "PRD Review Bot",
+				"--task-fixed-fee", tt.fee,
+			})
+
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("market publish command error = %v", err)
+			}
+			if body["taskFixedFeeT"] != tt.want {
+				t.Fatalf("taskFixedFeeT=%v want %.0f", body["taskFixedFeeT"], tt.want)
+			}
+		})
+	}
+}
+
+func TestMarketPublishDeprecatedTaskFixedFeeTStillWorks(t *testing.T) {
+	var body map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":"listing-1"}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newListingPublishCmd(opts)
+	cmd.SetArgs([]string{
+		"template-1",
+		"--template-version-id", "version-1",
+		"--display-name", "PRD Review Bot",
+		"--task-fixed-fee-t", "5000000",
+	})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("market publish command error = %v", err)
+	}
+	if body["taskFixedFeeT"] != float64(5_000_000) {
+		t.Fatalf("taskFixedFeeT=%v want 5000000", body["taskFixedFeeT"])
+	}
+}
+
+func TestDeprecatedMarketPublishTaskFixedFeeConvertsCurrencyUnits(t *testing.T) {
+	var body map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":"listing-1"}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newDeprecatedMarketPublishCmd(opts)
+	cmd.SetArgs([]string{
+		"--template-id", "template-1",
+		"--template-version-id", "version-1",
+		"--display-name", "PRD Review Bot",
+		"--task-fixed-fee", "0.5",
+	})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("deprecated market publish command error = %v", err)
+	}
+	if body["taskFixedFeeT"] != float64(5_000_000) {
+		t.Fatalf("taskFixedFeeT=%v want 5000000", body["taskFixedFeeT"])
 	}
 }
 
@@ -167,11 +266,8 @@ func TestMarketShowUsesDetailEndpoint(t *testing.T) {
 	if requestedPath != "/loom/v1/marketListings/listing-1" {
 		t.Fatalf("path=%q want detail endpoint", requestedPath)
 	}
-	for _, want := range []string{"listing-1", "CNY 0.0000010", "task_fixed_fee_t", "fields:", "Prompt", "prompt", "sample_rows:"} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output=%s missing %q", out.String(), want)
-		}
-	}
+	assertContainsAll(t, out.String(), "listing-1", "CNY 0.0000010", "fields:", "Prompt", "prompt", "sample_rows:")
+	assertContainsNone(t, out.String(), "task_fixed_fee_t")
 }
 
 func TestMarketShowJSONPreservesUnknownFields(t *testing.T) {
@@ -233,8 +329,25 @@ func TestMarketPublishRequiresExplicitTaskFixedFee(t *testing.T) {
 	})
 
 	err := cmd.Execute()
-	if err == nil || !strings.Contains(err.Error(), "task-fixed-fee-t") {
+	if err == nil || !strings.Contains(err.Error(), "--task-fixed-fee") {
 		t.Fatalf("error=%v want task fee required", err)
+	}
+}
+
+func TestMarketPublishRejectsTaskFixedFeeConflict(t *testing.T) {
+	opts := &rootOptions{server: "https://example.test", timeout: time.Second}
+	cmd := newListingPublishCmd(opts)
+	cmd.SetArgs([]string{
+		"template-1",
+		"--template-version-id", "version-1",
+		"--display-name", "PRD Review Bot",
+		"--task-fixed-fee", "0.5",
+		"--task-fixed-fee-t", "5000000",
+	})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "cannot be used together") {
+		t.Fatalf("error=%v want task fee conflict", err)
 	}
 }
 
@@ -494,21 +607,17 @@ func TestMarketQuoteTextShowsFormattedAmounts(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("market quote command error = %v", err)
 	}
-	for _, want := range []string{
+	assertContainsAll(t, out.String(),
 		"CNY 0.5000000",
-		"task_fixed_fee_t",
-		"5000000",
 		"CNY 1.0069300",
-		"estimated_payable_t",
-		"10069300",
 		"CNY 0.0069300",
+	)
+	assertContainsNone(t, out.String(),
+		"task_fixed_fee_t",
+		"estimated_payable_t",
 		"estimated_execution_cost_t",
-		"69300",
-	} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output=%s missing %q", out.String(), want)
-		}
-	}
+		"10069300",
+	)
 }
 
 func TestMarketQuoteTextUnknownCurrencyFallback(t *testing.T) {
@@ -589,11 +698,8 @@ func TestMarketListTextShowsFormattedFee(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("market list command error = %v", err)
 	}
-	for _, want := range []string{"CNY 0.5000000", "5000000"} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output=%s missing %q", out.String(), want)
-		}
-	}
+	assertContainsAll(t, out.String(), "CNY 0.5000000")
+	assertContainsNone(t, out.String(), "task_fixed_fee_t")
 }
 
 func TestMarketListTextUnknownCurrencyFallback(t *testing.T) {
@@ -656,17 +762,12 @@ func TestMarketRunExecutionTextShowsFormattedAmounts(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("market run command error = %v", err)
 	}
-	for _, want := range []string{
-		"estimated_payable_t",
+	assertContainsAll(t, out.String(),
 		"USD 0.5000000",
 		"USD 0.5069300",
-		"task_fixed_fee_t",
 		"currency",
-	} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output=%s missing %q", out.String(), want)
-		}
-	}
+	)
+	assertContainsNone(t, out.String(), "estimated_payable_t", "task_fixed_fee_t")
 	// An empty skillName from the backend must not leave a blank row.
 	if strings.Contains(out.String(), "skillName") {
 		t.Fatalf("output=%s should omit empty skillName row", out.String())
@@ -1100,11 +1201,8 @@ func TestMarketWorkbookRunQuotesThenExecutes(t *testing.T) {
 	if !executeRequest.Confirm || executeRequest.ClientRequestID != "req-1" {
 		t.Fatalf("execute request=%#v want confirm and clientRequestId", executeRequest)
 	}
-	for _, want := range []string{"CNY 0.5000000", "task_fixed_fee_t", "CNY 0.5069300", "estimated_payable_t", "currency"} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output=%s missing %q", out.String(), want)
-		}
-	}
+	assertContainsAll(t, out.String(), "CNY 0.5000000", "CNY 0.5069300", "currency")
+	assertContainsNone(t, out.String(), "task_fixed_fee_t", "estimated_payable_t")
 	if strings.Contains(logs.String(), "eGxzeCBieXRlcw==") {
 		t.Fatalf("logs should not contain workbook base64: %s", logs.String())
 	}
@@ -1152,6 +1250,24 @@ func writeMarketWorkbookFile(t *testing.T, name string, content []byte) string {
 		t.Fatalf("write workbook file: %v", err)
 	}
 	return filePath
+}
+
+func assertContainsAll(t *testing.T, output string, wants ...string) {
+	t.Helper()
+	for _, want := range wants {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output=%s missing %q", output, want)
+		}
+	}
+}
+
+func assertContainsNone(t *testing.T, output string, forbidden ...string) {
+	t.Helper()
+	for _, item := range forbidden {
+		if strings.Contains(output, item) {
+			t.Fatalf("output=%s should not contain %q", output, item)
+		}
+	}
 }
 
 func marketListingDetailBody(t *testing.T) string {

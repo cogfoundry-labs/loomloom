@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -79,6 +80,7 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 		templateVersionID string
 		displayName       string
 		description       string
+		taskFixedFee      string
 		taskFixedFeeT     int64
 	)
 	cmd := &cobra.Command{
@@ -86,6 +88,11 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 		Short: "Submit a template version for Market SkillBot review",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			resolvedTaskFixedFeeT, err := taskFixedFeeFromFlags(cmd, taskFixedFee, taskFixedFeeT)
+			if err != nil {
+				return err
+			}
+
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
 				return err
@@ -99,7 +106,7 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 				TemplateVersionID: strings.TrimSpace(templateVersionID),
 				DisplayName:       strings.TrimSpace(displayName),
 				Description:       strings.TrimSpace(description),
-				TaskFixedFeeT:     taskFixedFeeT,
+				TaskFixedFeeT:     resolvedTaskFixedFeeT,
 			}
 
 			var resp map[string]any
@@ -116,11 +123,30 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 	cmd.Flags().StringVar(&templateVersionID, "template-version-id", "", "Template version ID to publish")
 	cmd.Flags().StringVar(&displayName, "display-name", "", "Market SkillBot display name")
 	cmd.Flags().StringVar(&description, "description", "", "Market SkillBot description")
-	cmd.Flags().Int64Var(&taskFixedFeeT, "task-fixed-fee-t", 0, "Creator fixed fee per billable task, in API units")
+	cmd.Flags().StringVar(&taskFixedFee, "task-fixed-fee", "", "Creator fixed fee per billable task, in currency units (for example 0.5)")
+	cmd.Flags().Int64Var(&taskFixedFeeT, "task-fixed-fee-t", 0, "Deprecated: creator fixed fee per billable task, in raw API units")
+	_ = cmd.Flags().MarkDeprecated("task-fixed-fee-t", "use --task-fixed-fee with a decimal currency amount")
 	_ = cmd.MarkFlagRequired("template-version-id")
 	_ = cmd.MarkFlagRequired("display-name")
-	_ = cmd.MarkFlagRequired("task-fixed-fee-t")
 	return cmd
+}
+
+func taskFixedFeeFromFlags(cmd *cobra.Command, taskFixedFee string, taskFixedFeeT int64) (int64, error) {
+	hasMoney := strings.TrimSpace(taskFixedFee) != ""
+	hasRaw := cmd.Flags().Changed("task-fixed-fee-t")
+	if hasMoney && hasRaw {
+		return 0, errors.New("--task-fixed-fee and --task-fixed-fee-t cannot be used together")
+	}
+	if hasMoney {
+		return parseMoneyAmountT(taskFixedFee)
+	}
+	if hasRaw {
+		if taskFixedFeeT < 0 {
+			return 0, errors.New("--task-fixed-fee-t must be non-negative")
+		}
+		return taskFixedFeeT, nil
+	}
+	return 0, errors.New("task fixed fee is required; use --task-fixed-fee")
 }
 
 func newListingListCmd(opts *rootOptions) *cobra.Command {
@@ -402,17 +428,16 @@ func printCreatorListings(w io.Writer, resp creatorMarketListingsResponse) error
 		return nil
 	}
 	tw := newTabWriter(w)
-	if _, err := fmt.Fprintln(tw, "id\tname\ttask_fixed_fee\ttask_fixed_fee_t\tstatus\tsale_status\texecution_availability_status\treview_status\tversion"); err != nil {
+	if _, err := fmt.Fprintln(tw, "id\tname\ttask_fixed_fee\tstatus\tsale_status\texecution_availability_status\treview_status\tversion"); err != nil {
 		return err
 	}
 	for _, item := range resp.Items {
 		if _, err := fmt.Fprintf(
 			tw,
-			"%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.ID,
 			oneLine(item.DisplayName),
 			formatMoneyT(int64(item.TaskFixedFeeT), item.Currency),
-			int64(item.TaskFixedFeeT),
 			oneLine(item.Status),
 			oneLine(item.SaleStatus),
 			oneLine(item.ExecutionAvailabilityStatus),
@@ -444,7 +469,6 @@ func printCreatorListingDetail(w io.Writer, listing creatorMarketListingResponse
 		{"review_status", listing.ReviewStatus},
 		{"review_reason", listing.ReviewReason},
 		{"task_fixed_fee", formatMoneyT(int64(listing.TaskFixedFeeT), listing.Currency)},
-		{"task_fixed_fee_t", fmt.Sprintf("%d", int64(listing.TaskFixedFeeT))},
 		{"sale_status", listing.SaleStatus},
 		{"execution_availability_status", listing.ExecutionAvailabilityStatus},
 	} {
@@ -464,7 +488,7 @@ func printCreatorListingVersions(w io.Writer, resp creatorMarketListingVersionsR
 		return err
 	}
 	tw := newTabWriter(w)
-	if _, err := fmt.Fprintln(tw, "id\tversion\ttask_fixed_fee\ttask_fixed_fee_t\tstatus\tsale_status\texecution_availability_status\treview_status\tcreated_at"); err != nil {
+	if _, err := fmt.Fprintln(tw, "id\tversion\ttask_fixed_fee\tstatus\tsale_status\texecution_availability_status\treview_status\tcreated_at"); err != nil {
 		return err
 	}
 	type versionNote struct {
@@ -476,11 +500,10 @@ func printCreatorListingVersions(w io.Writer, resp creatorMarketListingVersionsR
 	for _, item := range resp.Items {
 		if _, err := fmt.Fprintf(
 			tw,
-			"%s\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+			"%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.ID,
 			int64(item.VersionNumber),
 			formatMoneyT(int64(item.TaskFixedFeeT), item.Currency),
-			int64(item.TaskFixedFeeT),
 			oneLine(item.Status),
 			oneLine(item.SaleStatus),
 			oneLine(item.ExecutionAvailabilityStatus),

@@ -308,21 +308,11 @@ func formatDuration(startUnix int64, endUnix int64) string {
 }
 
 func formatCost(cost int64) string {
-	return formatMoney(cost, "CNY")
+	return formatMoneyT(cost, "")
 }
 
 func formatMoney(amountT int64, currency string) string {
-	currency = strings.ToUpper(strings.TrimSpace(currency))
-	if currency == "" {
-		currency = "CNY"
-	}
-	sign := ""
-	if amountT < 0 {
-		sign = "-"
-		amountT = -amountT
-	}
-	value := new(big.Rat).SetFrac(big.NewInt(amountT), big.NewInt(10_000_000))
-	return currency + " " + sign + value.FloatString(4)
+	return formatMoneyT(amountT, currency)
 }
 
 // formatMoneyT converts a raw *T amount (10,000,000 T = 1 currency unit) into
@@ -341,6 +331,76 @@ func formatMoneyT(amountT int64, currency string) string {
 		return fmt.Sprintf("(currency unknown) %d", amountT)
 	}
 	return strings.ToUpper(currency) + " " + sign + value.FloatString(7)
+}
+
+func parseMoneyAmountT(raw string) (int64, error) {
+	const unitsPerCurrency = int64(10_000_000)
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return 0, errors.New("amount is required")
+	}
+	if strings.HasPrefix(value, "-") {
+		return 0, errors.New("amount must be non-negative")
+	}
+	if strings.HasPrefix(value, "+") {
+		value = strings.TrimPrefix(value, "+")
+	}
+	if strings.ContainsAny(value, "eE/,") {
+		return 0, fmt.Errorf("invalid amount %q; use a decimal value such as 0.5", raw)
+	}
+	parts := strings.Split(value, ".")
+	if len(parts) > 2 {
+		return 0, fmt.Errorf("invalid amount %q; use a decimal value such as 0.5", raw)
+	}
+	whole := parts[0]
+	fractional := ""
+	if len(parts) == 2 {
+		fractional = parts[1]
+	}
+	if whole == "" && fractional == "" {
+		return 0, fmt.Errorf("invalid amount %q; use a decimal value such as 0.5", raw)
+	}
+	if whole == "" {
+		whole = "0"
+	}
+	if !allDigits(whole) || (fractional != "" && !allDigits(fractional)) {
+		return 0, fmt.Errorf("invalid amount %q; use a decimal value such as 0.5", raw)
+	}
+	fractional = strings.TrimRight(fractional, "0")
+	if len(fractional) > 7 {
+		return 0, errors.New("amount must be a multiple of 0.0000001")
+	}
+
+	total := new(big.Int)
+	wholeInt := new(big.Int)
+	if _, ok := wholeInt.SetString(whole, 10); !ok {
+		return 0, fmt.Errorf("invalid amount %q; use a decimal value such as 0.5", raw)
+	}
+	total.Mul(wholeInt, big.NewInt(unitsPerCurrency))
+	if fractional != "" {
+		padded := fractional + strings.Repeat("0", 7-len(fractional))
+		fractionalInt := new(big.Int)
+		if _, ok := fractionalInt.SetString(padded, 10); !ok {
+			return 0, fmt.Errorf("invalid amount %q; use a decimal value such as 0.5", raw)
+		}
+		total.Add(total, fractionalInt)
+	}
+	if !total.IsInt64() {
+		return 0, fmt.Errorf("amount %q is too large", raw)
+	}
+	return total.Int64(), nil
+}
+
+func allDigits(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, r := range value {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func isTerminalRunStatus(status string) bool {
@@ -390,7 +450,7 @@ func printTemplateFileValidation(w io.Writer, resp validateTemplateFileResponse)
 }
 
 func printPrecheck(w io.Writer, resp precheckTemplateRowsResponse) error {
-	currency := "CNY"
+	currency := ""
 	if resp.BalanceCheck != nil && strings.TrimSpace(resp.BalanceCheck.Currency) != "" {
 		currency = resp.BalanceCheck.Currency
 	}

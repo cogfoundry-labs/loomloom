@@ -178,7 +178,7 @@ Read `market show` first to understand public fields and examples. Use `fields[]
 
 Creator role (publish and manage a SkillBot):
 
-- `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee-t <fee>` — submit a version for review; it must already have one successful run; returns `reviewRequestId` with `reviewStatus: pending_review`.
+- `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee <amount>` — submit a version for review; it must already have one successful run; returns `reviewRequestId` with `reviewStatus: pending_review`. Use normal currency units such as `--task-fixed-fee 0.5`; the CLI converts this to raw API units internally.
 - To submit a new version for an existing listing, run the same command with `--listing-id <listing-id>` and the new `--template-version-id`. The published version stays active until approval.
 - `loomloom listing list`, `loomloom listing show <listing-id>`, `loomloom listing versions <listing-id>` — creator-owned listings, including pending/rejected/unlisted.
 - `loomloom listing update <listing-id> --display-name <name> --description <text>` — public-profile change for review; does not change pricing or execution version.
@@ -187,7 +187,7 @@ Creator role (publish and manage a SkillBot):
 - `loomloom creator review list`, `loomloom creator review get <review-request-id>`, `loomloom creator review withdraw <review-request-id>` — track and withdraw review requests.
 - `loomloom creator earnings` and `loomloom creator transactions` — creator income and per-call settlement.
 
-All `*FeeT`, `*CostT`, `*AmountT`, and `*PayableT` values are in API units where 10,000,000 units equal 1 currency unit. The CLI's default text output for Market and usage commands already converts these to human-readable amounts (e.g. `CNY 0.5000000` or `USD 0.5000000`) while still printing the raw `*T` value; `--output json` always returns the raw `*T` fields unchanged. When CLI output says `(currency unknown)` or a response lacks `currency`, tell the user the currency is unknown and preserve the raw T value; do not show only a bare number and do not guess CNY or USD.
+All `*FeeT`, `*CostT`, `*AmountT`, and `*PayableT` values are backend API units where 10,000,000 units equal 1 currency unit. User-facing CLI inputs and default text output use normal currency units (for example `--task-fixed-fee 0.5`, `CNY 0.5000000`, or `USD 0.5000000`). `--output json` always returns raw `*T` fields unchanged. When CLI output says `(currency unknown)` or a response lacks `currency`, tell the user the currency is unknown and preserve the raw T value; do not show only a bare number and do not guess CNY or USD.
 
 ## Submission Confirmation Rule
 
@@ -504,7 +504,7 @@ The public CLI currently supports:
 - `loomloom market workbook run <listing-id> --file <xlsx> --confirm --client-request-id <id>`
 - `loomloom usage list`
 - `loomloom usage get <run-transaction-id>`
-- `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee-t <fee>`
+- `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee <amount>`
 - `loomloom listing list`
 - `loomloom listing show <listing-id>`
 - `loomloom listing versions <listing-id>`

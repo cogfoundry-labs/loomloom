@@ -925,17 +925,16 @@ func printMarketListings(w io.Writer, resp marketListingsResponse) error {
 		return nil
 	}
 	tw := newTabWriter(w)
-	if _, err := fmt.Fprintln(tw, "id\tname\ttask_fixed_fee\ttask_fixed_fee_t\tavailability\tversion\tdescription"); err != nil {
+	if _, err := fmt.Fprintln(tw, "id\tname\ttask_fixed_fee\tavailability\tversion\tdescription"); err != nil {
 		return err
 	}
 	for _, item := range resp.Items {
 		if _, err := fmt.Fprintf(
 			tw,
-			"%s\t%s\t%s\t%d\t%s\t%s\t%s\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.ID,
 			oneLine(item.DisplayName),
 			formatMoneyT(int64(item.TaskFixedFeeT), item.Currency),
-			int64(item.TaskFixedFeeT),
 			oneLine(item.ExecutionAvailabilityStatus),
 			oneLine(item.ListingVersionID),
 			oneLine(item.Description),
@@ -961,7 +960,6 @@ func printMarketListingDetail(w io.Writer, listing marketListingPublicResponse) 
 		{"description", listing.Description},
 		{"listing_version_id", listing.ListingVersionID},
 		{"task_fixed_fee", formatMoneyT(int64(listing.TaskFixedFeeT), listing.Currency)},
-		{"task_fixed_fee_t", fmt.Sprintf("%d", int64(listing.TaskFixedFeeT))},
 		{"sale_status", listing.SaleStatus},
 		{"execution_availability_status", listing.ExecutionAvailabilityStatus},
 	} {
@@ -1043,10 +1041,10 @@ func printMarketQuote(w io.Writer, resp map[string]any) error {
 			return err
 		}
 	}
-	if err := printMoneyMapField(tw, resp, "estimated_execution_cost", "estimated_execution_cost_t", "estimatedExecutionCostT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "estimated_execution_cost", "estimatedExecutionCostT", currency); err != nil {
 		return err
 	}
-	if err := printMoneyMapField(tw, resp, "task_fixed_fee", "task_fixed_fee_t", "taskFixedFeeT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "task_fixed_fee", "taskFixedFeeT", currency); err != nil {
 		return err
 	}
 	if value, ok := resp["taskCount"]; ok && value != nil {
@@ -1054,7 +1052,7 @@ func printMarketQuote(w io.Writer, resp map[string]any) error {
 			return err
 		}
 	}
-	if err := printMoneyMapField(tw, resp, "estimated_payable", "estimated_payable_t", "estimatedBuyerPayableT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "estimated_payable", "estimatedBuyerPayableT", currency); err != nil {
 		return err
 	}
 	return tw.Flush()
@@ -1071,19 +1069,19 @@ func printMarketExecution(w io.Writer, resp map[string]any) error {
 			return err
 		}
 	}
-	if err := printMoneyMapField(tw, resp, "task_fixed_fee", "task_fixed_fee_t", "taskFixedFeeT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "task_fixed_fee", "taskFixedFeeT", currency); err != nil {
 		return err
 	}
-	if err := printMoneyMapField(tw, resp, "estimated_execution_cost", "estimated_execution_cost_t", "estimatedExecutionCostT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "estimated_execution_cost", "estimatedExecutionCostT", currency); err != nil {
 		return err
 	}
-	if err := printMoneyMapField(tw, resp, "estimated_payable", "estimated_payable_t", "estimatedBuyerPayableT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "estimated_payable", "estimatedBuyerPayableT", currency); err != nil {
 		return err
 	}
-	if err := printMoneyMapField(tw, resp, "actual_execution_cost", "actual_execution_cost_t", "actualExecutionCostT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "actual_execution_cost", "actualExecutionCostT", currency); err != nil {
 		return err
 	}
-	if err := printMoneyMapField(tw, resp, "final_payable", "final_payable_t", "finalBuyerPayableT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "final_payable", "finalBuyerPayableT", currency); err != nil {
 		return err
 	}
 	if err := printStringMapField(tw, resp, "transactionStatus"); err != nil {
@@ -1108,18 +1106,14 @@ func printStringMapField(tw *tabwriter.Writer, resp map[string]any, key string) 
 	return err
 }
 
-// printMoneyMapField writes a readable-money row followed by the raw *T row
-// for a field present in a decoded JSON map. It is a no-op if the field is
-// absent.
-func printMoneyMapField(tw *tabwriter.Writer, resp map[string]any, label string, rawLabel string, rawKey string, currency string) error {
+// printMoneyMapField writes a readable-money row for a raw *T field present in
+// a decoded JSON map. It is a no-op if the field is absent.
+func printMoneyMapField(tw *tabwriter.Writer, resp map[string]any, label string, rawKey string, currency string) error {
 	amountT, ok := int64MapValue(resp, rawKey)
 	if !ok {
 		return nil
 	}
-	if _, err := fmt.Fprintf(tw, "%s\t%s\n", label, formatMoneyT(amountT, currency)); err != nil {
-		return err
-	}
-	_, err := fmt.Fprintf(tw, "%s\t%d\n", rawLabel, amountT)
+	_, err := fmt.Fprintf(tw, "%s\t%s\n", label, formatMoneyT(amountT, currency))
 	return err
 }
 
@@ -1153,6 +1147,7 @@ func newDeprecatedMarketPublishCmd(opts *rootOptions) *cobra.Command {
 		templateVersionID string
 		displayName       string
 		description       string
+		taskFixedFee      string
 		taskFixedFeeT     int64
 	)
 	cmd := &cobra.Command{
@@ -1160,11 +1155,16 @@ func newDeprecatedMarketPublishCmd(opts *rootOptions) *cobra.Command {
 		Short:      "Publish a template version as a Market SkillBot",
 		Deprecated: "use 'loomloom listing publish <template-id>'",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			resolvedTaskFixedFeeT, err := taskFixedFeeFromFlags(cmd, taskFixedFee, taskFixedFeeT)
+			if err != nil {
+				return err
+			}
+
 			req := publishMarketListingRequest{
 				ListingID:         strings.TrimSpace(listingID),
 				DisplayName:       strings.TrimSpace(displayName),
 				Description:       strings.TrimSpace(description),
-				TaskFixedFeeT:     taskFixedFeeT,
+				TaskFixedFeeT:     resolvedTaskFixedFeeT,
 				TemplateID:        strings.TrimSpace(templateID),
 				TemplateVersionID: strings.TrimSpace(templateVersionID),
 			}
@@ -1188,11 +1188,12 @@ func newDeprecatedMarketPublishCmd(opts *rootOptions) *cobra.Command {
 	cmd.Flags().StringVar(&templateVersionID, "template-version-id", "", "Template version ID to publish")
 	cmd.Flags().StringVar(&displayName, "display-name", "", "Market SkillBot display name")
 	cmd.Flags().StringVar(&description, "description", "", "Market SkillBot description")
-	cmd.Flags().Int64Var(&taskFixedFeeT, "task-fixed-fee-t", 0, "Creator fixed fee per billable task, in API units")
+	cmd.Flags().StringVar(&taskFixedFee, "task-fixed-fee", "", "Creator fixed fee per billable task, in currency units (for example 0.5)")
+	cmd.Flags().Int64Var(&taskFixedFeeT, "task-fixed-fee-t", 0, "Deprecated: creator fixed fee per billable task, in raw API units")
+	_ = cmd.Flags().MarkDeprecated("task-fixed-fee-t", "use --task-fixed-fee with a decimal currency amount")
 	_ = cmd.MarkFlagRequired("template-id")
 	_ = cmd.MarkFlagRequired("template-version-id")
 	_ = cmd.MarkFlagRequired("display-name")
-	_ = cmd.MarkFlagRequired("task-fixed-fee-t")
 	return cmd
 }
 
