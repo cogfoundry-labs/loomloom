@@ -1,0 +1,201 @@
+{
+  "version": "template-spec-translations/v2",
+  "recorder": "template-spec-docs.sh/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "source_sha256": "40c8a416992a8ad98083e0e97cc4faf3c4c4bfbc8969ac218a07ffa495e7313f",
+      "generated_sha256": "d3aa2f3fa66fcc78eadec98c9c61b6404ffdef17e565848c748866f9ca80281d"
+    },
+    {
+      "path": "concepts/artifacts-and-results.md",
+      "source_sha256": "331dbece7488791026d65fe49b507f1ebf6acc06ab5601706f39de181fb76d12",
+      "generated_sha256": "111103a1fcdb2134b6c20f52e55b4eea70274b15992f6fcad16037c8a1d84465"
+    },
+    {
+      "path": "concepts/bindings-and-data-flow.md",
+      "source_sha256": "236dbda505c05ed591b4807b8901ce70fb3f23cff31b083642991db1f9e2917a",
+      "generated_sha256": "0a2971e1a9f3fccd407b7d305cecafe81163ff77f63576c849b48752454daecc"
+    },
+    {
+      "path": "concepts/execution-flow.md",
+      "source_sha256": "d4c7fadac674f1580e7a165c401b9b0b177016f5b09dfc44e2b4c86f81fe9dc1",
+      "generated_sha256": "0549b8f69b69195274ecc6491c73729b1d7e7011c8d7e1451cf038e814ef41b7"
+    },
+    {
+      "path": "concepts/inputs.md",
+      "source_sha256": "68ed357eabd8d0664886fec7166c0933c6ff02282524d17108e0c1db9e4d826f",
+      "generated_sha256": "f65998222bd197607222d8ccb903aaf8351fe7409408754a0ac3b115d40e347d"
+    },
+    {
+      "path": "concepts/steps-and-execution-units.md",
+      "source_sha256": "f9f22e9f71fb334f6d18e3e1a5bc5f3289cbd1f587e5959ff684e549cd47bf43",
+      "generated_sha256": "dbab66734886f820bca5bbb2b63289d54ba6c984de689ed9cc0d0e416ce900a6"
+    },
+    {
+      "path": "concepts/templates-and-versions.md",
+      "source_sha256": "72566eae147b5535ff3bbafc988c70f063f0ed48df73b3f447421ededdcb8320",
+      "generated_sha256": "0f2b3843015fb321e38643a7fae52bb460632ace6c036f84eafbfee40dfd13b8"
+    },
+    {
+      "path": "concepts/validation-layers.md",
+      "source_sha256": "ed81c87c76ca32b1d4fbf5c938672b7d2c71346e15567694283e8265c6e22a37",
+      "generated_sha256": "c693a1f1a43b84f564e5134ee87a5ae7b654295f2a3c09b9d7059d75873f0d2a"
+    },
+    {
+      "path": "concepts/workbooks-and-rows.md",
+      "source_sha256": "c291bc270be3e5c5739216d86f17b6d5352af9c1b1fe394bf5e0028eb481eef7",
+      "generated_sha256": "16abbe27910796b5afa530dab38d3aaecd8fc15f0f19c668e7cd649bb3627c9d"
+    },
+    {
+      "path": "examples/README.md",
+      "source_sha256": "dd69f734c42780d82f242e5fe2db2c09d8a2779471105f82acf283bac3511316",
+      "generated_sha256": "83c268fca0dd0c35a881235dca7fd4c665162e749ebbad0b3eeda0e50d04aa07"
+    },
+    {
+      "path": "examples/invalid/text-reference-without-input-binding.json",
+      "source_sha256": "dcfa64d37ead79d757945c9a60bbc9ea3ccaaf039958300a1476abff40a1c068",
+      "generated_sha256": "73c7dc1a5126762c720d9e1849d0267e33a4ec8ad16b8b8a0b48c7e5dc013230"
+    },
+    {
+      "path": "examples/invalid/uploaded-text-as-string.json",
+      "source_sha256": "c0c5440de077bab24d96fbd3c6097aaf219c9a0273e43dd3016056395bd33706",
+      "generated_sha256": "5dcc7ec532fa2be2681d112b3fa43a99aae4c820a12afde289cce1c7bdb5237a"
+    },
+    {
+      "path": "examples/valid/multi-step-review.json",
+      "source_sha256": "3eecc4de0575b5dcb042e702bd1f9fc9b701282119e6e47b94b6c17631f872d0",
+      "generated_sha256": "3a40cc94488c17b6290050de7ab5587d91a7b8e4247b0494bd0d6c6a1cf60470"
+    },
+    {
+      "path": "examples/valid/multi-upstream-summary.json",
+      "source_sha256": "37b09663943daa4ac429e0bd8dbd9325f5b9c7e8918b57f8012870cf9b190610",
+      "generated_sha256": "316a249214db2d26b2fcc1e5b969982d72f14ab47d1c662242b604f29a23f06f"
+    },
+    {
+      "path": "examples/valid/single-text-generation.json",
+      "source_sha256": "a7c68795a2c19c58a508e74ed3c20daa5b9b73d9cefa72f76b86b0ec14f224f4",
+      "generated_sha256": "75fd0203254bac4e1b48fc154a7e2623273c2e7217b93d6e9fa8db264e2e3f2a"
+    },
+    {
+      "path": "examples/valid/text-image-video-chain.json",
+      "source_sha256": "00d24ca770450a74d3107c06b3906e15c8c5d4e45366accfd64f7a102960968a",
+      "generated_sha256": "3edd3068ce9cf0fad4d32dfe22bea8489dabce37d5e2dc1c9b87d4a5397bb732"
+    },
+    {
+      "path": "examples/valid/uploaded-text-reference.json",
+      "source_sha256": "0a8b85f0f97d9c02fb457ffc0b5179a9c843d1aaff79c6ad8eae49c27553f0e2",
+      "generated_sha256": "883f7911e5a41ac7bf99de69877e9923666d5fb00ed9c45acc696ca44e191e58"
+    },
+    {
+      "path": "examples/valid/workbook-fields-and-model-override.json",
+      "source_sha256": "4ec8cac1ca0a59ff26ce186aeaf2314c965b6dafd32e9dd536544e1c8c51d8fa",
+      "generated_sha256": "1e5e2c2fc3093f21dae6416cb456846f8546083168ffff59680515547e934e5e"
+    },
+    {
+      "path": "get-started/quickstart.md",
+      "source_sha256": "b3d297f73516ad500d084cdec99000da59fe6ab1d3821b3e1b4c0df9c2c399c0",
+      "generated_sha256": "b4c17ba670d06626ad7637cec6c1e66e220f40e61dfd37639dea97c0127c42bb"
+    },
+    {
+      "path": "get-started/understand-template-spec.md",
+      "source_sha256": "812a466d829d4fb373425ef9b9d8d1806905c394b335cfcfbc5292c2bd05d279",
+      "generated_sha256": "fe2fa882314c07352ee77dacbcba70059b0ac3565eefaa8aec0d43901c441b8d"
+    },
+    {
+      "path": "how-to/accept-pasted-text.md",
+      "source_sha256": "eb027749b4dd8c6d3a33cae1e57e9833091a9375c357fb4900f7f7903afb57ad",
+      "generated_sha256": "4579fb7dd9050caa356a41d4a087eb338f6c4f44524cb20cf12aa7fcf0dc1694"
+    },
+    {
+      "path": "how-to/accept-uploaded-files.md",
+      "source_sha256": "949977c0a583da709d1677c2e73f22572985c74f688042a5b0812a0c8063b362",
+      "generated_sha256": "482ca7e5e487adc6c816a4d7252621ad1715274507a260132d002a2b2b92d6f3"
+    },
+    {
+      "path": "how-to/build-multi-step-workflows.md",
+      "source_sha256": "1d6704768d5a765aa3d635670fed35a94e0f2fd70252bf4a2610f90f1bd6958c",
+      "generated_sha256": "6cd5f82386275993b3c017497062e4ceb69c4e71aec24c53cda4d068897ee3c0"
+    },
+    {
+      "path": "how-to/compose-prompts.md",
+      "source_sha256": "65bffb0a2d1ab2199b9c5c8c034f074f3ea22d50c06cffafe526225d24871c49",
+      "generated_sha256": "98e33e30dfaf8028a687191c6451743d17a5a08a893cb8e7337a1057a4a3124b"
+    },
+    {
+      "path": "how-to/configure-models.md",
+      "source_sha256": "9cccfbc20ded580d21fa7aa8a01e53a3c28c22f671379d4187fb34627926f5f4",
+      "generated_sha256": "e6d90746898f581db5d01789f8ad6f8bef4e8543e6f264759bf22ed19e97d553"
+    },
+    {
+      "path": "how-to/design-workbook-inputs.md",
+      "source_sha256": "0f9dd3c3c777b7082ae4ce6988eda5d29dcbd8caf5594be75a9ecab4dbe5db57",
+      "generated_sha256": "5a51dcf98cc12ef1a156166ab81ff306fc0d45254a464c47a395d25b079c669e"
+    },
+    {
+      "path": "how-to/expose-model-overrides.md",
+      "source_sha256": "12ba3c7de1a710de96c52ce8281b2a8d40265f946c5b1696401fabf5ea11faf6",
+      "generated_sha256": "61e201461f7bcc46ad0541f14ce6c6a585654244412c74e7f40b0c2d878bcea2"
+    },
+    {
+      "path": "how-to/run-and-read-results.md",
+      "source_sha256": "ccaf26a5917735557b7c9073288031ed677746d7725edd17ad5aebab6606ec43",
+      "generated_sha256": "0d1d794865c0b7bf8e6f4168c9745f1e1aa4a245f7c948df1eca2b61f0c3afc6"
+    },
+    {
+      "path": "how-to/troubleshoot.md",
+      "source_sha256": "b67b7c412bc68ca91c5eb9b6f8c977f5cd4b22b1f50f3c6e0c3ca74d76091d6a",
+      "generated_sha256": "9b9f519248bbcf60632672142d33b3cc5da9121c0804db14762aa0669e557807"
+    },
+    {
+      "path": "how-to/validate-create-and-version.md",
+      "source_sha256": "d4f1dfc02765654c42434586b314dcb922dedcde1bc36b209598305618b75d8c",
+      "generated_sha256": "afda0244a5fc041613cd1298e4bffd57397f253645d6fb6b3d7b71c8e14f2bb0"
+    },
+    {
+      "path": "reference/bindings.md",
+      "source_sha256": "6788b7ae0c04613dbc28208ce6068658a063958be86a0936dff58a325b88524e",
+      "generated_sha256": "597e4603e06f9067c93ce1fa47b93550ad9ed18ad6b811c2bc38e479694d3942"
+    },
+    {
+      "path": "reference/compatibility.md",
+      "source_sha256": "b9ac47d589a2fe6e4e07db19d5893e4def045991368017653e7b9d3c609ba97d",
+      "generated_sha256": "57acd8abfc2ab544a426ad99bf6b8a7560b85db7d0280b79bec4709f3c41cdf7"
+    },
+    {
+      "path": "reference/execution-units.md",
+      "source_sha256": "604c052e1612008a4fb871529a730d85f250acba4da79240e280aa5d43f5b61e",
+      "generated_sha256": "0c04591606777aed4bc1768d3173598f866945f56f777f3342c161a89b4b2b51"
+    },
+    {
+      "path": "reference/input-schema.md",
+      "source_sha256": "dace952f5651164b4d842ac25bfce83e7a065556e91246ad9a3eb820a0d43297",
+      "generated_sha256": "fcfe77644731a35f9b6782f08ccda16d28118c7f8797f5630fd4ff44a5834a95"
+    },
+    {
+      "path": "reference/limits.md",
+      "source_sha256": "077660c4df59a885f6f1264965026b1bd2271892c21afb8526b8eb7f94c659f4",
+      "generated_sha256": "c70999e74c5b324da574f0b352c7693c3e5f0e67e96935a6a2c3a0909c539c5d"
+    },
+    {
+      "path": "reference/metadata.md",
+      "source_sha256": "8188a404c00da69a4b69a05d9b28432f3ae743724deff1ec4279a6d9ad522443",
+      "generated_sha256": "d857aa8d642f9e0a7ab67eecc6fe63cb8128f907f9c0dd6c8f5ee129253eb59c"
+    },
+    {
+      "path": "reference/steps.md",
+      "source_sha256": "6af4ff25bd9c4a98718e51fdbca32d38eab2023d9816534745b4d738265af985",
+      "generated_sha256": "38d018e06e15e3d3cda766dc723cf739bd3c770c24d4efbd9b89c4a448110e76"
+    },
+    {
+      "path": "reference/template-syntax.md",
+      "source_sha256": "95bd3cceeafd9c77e301be75b51868ab8817da3aed0488ca2e82299785ba46f1",
+      "generated_sha256": "ff7c0ac9e359b06a8d8cf1945192d957afd521abba8641c089300798308d017f"
+    },
+    {
+      "path": "reference/validation-errors.md",
+      "source_sha256": "dd89b5fe253b0036e89109d109518b46c8bba891d0f46c7b7f46e9652845b70e",
+      "generated_sha256": "f92dd14af7edcfe2b0b9664047a3cc1ec11c2ab35ff5108c22fca7610cb7bdb5"
+    }
+  ]
+}

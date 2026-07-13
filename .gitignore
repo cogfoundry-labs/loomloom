@@ -5,3 +5,6 @@ release/
 .DS_Store
 cli/batchjob-cli
 intro/
+cli/internal/template_spec_docs/generated/*
+!cli/internal/template_spec_docs/generated/placeholder.txt
+skills/*/loomloom/generated-template-spec/

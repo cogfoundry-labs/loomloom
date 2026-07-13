@@ -388,7 +388,7 @@ When the user describes a new template in natural language, do not immediately w
 
 Flow:
 
-1. Ask business questions, not TemplateSpec technical-field questions.
+1. Ask business questions, not TemplateSpec technical-field questions. For long-form material, explicitly ask whether future users will paste the content or upload a file; do not infer the transport from words such as "document" or "material".
 2. Ask one missing-detail question at a time.
 3. Avoid user-facing technical terms such as `fieldBindings`, `upstreamBindings`, `fan-in`, `execution`, `outputSchema`, `provider`, and `mode`.
 4. Restate complex workflows in business language before continuing.
@@ -448,6 +448,8 @@ Default modeling rules:
 TemplateSpec authoring constraints:
 
 - Before writing custom TemplateSpec, run `loomloom template-spec docs spec` and use the CLI-bundled document as the current contract.
+- Apply the canonical input rules consistently: pasted text uses `string -> prompt` (TS-IN-001); uploaded text files use `text_reference -> initial_input -> compatible text port` (TS-IN-002); reject a generated design that declares `string`, instructs users to enter an asset ID, and binds it to `prompt` (TS-IN-003).
+- Before showing TemplateSpec, verify that field descriptions, sample rows, `valueType`, and bindings all describe the same input transport.
 - Use `loomloom template-spec docs examples` for examples and patterns.
 - Use `loomloom template-spec docs conversation` for the natural-language creation flow.
 - Use only `text-generate`, `image-generate`, and `video-generate` by default.

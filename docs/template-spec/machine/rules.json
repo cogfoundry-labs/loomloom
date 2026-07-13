@@ -1,0 +1,32 @@
+{
+  "version": "template-spec-rules/v1",
+  "rules": [
+    {
+      "id": "TS-IN-001",
+      "scope": "field",
+      "severity": "error",
+      "enforcement": ["authoring_lint"],
+      "referenceId": "ports-and-bindings.input-transport",
+      "validExamples": ["examples/valid/single-text-generation.json"],
+      "invalidExamples": []
+    },
+    {
+      "id": "TS-IN-002",
+      "scope": "template",
+      "severity": "error",
+      "enforcement": ["authoring_lint", "core_validator"],
+      "referenceId": "ports-and-bindings.uploaded-text",
+      "validExamples": ["examples/valid/uploaded-text-reference.json"],
+      "invalidExamples": ["examples/invalid/text-reference-without-input-binding.json"]
+    },
+    {
+      "id": "TS-IN-003",
+      "scope": "template",
+      "severity": "error",
+      "enforcement": ["authoring_lint"],
+      "referenceId": "ports-and-bindings.input-transport",
+      "validExamples": ["examples/valid/uploaded-text-reference.json"],
+      "invalidExamples": ["examples/invalid/uploaded-text-as-string.json"]
+    }
+  ]
+}

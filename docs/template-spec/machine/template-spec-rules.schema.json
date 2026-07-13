@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://loomloom.dev/schemas/template-spec-rules-v1.json",
+  "type": "object",
+  "required": ["version", "rules"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {"const": "template-spec-rules/v1"},
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "scope", "severity", "enforcement", "referenceId", "validExamples", "invalidExamples"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^TS-[A-Z]+-[0-9]{3}$"},
+          "scope": {"enum": ["field", "step", "template", "runtime"]},
+          "severity": {"enum": ["error", "warning"]},
+          "enforcement": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"enum": ["json_schema", "authoring_lint", "core_validator", "runtime_registry"]}
+          },
+          "referenceId": {"type": "string", "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+$"},
+          "validExamples": {"type": "array", "items": {"type": "string"}},
+          "invalidExamples": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}

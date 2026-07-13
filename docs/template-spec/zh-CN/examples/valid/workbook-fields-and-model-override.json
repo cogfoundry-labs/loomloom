@@ -1,0 +1,15 @@
+{
+  "meta": {"name": "可配置文案生成"},
+  "steps": [{"stepId": "stp_write01", "displayName": "生成文案", "executionUnit": "text-generate", "instruction": "保持事实准确。", "defaultModelRef": {"modelKey": "google/gemini-2.5-flash"}, "allowModelOverride": true}],
+  "inputSchema": {
+    "instructions": ["每行填写一篇内容。"],
+    "fields": [
+      {"key": "content", "label": "正文", "valueType": "string", "required": true, "order": 1, "presentation": {"widget": "textarea", "hint": "粘贴正文"}},
+      {"key": "tone", "label": "语气", "valueType": "enum", "enumValues": ["专业", "轻松"], "required": true, "order": 2, "presentation": {"widget": "select"}},
+      {"key": "policy", "label": "固定规则", "valueType": "string", "sourceKind": "hidden", "hidden": true, "defaultValue": "不添加未提供的事实"},
+      {"key": "text_model", "label": "文本模型", "valueType": "string", "required": true, "order": 3}
+    ]
+  },
+  "paramBindings": [{"stepId": "stp_write01", "paramKey": "prompt", "bindMode": "shared", "separator": "\n\n", "sources": [{"kind": "field_ref", "fieldKey": "content"}, {"kind": "field_ref", "fieldKey": "tone"}, {"kind": "field_ref", "fieldKey": "policy"}]}],
+  "fieldBindings": [{"fieldKey": "text_model", "stepId": "stp_write01", "paramKey": "model", "bindMode": "shared"}]
+}

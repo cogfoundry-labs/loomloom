@@ -1,0 +1,29 @@
+{
+  "meta": {"name": "串行材料评审", "description": "先整理材料，再形成评审结论"},
+  "steps": [
+    {
+      "stepId": "stp_extract1",
+      "displayName": "整理材料",
+      "executionUnit": "text-generate",
+      "instruction": "整理材料中的目标、范围和明确事实。",
+      "defaultModelRef": {"modelKey": "google/gemini-2.5-flash"}
+    },
+    {
+      "stepId": "stp_review1",
+      "displayName": "形成评审",
+      "executionUnit": "text-generate",
+      "instruction": "根据上游整理结果列出风险和建议。",
+      "defaultModelRef": {"modelKey": "google/gemini-2.5-flash"},
+      "dependsOn": ["stp_extract1"],
+      "upstreamBindings": [
+        {"inputPort": "prompt", "sourceStepId": "stp_extract1", "sourcePort": "output"}
+      ]
+    }
+  ],
+  "inputSchema": {
+    "fields": [{"key": "material", "label": "评审材料", "valueType": "string", "required": true}]
+  },
+  "fieldBindings": [
+    {"fieldKey": "material", "stepId": "stp_extract1", "paramKey": "prompt", "bindMode": "shared"}
+  ]
+}
