@@ -23,7 +23,7 @@ Simply describe the outcome you want. LoomLoom transforms it into an executable 
 - 📄 Document processing and knowledge extraction
 - 💻 AI-assisted software engineering and code generation
 
-[Quick Start](#quick-start) · [Installation](references/installation.md) · [Key Concepts](#key-concepts) · [CLI Reference](references/cli-reference.md) · [Template Docs](docs/template-spec/00-template-spec.md)
+[Quick Start](#quick-start) · [Installation](references/installation.md) · [Key Concepts](#key-concepts) · [CLI Reference](references/cli-reference.md) · [Template Docs](docs/template-spec/en/README.md) · [中文模板文档](docs/template-spec/zh-CN/README.md)
 
 --- 
 
@@ -133,7 +133,7 @@ Most AI tools optimize a single prompt. Most real work isn't a single prompt —
 Deeper documentation:
 
 - [Official Templates](references/official-templates.md) — input schemas for each official workflow
-- [Private Templates & Authoring](references/private-templates.md) — build your own with TemplateSpec ([formal spec](docs/template-spec/00-template-spec.md))
+- [Private Templates & Authoring](references/private-templates.md) — build your own with TemplateSpec ([English handbook](docs/template-spec/en/README.md), [中文手册](docs/template-spec/zh-CN/README.md))
 - [Market & SkillBots](references/market-skillbots.md) — publish, version, price, and run SkillBots
 - [Complete CLI Reference](references/cli-reference.md)
 - [Workflow Examples](references/workflow-examples.md)
