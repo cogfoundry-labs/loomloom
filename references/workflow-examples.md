@@ -1,6 +1,6 @@
 # Example Workflows
 
-End-to-end walkthroughs for the main ways to use LoomLoom. Each one assumes you've already completed [Quick Start](../README.md#quick-start) (`loomloom doctor` reports healthy).
+End-to-end walkthroughs for the main ways to use LoomLoom. Each one assumes you've already completed [Quick Start](../README.md#quick-install) (`loomloom doctor` reports healthy).
 
 ## 1. Batch copywriting with an official template
 
@@ -21,7 +21,7 @@ Field definitions for `text-v1` are in [`official-templates.md`](official-templa
 
 ## 2. Batch image generation with an official template
 
-Generate a batch of social images from a workbook of prompts (the canonical example, also shown in the [README Quick Start](../README.md#quick-start)):
+Generate a batch of social images from a workbook of prompts (the canonical example, also shown in the [README Quick Start](../README.md#quick-install)):
 
 ```bash
 loomloom template download text-image-v1 --output-file ./task.xlsx

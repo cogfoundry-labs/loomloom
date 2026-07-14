@@ -1,14 +1,124 @@
-# Installation & Uninstall
-
-Full installation options for LoomLoom. For the fastest path, see [Quick Start](../README.md#quick-start) in the README — this document covers agent-assisted install, per-agent packages, version pinning, the Gitee mirror, credential setup, and uninstall.
+# Getting Started
 
 ## Contents
 
+- [Key Concepts](#key-concepts)
+- [Supported Agents](#supported-agents)
 - [Agent-assisted install](#agent-assisted-install)
 - [Install from script (macOS / Linux)](#install-from-script-macos--linux)
 - [Install from script (Windows / PowerShell)](#install-from-script-windows--powershell)
 - [Configure credentials](#configure-credentials)
 - [Uninstall](#uninstall)
+
+## Key Concepts
+
+| Term | Meaning |
+|---|---|
+| **Template** | A reusable AI workflow run repeatedly with different inputs. |
+| **Official Template** | Platform-maintained workflow (e.g. `text-v1`), discovered via `loomloom template list`. |
+| **Private Template** | Your own workflow authored with `TemplateSpec`; supports multiple immutable versions. |
+| **SkillBot** | A public workflow created from an approved Private Template version, published on the Market. |
+| **Run** | A single execution of a template against your data. |
+
+Deeper documentation:
+
+- [Official Templates](official-templates.md) — input schemas for each official workflow
+- [Private Templates & Authoring](private-templates.md) — build your own with TemplateSpec ([formal spec](../docs/template-spec/00-template-spec.md))
+- [Market & SkillBots](market-skillbots.md) — publish, version, price, and run SkillBots
+- [Complete CLI Reference](cli-reference.md)
+- [Workflow Examples](workflow-examples.md)
+
+---
+
+## Supported Agents
+
+LoomLoom separates workflow orchestration from agent execution. Installing LoomLoom installs the integration package for the selected agent.
+
+| Agent | Status |
+|---|---|
+| Codex (OpenAI) | Supported |
+| Claude Code (Anthropic) | Supported |
+| OpenClaw | Supported |
+
+---
+
+## Quick Start
+
+### 1. Install
+
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Cogfoundry-ai/loomloom/main/install.sh | bash
+```
+
+**Windows (PowerShell)**
+
+```powershell
+irm https://raw.githubusercontent.com/Cogfoundry-ai/loomloom/main/install.ps1 | iex
+```
+
+> For agent-assisted installation, version pinning, the Gitee mirror, credential configuration, and uninstall instructions, see the sections below.
+
+### 2. Configure credentials
+
+If `LOOMLOOM_TOKEN` is not configured yet, choose the platform you want to use:
+
+1. **ShengSuanYun**
+   Recommended for users in Mainland China. This service is jointly supported by CogFoundry. You can create an API key and recharge your account in the ShengSuanYun Console.
+
+   - API keys: https://console.shengsuanyun.com/user/keys
+   - Recharge: https://console.shengsuanyun.com/user/recharge
+
+2. **CogFoundry**
+   Recommended for users in Singapore and other overseas regions. CogFoundry payment and transaction capabilities are coming soon.
+
+   Until CogFoundry billing is available, you can use the ShengSuanYun Console to create an API key and recharge your account:
+
+   - API keys: https://console.shengsuanyun.com/user/keys
+   - Recharge: https://console.shengsuanyun.com/user/recharge
+
+```bash
+export LOOMLOOM_SERVER="https://loomloom.shengsuanyun.com/loom/v1"
+export LOOMLOOM_TOKEN="<your LoomLoom API key>"
+```
+
+On Windows PowerShell, use `$env:LOOMLOOM_SERVER = "..."`. Never commit or share your API key.
+
+### 3. Verify
+
+```bash
+loomloom doctor
+```
+
+### 4. Inspect commands and inputs
+
+- Use `loomloom <command> --help` to inspect positional arguments and flags.
+- Use `loomloom template schema <template-id> --output json` to inspect official template fields.
+- Use `loomloom market show <listing-id> --output json` to inspect a Market SkillBot's public input schema.
+- Use `loomloom template-spec docs spec|examples|conversation` when authoring private templates.
+- Use `--output json` when chaining commands, and preserve returned IDs exactly.
+
+### 5. Run your first workflow
+
+```bash
+# Download a sample workbook for an official template
+loomloom template download text-image-v1 --output-file ./task.xlsx
+
+# Fill in the workbook, then validate and estimate cost
+loomloom template validate-file text-image-v1 ./task.xlsx
+loomloom template precheck-file text-image-v1 ./task.xlsx
+
+# Review the estimate and confirm before submitting
+loomloom template submit-file text-image-v1 ./task.xlsx --client-request-id <stable-id>
+
+# Watch progress, then download results and artifacts
+loomloom run watch <run-id>
+loomloom run result-workbook <run-id> --output-file ./task.result.xlsx
+loomloom artifact download <run-id> --output-dir ./downloads
+```
+
+More end-to-end walkthroughs are in **[Workflow Examples](workflow-examples.md)**.
 
 ---
 
@@ -174,3 +284,27 @@ irm https://raw.githubusercontent.com/Cogfoundry-ai/loomloom/main/uninstall.ps1 
 # Remove skill package only
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Cogfoundry-ai/loomloom/main/uninstall.ps1))) -SkillOnly
 ```
+
+## Market
+
+The LoomLoom Market lets creators publish reusable workflows as **SkillBots**, and lets others discover and run them without rebuilding the workflow. CogFoundry payment and transaction capabilities are coming soon. For Market-related paid workflows, check availability, balance, and transaction status in the [ShengSuanYun Console](https://console.shengsuanyun.com/user/recharge). See **[Market & SkillBots](market-skillbots.md)** for publishing, versioning, and pricing.
+
+---
+
+## Security
+
+- Only send `LOOMLOOM_TOKEN` to the `LOOMLOOM_SERVER` you configured, over HTTPS.
+- Never put real tokens in source, docs, screenshots, or logs.
+- AI agents must get explicit user confirmation before paid or state-changing operations (for example, `submit-file`, `run submit`, `template-spec run`, `market run`, `listing publish`, or `listing unlist`).
+- Do not blindly retry paid or state-changing commands after an ambiguous failure; check the relevant run, listing, review, or usage state first.
+
+Full guidance: **[Security Notes](security.md)**. LoomLoom is **beta** — breaking changes are possible before the first stable release.
+
+---
+
+## Links
+
+- **API Base URL**: https://loomloom.shengsuanyun.com/loom/v1
+- **API Keys**: https://console.shengsuanyun.com/user/keys
+- **Recharge**: https://console.shengsuanyun.com/user/recharge
+- **CogFoundry**: https://cogfoundry.ai

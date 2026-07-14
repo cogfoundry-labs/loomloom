@@ -2,7 +2,7 @@
 
 The LoomLoom Market lets creators publish a private template version as a paid **SkillBot**. CogFoundry payment and transaction capabilities are coming soon. For Market-related paid workflows, check availability, balance, and transaction status in the [ShengSuanYun Console](https://console.shengsuanyun.com/user/recharge).
 
-See the main [README](../README.md) for the Template → Private Template → SkillBot taxonomy, and [`cli-reference.md`](cli-reference.md#market--buyer) for the full command list.
+See the main [README](../README.md) for the Template → Private Template → SkillBot taxonomy, and [`cli-reference.md`](cli-reference.md#9-market-buy-workflows) for the full command list.
 
 Publishing a SkillBot does not expose or convert the underlying private template into a public object. Instead, the system creates an immutable Listing Version execution snapshot from the selected template version.
 
