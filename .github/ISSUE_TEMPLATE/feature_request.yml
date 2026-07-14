@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest an idea or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! For large or breaking changes, please open an issue
+        to discuss the approach before writing code.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the problem or use case, not just the solution.
+      placeholder: I'm always frustrated when ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to happen?
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches or workarounds you've thought about.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true

@@ -1,6 +1,6 @@
 # Private Template Authoring (TemplateSpec)
 
-How to author your own workflow — a **private template** — and run it either through a workbook or directly from row data. See the main [README](../README.md) for how private templates relate to official templates and SkillBots, and [`cli-reference.md`](cli-reference.md#private-templates-created-via-templatespec) for the full command list.
+How to author your own workflow — a **private template** — and run it either through a workbook or directly from row data. See the main [README](../README.md) for how private templates relate to official templates and SkillBots, and [`cli-reference.md`](cli-reference.md#7-private-templates-created-via-templatespec) for the full command list.
 
 ## Input assets vs. orchestration inputs
 
