@@ -1,0 +1,20 @@
+{
+  "meta": {"name": "单步文本生成", "description": "根据用户粘贴的主题生成短文"},
+  "steps": [
+    {
+      "stepId": "stp_write01",
+      "displayName": "生成正文",
+      "executionUnit": "text-generate",
+      "instruction": "根据用户主题生成一段简洁正文。",
+      "defaultModelRef": {"modelKey": "google/gemini-2.5-flash"}
+    }
+  ],
+  "inputSchema": {
+    "fields": [
+      {"key": "topic", "label": "主题", "valueType": "string", "required": true, "order": 1}
+    ]
+  },
+  "fieldBindings": [
+    {"fieldKey": "topic", "stepId": "stp_write01", "paramKey": "prompt", "bindMode": "shared"}
+  ]
+}

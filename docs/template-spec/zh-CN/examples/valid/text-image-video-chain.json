@@ -1,0 +1,16 @@
+{
+  "meta": {"name": "文案到视频"},
+  "steps": [
+    {"stepId": "stp_prompt1", "displayName": "整理画面提示", "executionUnit": "text-generate", "defaultModelRef": {"modelKey": "google/gemini-2.5-flash"}},
+    {"stepId": "stp_image01", "displayName": "生成图片", "executionUnit": "image-generate", "dependsOn": ["stp_prompt1"], "upstreamBindings": [{"inputPort": "prompt", "sourceType": "step_output", "sourceStepId": "stp_prompt1", "sourcePort": "output"}], "defaultModelRef": {"modelKey": "image/model"}},
+    {"stepId": "stp_video01", "displayName": "生成视频", "executionUnit": "video-generate", "dependsOn": ["stp_image01"], "upstreamBindings": [{"inputPort": "image", "sourceType": "step_output", "sourceStepId": "stp_image01", "sourcePort": "output"}], "defaultModelRef": {"modelKey": "video/model"}}
+  ],
+  "inputSchema": {"fields": [
+    {"key": "idea", "label": "创意", "valueType": "string", "required": true},
+    {"key": "motion", "label": "运动描述", "valueType": "string", "required": true}
+  ]},
+  "fieldBindings": [
+    {"fieldKey": "idea", "stepId": "stp_prompt1", "paramKey": "prompt", "bindMode": "shared"},
+    {"fieldKey": "motion", "stepId": "stp_video01", "paramKey": "prompt", "bindMode": "shared"}
+  ]
+}

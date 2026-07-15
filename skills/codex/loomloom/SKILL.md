@@ -106,6 +106,7 @@ Choose the entry point by user intent:
    `loomloom template-spec docs spec`
    `loomloom template-spec docs examples`
    `loomloom template-spec docs conversation`
+   TemplateSpec docs default to English and are also available in Chinese with `--lang zh-CN`, for example `loomloom template-spec docs spec --lang zh-CN`. Select the documentation language as appropriate for the conversation and task.
    `loomloom template-spec models <text-generate|image-generate|video-generate>`
    `loomloom template-spec check <spec.json>`
    `loomloom template-spec create <spec.json>`
@@ -542,7 +543,7 @@ When the user describes a new template in natural language, do not immediately w
 
 Flow:
 
-1. Ask business questions, not TemplateSpec technical-field questions.
+1. Ask business questions, not TemplateSpec technical-field questions. For long-form material, explicitly ask whether future users will paste the content or upload a file; do not infer the transport from words such as "document" or "material".
 2. Ask one missing-detail question at a time.
 3. Avoid user-facing technical terms such as `fieldBindings`, `upstreamBindings`, `fan-in`, `execution`, `outputSchema`, `provider`, and `mode`.
 4. Restate complex workflows in business language before continuing.
@@ -653,9 +654,11 @@ Default modeling rules:
 TemplateSpec authoring constraints:
 
 - Before writing custom TemplateSpec, run `loomloom template-spec docs spec` and use the CLI-bundled document as the current contract.
+- Apply the canonical input rules consistently: pasted text uses `string -> prompt` (TS-IN-001); uploaded text files use `text_reference -> initial_input -> compatible text port` (TS-IN-002); reject a generated design that declares `string`, instructs users to enter an asset ID, and binds it to `prompt` (TS-IN-003).
+- Before showing TemplateSpec, verify that field descriptions, sample rows, `valueType`, and bindings all describe the same input transport.
 - Use `loomloom template-spec docs examples` for examples and patterns.
 - Use `loomloom template-spec docs conversation` for the natural-language creation flow.
-- Installed skills also contain a `docs/template-spec/` backup, but prefer the CLI docs command because it reflects the docs bundled with the current CLI.
+- Installed Skills do not maintain a second TemplateSpec source. Use the CLI docs command, which reads the generated documentation bundle shipped with the current CLI.
 - Use only `text-generate`, `image-generate`, and `video-generate` by default unless the user has an explicitly documented custom unit.
 - Use OpenAPI lowerCamel fields such as `meta.name`, `steps[].stepId`, and `defaultModelRef.modelKey`.
 - `inputSchema.sampleRows[]` must wrap sample field values in a `values` object, for example `{ "values": { "prompt": "example" } }`; do not put field keys directly on the sample row object.

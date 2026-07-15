@@ -150,38 +150,56 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 }
 
 func newTemplateSpecDocsCmd(opts *rootOptions) *cobra.Command {
+	var language string
 	cmd := &cobra.Command{
 		Use:   "docs [spec|authoring|examples|conversation|all]",
 		Short: "Show the TemplateSpec documentation snapshot shipped with this CLI",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			normalizedLanguage, err := templatespecdocs.NormalizeLanguage(strings.TrimSpace(language))
+			if err != nil {
+				return err
+			}
 			topic := ""
 			if len(args) > 0 {
 				topic = strings.TrimSpace(args[0])
 			}
 			if topic == "" {
-				return printTemplateSpecDocsIndex(cmd, opts)
+				return printTemplateSpecDocsIndex(cmd, opts, normalizedLanguage)
 			}
 			if topic == "all" {
-				return printAllTemplateSpecDocs(cmd, opts)
+				return printAllTemplateSpecDocs(cmd, opts, normalizedLanguage)
 			}
-			return printOneTemplateSpecDoc(cmd, opts, topic)
+			return printOneTemplateSpecDoc(cmd, opts, normalizedLanguage, topic)
 		},
 	}
+	cmd.Flags().StringVar(&language, "lang", "en", "Documentation language: en or zh-CN")
 	return cmd
 }
 
-func printTemplateSpecDocsIndex(cmd *cobra.Command, opts *rootOptions) error {
-	topics := templatespecdocs.Topics()
+func printTemplateSpecDocsIndex(cmd *cobra.Command, opts *rootOptions, language string) error {
+	topics, err := templatespecdocs.Topics(language)
+	if err != nil {
+		return err
+	}
+	manifest, err := templatespecdocs.ReadManifest()
+	if err != nil {
+		return err
+	}
 	if opts.output == "json" {
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
 		return enc.Encode(map[string]any{
-			"topics": topics,
-			"usage":  "loomloom template-spec docs <topic>",
+			"language":          language,
+			"languageRevision":  templateSpecLanguageRevision(manifest, language),
+			"specRevision":      manifest.SpecRevision,
+			"generatedRevision": manifest.GeneratedRevision,
+			"owner":             manifest.Owner,
+			"topics":            topics,
+			"usage":             "loomloom template-spec docs <topic>",
 		})
 	}
-	_, err := fmt.Fprintln(cmd.OutOrStdout(), "TemplateSpec docs topics:")
+	_, err = fmt.Fprintf(cmd.OutOrStdout(), "TemplateSpec revision: %s\nLanguage: %s\nLanguage revision: %s\nGenerated revision: %s\nOwner: %s\n\nTemplateSpec docs topics:\n", manifest.SpecRevision, language, templateSpecLanguageRevision(manifest, language), manifest.GeneratedRevision, manifest.Owner)
 	if err != nil {
 		return err
 	}
@@ -201,8 +219,12 @@ func printTemplateSpecDocsIndex(cmd *cobra.Command, opts *rootOptions) error {
 	return err
 }
 
-func printOneTemplateSpecDoc(cmd *cobra.Command, opts *rootOptions, topicName string) error {
-	topic, content, err := templatespecdocs.Read(topicName)
+func printOneTemplateSpecDoc(cmd *cobra.Command, opts *rootOptions, language string, topicName string) error {
+	topic, content, err := templatespecdocs.Read(language, topicName)
+	if err != nil {
+		return err
+	}
+	manifest, err := templatespecdocs.ReadManifest()
 	if err != nil {
 		return err
 	}
@@ -210,21 +232,33 @@ func printOneTemplateSpecDoc(cmd *cobra.Command, opts *rootOptions, topicName st
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
 		return enc.Encode(map[string]any{
-			"topic":       topic.Name,
-			"filename":    topic.Filename,
-			"description": topic.Description,
-			"content":     content,
+			"language":          language,
+			"languageRevision":  templateSpecLanguageRevision(manifest, language),
+			"specRevision":      manifest.SpecRevision,
+			"generatedRevision": manifest.GeneratedRevision,
+			"owner":             manifest.Owner,
+			"topic":             topic.Name,
+			"filename":          topic.Filename,
+			"description":       topic.Description,
+			"content":           content,
 		})
 	}
-	_, err = fmt.Fprint(cmd.OutOrStdout(), content)
+	_, err = fmt.Fprintf(cmd.OutOrStdout(), "TemplateSpec revision: %s\nLanguage: %s\nLanguage revision: %s\nGenerated revision: %s\nOwner: %s\n\n%s", manifest.SpecRevision, language, templateSpecLanguageRevision(manifest, language), manifest.GeneratedRevision, manifest.Owner, content)
 	return err
 }
 
-func printAllTemplateSpecDocs(cmd *cobra.Command, opts *rootOptions) error {
-	topics := templatespecdocs.Topics()
+func printAllTemplateSpecDocs(cmd *cobra.Command, opts *rootOptions, language string) error {
+	topics, err := templatespecdocs.Topics(language)
+	if err != nil {
+		return err
+	}
+	manifest, err := templatespecdocs.ReadManifest()
+	if err != nil {
+		return err
+	}
 	docs := make([]map[string]any, 0, len(topics))
 	for _, topic := range topics {
-		loadedTopic, content, err := templatespecdocs.Read(topic.Name)
+		loadedTopic, content, err := templatespecdocs.Read(language, topic.Name)
 		if err != nil {
 			return err
 		}
@@ -238,7 +272,10 @@ func printAllTemplateSpecDocs(cmd *cobra.Command, opts *rootOptions) error {
 	if opts.output == "json" {
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
-		return enc.Encode(map[string]any{"docs": docs})
+		return enc.Encode(map[string]any{"language": language, "languageRevision": templateSpecLanguageRevision(manifest, language), "specRevision": manifest.SpecRevision, "generatedRevision": manifest.GeneratedRevision, "owner": manifest.Owner, "docs": docs})
+	}
+	if _, err := fmt.Fprintf(cmd.OutOrStdout(), "TemplateSpec revision: %s\nLanguage: %s\nLanguage revision: %s\nGenerated revision: %s\nOwner: %s\n\n", manifest.SpecRevision, language, templateSpecLanguageRevision(manifest, language), manifest.GeneratedRevision, manifest.Owner); err != nil {
+		return err
 	}
 	for i, doc := range docs {
 		if i > 0 {
@@ -251,6 +288,13 @@ func printAllTemplateSpecDocs(cmd *cobra.Command, opts *rootOptions) error {
 		}
 	}
 	return nil
+}
+
+func templateSpecLanguageRevision(manifest templatespecdocs.Manifest, language string) string {
+	if language == "zh-CN" {
+		return manifest.ChineseRevision
+	}
+	return manifest.EnglishRevision
 }
 
 func newTemplateSpecCheckCmd(opts *rootOptions) *cobra.Command {

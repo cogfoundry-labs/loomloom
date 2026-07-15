@@ -10,9 +10,58 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode"
 
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
+	templatespecdocs "github.com/Cogfoundry-ai/loomloom/cli/internal/template_spec_docs"
 )
+
+func TestGeneratedTemplateSpecExamplesAreEnglish(t *testing.T) {
+	root := findRepoRoot(t)
+	paths, err := filepath.Glob(filepath.Join(root, "docs", "template-spec", "en", "examples", "*", "*.json"))
+	if err != nil {
+		t.Fatalf("glob generated examples: %v", err)
+	}
+	if len(paths) == 0 {
+		t.Fatal("generated TemplateSpec examples are missing")
+	}
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		for _, r := range string(data) {
+			if unicode.Is(unicode.Han, r) {
+				t.Fatalf("generated English example contains Chinese text: %s", path)
+			}
+		}
+	}
+}
+
+func TestGeneratedValidTemplateSpecExamplesPassCLIValidation(t *testing.T) {
+	root := findRepoRoot(t)
+	paths, err := filepath.Glob(filepath.Join(root, "docs", "template-spec", "en", "examples", "valid", "*.json"))
+	if err != nil {
+		t.Fatalf("glob generated valid examples: %v", err)
+	}
+	if len(paths) == 0 {
+		t.Fatal("generated valid TemplateSpec examples are missing")
+	}
+	for _, path := range paths {
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			if _, _, err := loadTemplateSpecFile(path); err != nil {
+				t.Fatalf("generated valid example failed CLI validation: %v", err)
+			}
+		})
+	}
+}
+
+func requireGeneratedTemplateSpecDocs(t *testing.T) {
+	t.Helper()
+	if _, err := templatespecdocs.ReadManifest(); err != nil {
+		t.Skip("generated TemplateSpec docs were not prepared")
+	}
+}
 
 func TestLoadTemplateSpecFile_ValidSpec(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
@@ -236,6 +285,7 @@ func TestTemplateSpecCheckCmdCountsParamBindings(t *testing.T) {
 }
 
 func TestTemplateSpecDocsCmdListsTopics(t *testing.T) {
+	requireGeneratedTemplateSpecDocs(t)
 	opts := &rootOptions{output: "text"}
 	cmd := newTemplateSpecDocsCmd(opts)
 	var out bytes.Buffer
@@ -245,7 +295,7 @@ func TestTemplateSpecDocsCmdListsTopics(t *testing.T) {
 		t.Fatalf("docs command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"spec", "authoring", "examples", "conversation", "loomloom template-spec docs <topic>"} {
+	for _, want := range []string{"TemplateSpec revision: sha256:", "Owner: loomloom-docs", "spec", "authoring", "examples", "conversation", "loomloom template-spec docs <topic>"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
 		}
@@ -253,6 +303,7 @@ func TestTemplateSpecDocsCmdListsTopics(t *testing.T) {
 }
 
 func TestTemplateSpecDocsCmdPrintsConversation(t *testing.T) {
+	requireGeneratedTemplateSpecDocs(t)
 	opts := &rootOptions{output: "text"}
 	cmd := newTemplateSpecDocsCmd(opts)
 	var out bytes.Buffer
@@ -263,7 +314,7 @@ func TestTemplateSpecDocsCmdPrintsConversation(t *testing.T) {
 		t.Fatalf("docs conversation command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"# Conversational Template Authoring", "TemplatePlan", "Ask one question at a time"} {
+	for _, want := range []string{"# Understand TemplateSpec", "immutable snapshots", "Local check is not execution"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
 		}
@@ -271,6 +322,7 @@ func TestTemplateSpecDocsCmdPrintsConversation(t *testing.T) {
 }
 
 func TestTemplateSpecDocsCmdPrintsSpec(t *testing.T) {
+	requireGeneratedTemplateSpecDocs(t)
 	opts := &rootOptions{output: "text"}
 	cmd := newTemplateSpecDocsCmd(opts)
 	var out bytes.Buffer
@@ -281,14 +333,43 @@ func TestTemplateSpecDocsCmdPrintsSpec(t *testing.T) {
 		t.Fatalf("docs spec command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"# TemplateSpec Specification", "Step-Level Fan-In", "allows multiple inputs", "at most three regular visible field sources"} {
+	for _, want := range []string{"# TemplateSpec syntax", "lowerCamel", "inputSchema", "fieldBindings"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
 		}
 	}
 }
 
+func TestTemplateSpecDocsCmdPrintsChineseSpec(t *testing.T) {
+	requireGeneratedTemplateSpecDocs(t)
+	opts := &rootOptions{output: "text"}
+	cmd := newTemplateSpecDocsCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"spec", "--lang", "zh-CN"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Chinese docs command error = %v", err)
+	}
+	output := out.String()
+	for _, want := range []string{"Language: zh-CN", "# TemplateSpec 语法参考", "顶层对象", "字段"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("Chinese output missing %q: %s", want, output)
+		}
+	}
+}
+
+func TestTemplateSpecDocsCmdRejectsUnknownLanguage(t *testing.T) {
+	opts := &rootOptions{output: "text"}
+	cmd := newTemplateSpecDocsCmd(opts)
+	cmd.SetArgs([]string{"spec", "--lang", "fr"})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "use en or zh-CN") {
+		t.Fatalf("unexpected language error: %v", err)
+	}
+}
+
 func TestTemplateSpecDocsCmdSupportsJSON(t *testing.T) {
+	requireGeneratedTemplateSpecDocs(t)
 	opts := &rootOptions{output: "json"}
 	cmd := newTemplateSpecDocsCmd(opts)
 	var out bytes.Buffer
@@ -305,11 +386,48 @@ func TestTemplateSpecDocsCmdSupportsJSON(t *testing.T) {
 	if payload["topic"] != "examples" {
 		t.Fatalf("topic=%v want examples", payload["topic"])
 	}
+	if payload["language"] != "en" {
+		t.Fatalf("language=%v want en", payload["language"])
+	}
+	if revision, _ := payload["languageRevision"].(string); !strings.HasPrefix(revision, "sha256:") {
+		t.Fatalf("languageRevision=%v want sha256 revision", payload["languageRevision"])
+	}
+	if revision, _ := payload["specRevision"].(string); !strings.HasPrefix(revision, "sha256:") {
+		t.Fatalf("specRevision=%v want sha256 revision", payload["specRevision"])
+	}
+	if payload["owner"] != "loomloom-docs" {
+		t.Fatalf("owner=%v want loomloom-docs", payload["owner"])
+	}
 	content, _ := payload["content"].(string)
-	for _, want := range []string{"Step-Level Fan-In Review Summary", "stp_prod01", "stp_summary"} {
+	for _, want := range []string{"# TemplateSpec examples", "single-text-generation", "uploaded-text-reference"} {
 		if !strings.Contains(content, want) {
 			t.Fatalf("content missing %q: %s", want, content)
 		}
+	}
+}
+
+func TestTemplateSpecDocsCmdSupportsChineseJSON(t *testing.T) {
+	requireGeneratedTemplateSpecDocs(t)
+	opts := &rootOptions{output: "json"}
+	cmd := newTemplateSpecDocsCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"examples", "--lang", "zh-CN"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Chinese docs JSON command error = %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("decode Chinese docs JSON: %v", err)
+	}
+	if payload["language"] != "zh-CN" {
+		t.Fatalf("language=%v want zh-CN", payload["language"])
+	}
+	if revision, _ := payload["languageRevision"].(string); !strings.HasPrefix(revision, "sha256:") {
+		t.Fatalf("languageRevision=%v want sha256 revision", payload["languageRevision"])
+	}
+	if content, _ := payload["content"].(string); !strings.Contains(content, "# TemplateSpec Examples") || !strings.Contains(content, "本目录中的 JSON") {
+		t.Fatalf("unexpected Chinese examples content: %s", content)
 	}
 }
 

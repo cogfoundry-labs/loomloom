@@ -1,0 +1,29 @@
+{
+  "meta": {"name": "Sequential Material Review", "description": "Organize the material, then produce review findings"},
+  "steps": [
+    {
+      "stepId": "stp_extract1",
+      "displayName": "Organize Material",
+      "executionUnit": "text-generate",
+      "instruction": "Organize the goals, scope, and explicit facts in the material.",
+      "defaultModelRef": {"modelKey": "google/gemini-2.5-flash"}
+    },
+    {
+      "stepId": "stp_review1",
+      "displayName": "Produce Review",
+      "executionUnit": "text-generate",
+      "instruction": "List risks and recommendations based on the organized upstream result.",
+      "defaultModelRef": {"modelKey": "google/gemini-2.5-flash"},
+      "dependsOn": ["stp_extract1"],
+      "upstreamBindings": [
+        {"inputPort": "prompt", "sourceStepId": "stp_extract1", "sourcePort": "output"}
+      ]
+    }
+  ],
+  "inputSchema": {
+    "fields": [{"key": "material", "label": "Review Material", "valueType": "string", "required": true}]
+  },
+  "fieldBindings": [
+    {"fieldKey": "material", "stepId": "stp_extract1", "paramKey": "prompt", "bindMode": "shared"}
+  ]
+}

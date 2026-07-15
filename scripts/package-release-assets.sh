@@ -50,6 +50,17 @@ else
   out_dir="$repo_root/$OUT_DIR"
 fi
 dist_dir="$repo_root/dist"
+docs_script="$repo_root/scripts/template-spec-docs.sh"
+verification_dir=""
+
+cleanup() {
+  "$docs_script" clean
+  if [[ -n "$verification_dir" ]]; then
+    rm -rf "$verification_dir"
+  fi
+}
+
+trap cleanup EXIT
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -74,6 +85,8 @@ checksum_cmd() {
 require_cmd go
 require_cmd tar
 require_cmd zip
+
+"$docs_script" prepare-checked
 
 zip_file() {
   local archive_path="$1"
@@ -105,6 +118,23 @@ build_cli() {
   )
 }
 
+verify_bundled_docs() {
+  verification_dir="$(mktemp -d)"
+  local binary="$verification_dir/loomloom"
+
+  echo "verifying bundled TemplateSpec docs"
+  (
+    cd "$repo_root/cli"
+    GOWORK=off go build \
+      -buildvcs=false \
+      -ldflags "-X github.com/Cogfoundry-ai/loomloom/cli/internal/version.Version=${VERSION}" \
+      -o "$binary" \
+      ./cmd/loomloom
+  )
+  "$binary" template-spec docs spec >/dev/null
+  "$binary" template-spec docs spec --lang zh-CN >/dev/null
+}
+
 package_binary() {
   local binary="$1"
   local name
@@ -122,6 +152,8 @@ package_binary() {
   fi
   rm -rf "$staging"
 }
+
+verify_bundled_docs
 
 for target in \
   linux/amd64 \

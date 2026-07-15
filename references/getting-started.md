@@ -23,7 +23,7 @@
 Deeper documentation:
 
 - [Official Templates](official-templates.md) — input schemas for each official workflow
-- [Private Templates & Authoring](private-templates.md) — build your own with TemplateSpec ([formal spec](../docs/template-spec/00-template-spec.md))
+- [Private Templates & Authoring](private-templates.md) — build your own with TemplateSpec ([English handbook](../docs/template-spec/en/README.md), [中文手册](../docs/template-spec/zh-CN/README.md))
 - [Market & SkillBots](market-skillbots.md) — publish, version, price, and run SkillBots
 - [Complete CLI Reference](cli-reference.md)
 - [Workflow Examples](workflow-examples.md)

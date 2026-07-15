@@ -101,7 +101,16 @@ require_cmd install
 install_dir="$(resolve_install_dir)"
 skill_dir="$(resolve_skill_dir)"
 tmp_dir="$(mktemp -d)"
-trap 'rm -rf "$tmp_dir"' EXIT
+docs_script="$repo_root/scripts/template-spec-docs.sh"
+
+cleanup() {
+  rm -rf "$tmp_dir"
+  "$docs_script" clean
+}
+
+trap cleanup EXIT
+
+"$docs_script" prepare-checked
 
 echo "LoomLoom local installer"
 echo "repo: $repo_root"
@@ -123,6 +132,9 @@ mkdir -p "$install_dir" "$skill_dir"
 
 install -m 0755 "$tmp_dir/loomloom" "$install_dir/loomloom"
 cp -R "$repo_root/skills/$AGENT/loomloom/." "$skill_dir/"
+
+"$install_dir/loomloom" template-spec docs spec >/dev/null
+"$install_dir/loomloom" template-spec docs spec --lang zh-CN >/dev/null
 
 echo "installed:"
 echo "  $install_dir/loomloom"
