@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & discussion
+    url: https://discord.gg/cogfoundry
+    about: Ask questions and chat with the community on Discord.
+  - name: Troubleshooting & FAQ
+    url: https://github.com/Cogfoundry-ai/loomloom/blob/main/references/troubleshooting.md
+    about: Check common problems and fixes before opening an issue.

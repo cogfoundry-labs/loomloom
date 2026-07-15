@@ -1,6 +1,6 @@
 # CLI Command Reference
 
-This document provides a complete reference for the **LoomLoom CLI**. 
+This document provides a complete reference for the **LoomLoom CLI**.
 
 If you are new, start with:
 
@@ -27,7 +27,7 @@ LoomLoom's CLI is organized into the following command groups, in the order they
 
 Most users only need:
 
->template download → fill Excel → validate-file → precheck-file → confirm → submit-file → watch → result-workbook
+> template download → fill Excel → validate-file → precheck-file → confirm → submit-file → watch → result-workbook
 
 Useful inspection commands:
 
@@ -45,16 +45,16 @@ Some commands involve pricing (Market / Usage / Billing).
 
 All monetary fields like `taskFixedFeeT` and `amountT` use:
 
->10,000,000 API units = 1 currency unit
+> 10,000,000 API units = 1 currency unit
 
 ## What you see in CLI output
 
-#### Human-readable mode (default)
+### Human-readable mode (default)
 - Prices are shown as normal currency: `USD 0.5000000`
 - Raw `*T` fields are not shown as primary text output
 - If a response does not include `currency`, the CLI must not guess CNY or USD; keep the raw `*T` value in the currency-unknown display.
 
-#### JSON mode (`--output json`)
+### JSON mode (`--output json`)
 - Returns raw backend values only
 - No conversion is applied
 
@@ -73,23 +73,25 @@ These commands show monetary values:
 
 ## 1. Diagnostics
 Check whether your CLI is correctly configured.
+
 | Command | Description |
 |---|---|
 | `loomloom doctor` | Validate CLI configuration, server connectivity, token wiring, and version info. |
 
 ## 2. Inputs (optional advanced)
 Use these when you are not working directly with Excel workflows.
+
 | Command | Description |
 |---|---|
 | `loomloom input-asset upload <file>` | Upload reusable raw assets (text/image) and return `input_asset_id`. |
 | `loomloom orchestration-input upload <file.jsonl>` | Upload flat JSONL rows and get the `input_file_id` required by `template-spec precheck` and `template-spec run`. |
 
-## 3. Official Templates 
+## 3. Official Templates
 
 This is the **recommended starting point for most users**.
 
 ### Typical flow
->download → fill Excel → validate → precheck → confirm → submit → watch → download results
+> download → fill Excel → validate → precheck → confirm → submit → watch → download results
 
 | Command | Description |
 |---|---|
@@ -153,7 +155,7 @@ For building your own private workflows.
 | `loomloom template-spec precheck <template-id> --version-id <id> --input-file-id <id>` | Estimate cost and balance for an uploaded JSONL input without submitting. |
 | `loomloom template-spec run <template-id> --version-id <id> --input-file-id <id> --client-request-id <id>` | Run a private template version from an uploaded JSONL input after confirmation. |
 
-## 8. Local Agent Skills 
+## 8. Local Agent Skills
 Install/uninstall LoomLoom workflows as local tools for AI agents (e.g. Claude Code, Codex).
 
 | Command | Description |
@@ -163,16 +165,16 @@ Install/uninstall LoomLoom workflows as local tools for AI agents (e.g. Claude C
 | `loomloom skill uninstall --dir <skill-dir>` | Remove a locally installed skill installed by loomloom. |
 
 ### Notes
-- For install, use `--dry-run --output json` before writing final Skill files when an agent needs a stable installation preview for a confirmation card. Dry-run does not create the final `--output-dir` or write `SKILL.md` / `loomloom-skill.json`; it may create and immediately remove a temporary probe directory to verify writability. 
-- `--output-dir` is the directory for one generated Skill, not an agent skills root directory. 
-- Generated Skill names always use the `loomloom-` prefix, and the final `--output-dir` basename must match the previewed `skillName`. 
+- For install, use `--dry-run --output json` before writing final Skill files when an agent needs a stable installation preview for a confirmation card. Dry-run does not create the final `--output-dir` or write `SKILL.md` / `loomloom-skill.json`; it may create and immediately remove a temporary probe directory to verify writability.
+- `--output-dir` is the directory for one generated Skill, not an agent skills root directory.
+- Generated Skill names always use the `loomloom-` prefix, and the final `--output-dir` basename must match the previewed `skillName`.
 - Installation only writes local wrapper files; it does not execute a template, quote/precheck costs, or create billable model/API usage.
 - For uninstall, run `loomloom skill uninstall --dir <skill-dir> --dry-run --output json` first. The command only removes directories that contain valid LoomLoom skill metadata; pass `--force` only when you intentionally want to remove a directory with extra files in it.
 
 ## 9. Market (Buy workflows)
 
 Typical flow
->list → show → quote → confirm → run
+> list → show → quote → confirm → run
 
 | Command | Description |
 |---|---|
@@ -190,7 +192,7 @@ Typical flow
 ## 10. Market (Create Workflows)
 
 Typical flow
->confirm → publish → review → earnings
+> confirm → publish → review → earnings
 
 | Command | Description |
 |---|---|
@@ -220,26 +222,26 @@ When building multi-step workflows, agents must treat CLI commands as a determin
 - Use returned identifiers exactly as provided by the CLI
 
 ### 1. Template Spec execution flow
->orchestration-input upload → inputFileId → template-spec precheck → confirm → template-spec run
+> orchestration-input upload → inputFileId → template-spec precheck → confirm → template-spec run
 
 ### 2. Run lifecycle flow
->confirmed template-spec run / run submit → runId → run watch / result commands
+> confirmed template-spec run / run submit → runId → run watch / result commands
 
 ### 3. Listing review flow
->confirm → listing publish → reviewRequestId → creator review get/withdraw
+> confirm → listing publish → reviewRequestId → creator review get/withdraw
 
 Confirm before any listing or review state change, including `listing publish`, `listing update`, `listing unlist`, `listing relist`, `listing withdraw`, and `creator review withdraw`.
 
 ### 4. Market (JSON input) flow
->market quote → confirm → market run → runTransactionId and runId → usage get / run watch
+> market quote → confirm → market run → runTransactionId and runId → usage get / run watch
 
 ### 5. Market (Workbook) flow
->market workbook quote → confirm → market workbook run → runTransactionId and runId → usage get / run watch / result-workbook
+> market workbook quote → confirm → market workbook run → runTransactionId and runId → usage get / run watch / result-workbook
 
 ### Notes
 
 - Text output uses labels such as `input_file_id`; JSON output uses Product API field names such as `inputFileId`.
 
-- For `template submit-file`, `template-spec submit-workbook`, `run submit`, `template-spec run`, `market run`, and `market workbook run`, pass an explicit `--client-request-id`, retain it with the request, and reuse it only when retrying the identical payload. 
-- Use a new ID if the payload changes. 
+- For `template submit-file`, `template-spec submit-workbook`, `run submit`, `template-spec run`, `market run`, and `market workbook run`, pass an explicit `--client-request-id`, retain it with the request, and reuse it only when retrying the identical payload.
+- Use a new ID if the payload changes.
 - Do not blindly retry paid or remote-state-changing commands after an ambiguous failure — first check whether the original request succeeded.
