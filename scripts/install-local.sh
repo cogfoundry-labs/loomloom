@@ -110,7 +110,7 @@ cleanup() {
 
 trap cleanup EXIT
 
-"$docs_script" prepare
+"$docs_script" prepare-checked
 
 echo "LoomLoom local installer"
 echo "repo: $repo_root"

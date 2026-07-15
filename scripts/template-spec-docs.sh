@@ -15,7 +15,7 @@ SKILL_GENERATED_DIRS=(
 )
 
 usage() {
-  echo "usage: LOOMLOOM_CORE_DIR=/path/to/loomloom scripts/template-spec-docs.sh <record-generation|sync|check|prepare|clean|build>" >&2
+  echo "usage: LOOMLOOM_CORE_DIR=/path/to/loomloom scripts/template-spec-docs.sh <record-generation|sync|check|check-local|prepare|prepare-checked|clean|build>" >&2
   exit 2
 }
 
@@ -48,6 +48,24 @@ normalize_chinese_generated_source() {
     reference/*.md) sed 's#](../machine/#](../../machine/#g; s#`../machine/#`../../machine/#g' "$source" ;;
     *) cat "$source" ;;
   esac
+}
+
+normalize_chinese_snapshot_source() {
+  local source=$1 relative=${1#"$ZH_DIR/"}
+  case "$relative" in
+    README.md) sed 's#](../machine/#](machine/#g; s#`../machine/#`machine/#g' "$source" ;;
+    reference/*.md) sed 's#](../../machine/#](../machine/#g; s#`../../machine/#`../machine/#g' "$source" ;;
+    *) cat "$source" ;;
+  esac
+}
+
+translated_tree_paths() {
+  local tree=$1
+  find "$tree" -type f \( \
+    -name '*.md' -o \
+    -path '*/examples/valid/*.json' -o \
+    -path '*/examples/invalid/*.json' \
+  \) -print | sed "s#^$tree/##" | LC_ALL=C sort
 }
 
 record_generation() {
@@ -122,6 +140,74 @@ tree_revision() {
   rm -f "$tmp"
 }
 
+check_local_json() {
+  local failed=0 file
+  for file in "$DOCS_DIR/manifest.json" "$TRANSLATION_MAP" \
+    "$DOCS_DIR/machine/template-spec.schema.json" \
+    "$DOCS_DIR/machine/template-spec-rules.schema.json" \
+    "$DOCS_DIR/machine/rules.json"; do
+    [[ -f "$file" ]] || { echo "missing TemplateSpec JSON file: ${file#"$ROOT_DIR/"}" >&2; failed=1; continue; }
+    jq empty "$file" || failed=1
+  done
+  while IFS= read -r -d '' file; do
+    jq empty "$file" || failed=1
+  done < <(find "$EN_DIR/examples" "$ZH_DIR/examples" -type f -name '*.json' -print0)
+  return "$failed"
+}
+
+check_local_translation_map() {
+  local failed=0 path expected_source expected_english english chinese normalized mapped_paths english_paths chinese_paths
+  if [[ ! -f "$TRANSLATION_MAP" ]]; then
+    echo "missing translation-map.json" >&2
+    return 1
+  fi
+  while IFS=$'\t' read -r path expected_source expected_english; do
+    english="$EN_DIR/$path"
+    chinese="$ZH_DIR/$path"
+    [[ -f "$english" && -f "$chinese" ]] || { echo "local translation path missing: $path" >&2; failed=1; continue; }
+    [[ $(shasum -a 256 "$english" | awk '{print $1}') == "$expected_english" ]] || { echo "English generated file drifted: $path" >&2; failed=1; }
+    normalized=$(mktemp)
+    normalize_chinese_snapshot_source "$chinese" >"$normalized"
+    [[ $(shasum -a 256 "$normalized" | awk '{print $1}') == "$expected_source" ]] || { echo "Chinese source snapshot drifted: $path" >&2; failed=1; }
+    rm -f "$normalized"
+  done < <(jq -r '.files[] | [.path,.source_sha256,.generated_sha256] | @tsv' "$TRANSLATION_MAP")
+  [[ $(jq '[.files[].path] | length == (unique | length)' "$TRANSLATION_MAP") == true ]] || { echo "translation mapping contains duplicate paths" >&2; failed=1; }
+  mapped_paths=$(jq -r '.files[].path' "$TRANSLATION_MAP" | LC_ALL=C sort)
+  english_paths=$(translated_tree_paths "$EN_DIR")
+  chinese_paths=$(translated_tree_paths "$ZH_DIR")
+  [[ "$mapped_paths" == "$english_paths" ]] || { echo "English document path set drifted from translation map" >&2; failed=1; }
+  [[ "$mapped_paths" == "$chinese_paths" ]] || { echo "Chinese document path set drifted from translation map" >&2; failed=1; }
+  return "$failed"
+}
+
+check_local_docs() {
+  local failed=0 expected actual path relative english_norm chinese_norm reference_id anchor
+  check_local_json || failed=1
+  check_local_translation_map || failed=1
+  while IFS= read -r -d '' path; do
+    relative=${path#"$EN_DIR/"}
+    english_norm=$(mktemp)
+    chinese_norm=$(mktemp)
+    normalize_example "$path" >"$english_norm"
+    normalize_example "$ZH_DIR/$relative" >"$chinese_norm"
+    cmp -s "$english_norm" "$chinese_norm" || { echo "translated example structure drifted: $relative" >&2; failed=1; }
+    rm -f "$english_norm" "$chinese_norm"
+  done < <(find "$EN_DIR/examples" -type f -name '*.json' -print0)
+  expected=$(tree_revision "$DOCS_DIR")
+  actual=$(jq -r '.generated_revision' "$DOCS_DIR/manifest.json")
+  [[ "$expected" == "$actual" ]] || { echo "generated revision mismatch: manifest=$actual bundle=$expected" >&2; failed=1; }
+  [[ $(jq -r '.english_revision' "$DOCS_DIR/manifest.json") == $(tree_revision "$EN_DIR") ]] || { echo "English revision mismatch" >&2; failed=1; }
+  [[ $(jq -r '.chinese_revision' "$DOCS_DIR/manifest.json") == $(tree_revision "$ZH_DIR") ]] || { echo "Chinese revision mismatch" >&2; failed=1; }
+  jq -e '.owner == "loomloom-docs" and .default_language == "en" and .languages == ["en", "zh-CN"] and (.source_revision | startswith("sha256:"))' "$DOCS_DIR/manifest.json" >/dev/null || { echo "invalid TemplateSpec CLI manifest metadata" >&2; failed=1; }
+  while IFS= read -r reference_id; do
+    anchor="ref-${reference_id//./-}"
+    [[ $(rg -l "<a id=\"$anchor\"></a>" "$EN_DIR/reference"/*.md | wc -l | tr -d ' ') == 1 ]] || { echo "English reference anchor missing or duplicate: $anchor" >&2; failed=1; }
+    [[ $(rg -l "<a id=\"$anchor\"></a>" "$ZH_DIR/reference"/*.md | wc -l | tr -d ' ') == 1 ]] || { echo "Chinese reference anchor missing or duplicate: $anchor" >&2; failed=1; }
+  done < <(jq -r '.rules[].referenceId' "$DOCS_DIR/machine/rules.json" | sort -u)
+  [[ $failed -eq 0 ]] || return 1
+  echo "TemplateSpec CLI local docs OK (source=$(jq -r '.source_revision' "$DOCS_DIR/manifest.json") generated=$actual)"
+}
+
 sync_docs() {
   require_core
   check_translation_map
@@ -155,6 +241,7 @@ sync_docs() {
 check_docs() {
   require_core
   local failed=0 expected actual path reference_id anchor relative core_norm cli_norm source_paths en_paths zh_paths
+  check_local_docs || failed=1
   check_translation_map || failed=1
   for path in machine/template-spec.schema.json machine/template-spec-rules.schema.json machine/rules.json; do
     cmp -s "$CORE_DIR/loomloom-docs/template-spec/$path" "$DOCS_DIR/$path" || { echo "machine contract drifted: $path" >&2; failed=1; }
@@ -230,20 +317,29 @@ prepare_docs() {
   for target in "${SKILL_GENERATED_DIRS[@]}"; do mkdir -p "$target"; cp -R "$DOCS_DIR"/. "$target"/; done
 }
 
+prepare_checked_docs() {
+  check_local_docs
+  prepare_docs
+}
+
 build_docs() {
   local binary
   binary=$(mktemp)
   trap "clean_docs; rm -f '$binary'" EXIT
-  prepare_docs
+  prepare_checked_docs
   (cd "$ROOT_DIR/cli" && go test ./internal/template_spec_docs ./internal/cmd -run 'TestTemplateSpecDocs|TestGeneratedTemplateSpecExamplesAreEnglish|TestGeneratedValidTemplateSpecExamplesPassCLIValidation')
   (cd "$ROOT_DIR/cli" && go build -buildvcs=false -o "$binary" ./cmd/loomloom)
+  "$binary" template-spec docs spec >/dev/null
+  "$binary" template-spec docs spec --lang zh-CN >/dev/null
 }
 
 case "${1:-}" in
   record-generation) record_generation ;;
   sync) sync_docs ;;
   check) check_docs ;;
+  check-local) check_local_docs ;;
   prepare) prepare_docs ;;
+  prepare-checked) prepare_checked_docs ;;
   clean) clean_docs ;;
   build) build_docs ;;
   *) usage ;;

@@ -23,7 +23,7 @@ LoomLoom is developed by [CogFoundry](https://cogfoundry.ai) and designed to run
 
 For scalable production execution or IP protection, package compiled AI systems as SkillBots and deploy them through the LoomLoom Execution Platform powered by CogFoundry.
 
-[Why LoomLoom](#why-loomloom) · [How LoomLoom Works](#how-loomloom-works) · [Architecture](#architecture) · [CLI Reference](references/cli-reference.md) · [Template Docs](docs/template-spec/en/README.md) · [中文模板文档](docs/template-spec/zh-CN/README.md) · [Use Cases](#what-you-can-build) · [Quick Install](#quick-install) · [DeepWiki](https://deepwiki.com/Cogfoundry-ai/loomloom) · [Discord](https://discord.gg/cogfoundry)
+[Why LoomLoom](#why-loomloom) · [How LoomLoom Works](#how-loomloom-works) · [Architecture](#architecture) · [CLI Reference](references/cli-reference.md) · [Template Docs](docs/template-spec/en/README.md) · [Chinese Template Docs](docs/template-spec/zh-CN/README.md) · [Use Cases](#what-you-can-build) · [Quick Install](#quick-install) · [DeepWiki](https://deepwiki.com/Cogfoundry-ai/loomloom) · [Discord](https://discord.gg/cogfoundry)
 
 ## Why LoomLoom?
 
@@ -401,7 +401,7 @@ The LoomLoom Execution Platform specification is implemented by multiple provide
 
 - [Getting Started](references/getting-started.md) — install and configure the CLI.
 - [Official Templates](references/official-templates.md) — inspect and run platform-maintained workflows.
-- [Private Templates & Authoring](references/private-templates.md) — build workflows with TemplateSpec using the [English handbook](docs/template-spec/en/README.md) or [中文手册](docs/template-spec/zh-CN/README.md).
+- [Private Templates & Authoring](references/private-templates.md) — build workflows with TemplateSpec using the [English handbook](docs/template-spec/en/README.md) or [Chinese handbook](docs/template-spec/zh-CN/README.md).
 - [Market & SkillBots](references/market-skillbots.md) — publish, version, price, and run SkillBots.
 - [Complete CLI Reference](references/cli-reference.md) — browse supported commands and options.
 - [Workflow Examples](references/workflow-examples.md) — follow end-to-end usage patterns.

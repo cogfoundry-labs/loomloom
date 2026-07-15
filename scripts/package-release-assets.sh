@@ -86,7 +86,7 @@ require_cmd go
 require_cmd tar
 require_cmd zip
 
-"$docs_script" prepare
+"$docs_script" prepare-checked
 
 zip_file() {
   local archive_path="$1"
