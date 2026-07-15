@@ -151,6 +151,32 @@ func TestBundledSkillsUseCanonicalUploadedTextRules(t *testing.T) {
 	}
 }
 
+func TestBundledSkillsExposeTemplateSpecDocsLanguageOption(t *testing.T) {
+	root := findRepoRoot(t)
+	for _, rel := range []string{
+		"skills/codex/loomloom/SKILL.md",
+		"skills/claude/loomloom/SKILL.md",
+		"skills/openclaw/loomloom/SKILL.md",
+	} {
+		t.Run(rel, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(root, rel))
+			if err != nil {
+				t.Fatalf("ReadFile error=%v", err)
+			}
+			text := string(data)
+			for _, want := range []string{
+				"TemplateSpec docs default to English and are also available in Chinese",
+				"loomloom template-spec docs spec --lang zh-CN",
+				"Select the documentation language as appropriate for the conversation and task",
+			} {
+				if !strings.Contains(text, want) {
+					t.Fatalf("%s missing %q", rel, want)
+				}
+			}
+		})
+	}
+}
+
 func findRepoRoot(t *testing.T) string {
 	t.Helper()
 	dir, err := os.Getwd()

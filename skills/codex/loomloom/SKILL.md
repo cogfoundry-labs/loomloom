@@ -106,6 +106,7 @@ Choose the entry point by user intent:
    `loomloom template-spec docs spec`
    `loomloom template-spec docs examples`
    `loomloom template-spec docs conversation`
+   TemplateSpec docs default to English and are also available in Chinese with `--lang zh-CN`, for example `loomloom template-spec docs spec --lang zh-CN`. Select the documentation language as appropriate for the conversation and task.
    `loomloom template-spec models <text-generate|image-generate|video-generate>`
    `loomloom template-spec check <spec.json>`
    `loomloom template-spec create <spec.json>`

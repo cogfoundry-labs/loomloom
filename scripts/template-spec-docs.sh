@@ -19,6 +19,13 @@ usage() {
   exit 2
 }
 
+require_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "missing required command for TemplateSpec docs: $1" >&2
+    return 1
+  fi
+}
+
 translated_sources() {
   find "$CORE_DIR/loomloom-docs/template-spec" -type f \( \
     -name '*.md' -o \
@@ -182,6 +189,9 @@ check_local_translation_map() {
 
 check_local_docs() {
   local failed=0 expected actual path relative english_norm chinese_norm reference_id anchor
+  require_cmd jq || return 1
+  require_cmd rg || return 1
+  require_cmd shasum || return 1
   check_local_json || failed=1
   check_local_translation_map || failed=1
   while IFS= read -r -d '' path; do
