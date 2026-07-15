@@ -8,7 +8,22 @@
 - CLI 能运行 `loomloom template-spec docs` 和 `check`。
 - 准备一个空目录保存 `template.json`。
 
-## 1. 复制最小模板
+## 1. 先读取随 CLI 分发的参考
+
+先阅读语法入口，再按需要读取字段、Step、Binding 和 execution unit 参考；不需要先访问源码仓库：
+
+```bash
+loomloom template-spec docs spec
+loomloom template-spec docs inputs
+loomloom template-spec docs steps
+loomloom template-spec docs bindings
+loomloom template-spec docs execution-units
+loomloom template-spec docs examples
+```
+
+`examples` 中的 JSON 是随 CLI 分发的规范示例。固定数量的并行 DAG 分支使用多个独立 root Step 和一对一 `dependsOn` / `upstreamBindings`；不要添加 `branch` 或 `parallel` 字段，也不要用 `expanded` 代替固定分支。
+
+## 2. 复制最小模板
 
 复制[单步文本生成示例](../examples/valid/single-text-generation.json)。它包含：
 
@@ -16,7 +31,7 @@
 - 一个 `text-generate` Step。
 - 一条把 content 写入 prompt 的 FieldBinding。
 
-## 2. 查询并选择模型
+## 3. 查询并选择模型
 
 ```bash
 loomloom template-spec models text-generate
@@ -24,7 +39,7 @@ loomloom template-spec models text-generate
 
 把示例中的 `defaultModelRef.modelKey` 替换为目标环境实际返回的 model ID。模型目录是动态事实，示例值不保证在所有环境可用。
 
-## 3. 修改业务定义
+## 4. 修改业务定义
 
 先只修改：
 
@@ -34,7 +49,7 @@ loomloom template-spec models text-generate
 
 第一次不要修改 stepId、field key、valueType 或 bindings；这些值互相引用。
 
-## 4. 本地检查
+## 5. 本地检查
 
 ```bash
 loomloom template-spec check ./template.json
@@ -42,7 +57,7 @@ loomloom template-spec check ./template.json
 
 输出 valid 说明本地已知结构和 authoring 规则通过。它不验证目标环境所有动态能力。
 
-## 5. 理解结果
+## 6. 理解结果
 
 运行时一行输入提供 `content`，Binding 把它写入 Step prompt；instruction 作为模板作者固定要求一起生效；Step 输出 `text/plain` artifact。
 

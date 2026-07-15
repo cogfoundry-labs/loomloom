@@ -49,8 +49,8 @@
     },
     {
       "path": "examples/README.md",
-      "source_sha256": "85cb34ab5ab6abcf390d9233558bf3f6650645dddef8c713c38bbea3116395b3",
-      "generated_sha256": "cc8f969f4f246e6c21a85daf9bcef43a8d2f965eb2677b77c41681aee40e1dcc"
+      "source_sha256": "73ff07d4b752676d3d43721c6035885715bbe7a78025f7b3c66d40009597095c",
+      "generated_sha256": "d05c5b12635c328223b021ed61a0558ee61b85507469f66e709bb4731b9fe94a"
     },
     {
       "path": "examples/invalid/text-reference-without-input-binding.json",
@@ -99,8 +99,8 @@
     },
     {
       "path": "get-started/quickstart.md",
-      "source_sha256": "b3d297f73516ad500d084cdec99000da59fe6ab1d3821b3e1b4c0df9c2c399c0",
-      "generated_sha256": "b4c17ba670d06626ad7637cec6c1e66e220f40e61dfd37639dea97c0127c42bb"
+      "source_sha256": "61dfbc5f92dc07f6f9b1335836e1de1fda9a54290ec953a09c8e51539d468f80",
+      "generated_sha256": "4566c818bf64a3fe9b9b27a4a5dd9050e216445016b90b8e240ab19ba20bb856"
     },
     {
       "path": "get-started/understand-template-spec.md",
@@ -194,8 +194,8 @@
     },
     {
       "path": "reference/template-syntax.md",
-      "source_sha256": "f5ce3ea4c330a62fde0e7c09154189e8e2de0472318e3d8ca9395fe73ff838a2",
-      "generated_sha256": "a232fef3a1e90eaa9776e426b4c7546bcc8073cb30a59066a8f2bad7f5891a7c"
+      "source_sha256": "e3d46109f408078b5a9c964a8debb4979d5c53fbf00a596c7eddd3cee672bf04",
+      "generated_sha256": "d3087ca78c1dbaf0031edee9ab0225c0d6f0357d59a8c005bd1a481742dc04d7"
     },
     {
       "path": "reference/validation-errors.md",

@@ -152,7 +152,7 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 func newTemplateSpecDocsCmd(opts *rootOptions) *cobra.Command {
 	var language string
 	cmd := &cobra.Command{
-		Use:   "docs [spec|authoring|examples|conversation|all]",
+		Use:   "docs [topic]",
 		Short: "Show the TemplateSpec documentation snapshot shipped with this CLI",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
