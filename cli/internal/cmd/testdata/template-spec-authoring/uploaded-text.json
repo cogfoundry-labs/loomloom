@@ -1,5 +1,5 @@
 {
-  "request": "创建一个模板，让运行者上传 UTF-8 文本文件，并让模型只基于上传内容提取事实。",
+  "request": "Create a template that lets operators upload a UTF-8 text file and instructs the model to extract facts only from the uploaded content.",
   "fixture": "docs/template-spec/en/examples/valid/uploaded-text-reference.json",
   "expected": {
     "fieldKey": "source_text",
