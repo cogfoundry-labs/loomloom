@@ -21,6 +21,8 @@ jobs:
         with:
           go-version-file: cli/go.mod
           cache-dependency-path: cli/go.sum
+      - name: Install documentation tooling
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y ripgrep
       - name: Package release assets
         run: scripts/package-release-assets.sh --version "${{ github.ref_name }}"
       - name: Upload packaged assets
