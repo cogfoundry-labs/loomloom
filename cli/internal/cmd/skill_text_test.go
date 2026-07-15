@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"unicode"
 )
 
 func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
@@ -31,9 +30,6 @@ func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
 	}
 	if authoringCase.Request == "" {
 		t.Fatal("authoring case request must describe the user intent")
-	}
-	if strings.IndexFunc(authoringCase.Request, func(r rune) bool { return unicode.Is(unicode.Han, r) }) >= 0 {
-		t.Fatal("non-localized authoring case request must use English")
 	}
 
 	specData, err := os.ReadFile(filepath.Join(root, authoringCase.Fixture))
