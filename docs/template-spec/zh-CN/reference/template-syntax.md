@@ -32,4 +32,39 @@
 
 Schema 对公开对象使用 `additionalProperties=false`。拼错字段名不会被静默忽略，应在结构校验阶段失败。
 
+## 固定并行分支语法
+
+固定分支由 `steps` 和 bindings 的拓扑表达，不存在额外的 `branch` 或 `parallel` 字段。下面省略了展示字段和模型配置，只保留“一份输入启动两个文本 Step，每个文本 Step 连接一个图片 Step”的关键结构：
+
+```json
+{
+  "steps": [
+    {"stepId": "stp_scenea", "executionUnit": "text-generate"},
+    {"stepId": "stp_sceneb", "executionUnit": "text-generate"},
+    {
+      "stepId": "stp_imagea",
+      "executionUnit": "image-generate",
+      "dependsOn": ["stp_scenea"],
+      "upstreamBindings": [
+        {"inputPort": "prompt", "sourceType": "step_output", "sourceStepId": "stp_scenea", "sourcePort": "output"}
+      ]
+    },
+    {
+      "stepId": "stp_imageb",
+      "executionUnit": "image-generate",
+      "dependsOn": ["stp_sceneb"],
+      "upstreamBindings": [
+        {"inputPort": "prompt", "sourceType": "step_output", "sourceStepId": "stp_sceneb", "sourcePort": "output"}
+      ]
+    }
+  ],
+  "fieldBindings": [
+    {"fieldKey": "book_title", "stepId": "stp_scenea", "paramKey": "prompt", "bindMode": "shared"},
+    {"fieldKey": "book_title", "stepId": "stp_sceneb", "paramKey": "prompt", "bindMode": "shared"}
+  ]
+}
+```
+
+两个文本 Step 都没有 `dependsOn`，所以会在输入就绪后进入同一轮调度。两个图片 Step 各自等待对应文本 Step。需要十条固定分支时，重复相同的 Step 和 binding 结构；不要把它改成 `expanded`。可直接校验的完整 Spec 见[固定并行配图示例](../examples/valid/parallel-text-to-image-branches.json)。
+
 分项参考：[Metadata](metadata.md)、[Input Schema](input-schema.md)、[Steps](steps.md)、[Bindings](bindings.md)。

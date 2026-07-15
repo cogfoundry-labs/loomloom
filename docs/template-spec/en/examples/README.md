@@ -6,6 +6,7 @@ Valid examples pass JSON Schema and the real Core validator. Invalid examples li
 - `valid/uploaded-text-reference.json`
 - `valid/multi-step-review.json`
 - `valid/multi-upstream-summary.json`
+- `valid/parallel-text-to-image-branches.json`
 - `valid/workbook-fields-and-model-override.json`
 - `valid/text-image-video-chain.json`
 - `invalid/uploaded-text-as-string.json`

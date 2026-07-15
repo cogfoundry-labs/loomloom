@@ -8,6 +8,7 @@
 - `uploaded-text-reference.json`：text_reference → initial_input(reference)。
 - `multi-step-review.json`：单上游线性文本处理。
 - `multi-upstream-summary.json`：两个并行文本步骤汇总到允许 multiple 的 prompt 端口。
+- `parallel-text-to-image-branches.json`：同一个 shared 输入启动两个固定文本分支，每个分支继续生成一张图片。
 - `workbook-fields-and-model-override.json`：enum、hidden default、presentation、ParamBinding 和模型覆盖。
 - `text-image-video-chain.json`：文本、图片和视频 unit 的端口兼容链路。
 

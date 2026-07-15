@@ -15,6 +15,8 @@
 
 ## 拓扑规则
 
+- 模板可以包含多个根 Step；根 Step 没有 `dependsOn`。
+- 同一轮中依赖和输入均已就绪的 Step 会被并发调度；实际同时执行数量受 worker 和模型服务并发限制。
 - dependsOn 引用的 Step 必须存在。
 - 依赖图不能包含环。
 - step_output binding 的 sourceStepId 必须也在 dependsOn。

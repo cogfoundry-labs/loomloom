@@ -19,8 +19,8 @@
     },
     {
       "path": "concepts/execution-flow.md",
-      "source_sha256": "d4c7fadac674f1580e7a165c401b9b0b177016f5b09dfc44e2b4c86f81fe9dc1",
-      "generated_sha256": "0549b8f69b69195274ecc6491c73729b1d7e7011c8d7e1451cf038e814ef41b7"
+      "source_sha256": "f68d9b243d8c4c10532c04ec655495e2527bd47e46d55dd658df8da400a965ca",
+      "generated_sha256": "46bbc53e794630d31836e74e6ed5c0d35462d73e54920587bcd3473a70dd521b"
     },
     {
       "path": "concepts/inputs.md",
@@ -49,8 +49,8 @@
     },
     {
       "path": "examples/README.md",
-      "source_sha256": "dd69f734c42780d82f242e5fe2db2c09d8a2779471105f82acf283bac3511316",
-      "generated_sha256": "83c268fca0dd0c35a881235dca7fd4c665162e749ebbad0b3eeda0e50d04aa07"
+      "source_sha256": "85cb34ab5ab6abcf390d9233558bf3f6650645dddef8c713c38bbea3116395b3",
+      "generated_sha256": "cc8f969f4f246e6c21a85daf9bcef43a8d2f965eb2677b77c41681aee40e1dcc"
     },
     {
       "path": "examples/invalid/text-reference-without-input-binding.json",
@@ -71,6 +71,11 @@
       "path": "examples/valid/multi-upstream-summary.json",
       "source_sha256": "37b09663943daa4ac429e0bd8dbd9325f5b9c7e8918b57f8012870cf9b190610",
       "generated_sha256": "316a249214db2d26b2fcc1e5b969982d72f14ab47d1c662242b604f29a23f06f"
+    },
+    {
+      "path": "examples/valid/parallel-text-to-image-branches.json",
+      "source_sha256": "3d286cd0389ff886aa1c8e3566bfe47ed16e222a85c06b4ea39e0e0b1e8ff633",
+      "generated_sha256": "b3ba44ab76be2aaa01a20d12683b8a3e54d590fe548c0ead10336f0b9d82529c"
     },
     {
       "path": "examples/valid/single-text-generation.json",
@@ -114,8 +119,8 @@
     },
     {
       "path": "how-to/build-multi-step-workflows.md",
-      "source_sha256": "1d6704768d5a765aa3d635670fed35a94e0f2fd70252bf4a2610f90f1bd6958c",
-      "generated_sha256": "6cd5f82386275993b3c017497062e4ceb69c4e71aec24c53cda4d068897ee3c0"
+      "source_sha256": "6e566c792bd102dc8bcd4b3665f0b5a327755de675a73b34d859baba04d27399",
+      "generated_sha256": "0627b0e543e5ef404bb3982fd9a8ce08957911cdc333b37b0b84b1d6e2a141ed"
     },
     {
       "path": "how-to/compose-prompts.md",
@@ -184,13 +189,13 @@
     },
     {
       "path": "reference/steps.md",
-      "source_sha256": "6af4ff25bd9c4a98718e51fdbca32d38eab2023d9816534745b4d738265af985",
-      "generated_sha256": "38d018e06e15e3d3cda766dc723cf739bd3c770c24d4efbd9b89c4a448110e76"
+      "source_sha256": "ff6d790e859a67ffeadebcf23d0d778f6bdf9ab6cdc77f16259c297fe09790b0",
+      "generated_sha256": "7f34a6b33f29c62c1b2700b81bdfee5dec3b44d370e835397a25df15776d086d"
     },
     {
       "path": "reference/template-syntax.md",
-      "source_sha256": "95bd3cceeafd9c77e301be75b51868ab8817da3aed0488ca2e82299785ba46f1",
-      "generated_sha256": "ff7c0ac9e359b06a8d8cf1945192d957afd521abba8641c089300798308d017f"
+      "source_sha256": "f5ce3ea4c330a62fde0e7c09154189e8e2de0472318e3d8ca9395fe73ff838a2",
+      "generated_sha256": "a232fef3a1e90eaa9776e426b4c7546bcc8073cb30a59066a8f2bad7f5891a7c"
     },
     {
       "path": "reference/validation-errors.md",
