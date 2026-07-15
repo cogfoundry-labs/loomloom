@@ -295,7 +295,7 @@ func TestTemplateSpecDocsCmdListsTopics(t *testing.T) {
 		t.Fatalf("docs command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"TemplateSpec revision: sha256:", "Owner: loomloom-docs", "spec", "authoring", "examples", "conversation", "loomloom template-spec docs <topic>"} {
+	for _, want := range []string{"TemplateSpec revision: sha256:", "Owner: loomloom-docs", "spec", "authoring", "examples", "conversation", "metadata", "inputs", "steps", "bindings", "execution-units", "loomloom template-spec docs <topic>"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
 		}
@@ -321,6 +321,25 @@ func TestTemplateSpecDocsCmdPrintsConversation(t *testing.T) {
 	}
 }
 
+func TestTemplateSpecDocsCmdPrintsAuthoringDiscoveryPath(t *testing.T) {
+	requireGeneratedTemplateSpecDocs(t)
+	opts := &rootOptions{output: "text"}
+	cmd := newTemplateSpecDocsCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"authoring"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("docs authoring command error = %v", err)
+	}
+	output := out.String()
+	for _, want := range []string{"# TemplateSpec quickstart", "docs spec", "docs inputs", "docs steps", "docs bindings", "docs execution-units", "do not add `branch` or `parallel`", "do not use `expanded`"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output missing %q: %s", want, output)
+		}
+	}
+}
+
 func TestTemplateSpecDocsCmdPrintsSpec(t *testing.T) {
 	requireGeneratedTemplateSpecDocs(t)
 	opts := &rootOptions{output: "text"}
@@ -333,7 +352,7 @@ func TestTemplateSpecDocsCmdPrintsSpec(t *testing.T) {
 		t.Fatalf("docs spec command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"# TemplateSpec syntax", "lowerCamel", "inputSchema", "fieldBindings"} {
+	for _, want := range []string{"# TemplateSpec syntax", "lowerCamel", "inputSchema", "fieldBindings", "Field quick reference", "valueType`, not `type`", "docs execution-units"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
 		}
@@ -399,7 +418,7 @@ func TestTemplateSpecDocsCmdSupportsJSON(t *testing.T) {
 		t.Fatalf("owner=%v want loomloom-docs", payload["owner"])
 	}
 	content, _ := payload["content"].(string)
-	for _, want := range []string{"# TemplateSpec examples", "single-text-generation", "uploaded-text-reference"} {
+	for _, want := range []string{"# TemplateSpec examples", "single-text-generation", "uploaded-text-reference", "Capability", "parallel-text-to-image-branches", "no `branch` or `parallel` property", "template-spec check"} {
 		if !strings.Contains(content, want) {
 			t.Fatalf("content missing %q: %s", want, content)
 		}
