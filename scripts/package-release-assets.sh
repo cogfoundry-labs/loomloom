@@ -51,9 +51,11 @@ else
 fi
 dist_dir="$repo_root/dist"
 docs_script="$repo_root/scripts/template-spec-docs.sh"
+references_script="$repo_root/scripts/skill-references.sh"
 verification_dir=""
 
 cleanup() {
+  "$references_script" clean
   "$docs_script" clean
   if [[ -n "$verification_dir" ]]; then
     rm -rf "$verification_dir"
@@ -87,6 +89,7 @@ require_cmd tar
 require_cmd zip
 
 "$docs_script" prepare-checked
+"$references_script" prepare-checked
 
 zip_file() {
   local archive_path="$1"

@@ -15,6 +15,8 @@ var bundledSkillDirs = []string{
 	"skills/openclaw/loomloom",
 }
 
+const canonicalSkillReferencesDir = "skill-sources/references"
+
 func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
 	root := findRepoRoot(t)
 	caseData, err := os.ReadFile(filepath.Join(root, "cli/internal/cmd/testdata/template-spec-authoring/uploaded-text.json"))
@@ -91,72 +93,60 @@ func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
 
 func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 	root := findRepoRoot(t)
-	for _, rel := range bundledSkillDirs {
-		t.Run(rel, func(t *testing.T) {
-			text := readBundledSkillReference(t, root, rel, "setup.md")
-			for _, want := range []string{
-				"loomloom doctor --output json",
-				"credential_action",
-				"你还没有完整配置 LoomLoom Server 和密钥。请选择要使用的平台：",
-				"https://loomloom.shengsuanyun.com/loom/v1",
-				"https://console.shengsuanyun.com/user/keys",
-				"当前未检测到胜算云密钥。请前往胜算云控制台创建或复制密钥后配置到本地环境：",
-				"当前胜算云账户余额不足，请前往胜算云控制台充值后再继续：",
-				"https://console.shengsuanyun.com/user/recharge",
-				"在 CogFoundry 计费功能上线前，请使用胜算云控制台创建 API 密钥",
-				"CogFoundry 面向新加坡及其他海外地区用户，当前支付和交易能力仍在建设中，敬请期待。当前阶段请继续使用胜算云。",
-			} {
-				if !strings.Contains(text, want) {
-					t.Fatalf("%s missing %q", rel, want)
-				}
-			}
-			for _, forbidden := range []string{
-				"https://cogfoundry.ai",
-				"https://console-dev.cogfoundry",
-				"https://console.cogfoundry",
-			} {
-				if strings.Contains(text, forbidden) {
-					t.Fatalf("%s should not include CogFoundry console URL %q", rel, forbidden)
-				}
-			}
-		})
+	text := readCanonicalSkillReference(t, root, "setup.md")
+	for _, want := range []string{
+		"loomloom doctor --output json",
+		"credential_action",
+		"你还没有完整配置 LoomLoom Server 和密钥。请选择要使用的平台：",
+		"https://loomloom.shengsuanyun.com/loom/v1",
+		"https://console.shengsuanyun.com/user/keys",
+		"当前未检测到胜算云密钥。请前往胜算云控制台创建或复制密钥后配置到本地环境：",
+		"当前胜算云账户余额不足，请前往胜算云控制台充值后再继续：",
+		"https://console.shengsuanyun.com/user/recharge",
+		"在 CogFoundry 计费功能上线前，请使用胜算云控制台创建 API 密钥",
+		"CogFoundry 面向新加坡及其他海外地区用户，当前支付和交易能力仍在建设中，敬请期待。当前阶段请继续使用胜算云。",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
+		}
+	}
+	for _, forbidden := range []string{
+		"https://cogfoundry.ai",
+		"https://console-dev.cogfoundry",
+		"https://console.cogfoundry",
+	} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("%s should not include CogFoundry console URL %q", canonicalSkillReferencesDir, forbidden)
+		}
 	}
 }
 
 func TestBundledSkillsUseCanonicalUploadedTextRules(t *testing.T) {
 	root := findRepoRoot(t)
-	for _, rel := range bundledSkillDirs {
-		t.Run(rel, func(t *testing.T) {
-			text := readBundledSkillReference(t, root, rel, "template-spec.md")
-			for _, want := range []string{
-				"TS-IN-001",
-				"TS-IN-002",
-				"TS-IN-003",
-				"whether future users will paste the content or upload a file",
-			} {
-				if !strings.Contains(text, want) {
-					t.Fatalf("%s missing %q", rel, want)
-				}
-			}
-		})
+	text := readCanonicalSkillReference(t, root, "template-spec.md")
+	for _, want := range []string{
+		"TS-IN-001",
+		"TS-IN-002",
+		"TS-IN-003",
+		"whether future users will paste the content or upload a file",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
+		}
 	}
 }
 
 func TestBundledSkillsExposeTemplateSpecDocsLanguageOption(t *testing.T) {
 	root := findRepoRoot(t)
-	for _, rel := range bundledSkillDirs {
-		t.Run(rel, func(t *testing.T) {
-			text := readBundledSkillReference(t, root, rel, "template-spec.md")
-			for _, want := range []string{
-				"TemplateSpec docs default to English and are also available in Chinese",
-				"loomloom template-spec docs spec --lang zh-CN",
-				"Select the documentation language as appropriate for the conversation and task",
-			} {
-				if !strings.Contains(text, want) {
-					t.Fatalf("%s missing %q", rel, want)
-				}
-			}
-		})
+	text := readCanonicalSkillReference(t, root, "template-spec.md")
+	for _, want := range []string{
+		"TemplateSpec docs default to English and are also available in Chinese",
+		"loomloom template-spec docs spec --lang zh-CN",
+		"Select the documentation language as appropriate for the conversation and task",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
+		}
 	}
 }
 
@@ -171,9 +161,27 @@ func TestBundledSkillReferenceLayout(t *testing.T) {
 		"setup.md",
 		"template-spec.md",
 	}
-	canonical := make(map[string]string, len(expected))
+	entries, err := os.ReadDir(filepath.Join(root, canonicalSkillReferencesDir))
+	if err != nil {
+		t.Fatalf("read canonical references directory: %v", err)
+	}
+	var names []string
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".md" {
+			names = append(names, entry.Name())
+		}
+	}
+	sort.Strings(names)
+	if strings.Join(names, "\n") != strings.Join(expected, "\n") {
+		t.Fatalf("canonical reference files=%v, want %v", names, expected)
+	}
+	for _, name := range expected {
+		if strings.TrimSpace(readCanonicalSkillReference(t, root, name)) == "" {
+			t.Fatalf("canonical reference %s is empty", name)
+		}
+	}
 
-	for i, rel := range bundledSkillDirs {
+	for _, rel := range bundledSkillDirs {
 		t.Run(rel, func(t *testing.T) {
 			skillData, err := os.ReadFile(filepath.Join(root, rel, "SKILL.md"))
 			if err != nil {
@@ -181,54 +189,20 @@ func TestBundledSkillReferenceLayout(t *testing.T) {
 			}
 			skillText := string(skillData)
 
-			entries, err := os.ReadDir(filepath.Join(root, rel, "references"))
-			if err != nil {
-				t.Fatalf("read references directory: %v", err)
-			}
-			var names []string
-			for _, entry := range entries {
-				if !entry.IsDir() && filepath.Ext(entry.Name()) == ".md" {
-					names = append(names, entry.Name())
-				}
-			}
-			sort.Strings(names)
-			if strings.Join(names, "\n") != strings.Join(expected, "\n") {
-				t.Fatalf("reference files=%v, want %v", names, expected)
-			}
-
 			for _, name := range expected {
 				if !strings.Contains(skillText, "references/"+name) {
 					t.Fatalf("SKILL.md does not route to references/%s", name)
-				}
-				data, err := os.ReadFile(filepath.Join(root, rel, "references", name))
-				if err != nil {
-					t.Fatalf("read reference %s: %v", name, err)
-				}
-				if i == 0 {
-					canonical[name] = string(data)
-					continue
-				}
-				if string(data) != canonical[name] {
-					t.Fatalf("reference %s differs from %s", name, bundledSkillDirs[0])
 				}
 			}
 		})
 	}
 }
 
-func readBundledSkillReference(t *testing.T, root, skillDir, reference string) string {
+func readCanonicalSkillReference(t *testing.T, root, reference string) string {
 	t.Helper()
-	skillData, err := os.ReadFile(filepath.Join(root, skillDir, "SKILL.md"))
+	referenceData, err := os.ReadFile(filepath.Join(root, canonicalSkillReferencesDir, reference))
 	if err != nil {
-		t.Fatalf("read SKILL.md: %v", err)
-	}
-	relativeReference := "references/" + reference
-	if !strings.Contains(string(skillData), relativeReference) {
-		t.Fatalf("SKILL.md does not route to %s", relativeReference)
-	}
-	referenceData, err := os.ReadFile(filepath.Join(root, skillDir, "references", reference))
-	if err != nil {
-		t.Fatalf("read %s: %v", relativeReference, err)
+		t.Fatalf("read canonical Skill reference %s: %v", reference, err)
 	}
 	return string(referenceData)
 }

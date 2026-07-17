@@ -102,15 +102,18 @@ install_dir="$(resolve_install_dir)"
 skill_dir="$(resolve_skill_dir)"
 tmp_dir="$(mktemp -d)"
 docs_script="$repo_root/scripts/template-spec-docs.sh"
+references_script="$repo_root/scripts/skill-references.sh"
 
 cleanup() {
   rm -rf "$tmp_dir"
+  "$references_script" clean
   "$docs_script" clean
 }
 
 trap cleanup EXIT
 
 "$docs_script" prepare-checked
+"$references_script" prepare-checked
 
 echo "LoomLoom local installer"
 echo "repo: $repo_root"
