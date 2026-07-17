@@ -21,8 +21,9 @@
             "type": "array",
             "minItems": 1,
             "uniqueItems": true,
-            "items": {"enum": ["json_schema", "authoring_lint", "core_validator", "runtime_registry"]}
+            "items": {"enum": ["json_schema", "authoring_lint", "authoring_service", "publication_gate", "core_validator", "runtime_registry"]}
           },
+          "lifecycle": {"enum": ["all_versions", "new_authoring_only", "runtime_compatibility"]},
           "referenceId": {"type": "string", "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+$"},
           "validExamples": {"type": "array", "items": {"type": "string"}},
           "invalidExamples": {"type": "array", "items": {"type": "string"}}

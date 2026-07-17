@@ -89,7 +89,7 @@ type templateSpecEnvelope struct {
 	Steps         []templateSpecStep       `json:"steps"`
 	InputSchema   *templateSpecInputSchema `json:"inputSchema"`
 	FieldBindings []templateSpecBinding    `json:"fieldBindings"`
-	ParamBindings []any                    `json:"paramBindings"`
+	ParamBindings []templateSpecBinding    `json:"paramBindings"`
 }
 
 type templateSpecStep struct {
@@ -108,9 +108,10 @@ type templateSpecSampleRow struct {
 }
 
 type templateSpecInputField struct {
-	Key       string `json:"key"`
-	Label     string `json:"label"`
-	ValueType string `json:"valueType"`
+	Key        string `json:"key"`
+	Label      string `json:"label"`
+	ValueType  string `json:"valueType"`
+	MultiValue bool   `json:"multiValue"`
 }
 
 type templateSpecBinding struct {
@@ -735,11 +736,38 @@ func loadTemplateSpecFile(path string) (templateSpecEnvelope, []byte, error) {
 	if err := validateTemplateSpecAssetBindingContract(spec); err != nil {
 		return templateSpecEnvelope{}, nil, err
 	}
+	if err := validateTemplateSpecAuthoringPolicy(spec); err != nil {
+		return templateSpecEnvelope{}, nil, err
+	}
 	var compact bytes.Buffer
 	if err := json.Compact(&compact, normalized); err != nil {
 		return templateSpecEnvelope{}, nil, fmt.Errorf("compact TemplateSpec JSON: %w", err)
 	}
 	return spec, compact.Bytes(), nil
+}
+
+const templateSpecExpandedAuthoringPolicyCode = "TS-TOPOLOGY-001"
+
+func validateTemplateSpecAuthoringPolicy(spec templateSpecEnvelope) error {
+	for i, binding := range spec.FieldBindings {
+		if strings.EqualFold(strings.TrimSpace(binding.BindMode), "expanded") {
+			return templateSpecExpandedAuthoringPolicyError(fmt.Sprintf("fieldBindings[%d]", i))
+		}
+	}
+	for i, binding := range spec.ParamBindings {
+		if strings.EqualFold(strings.TrimSpace(binding.BindMode), "expanded") {
+			return templateSpecExpandedAuthoringPolicyError(fmt.Sprintf("paramBindings[%d]", i))
+		}
+	}
+	return nil
+}
+
+func templateSpecExpandedAuthoringPolicyError(path string) error {
+	return fmt.Errorf(
+		"%s: %s uses bindMode=expanded, which is compatibility-only for historical template versions and cannot be used for new authoring; use one workbook row per independently processed item, or define fixed parallel steps with shared bindings and connect them with dependsOn/upstreamBindings; TemplateSpec v1 does not support dynamic-cardinality step fan-out",
+		templateSpecExpandedAuthoringPolicyCode,
+		path,
+	)
 }
 
 var templateSpecStepIDPattern = regexp.MustCompile(`^stp_[0-9a-z]{6,10}$`)

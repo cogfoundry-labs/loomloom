@@ -7,6 +7,7 @@
 | TS-IN-001 | 直接文本未按普通字段使用 | string + compatible parameter binding |
 | TS-IN-002 | text_reference 被写入 prompt，未作为 initial input | 绑定到接受 MIME 的 input port |
 | TS-IN-003 | string 说明要求填写资产 ID | 改成普通文本，或改用引用字段 |
+| TS-TOPOLOGY-001 | 新模板、新版本或新发布流程使用 expanded execution | 独立对象使用 workbook 多行；固定并行显式声明多个 Step；多内容集合使用 initial_input |
 | meta.name is required | 名称为空 | 提供非空名称 |
 | step_id pattern | ID 不满足 stp_ + base36 | 使用 6～10 位小写字母数字 |
 | unknown execution unit | unit 不在 registry | 使用公开 unit |

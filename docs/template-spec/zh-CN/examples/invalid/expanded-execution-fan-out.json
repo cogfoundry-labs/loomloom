@@ -1,0 +1,20 @@
+{
+  "meta": {"name": "历史多值展开", "description": "此语法仅用于历史版本运行兼容"},
+  "steps": [
+    {
+      "stepId": "stp_write01",
+      "displayName": "分别生成正文",
+      "executionUnit": "text-generate",
+      "instruction": "根据每个主题分别生成正文。",
+      "defaultModelRef": {"modelKey": "google/gemini-2.5-flash"}
+    }
+  ],
+  "inputSchema": {
+    "fields": [
+      {"key": "topics", "label": "多个主题", "valueType": "string", "required": true, "multiValue": true, "maxValues": 10, "order": 1}
+    ]
+  },
+  "fieldBindings": [
+    {"fieldKey": "topics", "stepId": "stp_write01", "paramKey": "prompt", "bindMode": "expanded"}
+  ]
+}

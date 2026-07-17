@@ -24,8 +24,8 @@
 | `inputSchema` | `fields` | `instructions`、`sampleRows` | fields 至少一个；sample row 使用 `{ "values": { "field_key": "value" } }` |
 | `inputSchema.fields[]` | `key`、`label`、`valueType` | `description`、`required`、`enumValues`、`acceptedMimeTypes`、`multiValue`、`maxValues`、`order`、`defaultValue`、`hidden`、`sourceKind`、`presentation` | `valueType` 是 `string`、`enum`、`image_url`、`asset_ref` 或 `text_reference`；enum 必须给 `enumValues`，asset/text reference 必须给 `acceptedMimeTypes` |
 | `steps[]` | `stepId`、`displayName`、`executionUnit` | `instruction`、`dependsOn`、`upstreamBindings`、`triggerPolicy`、`defaultModelRef`、`allowModelOverride`、`staticParams` | `stepId` 全局唯一；依赖无环；模型 Step 通常需要当前目录中的 `defaultModelRef.modelKey` |
-| `fieldBindings[]` | `fieldKey`、`stepId`、`paramKey`、`bindMode` | — | 单值字段使用 `shared`，多值字段使用 `expanded`；同一 `stepId + paramKey` 只能有一条 Binding |
-| `paramBindings[]` | `stepId`、`paramKey`、`bindMode`、`sources` | `separator` | 用 `field_ref` 与 `literal` 组合参数；有多值来源时使用 `expanded` |
+| `fieldBindings[]` | `fieldKey`、`stepId`、`paramKey`、`bindMode` | — | 新模板只使用 `shared`；同一 `stepId + paramKey` 只能有一条 Binding；`expanded` 仅为历史版本兼容保留 |
+| `paramBindings[]` | `stepId`、`paramKey`、`bindMode`、`sources` | `separator` | 用单值 `field_ref` 与 `literal` 组合参数并使用 `shared`；多值来源和 `expanded` 仅为历史版本兼容保留 |
 | `steps[].upstreamBindings[]` | `inputPort`、来源字段 | `sourceType` | `step_output` 使用 `sourceStepId` 和 `sourcePort`；`initial_input` 使用 `sourceInputKey` |
 
 字段名必须使用表中的 lowerCamel 形式；例如输入字段类型是 `valueType`，不是 `type`。`sourceKind` 省略时按 `user_input`，`triggerPolicy` 省略时按 `require_all`，UpstreamBinding `sourceType` 省略时按 `step_output`。

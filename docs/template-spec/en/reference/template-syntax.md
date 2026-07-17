@@ -22,8 +22,8 @@ This page lists the minimum fields needed to author a Spec independently. Follow
 | `inputSchema` | `fields` | `instructions`, `sampleRows` | At least one field; sample rows use `{ "values": { "field_key": "value" } }` |
 | `inputSchema.fields[]` | `key`, `label`, `valueType` | `description`, `required`, `enumValues`, `acceptedMimeTypes`, `multiValue`, `maxValues`, `order`, `defaultValue`, `hidden`, `sourceKind`, `presentation` | `valueType` is `string`, `enum`, `image_url`, `asset_ref`, or `text_reference`; enum needs `enumValues`, asset/text reference needs `acceptedMimeTypes` |
 | `steps[]` | `stepId`, `displayName`, `executionUnit` | `instruction`, `dependsOn`, `upstreamBindings`, `triggerPolicy`, `defaultModelRef`, `allowModelOverride`, `staticParams` | IDs are globally unique and dependencies are acyclic; model steps normally need a catalog `defaultModelRef.modelKey` |
-| `fieldBindings[]` | `fieldKey`, `stepId`, `paramKey`, `bindMode` | — | Single-value fields use `shared`; multi-value fields use `expanded`; one binding per `stepId + paramKey` |
-| `paramBindings[]` | `stepId`, `paramKey`, `bindMode`, `sources` | `separator` | Combines `field_ref` and `literal` sources; use `expanded` with a multi-value source |
+| `fieldBindings[]` | `fieldKey`, `stepId`, `paramKey`, `bindMode` | — | New authoring uses `shared`; one binding per `stepId + paramKey`; `expanded` remains only for historical compatibility |
+| `paramBindings[]` | `stepId`, `paramKey`, `bindMode`, `sources` | `separator` | Combines single-value `field_ref` and `literal` sources in `shared` mode; multi-value sources and `expanded` remain only for historical compatibility |
 | `steps[].upstreamBindings[]` | `inputPort`, source fields | `sourceType` | `step_output` uses `sourceStepId` and `sourcePort`; `initial_input` uses `sourceInputKey` |
 
 Use the lowerCamel names shown here: an input field type is `valueType`, not `type`. Omitted `sourceKind` means `user_input`; omitted `triggerPolicy` means `require_all`; omitted upstream `sourceType` means `step_output`.
