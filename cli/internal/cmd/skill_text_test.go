@@ -4,9 +4,16 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
+
+var bundledSkillDirs = []string{
+	"skills/codex/loomloom",
+	"skills/claude/loomloom",
+	"skills/openclaw/loomloom",
+}
 
 func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
 	root := findRepoRoot(t)
@@ -84,17 +91,9 @@ func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
 
 func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 	root := findRepoRoot(t)
-	for _, rel := range []string{
-		"skills/codex/loomloom/SKILL.md",
-		"skills/claude/loomloom/SKILL.md",
-		"skills/openclaw/loomloom/SKILL.md",
-	} {
+	for _, rel := range bundledSkillDirs {
 		t.Run(rel, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join(root, rel))
-			if err != nil {
-				t.Fatalf("ReadFile error=%v", err)
-			}
-			text := string(data)
+			text := readBundledSkillReference(t, root, rel, "setup.md")
 			for _, want := range []string{
 				"loomloom doctor --output json",
 				"credential_action",
@@ -126,17 +125,9 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 
 func TestBundledSkillsUseCanonicalUploadedTextRules(t *testing.T) {
 	root := findRepoRoot(t)
-	for _, rel := range []string{
-		"skills/codex/loomloom/SKILL.md",
-		"skills/claude/loomloom/SKILL.md",
-		"skills/openclaw/loomloom/SKILL.md",
-	} {
+	for _, rel := range bundledSkillDirs {
 		t.Run(rel, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join(root, rel))
-			if err != nil {
-				t.Fatalf("ReadFile error=%v", err)
-			}
-			text := string(data)
+			text := readBundledSkillReference(t, root, rel, "template-spec.md")
 			for _, want := range []string{
 				"TS-IN-001",
 				"TS-IN-002",
@@ -153,17 +144,9 @@ func TestBundledSkillsUseCanonicalUploadedTextRules(t *testing.T) {
 
 func TestBundledSkillsExposeTemplateSpecDocsLanguageOption(t *testing.T) {
 	root := findRepoRoot(t)
-	for _, rel := range []string{
-		"skills/codex/loomloom/SKILL.md",
-		"skills/claude/loomloom/SKILL.md",
-		"skills/openclaw/loomloom/SKILL.md",
-	} {
+	for _, rel := range bundledSkillDirs {
 		t.Run(rel, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join(root, rel))
-			if err != nil {
-				t.Fatalf("ReadFile error=%v", err)
-			}
-			text := string(data)
+			text := readBundledSkillReference(t, root, rel, "template-spec.md")
 			for _, want := range []string{
 				"TemplateSpec docs default to English and are also available in Chinese",
 				"loomloom template-spec docs spec --lang zh-CN",
@@ -175,6 +158,79 @@ func TestBundledSkillsExposeTemplateSpecDocsLanguageOption(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBundledSkillReferenceLayout(t *testing.T) {
+	root := findRepoRoot(t)
+	expected := []string{
+		"billing.md",
+		"cli.md",
+		"execution.md",
+		"local-skills.md",
+		"market.md",
+		"setup.md",
+		"template-spec.md",
+	}
+	canonical := make(map[string]string, len(expected))
+
+	for i, rel := range bundledSkillDirs {
+		t.Run(rel, func(t *testing.T) {
+			skillData, err := os.ReadFile(filepath.Join(root, rel, "SKILL.md"))
+			if err != nil {
+				t.Fatalf("read SKILL.md: %v", err)
+			}
+			skillText := string(skillData)
+
+			entries, err := os.ReadDir(filepath.Join(root, rel, "references"))
+			if err != nil {
+				t.Fatalf("read references directory: %v", err)
+			}
+			var names []string
+			for _, entry := range entries {
+				if !entry.IsDir() && filepath.Ext(entry.Name()) == ".md" {
+					names = append(names, entry.Name())
+				}
+			}
+			sort.Strings(names)
+			if strings.Join(names, "\n") != strings.Join(expected, "\n") {
+				t.Fatalf("reference files=%v, want %v", names, expected)
+			}
+
+			for _, name := range expected {
+				if !strings.Contains(skillText, "references/"+name) {
+					t.Fatalf("SKILL.md does not route to references/%s", name)
+				}
+				data, err := os.ReadFile(filepath.Join(root, rel, "references", name))
+				if err != nil {
+					t.Fatalf("read reference %s: %v", name, err)
+				}
+				if i == 0 {
+					canonical[name] = string(data)
+					continue
+				}
+				if string(data) != canonical[name] {
+					t.Fatalf("reference %s differs from %s", name, bundledSkillDirs[0])
+				}
+			}
+		})
+	}
+}
+
+func readBundledSkillReference(t *testing.T, root, skillDir, reference string) string {
+	t.Helper()
+	skillData, err := os.ReadFile(filepath.Join(root, skillDir, "SKILL.md"))
+	if err != nil {
+		t.Fatalf("read SKILL.md: %v", err)
+	}
+	relativeReference := "references/" + reference
+	if !strings.Contains(string(skillData), relativeReference) {
+		t.Fatalf("SKILL.md does not route to %s", relativeReference)
+	}
+	referenceData, err := os.ReadFile(filepath.Join(root, skillDir, "references", reference))
+	if err != nil {
+		t.Fatalf("read %s: %v", relativeReference, err)
+	}
+	return string(referenceData)
 }
 
 func findRepoRoot(t *testing.T) string {
