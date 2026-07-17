@@ -27,6 +27,16 @@
       "referenceId": "ports-and-bindings.input-transport",
       "validExamples": ["examples/valid/uploaded-text-reference.json"],
       "invalidExamples": ["examples/invalid/uploaded-text-as-string.json"]
+    },
+    {
+      "id": "TS-TOPOLOGY-001",
+      "scope": "template",
+      "severity": "error",
+      "enforcement": ["authoring_lint", "authoring_service", "publication_gate"],
+      "lifecycle": "new_authoring_only",
+      "referenceId": "ports-and-bindings.expanded-compatibility",
+      "validExamples": ["examples/valid/parallel-text-to-image-branches.json", "examples/valid/uploaded-text-reference.json"],
+      "invalidExamples": ["examples/invalid/expanded-execution-fan-out.json"]
     }
   ]
 }

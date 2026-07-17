@@ -18,7 +18,9 @@
 
 ## 单值与多值
 
-`multiValue=true` 表示一行可以提供多个值，并要求 `maxValues > 0`。多值字段要通过 `expanded` binding 产生 fan-out；普通单值字段使用 `shared`。不要用逗号文本模拟多值，除非业务内容本身就是一段字符串。
+`multiValue=true` 表示一行可以提供多个内容，并要求 `maxValues > 0`。新模板中，多值字段只用于通过 `sourceType=initial_input` 向支持多内容的 input port 提供有序内容集合；它不会增加 Step 的 execution 数量。普通参数字段使用 `shared`。不要用逗号文本模拟多值，除非业务内容本身就是一段字符串。
+
+历史版本可能包含 `bindMode=expanded`，将多值参数展开为多次 execution。该语法仅为历史运行兼容保留，不能用于新建模板或新版本。
 
 ## 展示信息
 

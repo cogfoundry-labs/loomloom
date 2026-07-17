@@ -8,7 +8,7 @@
 
 ## 一行代表什么
 
-通常一行代表一个 task。普通字段给该 task 提供值；multiValue + expanded 可能在一个 Step 内产生多次 execution。模板作者应在手册说明“一行是什么业务对象”，例如一篇文章、一个商品或一个候选人。
+通常一行代表一个 task。普通字段给该 task 提供值；multiValue initial input 可以让一次 Step execution 同时接收多份内容。模板作者应在手册说明“一行是什么业务对象”，例如一篇文章、一个商品或一个候选人。需要独立处理多个对象时，应使用多行，而不是在一行中展开多个 execution。
 
 ## 推荐流程
 

@@ -441,7 +441,9 @@ TemplatePlan should cover template name and goal, row meaning, input fields, wor
 Default modeling rules:
 
 - "Product, engineering, and risk review separately, then summarize" should be modeled as multiple parallel `text-generate` steps plus one downstream summary step, using step-level `dependsOn` and `upstreamBindings`.
-- Do not model multi-role review as one `expanded` step. `expanded` is only for dynamic multi-value input.
+- Do not author `bindMode=expanded`. It is compatibility-only for running historical template versions and is rejected for new templates, versions, and publication flows with `TS-TOPOLOGY-001`.
+- `multiValue=true` may still represent an ordered content collection passed through `sourceType=initial_input` to a port that accepts multiple contents; it does not create additional executions.
+- For independently processed dynamic items, use one workbook row per item. For a fixed number of parallel branches, declare multiple Steps and connect them with `dependsOn` / `upstreamBindings`. TemplateSpec v1 does not support dynamic-cardinality Step fan-out.
 - Add result and error columns for every user-visible step by default.
 - If partial completion is allowed, the summary step should explain missing upstreams and expose failed step error columns.
 - Keep `provider` and `mode` internal.

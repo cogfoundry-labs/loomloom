@@ -14,6 +14,7 @@ import (
 
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
 	templatespecdocs "github.com/Cogfoundry-ai/loomloom/cli/internal/template_spec_docs"
+	"github.com/spf13/cobra"
 )
 
 func TestGeneratedTemplateSpecExamplesAreEnglish(t *testing.T) {
@@ -56,6 +57,16 @@ func TestGeneratedValidTemplateSpecExamplesPassCLIValidation(t *testing.T) {
 	}
 }
 
+func TestGeneratedExpandedCompatibilityExampleFailsNewAuthoringValidation(t *testing.T) {
+	path := filepath.Join(findRepoRoot(t), "docs", "template-spec", "en", "examples", "invalid", "expanded-execution-fan-out.json")
+
+	_, _, err := loadTemplateSpecFile(path)
+
+	if err == nil || !strings.Contains(err.Error(), templateSpecExpandedAuthoringPolicyCode) {
+		t.Fatalf("loadTemplateSpecFile() error = %v, want %s", err, templateSpecExpandedAuthoringPolicyCode)
+	}
+}
+
 func requireGeneratedTemplateSpecDocs(t *testing.T) {
 	t.Helper()
 	if _, err := templatespecdocs.ReadManifest(); err != nil {
@@ -90,6 +101,56 @@ func TestLoadTemplateSpecFile_ValidSpec(t *testing.T) {
 	}
 	if strings.Contains(string(raw), `"Meta"`) {
 		t.Fatalf("expected PascalCase keys to be normalized, got %s", string(raw))
+	}
+}
+
+func TestLoadTemplateSpecFile_RejectsExpandedForNewAuthoring(t *testing.T) {
+	tests := []struct {
+		name     string
+		bindings string
+	}{
+		{name: "field binding", bindings: `"fieldBindings":[{"fieldKey":"prompts","stepId":"stp_text01","paramKey":"prompt","bindMode":"expanded"}]`},
+		{name: "param binding", bindings: `"paramBindings":[{"stepId":"stp_text01","paramKey":"prompt","bindMode":"expanded","sources":[{"kind":"field_ref","fieldKey":"prompts"}]}]`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "spec.json")
+			content := `{
+  "meta":{"name":"Legacy expansion"},
+  "steps":[{"stepId":"stp_text01","executionUnit":"text-generate"}],
+  "inputSchema":{"fields":[{"key":"prompts","label":"Prompts","valueType":"string","multiValue":true,"maxValues":10}]},
+  ` + tt.bindings + `
+}`
+			if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+				t.Fatalf("write spec: %v", err)
+			}
+
+			_, _, err := loadTemplateSpecFile(path)
+
+			if err == nil || !strings.Contains(err.Error(), templateSpecExpandedAuthoringPolicyCode) {
+				t.Fatalf("loadTemplateSpecFile() error = %v, want %s", err, templateSpecExpandedAuthoringPolicyCode)
+			}
+		})
+	}
+}
+
+func TestLoadTemplateSpecFile_AllowsMultiValueInitialInputCollection(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "spec.json")
+	content := `{
+  "meta":{"name":"Reference summary"},
+  "steps":[{
+    "stepId":"stp_text01",
+    "executionUnit":"text-generate",
+    "upstreamBindings":[{"inputPort":"reference","sourceType":"initial_input","sourceInputKey":"references"}]
+  }],
+  "inputSchema":{"fields":[{"key":"references","label":"References","valueType":"text_reference","acceptedMimeTypes":["text/*"],"multiValue":true,"maxValues":10}]}
+}`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write spec: %v", err)
+	}
+
+	if _, _, err := loadTemplateSpecFile(path); err != nil {
+		t.Fatalf("loadTemplateSpecFile() error = %v", err)
 	}
 }
 
@@ -587,6 +648,46 @@ func TestTemplateSpecCreateVersionPostsCanonicalSpec(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `"versionNumber": 2`) {
 		t.Fatalf("output missing version number: %s", out.String())
+	}
+}
+
+func TestTemplateSpecCreateCommandsRejectExpandedBeforeRemoteMutation(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "expanded.json")
+	content := `{
+  "meta":{"name":"Legacy expansion"},
+  "steps":[{"stepId":"stp_text01","executionUnit":"text-generate"}],
+  "inputSchema":{"fields":[{"key":"prompts","label":"Prompts","valueType":"string","multiValue":true,"maxValues":10}]},
+  "fieldBindings":[{"fieldKey":"prompts","stepId":"stp_text01","paramKey":"prompt","bindMode":"expanded"}]
+}`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write spec: %v", err)
+	}
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		requestCount++
+	}))
+	defer server.Close()
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
+
+	tests := []struct {
+		name string
+		cmd  *cobra.Command
+		args []string
+	}{
+		{name: "create", cmd: newTemplateSpecCreateCmd(opts), args: []string{path}},
+		{name: "create-version", cmd: newTemplateSpecCreateVersionCmd(opts), args: []string{"tmpl_123", path}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.cmd.SetArgs(tt.args)
+			err := tt.cmd.Execute()
+			if err == nil || !strings.Contains(err.Error(), templateSpecExpandedAuthoringPolicyCode) {
+				t.Fatalf("command error = %v, want %s", err, templateSpecExpandedAuthoringPolicyCode)
+			}
+		})
+	}
+	if requestCount != 0 {
+		t.Fatalf("remote request count = %d, want 0", requestCount)
 	}
 }
 
