@@ -120,7 +120,9 @@ For separate product, engineering, and risk reviews followed by a summary:
 - Model the reviews as parallel `text-generate` steps.
 - Model the summary as a downstream step.
 - Connect steps with `dependsOn` and `upstreamBindings`.
-- Do not model multiple roles as one `expanded` step. `expanded` is for dynamic multi-value input.
+- Do not author `bindMode=expanded`. It is compatibility-only for running historical template versions and is rejected for new templates, versions, and publication flows with `TS-TOPOLOGY-001`.
+- `multiValue=true` may still represent an ordered content collection passed through `sourceType=initial_input` to a port that accepts multiple contents; it does not create additional executions.
+- For independently processed dynamic items, use one workbook row per item. For a fixed number of parallel branches, declare multiple Steps and connect them with `dependsOn` / `upstreamBindings`. TemplateSpec v1 does not support dynamic-cardinality Step fan-out.
 
 Add result and error columns for every user-visible step by default. If partial completion is allowed, make missing upstream results understandable and expose failed-step error columns.
 

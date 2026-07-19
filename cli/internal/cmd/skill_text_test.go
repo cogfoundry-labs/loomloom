@@ -136,6 +136,29 @@ func TestBundledSkillsUseCanonicalUploadedTextRules(t *testing.T) {
 	}
 }
 
+func TestBundledSkillsRejectExpandedAuthoringConsistently(t *testing.T) {
+	root := findRepoRoot(t)
+	text := readCanonicalSkillReference(t, root, "template-spec.md")
+	for _, want := range []string{
+		"Do not author `bindMode=expanded`",
+		"TS-TOPOLOGY-001",
+		"`multiValue=true` may still represent an ordered content collection",
+		"TemplateSpec v1 does not support dynamic-cardinality Step fan-out",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
+		}
+	}
+	for _, forbidden := range []string{
+		"`expanded` is only for dynamic multi-value input",
+		"`expanded` is for dynamic multi-value input",
+	} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("%s still recommends expanded authoring with %q", canonicalSkillReferencesDir, forbidden)
+		}
+	}
+}
+
 func TestBundledSkillsExposeTemplateSpecDocsLanguageOption(t *testing.T) {
 	root := findRepoRoot(t)
 	text := readCanonicalSkillReference(t, root, "template-spec.md")

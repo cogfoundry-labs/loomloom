@@ -19,13 +19,13 @@
     },
     {
       "path": "concepts/execution-flow.md",
-      "source_sha256": "f68d9b243d8c4c10532c04ec655495e2527bd47e46d55dd658df8da400a965ca",
-      "generated_sha256": "46bbc53e794630d31836e74e6ed5c0d35462d73e54920587bcd3473a70dd521b"
+      "source_sha256": "fd10806917a9a93af2013c33d002f4a9909feee00125342ec5efb753aae153e4",
+      "generated_sha256": "187b56bba2188aeb3399453a3f71c976d8f685e8a1a762269a1a6afb5f765581"
     },
     {
       "path": "concepts/inputs.md",
-      "source_sha256": "68ed357eabd8d0664886fec7166c0933c6ff02282524d17108e0c1db9e4d826f",
-      "generated_sha256": "f65998222bd197607222d8ccb903aaf8351fe7409408754a0ac3b115d40e347d"
+      "source_sha256": "ef14f0dd0c3abab77e199dc8f83e156292055e3dd14ba8ce71cbbb649806dcca",
+      "generated_sha256": "ebbb9d9d5479ea2c11a17527983a885c970a0bf52f1b20756a8d03f394900962"
     },
     {
       "path": "concepts/steps-and-execution-units.md",
@@ -44,13 +44,18 @@
     },
     {
       "path": "concepts/workbooks-and-rows.md",
-      "source_sha256": "c291bc270be3e5c5739216d86f17b6d5352af9c1b1fe394bf5e0028eb481eef7",
-      "generated_sha256": "16abbe27910796b5afa530dab38d3aaecd8fc15f0f19c668e7cd649bb3627c9d"
+      "source_sha256": "b7b18924e31e4b027f69454816a0c2bbe62b9b03e0bdec4c03487c14801de150",
+      "generated_sha256": "1361b2ab9c20ea0ebcaa761f4e2e89e311dd275e4d7174eb8cf1a4af8faee3b7"
     },
     {
       "path": "examples/README.md",
-      "source_sha256": "85cb34ab5ab6abcf390d9233558bf3f6650645dddef8c713c38bbea3116395b3",
-      "generated_sha256": "cc8f969f4f246e6c21a85daf9bcef43a8d2f965eb2677b77c41681aee40e1dcc"
+      "source_sha256": "73ff07d4b752676d3d43721c6035885715bbe7a78025f7b3c66d40009597095c",
+      "generated_sha256": "d05c5b12635c328223b021ed61a0558ee61b85507469f66e709bb4731b9fe94a"
+    },
+    {
+      "path": "examples/invalid/expanded-execution-fan-out.json",
+      "source_sha256": "c8c9697548ffff864d1dfc892bfe84cba9d08fb02d8366a7ecd98fce7c1535f1",
+      "generated_sha256": "599c563f883acd92ff8d9bdb5583a7ea053323b317e67bac299af96592fed4c0"
     },
     {
       "path": "examples/invalid/text-reference-without-input-binding.json",
@@ -99,8 +104,8 @@
     },
     {
       "path": "get-started/quickstart.md",
-      "source_sha256": "b3d297f73516ad500d084cdec99000da59fe6ab1d3821b3e1b4c0df9c2c399c0",
-      "generated_sha256": "b4c17ba670d06626ad7637cec6c1e66e220f40e61dfd37639dea97c0127c42bb"
+      "source_sha256": "61dfbc5f92dc07f6f9b1335836e1de1fda9a54290ec953a09c8e51539d468f80",
+      "generated_sha256": "4566c818bf64a3fe9b9b27a4a5dd9050e216445016b90b8e240ab19ba20bb856"
     },
     {
       "path": "get-started/understand-template-spec.md",
@@ -124,8 +129,8 @@
     },
     {
       "path": "how-to/compose-prompts.md",
-      "source_sha256": "65bffb0a2d1ab2199b9c5c8c034f074f3ea22d50c06cffafe526225d24871c49",
-      "generated_sha256": "98e33e30dfaf8028a687191c6451743d17a5a08a893cb8e7337a1057a4a3124b"
+      "source_sha256": "07d884368df3ad40273510931df820e403ee6ea7eb5ea7e35fa93d00bd6881fc",
+      "generated_sha256": "6fc3090c5c65a4e80918130030ed47530b302589acbaabdafa30c9ac58f9cc9c"
     },
     {
       "path": "how-to/configure-models.md",
@@ -159,8 +164,8 @@
     },
     {
       "path": "reference/bindings.md",
-      "source_sha256": "6788b7ae0c04613dbc28208ce6068658a063958be86a0936dff58a325b88524e",
-      "generated_sha256": "597e4603e06f9067c93ce1fa47b93550ad9ed18ad6b811c2bc38e479694d3942"
+      "source_sha256": "eb98f2bcc2464c93686a028a9185d2e4485a54ba44ad5fd26eb236cae389a144",
+      "generated_sha256": "cdaa7cd0e5055a9b78f9b21d15b0640b81509e43ef6ce20541159242dc43742e"
     },
     {
       "path": "reference/compatibility.md",
@@ -194,13 +199,13 @@
     },
     {
       "path": "reference/template-syntax.md",
-      "source_sha256": "f5ce3ea4c330a62fde0e7c09154189e8e2de0472318e3d8ca9395fe73ff838a2",
-      "generated_sha256": "a232fef3a1e90eaa9776e426b4c7546bcc8073cb30a59066a8f2bad7f5891a7c"
+      "source_sha256": "1e23eebd89c4fc52b497ccfd310178d42c9673f9177e5c1726dac569519284c6",
+      "generated_sha256": "c5f6889123c56b787fec738d9bfdf79e39b4464044652f35d7ff799f71029491"
     },
     {
       "path": "reference/validation-errors.md",
-      "source_sha256": "dd89b5fe253b0036e89109d109518b46c8bba891d0f46c7b7f46e9652845b70e",
-      "generated_sha256": "f92dd14af7edcfe2b0b9664047a3cc1ec11c2ab35ff5108c22fca7610cb7bdb5"
+      "source_sha256": "190a05f532411e9555d34ed69f3d8e37a0e2f75b26264b35d09ac16977237835",
+      "generated_sha256": "2fb7354cefc8b221fc6623d4096b03180ea510bc6d8ae418166ac16df7cbd177"
     }
   ]
 }

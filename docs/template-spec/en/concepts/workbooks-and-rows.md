@@ -13,4 +13,4 @@ download-workbook -> fill -> validate-workbook -> precheck-workbook
 -> show estimate and confirm -> submit-workbook
 ```
 
-Validation creates no run. Precheck estimates execution and cost. Submit is the state-changing operation. A multi-value + expanded field can create several step executions within one row/task.
+Validation creates no run. Precheck estimates execution and cost. Submit is the state-changing operation. A multi-value initial input may provide several content items to one Step execution. Use multiple rows when items must be processed independently.

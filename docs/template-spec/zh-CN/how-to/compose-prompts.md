@@ -22,7 +22,9 @@ sources 按声明顺序合并。literal 必须是非空文本，field_ref 必须
 
 ## 多值字段
 
-ParamBinding 最多包含一个 `multiValue=true` 的字段来源；存在多值来源时必须使用 `bindMode=expanded`。其他单值字段和 literal 会被共享到每次展开执行。
+新模板的 ParamBinding 只能组合单值字段和 literal，并使用 `bindMode=shared`。`multiValue=true` 的内容集合应通过 `sourceType=initial_input` 进入支持多内容的 input port，不用于组合 prompt，也不会产生多次 execution。
+
+历史版本中的 `bindMode=expanded` 仍可运行，但不能用于新建模板、新版本或新的发布流程。
 
 ## 不适用场景
 

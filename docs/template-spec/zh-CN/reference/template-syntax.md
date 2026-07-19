@@ -14,6 +14,37 @@
 
 完整 Spec 至少要让每个 required Step 输入能够由固定参数、字段 Binding、initial input 或上游输出满足。
 
+## 字段速查
+
+本页给出可以独立编写 Spec 的最小字段清单；字段的条件约束和端口兼容规则见下方链接的分项参考。
+
+| 对象 | 必需字段 | 常用可选字段 | 关键规则 |
+| --- | --- | --- | --- |
+| `meta` | `name` | `description`、`scenario`、`inputSummary`、`displayOutputType`、`primaryOutputType`、`tags` | 只描述模板，不控制执行；填写 `primaryOutputType` 时必须与终端 Step 推导结果一致 |
+| `inputSchema` | `fields` | `instructions`、`sampleRows` | fields 至少一个；sample row 使用 `{ "values": { "field_key": "value" } }` |
+| `inputSchema.fields[]` | `key`、`label`、`valueType` | `description`、`required`、`enumValues`、`acceptedMimeTypes`、`multiValue`、`maxValues`、`order`、`defaultValue`、`hidden`、`sourceKind`、`presentation` | `valueType` 是 `string`、`enum`、`image_url`、`asset_ref` 或 `text_reference`；enum 必须给 `enumValues`，asset/text reference 必须给 `acceptedMimeTypes` |
+| `steps[]` | `stepId`、`displayName`、`executionUnit` | `instruction`、`dependsOn`、`upstreamBindings`、`triggerPolicy`、`defaultModelRef`、`allowModelOverride`、`staticParams` | `stepId` 全局唯一；依赖无环；模型 Step 通常需要当前目录中的 `defaultModelRef.modelKey` |
+| `fieldBindings[]` | `fieldKey`、`stepId`、`paramKey`、`bindMode` | — | 新模板只使用 `shared`；同一 `stepId + paramKey` 只能有一条 Binding；`expanded` 仅为历史版本兼容保留 |
+| `paramBindings[]` | `stepId`、`paramKey`、`bindMode`、`sources` | `separator` | 用单值 `field_ref` 与 `literal` 组合参数并使用 `shared`；多值来源和 `expanded` 仅为历史版本兼容保留 |
+| `steps[].upstreamBindings[]` | `inputPort`、来源字段 | `sourceType` | `step_output` 使用 `sourceStepId` 和 `sourcePort`；`initial_input` 使用 `sourceInputKey` |
+
+字段名必须使用表中的 lowerCamel 形式；例如输入字段类型是 `valueType`，不是 `type`。`sourceKind` 省略时按 `user_input`，`triggerPolicy` 省略时按 `require_all`，UpstreamBinding `sourceType` 省略时按 `step_output`。
+
+## CLI 中继续查阅
+
+`loomloom template-spec docs spec` 是写 Spec 的入口。需要某一对象的完整条件或端口信息时，继续执行：
+
+```text
+loomloom template-spec docs metadata
+loomloom template-spec docs inputs
+loomloom template-spec docs steps
+loomloom template-spec docs bindings
+loomloom template-spec docs execution-units
+loomloom template-spec docs examples
+```
+
+`examples` 列出的 JSON 随 CLI 一起分发；它们是 CLI 文档包内的规范示例，不要求访问 Core 源仓库。使用 `template-spec check <file>` 校验自己生成的 JSON。
+
 ## 命名与引用
 
 - field key、step ID 和引用值大小写敏感。
@@ -23,9 +54,6 @@
 
 ## 默认值
 
-- `sourceKind` 无有效值时按 `user_input` 处理。
-- `triggerPolicy` 为空时按 `require_all`。
-- UpstreamBinding `sourceType` 为空时按 `step_output`。
 - 未声明 bindings 数组等同空数组。
 
 ## 未知字段
