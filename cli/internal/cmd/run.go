@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Cogfoundry-ai/loomloom/cli/internal/client"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +21,9 @@ func newRunCmd(opts *rootOptions) *cobra.Command {
 	}
 
 	cmd.AddCommand(
+		newRunValidateCmd(opts),
+		newRunPrecheckCmd(opts),
+		newRunExecuteCmd(opts),
 		newRunSubmitCmd(opts),
 		newRunWatchCmd(opts),
 		newRunListCmd(opts),
@@ -28,6 +32,233 @@ func newRunCmd(opts *rootOptions) *cobra.Command {
 		newRunResultWorkbookCmd(opts),
 	)
 	return cmd
+}
+
+func newRunValidateCmd(opts *rootOptions) *cobra.Command {
+	var inputPath string
+
+	cmd := &cobra.Command{
+		Use:   "validate <template-id>",
+		Short: "Validate official template rows from JSON or JSONL without submitting",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			templateID := strings.TrimSpace(args[0])
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+
+			rows, err := prepareOfficialTemplateRows(ctx, httpClient, templateID, inputPath)
+			if err != nil {
+				return err
+			}
+			var resp validateTemplateRowsResponse
+			if err := httpClient.PostJSON(
+				ctx,
+				"/officialTemplates/"+templateID+":validateRows",
+				map[string]any{"rows": templateRowsPayload(rows)},
+				&resp,
+			); err != nil {
+				return err
+			}
+
+			if opts.output == "json" {
+				if err := writeIndentedJSON(cmd.OutOrStdout(), map[string]any{
+					"templateId": templateID,
+					"inputPath":  strings.TrimSpace(inputPath),
+					"rowCount":   len(rows),
+					"validation": resp,
+				}); err != nil {
+					return err
+				}
+			} else if resp.Valid {
+				if _, err := fmt.Fprintf(
+					cmd.OutOrStdout(),
+					"template_id\t%s\ninput_path\t%s\nrow_count\t%d\nvalid\ttrue\n",
+					templateID,
+					strings.TrimSpace(inputPath),
+					len(rows),
+				); err != nil {
+					return err
+				}
+			}
+			return validationError(resp)
+		},
+	}
+	cmd.Flags().StringVarP(&inputPath, "file", "f", "", "Input file in JSON array or JSONL format")
+	_ = cmd.MarkFlagRequired("file")
+	return cmd
+}
+
+func newRunPrecheckCmd(opts *rootOptions) *cobra.Command {
+	var inputPath string
+
+	cmd := &cobra.Command{
+		Use:   "precheck <template-id>",
+		Short: "Estimate official template row cost without submitting",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			templateID := strings.TrimSpace(args[0])
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+
+			rows, err := prepareOfficialTemplateRows(ctx, httpClient, templateID, inputPath)
+			if err != nil {
+				return err
+			}
+			var resp precheckTemplateRowsResponse
+			if err := httpClient.PostJSON(
+				ctx,
+				"/officialTemplates/"+templateID+":precheckRows",
+				map[string]any{"rows": templateRowsPayload(rows)},
+				&resp,
+			); err != nil {
+				return err
+			}
+			if balance := resp.BalanceCheck; balance != nil && !balance.IsSufficient {
+				if err := maybeInsufficientBalanceError(opts, balance); err != nil {
+					return err
+				}
+				return fmt.Errorf(
+					"insufficient balance: estimated_cost=%s available=%s",
+					formatMoney(int64(resp.EstimatedTotalCost), balance.Currency),
+					formatMoney(int64(balance.AvailableBalance), balance.Currency),
+				)
+			}
+
+			if opts.output == "json" {
+				result := precheckJSONPayload(resp)
+				result["templateId"] = templateID
+				result["inputPath"] = strings.TrimSpace(inputPath)
+				result["rowCount"] = len(rows)
+				return writeIndentedJSON(cmd.OutOrStdout(), result)
+			}
+			if _, err := fmt.Fprintf(
+				cmd.OutOrStdout(),
+				"template_id\t%s\ninput_path\t%s\nrow_count\t%d\n",
+				templateID,
+				strings.TrimSpace(inputPath),
+				len(rows),
+			); err != nil {
+				return err
+			}
+			return printPrecheck(cmd.OutOrStdout(), resp)
+		},
+	}
+	cmd.Flags().StringVarP(&inputPath, "file", "f", "", "Input file in JSON array or JSONL format")
+	_ = cmd.MarkFlagRequired("file")
+	return cmd
+}
+
+func newRunExecuteCmd(opts *rootOptions) *cobra.Command {
+	var (
+		inputPath       string
+		callbackURL     string
+		clientRequestID string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "execute <template-id>",
+		Short: "Submit prechecked official template rows from JSON or JSONL",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			templateID := strings.TrimSpace(args[0])
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+
+			rows, err := prepareOfficialTemplateRows(ctx, httpClient, templateID, inputPath)
+			if err != nil {
+				return err
+			}
+			requestID, generatedRequestID := effectiveClientRequestID(clientRequestID)
+			payload := map[string]any{
+				"rows":            templateRowsPayload(rows),
+				"clientRequestId": requestID,
+			}
+			if callbackURL != "" {
+				payload["callbackUrl"] = callbackURL
+			}
+
+			printGeneratedClientRequestID(cmd, requestID, generatedRequestID)
+			var resp submitTemplateRowsResponse
+			if err := httpClient.PostJSON(
+				ctx,
+				"/officialTemplates/"+templateID+":runRows",
+				payload,
+				&resp,
+			); err != nil {
+				return err
+			}
+			opts.debugf(
+				"official template run: submitted template_id=%s run_id=%s row_count=%d",
+				templateID,
+				resp.RunID,
+				len(rows),
+			)
+
+			result := map[string]any{
+				"templateId":      templateID,
+				"inputPath":       strings.TrimSpace(inputPath),
+				"rowCount":        len(rows),
+				"clientRequestId": requestID,
+				"runId":           resp.RunID,
+				"status":          resp.Status,
+				"acceptedAt":      int64(resp.AcceptedAt),
+			}
+			if opts.output == "json" {
+				return writeIndentedJSON(cmd.OutOrStdout(), result)
+			}
+			_, err = fmt.Fprintf(
+				cmd.OutOrStdout(),
+				"template_id\t%s\ninput_path\t%s\nrow_count\t%d\nrun_id\t%s\nstatus\t%s\naccepted_at\t%s\n",
+				templateID,
+				strings.TrimSpace(inputPath),
+				len(rows),
+				resp.RunID,
+				resp.Status,
+				formatUnix(int64(resp.AcceptedAt)),
+			)
+			return err
+		},
+	}
+	cmd.Flags().StringVarP(&inputPath, "file", "f", "", "Input file in JSON array or JSONL format")
+	cmd.Flags().StringVar(&callbackURL, "callback-url", "", "Optional callback URL")
+	cmd.Flags().StringVar(&clientRequestID, "client-request-id", "", "Stable idempotency key for retrying the same rows submission")
+	cmd.Flags().StringVar(&clientRequestID, "idempotency-key", "", "Deprecated alias for --client-request-id")
+	_ = cmd.Flags().MarkDeprecated("idempotency-key", "use --client-request-id")
+	_ = cmd.MarkFlagRequired("file")
+	return cmd
+}
+
+func prepareOfficialTemplateRows(
+	ctx context.Context,
+	httpClient *client.Client,
+	templateID string,
+	inputPath string,
+) ([]templateDisplayRow, error) {
+	inputPath = strings.TrimSpace(inputPath)
+	if inputPath == "" {
+		return nil, fmt.Errorf("--file is required")
+	}
+	rows, err := loadTemplateRows(inputPath)
+	if err != nil {
+		return nil, err
+	}
+	var schemaResp templateSchemaResponse
+	if err := httpClient.GetJSON(ctx, "/officialTemplates/"+templateID+"/schema", &schemaResp); err != nil {
+		return nil, err
+	}
+	return remapRowsToHeaderLabels(rows, schemaResp), nil
 }
 
 func newRunListCmd(opts *rootOptions) *cobra.Command {
@@ -130,9 +361,10 @@ func newRunSubmitCmd(opts *rootOptions) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "submit <template-id>",
-		Short: "Validate, precheck, and submit official template rows from JSON or JSONL",
-		Args:  cobra.ExactArgs(1),
+		Use:    "submit <template-id>",
+		Short:  "Legacy combined validate, precheck, and submit flow for official template rows",
+		Hidden: true,
+		Args:   cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if inputPath == "" {
 				return fmt.Errorf("--file is required")
