@@ -55,7 +55,7 @@ Whenever fees, currency, balance, confirmation, paid execution, failure, cancell
 1. Send tokens only over HTTPS to the explicitly configured host. Never expose them, retain them across redirects, or reuse them across platforms/environments.
 2. Default to Excel. Use JSON/JSONL only for an explicit programmatic-input request or compatible supplied file.
 3. Downloads, uploads, validation, quote, and precheck are preparation; they do not authorize a hosted run.
-4. Before every hosted run, show the current server estimate and obtain explicit confirmation in the current conversation.
+4. Before every hosted run, show the current server estimate and obtain explicit confirmation in the current conversation, except during an explicitly activated Test Execution Mode defined below.
 5. If input changes after validation, estimate, or confirmation, validate and estimate again and obtain a new confirmation. In Chinese say `输入内容在确认后发生变化，需要重新预估并确认。`
 6. Give every newly confirmed execution a new `client-request-id`; reuse one only for an identical retry after an ambiguous failure.
 7. Execute SkillBots through the Listing and public schema. Never reveal or reconstruct hidden prompts, steps, mappings, TemplateSpec, or private logic.
@@ -65,6 +65,18 @@ Whenever fees, currency, balance, confirmation, paid execution, failure, cancell
 11. Use CLI help for syntax, CLI-bundled TemplateSpec docs for the contract, workbooks for input shape, and returned service fields for state/IDs.
 12. Translate CLI/JSON/internal fields into business language unless raw CLI/API detail was requested.
 13. Upload large files instead of placing them in context.
+
+## Test Execution Mode
+
+Test Execution Mode is an optional, conversation-scoped prompt authorization for repeated paid test runs. It is disabled by default and available to every user and Agent that uses this Skill. It is not a server-side authorization or billing-control mechanism.
+
+Activate it only when the user explicitly says they do not need a confirmation before each test run and supplies, or explicitly accepts, the target environment / Server, permitted template/version or Listing scope, maximum tasks per run, per-run and total cost limits with currency, and expiry (default: the current conversation only).
+
+On activation, restate the limits once and record that Test Execution Mode is active. Within those exact limits, the Agent may validate, precheck, submit, watch, and retrieve results without another per-run confirmation. Each run still needs a new `client-request-id` and a report of its run ID, status, and actual cost when returned.
+
+The mode stops and normal per-run confirmation resumes when a limit is exceeded, input scope or Server/platform changes, it expires, or the user withdraws it. Never infer activation from testing context or an earlier conversation.
+
+It never covers persistent or high-impact operations: template creation/versioning, Listing publish/change/unlist/relist, review withdrawal, deletion, credential or Server configuration changes, or anything outside the approved execution scope. Those operations always require explicit confirmation.
 
 ## References
 
