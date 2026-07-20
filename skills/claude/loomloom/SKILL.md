@@ -72,7 +72,7 @@ Test Execution Mode is an optional, conversation-scoped prompt authorization for
 
 Activate it only when the user explicitly says they do not need a confirmation before each test run and supplies, or explicitly accepts, the target environment / Server, permitted template/version or Listing scope, maximum tasks per run, per-run and total cost limits with currency, and expiry (default: the current conversation only).
 
-On activation, restate the limits once and record that Test Execution Mode is active. Within those exact limits, the Agent may validate, precheck, submit, watch, and retrieve results without another per-run confirmation. Each run still needs a new `client-request-id` and a report of its run ID, status, and actual cost when returned.
+On activation, restate the limits once and record that Test Execution Mode is active. Within those exact limits, the Agent may validate, precheck, submit, watch, and retrieve results without another per-run confirmation. A missing, zero, or currency-unknown precheck estimate is never eligible for automatic submission: stop and obtain a fresh explicit confirmation before creating that run. Each run still needs a new `client-request-id` and a report of its run ID, status, and actual cost when returned.
 
 The mode stops and normal per-run confirmation resumes when a limit is exceeded, input scope or Server/platform changes, it expires, or the user withdraws it. Never infer activation from testing context or an earlier conversation.
 

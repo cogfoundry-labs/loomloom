@@ -24,7 +24,7 @@ Treat the interaction as:
 
 Every run requires a fresh confirmation unless the active LoomLoom Skill Test Execution Mode explicitly covers that run. Confirmation for a different input, file, template, version, Listing, or conversation is not reusable.
 
-Test Execution Mode is a conversation-scoped Agent prompt authorization, not a server-side billing control. It may skip repeated confirmation only within the user-approved Server, execution scope, task limits, per-run and total cost limits, and expiry. If any of those conditions changes or is exceeded, obtain a fresh confirmation before submission.
+Test Execution Mode is a conversation-scoped Agent prompt authorization, not a server-side billing control. It may skip repeated confirmation only within the user-approved Server, execution scope, task limits, per-run and total cost limits, and expiry. A missing, zero, or currency-unknown precheck estimate is never eligible for automatic submission: obtain a fresh confirmation before submission. If any other condition changes or is exceeded, also obtain a fresh confirmation before submission.
 
 If input changes after validation, quote/precheck, or confirmation, validate and estimate again, show the new estimate, and obtain a new confirmation. In Chinese, say:
 
