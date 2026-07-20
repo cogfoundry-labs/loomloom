@@ -66,11 +66,12 @@ func TestDoctorSuccessPersistsCustomProfileAndReturnsTokenBinding(t *testing.T) 
 		token:  "token-1",
 	})
 	for key, want := range map[string]any{
-		"platform":    "custom",
-		"healthy":     true,
-		"token_set":   true,
-		"token_valid": true,
-		"next_action": "persist_token",
+		"platform":        "custom",
+		"platform_preset": false,
+		"healthy":         true,
+		"token_set":       true,
+		"token_valid":     true,
+		"next_action":     "persist_token",
 	} {
 		if got := payload[key]; got != want {
 			t.Fatalf("%s=%v want %v payload=%v", key, got, want, payload)
@@ -135,6 +136,9 @@ func TestDoctorCogFoundryWithoutTokenDoesNotReportUnavailable(t *testing.T) {
 	if payload["credential_action"] != "missing_token" || payload["next_action"] != "configure_token" {
 		t.Fatalf("payload=%v want missing CogFoundry token", payload)
 	}
+	if payload["platform_preset"] != true {
+		t.Fatalf("payload=%v want CogFoundry preset", payload)
+	}
 	if strings.Contains(strings.ToLower(payload["credential_message"].(string)), "unavailable") {
 		t.Fatalf("payload=%v must not report CogFoundry unavailable", payload)
 	}
@@ -151,6 +155,10 @@ func TestDoctorAuthenticationFailureDoesNotPersist(t *testing.T) {
 	})
 	if payload["token_valid"] != false || payload["next_action"] != "replace_token" {
 		t.Fatalf("payload=%v want invalid token result", payload)
+	}
+	message, _ := payload["credential_message"].(string)
+	if !strings.Contains(message, "密钥认证未通过") || strings.Contains(message, "平台不一致") {
+		t.Fatalf("payload=%v want neutral authentication failure message", payload)
 	}
 	if got := platform.LoadState(); len(got.Servers) != 0 {
 		t.Fatalf("state=%+v want no persistence", got)

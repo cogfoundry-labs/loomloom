@@ -55,7 +55,11 @@ func NewRootCmd() *cobra.Command {
 				opts.server = normalized
 			}
 			if !flagChanged(cmd, "token") {
-				opts.token, _ = configuredToken(opts.server)
+				var err error
+				opts.token, _, err = configuredToken(opts.server)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		},
@@ -128,18 +132,50 @@ func configuredServer() string {
 	return strings.TrimSpace(os.Getenv("LOOMLOOM_SERVER"))
 }
 
-func configuredToken(server string) (string, string) {
+func configuredToken(server string) (string, string, error) {
 	state := platform.LoadState()
 	if profile, ok := state.FindProfile(server); ok && strings.TrimSpace(profile.TokenEnv) != "" {
-		if value := strings.TrimSpace(os.Getenv(profile.TokenEnv)); value != "" {
-			return value, profile.TokenEnv
+		value := strings.TrimSpace(os.Getenv(profile.TokenEnv))
+		if value != "" && profile.TokenEnv == "LOOMLOOM_TOKEN" {
+			if err := validateGlobalTokenServer(server); err != nil {
+				return "", "", err
+			}
 		}
-		return "", profile.TokenEnv
+		if value != "" {
+			return value, profile.TokenEnv, nil
+		}
+		return "", profile.TokenEnv, nil
 	}
 	if value := strings.TrimSpace(os.Getenv("LOOMLOOM_TOKEN")); value != "" {
-		return value, "LOOMLOOM_TOKEN"
+		if err := validateGlobalTokenServer(server); err != nil {
+			return "", "", err
+		}
+		return value, "LOOMLOOM_TOKEN", nil
 	}
-	return "", ""
+	return "", "", nil
+}
+
+func validateGlobalTokenServer(server string) error {
+	selected, err := platform.NormalizeServer(server)
+	if err != nil {
+		return fmt.Errorf("cannot bind LOOMLOOM_TOKEN without a valid Server; pass both --server and --token")
+	}
+	environmentServer := strings.TrimSpace(os.Getenv("LOOMLOOM_SERVER"))
+	if environmentServer == "" {
+		state := platform.LoadState()
+		if profile, ok := state.FindProfile(selected); ok && profile.TokenEnv == "LOOMLOOM_TOKEN" {
+			return nil
+		}
+		return fmt.Errorf("LOOMLOOM_TOKEN is not bound to the selected Server; pass both --server and --token")
+	}
+	normalizedEnvironment, err := platform.NormalizeServer(environmentServer)
+	if err != nil {
+		return fmt.Errorf("LOOMLOOM_SERVER is invalid; pass both --server and --token")
+	}
+	if normalizedEnvironment != selected {
+		return fmt.Errorf("LOOMLOOM_SERVER conflicts with the selected Server; pass both --server and --token to use a different Server")
+	}
+	return nil
 }
 
 func flagChanged(cmd *cobra.Command, name string) bool {
