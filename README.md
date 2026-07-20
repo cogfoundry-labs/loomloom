@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://github.com/Cogfoundry-ai/loomloom/releases">
-    <img src="https://img.shields.io/github/v/release/Cogfoundry-ai/loomloom?include_prereleases&style=for-the-badge" alt="Latest Release">
+    <img src="https://img.shields.io/github/v/release/Cogfoundry-ai/loomloom?style=for-the-badge" alt="Latest Release">
   </a>
   <img src="https://img.shields.io/badge/Status-Beta-orange?style=for-the-badge" alt="Status: Beta">
   <a href="#license">

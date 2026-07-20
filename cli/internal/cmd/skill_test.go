@@ -39,7 +39,7 @@ func TestSkillInstallMarketDryRunOutputsPreviewAndDoesNotWrite(t *testing.T) {
 	defer server.Close()
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	outputDir := filepath.Join(t.TempDir(), "loomloom-prd-review")
@@ -93,7 +93,7 @@ func TestSkillInstallMarketWritesConcreteListingID(t *testing.T) {
 	defer server.Close()
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	outputDir := filepath.Join(t.TempDir(), "loomloom-prd-review")
@@ -134,7 +134,7 @@ func TestSkillInstallTemplateSpecWritesFiles(t *testing.T) {
 	defer server.Close()
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	outputDir := filepath.Join(t.TempDir(), "loomloom-internal-report")
@@ -212,7 +212,7 @@ func TestSkillInstallTemplateSpecUsesRequestedVersionSchema(t *testing.T) {
 	defer server.Close()
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	outputDir := filepath.Join(t.TempDir(), "loomloom-versioned-report")
@@ -254,7 +254,7 @@ func TestSkillInstallTemplateSpecRequiresVersionObject(t *testing.T) {
 	defer server.Close()
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	outputDir := filepath.Join(t.TempDir(), "loomloom-versioned-report")
@@ -288,7 +288,7 @@ func TestSkillInstallTemplateSpecPrefersDirectVersionSchema(t *testing.T) {
 	defer server.Close()
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	outputDir := filepath.Join(t.TempDir(), "loomloom-versioned-report")
@@ -330,7 +330,7 @@ func TestSkillInstallTemplateSpecWorkbookOnlyDryRunWarns(t *testing.T) {
 	defer server.Close()
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	outputDir := filepath.Join(t.TempDir(), "loomloom-workbook-only")
@@ -376,7 +376,7 @@ func TestSkillInstallTemplateSpecWorkbookOnlyInstallWarns(t *testing.T) {
 	defer server.Close()
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	outputDir := filepath.Join(t.TempDir(), "loomloom-workbook-only")
@@ -446,7 +446,7 @@ func TestSkillInstallDryRunConflictReturnsStructuredError(t *testing.T) {
 	}
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	cmd.SetArgs([]string{
@@ -490,7 +490,7 @@ func TestSkillInstallDryRunMissingParentIsOutputDirError(t *testing.T) {
 	defer server.Close()
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	outputDir := filepath.Join(t.TempDir(), "missing-parent", "loomloom-prd-review")
@@ -535,7 +535,7 @@ func TestSkillInstallDryRunOutputDirMustMatchGeneratedSkillName(t *testing.T) {
 	defer server.Close()
 
 	out := bytes.Buffer{}
-	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd := NewRootCmd()
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
 	outputDir := filepath.Join(t.TempDir(), "prd-review")
