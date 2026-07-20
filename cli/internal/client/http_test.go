@@ -30,6 +30,13 @@ func TestNormalizeBaseURLAddsScheme(t *testing.T) {
 	}
 }
 
+func TestNormalizeBaseURLRejectsRemoteHTTP(t *testing.T) {
+	_, err := normalizeBaseURL("http://api.cogfoundry.example/loom/v1")
+	if err == nil || !strings.Contains(err.Error(), "must use https") {
+		t.Fatalf("error=%v want remote HTTP rejection", err)
+	}
+}
+
 func TestEndpointUsesConfiguredBaseURL(t *testing.T) {
 	c, err := New(Config{BaseURL: "https://api-test.cogfoundry.example/loom/v1"})
 	if err != nil {
@@ -211,6 +218,33 @@ func TestOnSuccessWaitsForJSONDecode(t *testing.T) {
 	}
 	if called {
 		t.Fatal("OnSuccess called before successful JSON decode")
+	}
+}
+
+func TestClientRefusesCrossServerRedirect(t *testing.T) {
+	targetCalled := false
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		targetCalled = true
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer target.Close()
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL+"/loom/v1/users/me/executables", http.StatusFound)
+	}))
+	defer origin.Close()
+
+	c, err := New(Config{BaseURL: origin.URL + "/loom/v1", Token: "secret"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var response map[string]any
+	err = c.GetProductJSON(context.Background(), "/users/me/executables", &response)
+	if err == nil || !strings.Contains(err.Error(), "refusing cross-server redirect") {
+		t.Fatalf("error=%v want redirect rejection", err)
+	}
+	if targetCalled {
+		t.Fatal("redirect target was called")
 	}
 }
 

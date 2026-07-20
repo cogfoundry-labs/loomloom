@@ -14,6 +14,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
 )
 
 type Config struct {
@@ -67,6 +69,17 @@ func New(cfg Config) (*Client, error) {
 		token:   strings.TrimSpace(cfg.Token),
 		httpClient: &http.Client{
 			Timeout: timeout,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				if len(via) == 0 {
+					return nil
+				}
+				origin := via[0].URL
+				if !strings.EqualFold(origin.Scheme, req.URL.Scheme) ||
+					!strings.EqualFold(origin.Host, req.URL.Host) {
+					return fmt.Errorf("refusing cross-server redirect from %s://%s to %s://%s", origin.Scheme, origin.Host, req.URL.Scheme, req.URL.Host)
+				}
+				return nil
+			},
 		},
 		verbose:   cfg.Verbose,
 		logWriter: logWriter,
@@ -75,27 +88,7 @@ func New(cfg Config) (*Client, error) {
 }
 
 func normalizeBaseURL(raw string) (string, error) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return "", fmt.Errorf("server URL is required; set LOOMLOOM_SERVER or pass --server")
-	}
-	if !strings.Contains(raw, "://") {
-		if strings.Contains(raw, ":") {
-			raw = "http://" + raw
-		} else {
-			raw = "https://" + raw
-		}
-	}
-	u, err := url.Parse(raw)
-	if err != nil {
-		return "", fmt.Errorf("parse server URL: %w", err)
-	}
-	if u.Scheme == "" || u.Host == "" {
-		return "", fmt.Errorf("invalid server URL: %s", raw)
-	}
-	path := strings.TrimRight(u.Path, "/")
-	u.Path = path
-	return strings.TrimRight(u.String(), "/"), nil
+	return platform.NormalizeServer(raw)
 }
 
 func (c *Client) endpoint(path string) string {

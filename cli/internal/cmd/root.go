@@ -15,21 +15,24 @@ import (
 )
 
 type rootOptions struct {
-	server    string
-	token     string
-	timeout   time.Duration
-	output    string
-	verbose   bool
-	logWriter io.Writer
+	server                    string
+	token                     string
+	enforceServerVerification bool
+	timeout                   time.Duration
+	output                    string
+	verbose                   bool
+	logWriter                 io.Writer
 }
 
 func NewRootCmd() *cobra.Command {
+	server := configuredServer()
 	opts := &rootOptions{
-		server:  configuredServer(),
-		token:   envOrDefault("LOOMLOOM_TOKEN", os.Getenv("BATCHJOB_TOKEN")),
-		timeout: 30 * time.Second,
-		output:  "text",
-		verbose: envBool("LOOMLOOM_VERBOSE"),
+		server:                    server,
+		token:                     "",
+		enforceServerVerification: true,
+		timeout:                   30 * time.Second,
+		output:                    "text",
+		verbose:                   envBool("LOOMLOOM_VERBOSE"),
 	}
 
 	cmd := &cobra.Command{
@@ -43,6 +46,16 @@ func NewRootCmd() *cobra.Command {
 			opts.output = strings.ToLower(strings.TrimSpace(opts.output))
 			if opts.output != "text" && opts.output != "json" {
 				return fmt.Errorf("unsupported output format %q; use text or json", opts.output)
+			}
+			if strings.TrimSpace(opts.server) != "" && cmd.Name() != "doctor" {
+				normalized, err := platform.NormalizeServer(opts.server)
+				if err != nil {
+					return err
+				}
+				opts.server = normalized
+			}
+			if !flagChanged(cmd, "token") {
+				opts.token, _ = configuredToken(opts.server)
 			}
 			return nil
 		},
@@ -75,12 +88,21 @@ func NewRootCmd() *cobra.Command {
 		newTemplateSpecCmd(opts),
 		newSkillCmd(opts),
 		newArtifactCmd(opts),
+		newServerCmd(opts),
 	)
 	return cmd
 }
 
 func newHTTPClient(opts *rootOptions) (*client.Client, error) {
-	if err := validateTokenPlatform(opts); err != nil {
+	return newHTTPClientWithVerification(opts, false)
+}
+
+func newHTTPClientForDoctor(opts *rootOptions) (*client.Client, error) {
+	return newHTTPClientWithVerification(opts, true)
+}
+
+func newHTTPClientWithVerification(opts *rootOptions, allowUnverified bool) (*client.Client, error) {
+	if err := validateTokenPlatform(opts, allowUnverified); err != nil {
 		return nil, err
 	}
 	return client.New(client.Config{
@@ -89,26 +111,39 @@ func newHTTPClient(opts *rootOptions) (*client.Client, error) {
 		Timeout:   opts.timeout,
 		Verbose:   opts.verbose,
 		LogWriter: opts.logWriter,
-		OnSuccess: func(meta client.SuccessMeta) {
-			if isAuthenticatedProductPath(meta) {
-				maybePersistVerifiedPlatform(opts, true)
-			}
-		},
 	})
 }
 
-func envOrDefault(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+func configuredServer() string {
+	state := platform.LoadState()
+	if active, ok := state.ActiveProfile(); ok {
+		return active.Server
 	}
-	return fallback
+	path, pathErr := platform.StatePath()
+	if pathErr == nil {
+		if _, err := os.Stat(path); err == nil {
+			return ""
+		}
+	}
+	return strings.TrimSpace(os.Getenv("LOOMLOOM_SERVER"))
 }
 
-func configuredServer() string {
-	if value := strings.TrimSpace(envOrDefault("LOOMLOOM_SERVER", os.Getenv("BATCHJOB_SERVER"))); value != "" {
-		return value
+func configuredToken(server string) (string, string) {
+	state := platform.LoadState()
+	if profile, ok := state.FindProfile(server); ok && strings.TrimSpace(profile.TokenEnv) != "" {
+		if value := strings.TrimSpace(os.Getenv(profile.TokenEnv)); value != "" {
+			return value, profile.TokenEnv
+		}
+		return "", profile.TokenEnv
 	}
-	return strings.TrimSpace(platform.LoadState().Server)
+	if value := strings.TrimSpace(os.Getenv("LOOMLOOM_TOKEN")); value != "" {
+		return value, "LOOMLOOM_TOKEN"
+	}
+	return "", ""
+}
+
+func flagChanged(cmd *cobra.Command, name string) bool {
+	return cmd.Flags().Changed(name) || cmd.InheritedFlags().Changed(name)
 }
 
 func envBool(key string) bool {
