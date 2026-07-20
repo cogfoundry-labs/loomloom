@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 )
 
 func isolateConfigHome(t *testing.T) string {
@@ -15,98 +16,134 @@ func isolateConfigHome(t *testing.T) string {
 	return temp
 }
 
-func TestLoadStateMissingFileReturnsZero(t *testing.T) {
+func TestLoadStateMissingOrDamagedFileReturnsZero(t *testing.T) {
 	isolateConfigHome(t)
-	got := LoadState()
-	if got.Platform != "" {
-		t.Fatalf("LoadState platform=%q want empty", got.Platform)
+	if got := LoadState(); len(got.Servers) != 0 {
+		t.Fatalf("missing state=%+v want zero", got)
 	}
-	if got.Server != "" {
-		t.Fatalf("LoadState server=%q want empty", got.Server)
-	}
-}
-
-func TestLoadStateDamagedJSONReturnsZero(t *testing.T) {
-	isolateConfigHome(t)
-	path, err := StatePath()
-	if err != nil {
-		t.Fatalf("StatePath error=%v", err)
-	}
+	path, _ := StatePath()
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		t.Fatalf("MkdirAll error=%v", err)
+		t.Fatal(err)
 	}
 	if err := os.WriteFile(path, []byte("{"), 0600); err != nil {
-		t.Fatalf("WriteFile error=%v", err)
+		t.Fatal(err)
 	}
-	got := LoadState()
-	if got.Platform != "" {
-		t.Fatalf("LoadState platform=%q want empty", got.Platform)
-	}
-}
-
-func TestSaveStateRoundTrip(t *testing.T) {
-	isolateConfigHome(t)
-	const server = "https://loomloom.shengsuanyun.com/loom/v1"
-	if err := SaveState(State{Platform: ShengSuanYun, Server: server}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
-	}
-	got := LoadState()
-	if got.Platform != ShengSuanYun {
-		t.Fatalf("LoadState platform=%q want %q", got.Platform, ShengSuanYun)
-	}
-	if got.Server != server {
-		t.Fatalf("LoadState server=%q want %q", got.Server, server)
-	}
-	path, err := StatePath()
-	if err != nil {
-		t.Fatalf("StatePath error=%v", err)
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatalf("Stat error=%v", err)
-	}
-	if runtime.GOOS != "windows" && info.Mode().Perm() != 0600 {
-		t.Fatalf("mode=%#o want 0600", info.Mode().Perm())
+	if got := LoadState(); len(got.Servers) != 0 {
+		t.Fatalf("damaged state=%+v want zero", got)
 	}
 }
 
-func TestSaveStateSkipsUnknownAndInvalidPlatform(t *testing.T) {
+func TestLoadStateMigratesLegacyServerInMemory(t *testing.T) {
 	isolateConfigHome(t)
-	if err := SaveState(State{Platform: Unknown}); err != nil {
-		t.Fatalf("SaveState unknown error=%v", err)
-	}
-	if err := SaveState(State{Platform: ID("invalid")}); err != nil {
-		t.Fatalf("SaveState invalid error=%v", err)
-	}
-	path, err := StatePath()
-	if err != nil {
-		t.Fatalf("StatePath error=%v", err)
-	}
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Fatalf("config file exists or unexpected error: %v", err)
-	}
-}
-
-func TestSaveStateRepairsExistingFileMode(t *testing.T) {
-	isolateConfigHome(t)
-	path, err := StatePath()
-	if err != nil {
-		t.Fatalf("StatePath error=%v", err)
-	}
+	path, _ := StatePath()
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		t.Fatalf("MkdirAll error=%v", err)
+		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte("{}"), 0644); err != nil {
-		t.Fatalf("WriteFile error=%v", err)
+	data := []byte(`{"platform":"shengsuanyun","server":"https://loomloom.shengsuanyun.com/loom/v1"}`)
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatal(err)
 	}
-	if err := SaveState(State{Platform: ShengSuanYun}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
+	state := LoadState()
+	active, ok := state.ActiveProfile()
+	if !ok {
+		t.Fatalf("state=%+v want migrated active profile", state)
 	}
+	if active.Name != "shengsuanyun" || active.TokenEnv != "LOOMLOOM_TOKEN" {
+		t.Fatalf("active=%+v want legacy token mapping", active)
+	}
+}
+
+func TestStateUpsertUseRemoveRoundTrip(t *testing.T) {
+	isolateConfigHome(t)
+	var state State
+	first, err := state.UpsertVerified(
+		"https://loomloom.shengsuanyun.com/loom/v1",
+		ShengSuanYun,
+		"",
+		time.Unix(1, 0),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := state.UpsertVerified(
+		"https://loomloom-integration.test.cogfoundry.ai/loom/v1",
+		CogFoundry,
+		"",
+		time.Unix(2, 0),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.ActiveServer != second.Name || len(state.Servers) != 2 {
+		t.Fatalf("state=%+v want second active", state)
+	}
+	if _, err := state.Use(first.Name); err != nil {
+		t.Fatal(err)
+	}
+	if state.Server != first.Server || state.Platform != first.Platform {
+		t.Fatalf("compatibility mirror not updated: %+v", state)
+	}
+	if err := SaveState(state); err != nil {
+		t.Fatal(err)
+	}
+	loaded := LoadState()
+	if len(loaded.Servers) != 2 || loaded.ActiveServer != first.Name {
+		t.Fatalf("loaded=%+v want round trip", loaded)
+	}
+	if _, err := loaded.Remove(first.Name); err != nil {
+		t.Fatal(err)
+	}
+	if loaded.ActiveServer != "" || loaded.Server != "" {
+		t.Fatalf("remove active state=%+v want no implicit fallback", loaded)
+	}
+}
+
+func TestSaveStateUsesPrivateFileModeAndCanWriteEmptyState(t *testing.T) {
+	isolateConfigHome(t)
+	var state State
+	if _, err := state.UpsertVerified("https://api.example.com/loom/v1", Custom, "", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveState(state); err != nil {
+		t.Fatal(err)
+	}
+	path, _ := StatePath()
 	info, err := os.Stat(path)
 	if err != nil {
-		t.Fatalf("Stat error=%v", err)
+		t.Fatal(err)
 	}
 	if runtime.GOOS != "windows" && info.Mode().Perm() != 0600 {
 		t.Fatalf("mode=%#o want 0600", info.Mode().Perm())
+	}
+	if err := SaveState(State{}); err != nil {
+		t.Fatal(err)
+	}
+	loaded := LoadState()
+	if len(loaded.Servers) != 0 {
+		t.Fatalf("loaded=%+v want empty state", loaded)
+	}
+}
+
+func TestLoadStateRepairsUnexpectedTokenEnvironmentName(t *testing.T) {
+	isolateConfigHome(t)
+	path, _ := StatePath()
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		t.Fatal(err)
+	}
+	data := []byte(`{
+		"active_server":"company",
+		"servers":[{
+			"name":"company",
+			"platform":"custom",
+			"server":"https://api.company.com/loom/v1",
+			"token_env":"BATCHJOB_TOKEN"
+		}]
+	}`)
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	active, ok := LoadState().ActiveProfile()
+	if !ok || active.TokenEnv != "LOOMLOOM_TOKEN_COMPANY" {
+		t.Fatalf("active=%+v ok=%t want repaired token environment", active, ok)
 	}
 }
