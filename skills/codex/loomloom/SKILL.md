@@ -139,7 +139,7 @@ Activate it only when the user explicitly says they do not need a confirmation b
 - maximum cost per run and total cost, with currency;
 - expiry (default: the current conversation only).
 
-On activation, restate the limits once and record that Test Execution Mode is active. Within those exact limits, the Agent may validate, precheck, submit, watch, and retrieve results without requesting another per-run confirmation. Each run must still use a new `client-request-id` and report its run ID, status, and actual cost when returned.
+On activation, restate the limits once and record that Test Execution Mode is active. Within those exact limits, the Agent may validate, precheck, submit, watch, and retrieve results without requesting another per-run confirmation. However, a missing, zero, or currency-unknown precheck estimate is not eligible for automatic submission: stop and obtain a fresh explicit confirmation before creating that run. Each run must still use a new `client-request-id` and report its run ID, status, and actual cost when returned.
 
 Test Execution Mode immediately stops and normal per-run confirmation resumes when any limit is exceeded, the input scope changes, the Server/platform changes, the mode expires, or the user withdraws it. Never infer activation from a testing context or from an earlier conversation.
 
