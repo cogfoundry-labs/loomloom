@@ -26,7 +26,7 @@ Use this reference for installation, `doctor`, platform selection, credentials, 
 
 Run `loomloom doctor --output json` before advising about a token, server, platform, balance, recharge, or console. Treat these fields as authoritative:
 
-- `server`, `profile`, `platform`, `platform_operational`
+- `server`, `profile`, `platform`, `platform_preset`, `platform_operational`
 - `token_env`, `token_set`, `token_valid`
 - `healthy`, `credential_action`, `credential_message`, `next_action`
 
@@ -70,17 +70,17 @@ CogFoundry 控制台地址必须读取当前环境配置，不得由 Agent 自�
 
 For a missing custom-platform token, use `credential_message`. Never guess its console, key, balance, or recharge URL.
 
-For a Server and Token mismatch, output:
+When Server authentication rejects a Token, output:
 
 ```text
-当前 LoomLoom Server 与密钥所属平台不一致。为避免凭据被发送到错误的平台，本次请求已停止。请配置同一平台的 Server 和密钥后重试。
+当前 Server 可以访问，但密钥认证未通过。该密钥可能无效、已过期、权限不足，或不适用于当前 Server。请确认密钥由当前 Server 对应的环境提供后重试。
 ```
 
 ## Persist Verified Credentials
 
 The CLI generates `profile` and `token_env`; the Agent must not invent either name.
 
-When the user provides both a Server URL and Token and asks to install, configure, use, switch, or health-check LoomLoom, treat that as a request to register and activate that Server. The user does not need to separately ask to add a platform, overwrite configuration, or switch profiles. Use the exact URL and its corresponding Token for Doctor; do not modify the URL or reuse another Server's Token. If Doctor succeeds, persist the Token through the returned `token_env`, register the Server, and make it active. If the Server already exists, update its Token and make it active. If Doctor fails, do not persist or switch anything; keep the current configuration active.
+When the user provides both a Server URL and Token and asks to install, configure, use, switch, or health-check LoomLoom, treat that as a request to register and activate that Server. The user does not need to separately ask to add a platform, overwrite configuration, or switch profiles. Use the exact URL and its corresponding Token for Doctor; do not modify the URL or reuse another Server's Token. For the first Doctor check, pass the pair explicitly as `loomloom doctor --server <exact-server> --token <exact-token> --output json`. Do not use temporary `LOOMLOOM_SERVER=... LOOMLOOM_TOKEN=...` assignments because an existing active profile takes precedence over legacy environment configuration. If Doctor succeeds, persist the Token through the returned `token_env`, register the Server, and make it active. If the Server already exists, update its Token and make it active. If Doctor fails, do not persist or switch anything; keep the current configuration active.
 
 1. Run Doctor with the exact user-provided Server and Token.
 2. If Doctor fails, do not persist the Server or Token.

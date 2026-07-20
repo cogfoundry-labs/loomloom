@@ -107,6 +107,8 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 		"相关地址未知时，我不会自行猜测",
 		"ShengSuanYun and CogFoundry are preset platforms, not a whitelist",
 		"treat that as a request to register and activate that Server",
+		"loomloom doctor --server <exact-server> --token <exact-token> --output json",
+		"Do not use temporary `LOOMLOOM_SERVER=... LOOMLOOM_TOKEN=...` assignments",
 		"If Doctor fails, do not persist or switch anything; keep the current configuration active",
 		"next_action=persist_token",
 		"loomloom server use <name-or-server>",
