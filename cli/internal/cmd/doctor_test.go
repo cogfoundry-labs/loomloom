@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,229 +11,306 @@ import (
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
 )
 
-func healthyDoctorServer(t *testing.T, authenticatedStatus int) *httptest.Server {
-	t.Helper()
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestDoctorProbesProductAPIExecutables(t *testing.T) {
+	requests := map[string]string{}
+	var authorization string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests[r.URL.Path] = r.URL.RawQuery
 		switch r.URL.Path {
 		case "/loom/v1/marketListings":
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"items":[]}`))
 		case "/loom/v1/users/me/executables":
-			if authenticatedStatus != 0 && authenticatedStatus != http.StatusOK {
-				http.Error(w, `{"error":"unauthorized"}`, authenticatedStatus)
-				return
-			}
+			authorization = r.Header.Get("Authorization")
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"items":[]}`))
 		case "/release":
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"tag_name":"v0.0.1"}`))
 		default:
-			http.NotFound(w, r)
+			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 	}))
-}
-
-func executeDoctorJSON(t *testing.T, opts *rootOptions, args ...string) map[string]any {
-	t.Helper()
-	opts.output = "json"
-	if opts.timeout == 0 {
-		opts.timeout = time.Second
-	}
-	cmd := newDoctorCmd(opts)
-	cmd.SetArgs(args)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("doctor error=%v output=%s", err, out.String())
-	}
-	var payload map[string]any
-	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
-		t.Fatalf("decode output=%q error=%v", out.String(), err)
-	}
-	return payload
-}
-
-func TestDoctorSuccessPersistsCustomProfileAndReturnsTokenBinding(t *testing.T) {
-	isolateCmdConfigHome(t)
-	server := healthyDoctorServer(t, http.StatusOK)
 	defer server.Close()
 	t.Setenv("LOOMLOOM_CLI_RELEASE_API", server.URL+"/release")
-
-	payload := executeDoctorJSON(t, &rootOptions{
-		server: server.URL + "/loom/v1",
-		token:  "token-1",
-	})
-	for key, want := range map[string]any{
-		"platform":        "custom",
-		"platform_preset": false,
-		"healthy":         true,
-		"token_set":       true,
-		"token_valid":     true,
-		"next_action":     "persist_token",
-	} {
-		if got := payload[key]; got != want {
-			t.Fatalf("%s=%v want %v payload=%v", key, got, want, payload)
-		}
-	}
-	profileName, _ := payload["profile"].(string)
-	tokenEnv, _ := payload["token_env"].(string)
-	if profileName == "" || tokenEnv != platform.TokenEnvName(profileName) {
-		t.Fatalf("profile=%q token_env=%q want generated binding", profileName, tokenEnv)
-	}
-	state := platform.LoadState()
-	active, ok := state.ActiveProfile()
-	if !ok || active.Server != server.URL+"/loom/v1" || active.TokenEnv != tokenEnv {
-		t.Fatalf("state=%+v want persisted active profile", state)
-	}
-}
-
-func TestDoctorReturnsNoneWhenDedicatedTokenEnvironmentAlreadySet(t *testing.T) {
-	isolateCmdConfigHome(t)
-	server := healthyDoctorServer(t, http.StatusOK)
-	defer server.Close()
-	t.Setenv("LOOMLOOM_CLI_RELEASE_API", server.URL+"/release")
-	name, err := platform.GenerateProfileName(server.URL+"/loom/v1", platform.Custom, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv(platform.TokenEnvName(name), "token-1")
-
-	payload := executeDoctorJSON(t, &rootOptions{
-		server: server.URL + "/loom/v1",
-		token:  "token-1",
-	})
-	if payload["next_action"] != "none" {
-		t.Fatalf("payload=%v want next_action none", payload)
-	}
-}
-
-func TestDoctorWithoutServerChoosesPlatform(t *testing.T) {
-	isolateCmdConfigHome(t)
-	payload := executeDoctorJSON(t, &rootOptions{token: "token-1"})
-	if payload["credential_action"] != "choose_platform" || payload["next_action"] != "choose_server" {
-		t.Fatalf("payload=%v want platform selection", payload)
-	}
-	message, _ := payload["credential_message"].(string)
-	if !strings.Contains(message, "胜算云") ||
-		!strings.Contains(message, "CogFoundry") ||
-		!strings.Contains(message, "https://loomloom.shengsuanyun.com/loom/v1") ||
-		!strings.Contains(message, "https://console.shengsuanyun.com/user/keys") ||
-		!strings.Contains(message, "https://console.shengsuanyun.com/user/recharge") {
-		t.Fatalf("payload=%v want both preset platforms", payload)
-	}
-	if strings.Contains(message, "选择后，我会提供") {
-		t.Fatalf("payload=%v must not promise unknown platform configuration", payload)
-	}
-}
-
-func TestDoctorCogFoundryWithoutTokenDoesNotReportUnavailable(t *testing.T) {
-	isolateCmdConfigHome(t)
-	payload := executeDoctorJSON(t, &rootOptions{
-		server: "https://api.cogfoundry.ai/loom/v1",
-	})
-	if payload["credential_action"] != "missing_token" || payload["next_action"] != "configure_token" {
-		t.Fatalf("payload=%v want missing CogFoundry token", payload)
-	}
-	if payload["platform_preset"] != true {
-		t.Fatalf("payload=%v want CogFoundry preset", payload)
-	}
-	if strings.Contains(strings.ToLower(payload["credential_message"].(string)), "unavailable") {
-		t.Fatalf("payload=%v must not report CogFoundry unavailable", payload)
-	}
-}
-
-func TestDoctorAuthenticationFailureDoesNotPersist(t *testing.T) {
-	isolateCmdConfigHome(t)
-	server := healthyDoctorServer(t, http.StatusUnauthorized)
-	defer server.Close()
-
-	payload := executeDoctorJSON(t, &rootOptions{
-		server: server.URL + "/loom/v1",
-		token:  "bad-token",
-	})
-	if payload["token_valid"] != false || payload["next_action"] != "replace_token" {
-		t.Fatalf("payload=%v want invalid token result", payload)
-	}
-	message, _ := payload["credential_message"].(string)
-	if !strings.Contains(message, "密钥认证未通过") || strings.Contains(message, "平台不一致") {
-		t.Fatalf("payload=%v want neutral authentication failure message", payload)
-	}
-	if got := platform.LoadState(); len(got.Servers) != 0 {
-		t.Fatalf("state=%+v want no persistence", got)
-	}
-}
-
-func TestDoctorProbeFailureIsStructuredAndDoesNotPersist(t *testing.T) {
-	isolateCmdConfigHome(t)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
-
-	payload := executeDoctorJSON(t, &rootOptions{
-		server: server.URL + "/loom/v1",
-		token:  "token-1",
-	})
-	if payload["healthy"] != false || payload["next_action"] != "fix_server" {
-		t.Fatalf("payload=%v want fix_server", payload)
-	}
-	if got := platform.LoadState(); len(got.Servers) != 0 {
-		t.Fatalf("state=%+v want no persistence", got)
-	}
-}
-
-func TestDoctorFailureDoesNotEchoTokenFromServerResponse(t *testing.T) {
-	isolateCmdConfigHome(t)
-	const token = "doctor-secret-token"
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "reflected Authorization: Bearer "+token, http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	payload := executeDoctorJSON(t, &rootOptions{
-		server: server.URL + "/loom/v1",
-		token:  token,
-	})
-	encoded, err := json.Marshal(payload)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(string(encoded), token) {
-		t.Fatalf("JSON Doctor output leaked token: %s", encoded)
-	}
-	if payload["credential_message"] != "server returned HTTP 500" {
-		t.Fatalf("payload=%v want safe HTTP detail", payload)
-	}
 
 	opts := &rootOptions{
 		server:  server.URL + "/loom/v1",
-		token:   token,
+		token:   "token-1",
 		timeout: time.Second,
-		output:  "text",
+		output:  "json",
 	}
 	cmd := newDoctorCmd(opts)
 	var out bytes.Buffer
 	cmd.SetOut(&out)
+
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("text Doctor error=%v output=%s", err, out.String())
+		t.Fatalf("doctor command error = %v", err)
 	}
-	if strings.Contains(out.String(), token) {
-		t.Fatalf("text Doctor output leaked token: %s", out.String())
+	if _, called := requests["/version"]; called {
+		t.Fatalf("doctor should not call /version, but it did")
+	}
+	if requests["/loom/v1/marketListings"] != "pageSize=1" {
+		t.Fatalf("market query=%q want pageSize=1", requests["/loom/v1/marketListings"])
+	}
+	if requests["/loom/v1/users/me/executables"] != "pageSize=1" {
+		t.Fatalf("executables query=%q want pageSize=1", requests["/loom/v1/users/me/executables"])
+	}
+	if authorization != "Bearer token-1" {
+		t.Fatalf("authorization=%q want Bearer token-1", authorization)
+	}
+	if !strings.Contains(out.String(), `"healthy": true`) {
+		t.Fatalf("output=%s want healthy true", out.String())
+	}
+	if !strings.Contains(out.String(), `"message": "ok"`) {
+		t.Fatalf("output=%s want message ok", out.String())
 	}
 }
 
-func TestDoctorSupportsExplicitProfileName(t *testing.T) {
+func TestDoctorWithoutTokenAndUnknownPlatformShowsChoosePlatform(t *testing.T) {
 	isolateCmdConfigHome(t)
-	server := healthyDoctorServer(t, http.StatusOK)
+	opts := &rootOptions{
+		server:  "",
+		timeout: time.Second,
+		output:  "json",
+	}
+	cmd := newDoctorCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("doctor command error = %v", err)
+	}
+	if !strings.Contains(out.String(), `"credential_action": "choose_platform"`) {
+		t.Fatalf("output=%s want choose_platform", out.String())
+	}
+	for _, want := range []string{
+		"你还没有完整配置 LoomLoom Server 和密钥",
+		"https://loomloom.shengsuanyun.com/loom/v1",
+		"https://console.shengsuanyun.com/user/keys",
+		"在 CogFoundry 计费功能上线前，请使用胜算云控制台创建 API 密钥",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output=%s want %q", out.String(), want)
+		}
+	}
+}
+
+func TestDoctorWithTokenButNoServerShowsChoosePlatform(t *testing.T) {
+	isolateCmdConfigHome(t)
+	opts := &rootOptions{
+		token:   "token-1",
+		timeout: time.Second,
+		output:  "json",
+	}
+	cmd := newDoctorCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("doctor command error = %v", err)
+	}
+	if !strings.Contains(out.String(), `"credential_action": "choose_platform"`) {
+		t.Fatalf("output=%s want choose_platform", out.String())
+	}
+	if !strings.Contains(out.String(), "https://loomloom.shengsuanyun.com/loom/v1") {
+		t.Fatalf("output=%s want ShengSuanYun server guidance", out.String())
+	}
+}
+
+func TestDoctorWithoutTokenAndBoundShengSuanYunShowsMissingToken(t *testing.T) {
+	isolateCmdConfigHome(t)
+	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun}); err != nil {
+		t.Fatalf("SaveState error=%v", err)
+	}
+	opts := &rootOptions{
+		server:  "http://127.0.0.1:8080/loom/v1",
+		timeout: time.Second,
+		output:  "json",
+	}
+	cmd := newDoctorCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("doctor command error = %v", err)
+	}
+	if !strings.Contains(out.String(), `"credential_action": "missing_token"`) {
+		t.Fatalf("output=%s want missing_token", out.String())
+	}
+	for _, want := range []string{
+		"当前未检测到胜算云密钥",
+		"https://console.shengsuanyun.com/user/keys",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output=%s want %q", out.String(), want)
+		}
+	}
+}
+
+func TestDoctorCogFoundryReturnsStructuredUnavailableMessage(t *testing.T) {
+	isolateCmdConfigHome(t)
+	opts := &rootOptions{
+		server:  "https://api.cogfoundry.ai/loom/v1",
+		token:   "token-1",
+		timeout: time.Second,
+		output:  "json",
+	}
+	cmd := newDoctorCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("doctor command error = %v", err)
+	}
+	if !strings.Contains(out.String(), `"credential_action": "cogfoundry_unavailable"`) {
+		t.Fatalf("output=%s want cogfoundry_unavailable", out.String())
+	}
+	if !strings.Contains(out.String(), cogFoundryUnavailableMessage) {
+		t.Fatalf("output=%s want fixed CogFoundry unavailable message", out.String())
+	}
+}
+
+func TestDoctorAuthenticationFailureUsesPlatformCredentialMessage(t *testing.T) {
+	isolateCmdConfigHome(t)
+	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun}); err != nil {
+		t.Fatalf("SaveState error=%v", err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/loom/v1/marketListings":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"items":[]}`))
+		case "/loom/v1/users/me/executables":
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{
+		server:  server.URL + "/loom/v1",
+		token:   "bad-token",
+		timeout: time.Second,
+		output:  "json",
+	}
+	cmd := newDoctorCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("doctor command error = %v", err)
+	}
+	if !strings.Contains(out.String(), `"credential_action": "missing_token"`) {
+		t.Fatalf("output=%s want missing_token", out.String())
+	}
+	if !strings.Contains(out.String(), "当前未检测到胜算云密钥") {
+		t.Fatalf("output=%s want fixed ShengSuanYun token message", out.String())
+	}
+}
+
+func TestDoctorSuccessfulAuthenticatedProbePersistsPlatform(t *testing.T) {
+	isolateCmdConfigHome(t)
+	opts := &rootOptions{
+		server: "https://loomloom-test.shengsuanyun.com/loom/v1",
+		token:  "token-1",
+	}
+	maybePersistVerifiedPlatform(opts, true)
+	got := platform.LoadState()
+	if got.Platform != platform.ShengSuanYun {
+		t.Fatalf("platform=%q want %q", got.Platform, platform.ShengSuanYun)
+	}
+	if got.Server != opts.server {
+		t.Fatalf("server=%q want %q", got.Server, opts.server)
+	}
+}
+
+func TestDoctorFailedProductProbeDoesNotPersistPlatform(t *testing.T) {
+	isolateCmdConfigHome(t)
+	opts := &rootOptions{
+		server: "https://loomloom323.shengsuanyun.com/loom/v1",
+		token:  "token-1",
+	}
+	maybePersistVerifiedPlatform(opts, false)
+	got := platform.LoadState()
+	if got.Platform != "" {
+		t.Fatalf("platform=%q want empty", got.Platform)
+	}
+}
+
+func TestDoctorDecodeFailureDoesNotPersistPlatformThroughCallback(t *testing.T) {
+	isolateCmdConfigHome(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/loom/v1/marketListings":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"items":[]}`))
+		case "/loom/v1/users/me/executables":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`not-json`))
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{
+		server:  server.URL + "/loom/v1",
+		token:   "token-1",
+		timeout: time.Second,
+		output:  "json",
+	}
+	cmd := newDoctorCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "decode response JSON") {
+		t.Fatalf("error=%v want decode response JSON", err)
+	}
+	got := platform.LoadState()
+	if got.Platform != "" {
+		t.Fatalf("platform=%q want empty after decode failure", got.Platform)
+	}
+}
+
+func TestDoctorSuppressesReleaseCheckErrorsInJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/loom/v1/marketListings":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"items":[]}`))
+		case "/loom/v1/users/me/executables":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"items":[]}`))
+		case "/release":
+			http.NotFound(w, r)
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
 	defer server.Close()
 	t.Setenv("LOOMLOOM_CLI_RELEASE_API", server.URL+"/release")
 
-	payload := executeDoctorJSON(t, &rootOptions{
-		server: server.URL + "/loom/v1",
-		token:  "token-1",
-	}, "--name", "local-test")
-	if payload["profile"] != "local-test" || payload["token_env"] != "LOOMLOOM_TOKEN_LOCAL_TEST" {
-		t.Fatalf("payload=%v want explicit profile binding", payload)
+	opts := &rootOptions{
+		server:  server.URL + "/loom/v1",
+		token:   "token-1",
+		timeout: time.Second,
+		output:  "json",
+	}
+	cmd := newDoctorCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("doctor command error = %v", err)
+	}
+	if strings.Contains(out.String(), "version_check_error") {
+		t.Fatalf("output=%s should not include release check error", out.String())
+	}
+	if !strings.Contains(out.String(), `"healthy": true`) {
+		t.Fatalf("output=%s want healthy true", out.String())
 	}
 }

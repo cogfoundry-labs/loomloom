@@ -55,10 +55,6 @@ Keep raw field names for internal command chaining, not ordinary user summaries.
 ### Environment and inputs
 
 - `loomloom doctor`
-- `loomloom doctor --server <url> [--name <profile>] --output json`
-- `loomloom server list`
-- `loomloom server use <name-or-server>`
-- `loomloom server remove <name-or-server>`
 - `loomloom input-asset upload <file>`
 - `loomloom orchestration-input upload <file.jsonl>`
 

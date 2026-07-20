@@ -97,28 +97,20 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 	for _, want := range []string{
 		"loomloom doctor --output json",
 		"credential_action",
-		"你还没有配置 LoomLoom 平台和密钥。请选择你的使用平台：",
-		"本服务由 CogFoundry 联合支持，面向中国大陆用户推荐使用",
+		"你还没有完整配置 LoomLoom Server 和密钥。请选择要使用的平台：",
 		"https://loomloom.shengsuanyun.com/loom/v1",
 		"https://console.shengsuanyun.com/user/keys",
 		"当前未检测到胜算云密钥。请前往胜算云控制台创建或复制密钥后配置到本地环境：",
+		"当前胜算云账户余额不足，请前往胜算云控制台充值后再继续：",
 		"https://console.shengsuanyun.com/user/recharge",
-		"当前未检测到 CogFoundry 密钥",
-		"相关地址未知时，我不会自行猜测",
-		"ShengSuanYun and CogFoundry are preset platforms, not a whitelist",
-		"treat that as a request to register and activate that Server",
-		"loomloom doctor --server <exact-server> --token <exact-token> --output json",
-		"Do not use temporary `LOOMLOOM_SERVER=... LOOMLOOM_TOKEN=...` assignments",
-		"If Doctor fails, do not persist or switch anything; keep the current configuration active",
-		"next_action=persist_token",
-		"loomloom server use <name-or-server>",
+		"在 CogFoundry 计费功能上线前，请使用胜算云控制台创建 API 密钥",
+		"CogFoundry 面向新加坡及其他海外地区用户，当前支付和交易能力仍在建设中，敬请期待。当前阶段请继续使用胜算云。",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
 		}
 	}
 	for _, forbidden := range []string{
-		"选择后，我会提供对应平台的 Server 和密钥配置指引",
 		"https://cogfoundry.ai",
 		"https://console-dev.cogfoundry",
 		"https://console.cogfoundry",
