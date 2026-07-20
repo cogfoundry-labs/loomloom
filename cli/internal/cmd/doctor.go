@@ -66,7 +66,7 @@ func newDoctorCmd(opts *rootOptions) *cobra.Command {
 						resolvedPlatform,
 						"replace_token",
 						"credential action required",
-						invalidTokenMessageForPlatform(resolvedPlatform),
+						tokenAuthenticationFailureMessage(),
 						false,
 					)
 				}
@@ -113,6 +113,7 @@ func newDoctorCmd(opts *rootOptions) *cobra.Command {
 				"message":              "ok",
 				"platform":             string(resolvedPlatform.ID),
 				"platform_name":        resolvedPlatform.DisplayName,
+				"platform_preset":      isPlatformPreset(resolvedPlatform),
 				"platform_operational": resolvedPlatform.Operational,
 				"credential_action":    "none",
 				"credential_message":   "",
@@ -201,6 +202,7 @@ func doctorBasePayload(opts *rootOptions, resolvedPlatform platform.Platform) ma
 		"token_valid":          false,
 		"platform":             string(resolvedPlatform.ID),
 		"platform_name":        resolvedPlatform.DisplayName,
+		"platform_preset":      isPlatformPreset(resolvedPlatform),
 		"platform_operational": resolvedPlatform.Operational,
 	}
 	state := platform.LoadState()
@@ -209,6 +211,10 @@ func doctorBasePayload(opts *rootOptions, resolvedPlatform platform.Platform) ma
 		payload["token_env"] = profile.TokenEnv
 	}
 	return payload
+}
+
+func isPlatformPreset(p platform.Platform) bool {
+	return p.ID == platform.ShengSuanYun || p.ID == platform.CogFoundry
 }
 
 func writeJSON(cmd *cobra.Command, payload any) error {

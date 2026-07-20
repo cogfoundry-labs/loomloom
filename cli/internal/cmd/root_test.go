@@ -3,6 +3,8 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -171,7 +173,11 @@ func TestConfiguredTokenUsesActiveProfileTokenEnvironment(t *testing.T) {
 	profile := saveTestProfile(t, server, platform.CogFoundry, "")
 	t.Setenv(profile.TokenEnv, "profile-token")
 	t.Setenv("LOOMLOOM_TOKEN", "legacy-token")
-	token, source := configuredToken(server)
+	t.Setenv("LOOMLOOM_SERVER", "https://legacy.shengsuanyun.com/loom/v1")
+	token, source, err := configuredToken(server)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if token != "profile-token" || source != profile.TokenEnv {
 		t.Fatalf("token=%q source=%q want profile token from %q", token, source, profile.TokenEnv)
 	}
@@ -180,9 +186,69 @@ func TestConfiguredTokenUsesActiveProfileTokenEnvironment(t *testing.T) {
 func TestConfiguredTokenIgnoresRemovedBatchjobEnvironment(t *testing.T) {
 	isolateCmdConfigHome(t)
 	t.Setenv("BATCHJOB_TOKEN", "removed-token")
-	token, source := configuredToken("https://api.example.com/loom/v1")
+	token, source, err := configuredToken("https://api.example.com/loom/v1")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if token != "" || source != "" {
 		t.Fatalf("token=%q source=%q want removed BATCHJOB_TOKEN ignored", token, source)
+	}
+}
+
+func TestDoctorRejectsConflictingEnvironmentPairBeforeRequest(t *testing.T) {
+	isolateCmdConfigHome(t)
+	var requests int
+	activeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		http.Error(w, "must not be called", http.StatusInternalServerError)
+	}))
+	defer activeServer.Close()
+
+	saveTestProfile(t, activeServer.URL+"/loom/v1", platform.Custom, "LOOMLOOM_TOKEN")
+	t.Setenv("LOOMLOOM_SERVER", "https://loomloom-integration.test.cogfoundry.ai/loom/v1")
+	t.Setenv("LOOMLOOM_TOKEN", "new-server-token")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"doctor", "--output", "json"})
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "LOOMLOOM_SERVER conflicts with the selected Server") {
+		t.Fatalf("error=%v want conflicting Server/Token pair rejection", err)
+	}
+	if requests != 0 {
+		t.Fatalf("requests=%d want no request before credential pair validation", requests)
+	}
+}
+
+func TestDoctorExplicitServerAndTokenBypassConflictingLegacyEnvironment(t *testing.T) {
+	isolateCmdConfigHome(t)
+	activeServer := healthyDoctorServer(t, http.StatusOK)
+	defer activeServer.Close()
+	targetServer := healthyDoctorServer(t, http.StatusOK)
+	defer targetServer.Close()
+
+	saveTestProfile(t, activeServer.URL+"/loom/v1", platform.Custom, "LOOMLOOM_TOKEN")
+	t.Setenv("LOOMLOOM_SERVER", activeServer.URL+"/loom/v1")
+	t.Setenv("LOOMLOOM_TOKEN", "active-token")
+	t.Setenv("LOOMLOOM_CLI_RELEASE_API", targetServer.URL+"/release")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{
+		"doctor",
+		"--server", targetServer.URL + "/loom/v1",
+		"--token", "target-token",
+		"--output", "json",
+	})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("doctor error=%v output=%s", err, out.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("decode output=%q error=%v", out.String(), err)
+	}
+	if payload["healthy"] != true || payload["server"] != targetServer.URL+"/loom/v1" {
+		t.Fatalf("payload=%v want explicit target Server healthy", payload)
 	}
 }
 

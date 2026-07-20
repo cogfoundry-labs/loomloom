@@ -23,6 +23,6 @@ CogFoundry 控制台地址必须读取当前环境配置，不得由 Agent 自�
 
 const missingCustomTokenMessage = `当前 Server 尚未配置密钥。请从该 Server 的提供方获取 LoomLoom API Token，并配置到本地环境后重试。`
 
-const platformTokenMismatchMessage = `当前 LoomLoom Server 与密钥所属平台不一致。为避免凭据被发送到错误的平台，本次请求已停止。请配置同一平台的 Server 和密钥后重试。`
+const tokenAuthenticationFailedMessage = `当前 Server 可以访问，但密钥认证未通过。该密钥可能无效、已过期、权限不足，或不适用于当前 Server。请确认密钥由当前 Server 对应的环境提供后重试。`
 
 const insufficientCogFoundryBalanceMessage = `当前 CogFoundry 环境余额不足。请前往当前环境对应的 CogFoundry 控制台处理后重试。`

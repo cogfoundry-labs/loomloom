@@ -83,8 +83,8 @@ func credentialMessageForPlatform(p platform.Platform) (string, string) {
 	}
 }
 
-func invalidTokenMessageForPlatform(p platform.Platform) string {
-	return platformTokenMismatchMessage
+func tokenAuthenticationFailureMessage() string {
+	return tokenAuthenticationFailedMessage
 }
 
 func insufficientBalanceMessage(opts *rootOptions) string {
