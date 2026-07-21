@@ -4,20 +4,18 @@ set -euo pipefail
 REPOSITORY=""
 TAG=""
 ASSETS_DIR="release"
-PRERELEASE="false"
 API_BASE="${GITEE_API_BASE:-https://gitee.com/api/v5}"
 
 usage() {
   cat <<'EOF'
 Usage: scripts/publish-gitee-release.sh --repo <owner/repo> --tag <tag> [options]
 
-Create or refresh a Gitee Release with an existing directory of release assets.
+Create or refresh a stable Gitee Release with an existing directory of release assets.
 
 Options:
   --repo <owner/repo>       Gitee repository
-  --tag <tag>               Existing Git tag for the release
+  --tag <tag>               Existing stable Git tag (vX.Y.Z)
   --assets-dir <path>       Directory containing release assets (default: release)
-  --prerelease <true|false> Whether to mark a newly created release as prerelease
   --help                    Show this help text
 
 Environment:
@@ -40,10 +38,6 @@ while [[ $# -gt 0 ]]; do
       ASSETS_DIR="${2:-}"
       shift 2
       ;;
-    --prerelease)
-      PRERELEASE="${2:-}"
-      shift 2
-      ;;
     --help|-h)
       usage
       exit 0
@@ -59,12 +53,8 @@ if [[ ! "$REPOSITORY" =~ ^[^/]+/[^/]+$ ]]; then
   echo "--repo must use owner/repo format" >&2
   exit 1
 fi
-if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc|internal)\.[0-9]+)?$ ]]; then
-  echo "unsupported release tag: $TAG" >&2
-  exit 1
-fi
-if [[ "$PRERELEASE" != "true" && "$PRERELEASE" != "false" ]]; then
-  echo "--prerelease must be true or false" >&2
+if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "only stable release tags can be published to Gitee: $TAG" >&2
   exit 1
 fi
 if [[ ! -d "$ASSETS_DIR" || ! -f "$ASSETS_DIR/checksums.txt" ]]; then
@@ -220,7 +210,7 @@ create_release() {
     --form "name=${TAG}" \
     --form "body=LoomLoom ${TAG}" \
     --form "target_commitish=${TARGET_COMMITISH}" \
-    --form "prerelease=${PRERELEASE}" \
+    --form "prerelease=false" \
     "$RELEASES_URL"; then
     create_status="$CURL_HTTP_STATUS"
     if is_success_http_status "$create_status"; then
@@ -345,7 +335,7 @@ verify_existing_asset() {
     remote_checksum="$("${CHECKSUM_COMMAND[@]}" "$remote_asset" | awk '{print $1}')"
 
     if [[ "$local_checksum" != "$remote_checksum" ]]; then
-      echo "published Gitee release asset differs from GitHub: $asset_name" >&2
+      echo "published Gitee release asset differs from the current Gitee build: $asset_name" >&2
       echo "published release assets are immutable; create a new tag instead" >&2
       exit 1
     fi
@@ -452,7 +442,7 @@ verify_complete_asset_set() {
     exit 1
   fi
   if ! cmp -s "$expected_names" "$remote_names"; then
-    echo "Gitee release asset set does not exactly match GitHub" >&2
+    echo "published Gitee release asset set does not exactly match the current Gitee build" >&2
     diff -u "$expected_names" "$remote_names" >&2 || true
     exit 1
   fi
