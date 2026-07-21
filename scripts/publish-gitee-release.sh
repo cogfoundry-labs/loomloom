@@ -120,28 +120,128 @@ fi
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-release_file="$TMP_DIR/release.json"
-status="$(
-  curl -sS \
+CURL_MAX_ATTEMPTS=5
+CURL_HTTP_STATUS=""
+
+is_retryable_http_status() {
+  case "$1" in
+    408|429|5??) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+is_retryable_curl_exit() {
+  case "$1" in
+    5|6|7|18|28|35|47|52|55|56|92) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+retry_delay() {
+  local attempt="$1"
+  sleep $((attempt * 2))
+}
+
+curl_request() {
+  local output="$1"
+  local max_attempts="$2"
+  shift 2
+
+  local attempt=1
+  local curl_exit=0
+  local status=""
+  local partial="${output}.partial"
+
+  while true; do
+    rm -f "$partial"
+    if status="$(
+      curl -sS \
+        --connect-timeout 20 \
+        --max-time 600 \
+        --output "$partial" \
+        --write-out '%{http_code}' \
+        "$@"
+    )"; then
+      curl_exit=0
+      mv "$partial" "$output"
+      CURL_HTTP_STATUS="$status"
+      if ! is_retryable_http_status "$status" || [[ "$attempt" -ge "$max_attempts" ]]; then
+        return 0
+      fi
+      echo "Gitee API returned HTTP $status; retrying ($attempt/$max_attempts)" >&2
+    else
+      curl_exit=$?
+      CURL_HTTP_STATUS="${status:-000}"
+      rm -f "$partial"
+      if ! is_retryable_curl_exit "$curl_exit" || [[ "$attempt" -ge "$max_attempts" ]]; then
+        return "$curl_exit"
+      fi
+      echo "Gitee API connection failed with curl exit $curl_exit; retrying ($attempt/$max_attempts)" >&2
+    fi
+
+    retry_delay "$attempt"
+    attempt=$((attempt + 1))
+  done
+}
+
+is_success_http_status() {
+  [[ "$1" == 2?? ]]
+}
+
+query_release() {
+  local output="$1"
+  curl_request "$output" "$CURL_MAX_ATTEMPTS" \
     --get \
-    --output "$release_file" \
-    --write-out '%{http_code}' \
     --data-urlencode "access_token=${GITEE_SYNC_TOKEN}" \
     "${RELEASES_URL}/tags/${TAG}"
-)"
+}
+
+release_file="$TMP_DIR/release.json"
+query_exit=0
+if query_release "$release_file"; then
+  :
+else
+  query_exit=$?
+  echo "failed to query Gitee release $TAG (curl exit $query_exit)" >&2
+  exit 1
+fi
+status="$CURL_HTTP_STATUS"
 
 create_release() {
   echo "creating Gitee release: $TAG"
-  curl -fsS \
+  local create_file="$TMP_DIR/create-release.json"
+  local create_exit=0
+  local create_status=""
+
+  if curl_request "$create_file" 1 \
     --request POST \
-    --output "$release_file" \
     --form "access_token=${GITEE_SYNC_TOKEN}" \
     --form "tag_name=${TAG}" \
     --form "name=${TAG}" \
     --form "body=LoomLoom ${TAG}" \
     --form "target_commitish=${TARGET_COMMITISH}" \
     --form "prerelease=${PRERELEASE}" \
-    "$RELEASES_URL"
+    "$RELEASES_URL"; then
+    create_status="$CURL_HTTP_STATUS"
+    if is_success_http_status "$create_status"; then
+      mv "$create_file" "$release_file"
+      return
+    fi
+  else
+    create_exit=$?
+  fi
+
+  # A failed POST can still have created the Release before the response was
+  # interrupted. Query by tag before deciding that creation failed.
+  if query_release "$release_file" && [[ "$CURL_HTTP_STATUS" == "200" ]] && \
+    jq -e 'type == "object" and (.id != null)' "$release_file" >/dev/null; then
+    echo "Gitee release creation response was interrupted; recovered existing release: $TAG"
+    return
+  fi
+
+  echo "failed to create Gitee release $TAG (HTTP ${create_status:-000}, curl exit $create_exit)" >&2
+  jq -c . "$create_file" >&2 2>/dev/null || true
+  exit 1
 }
 
 case "$status" in
@@ -174,12 +274,30 @@ if ! release_id="$(jq -er 'if type == "object" and (.id != null) then .id else e
   exit 1
 fi
 attachments_file="$TMP_DIR/attachments.json"
-curl -fsS \
-  --get \
-  --output "$attachments_file" \
-  --data-urlencode "access_token=${GITEE_SYNC_TOKEN}" \
-  --data-urlencode "per_page=100" \
-  "${RELEASES_URL}/${release_id}/attach_files"
+refresh_attachments() {
+  local request_exit=0
+  if curl_request "$attachments_file" "$CURL_MAX_ATTEMPTS" \
+    --get \
+    --data-urlencode "access_token=${GITEE_SYNC_TOKEN}" \
+    --data-urlencode "per_page=100" \
+    "${RELEASES_URL}/${release_id}/attach_files"; then
+    :
+  else
+    request_exit=$?
+    echo "failed to query Gitee release assets (curl exit $request_exit)" >&2
+    return 1
+  fi
+  if ! is_success_http_status "$CURL_HTTP_STATUS"; then
+    echo "failed to query Gitee release assets (HTTP $CURL_HTTP_STATUS)" >&2
+    return 1
+  fi
+  if ! jq -e 'type == "array"' "$attachments_file" >/dev/null; then
+    echo "Gitee returned an invalid release asset list" >&2
+    return 1
+  fi
+}
+
+refresh_attachments
 
 missing_assets_file="$TMP_DIR/missing-assets"
 : > "$missing_assets_file"
@@ -207,11 +325,22 @@ verify_existing_asset() {
       jq -r --arg name "$asset_name" '.[] | select(.name == $name) | .id' "$attachments_file"
     )"
     remote_asset="$TMP_DIR/remote-${attachment_id}"
-    curl -fsSL \
+    local download_exit=0
+    if curl_request "$remote_asset" "$CURL_MAX_ATTEMPTS" \
       --get \
-      --output "$remote_asset" \
+      --location \
       --data-urlencode "access_token=${GITEE_SYNC_TOKEN}" \
-      "${RELEASES_URL}/${release_id}/attach_files/${attachment_id}/download"
+      "${RELEASES_URL}/${release_id}/attach_files/${attachment_id}/download"; then
+      :
+    else
+      download_exit=$?
+      echo "failed to download Gitee release asset: $asset_name (curl exit $download_exit)" >&2
+      exit 1
+    fi
+    if ! is_success_http_status "$CURL_HTTP_STATUS"; then
+      echo "failed to download Gitee release asset: $asset_name (HTTP $CURL_HTTP_STATUS)" >&2
+      exit 1
+    fi
     local_checksum="$("${CHECKSUM_COMMAND[@]}" "$asset" | awk '{print $1}')"
     remote_checksum="$("${CHECKSUM_COMMAND[@]}" "$remote_asset" | awk '{print $1}')"
 
@@ -221,34 +350,111 @@ verify_existing_asset() {
       exit 1
     fi
 
-    echo "keeping identical Gitee release asset: $asset_name"
-    skipped_count=$((skipped_count + 1))
-    return
+    return 0
   fi
 
-  printf '%s\0' "$asset" >> "$missing_assets_file"
+  return 1
+}
+
+classify_asset() {
+  local asset="$1"
+  local asset_name
+  asset_name="$(basename "$asset")"
+
+  if verify_existing_asset "$asset"; then
+    echo "keeping identical Gitee release asset: $asset_name"
+    skipped_count=$((skipped_count + 1))
+  else
+    printf '%s\0' "$asset" >> "$missing_assets_file"
+  fi
+}
+
+confirm_uploaded_asset() {
+  local asset="$1"
+  local check=1
+
+  while [[ "$check" -le 3 ]]; do
+    if ! refresh_attachments; then
+      echo "unable to determine whether Gitee stored the uploaded asset; stopping safely" >&2
+      exit 1
+    fi
+    if verify_existing_asset "$asset"; then
+      return 0
+    fi
+    if [[ "$check" -lt 3 ]]; then
+      retry_delay "$check"
+    fi
+    check=$((check + 1))
+  done
+
+  return 1
 }
 
 upload_missing_asset() {
   local asset="$1"
   local asset_name
+  local attempt=1
+  local upload_file
+  local upload_exit=0
+  local upload_status=""
   asset_name="$(basename "$asset")"
-  echo "uploading Gitee release asset: $asset_name"
-  curl -fsS \
-    --request POST \
-    --form "access_token=${GITEE_SYNC_TOKEN}" \
-    --form "file=@${asset}" \
-    "${RELEASES_URL}/${release_id}/attach_files" \
-    >/dev/null
-  uploaded_count=$((uploaded_count + 1))
+  upload_file="$TMP_DIR/upload-${asset_name}.json"
+
+  while [[ "$attempt" -le "$CURL_MAX_ATTEMPTS" ]]; do
+    echo "uploading Gitee release asset: $asset_name (attempt $attempt/$CURL_MAX_ATTEMPTS)"
+    upload_exit=0
+    upload_status=""
+    if curl_request "$upload_file" 1 \
+      --request POST \
+      --header 'Expect:' \
+      --form "access_token=${GITEE_SYNC_TOKEN}" \
+      --form "file=@${asset}" \
+      "${RELEASES_URL}/${release_id}/attach_files"; then
+      upload_status="$CURL_HTTP_STATUS"
+    else
+      upload_exit=$?
+    fi
+
+    # Whether POST succeeded, timed out, or lost its response, the remote state
+    # is authoritative. This prevents an ambiguous retry from creating a
+    # duplicate attachment.
+    if confirm_uploaded_asset "$asset"; then
+      echo "confirmed Gitee release asset: $asset_name"
+      uploaded_count=$((uploaded_count + 1))
+      return
+    fi
+
+    if [[ "$upload_exit" -eq 0 ]] && is_success_http_status "$upload_status"; then
+      echo "Gitee accepted the upload but the asset is not visible yet: $asset_name" >&2
+      echo "stopping safely instead of risking a duplicate attachment" >&2
+      exit 1
+    fi
+    if [[ "$upload_exit" -ne 0 ]] && ! is_retryable_curl_exit "$upload_exit"; then
+      echo "failed to upload Gitee release asset: $asset_name (curl exit $upload_exit)" >&2
+      exit 1
+    fi
+    if [[ "$upload_exit" -eq 0 ]] && ! is_success_http_status "$upload_status" && \
+      ! is_retryable_http_status "$upload_status"; then
+      echo "failed to upload Gitee release asset: $asset_name (HTTP $upload_status)" >&2
+      jq -c . "$upload_file" >&2 2>/dev/null || true
+      exit 1
+    fi
+    if [[ "$attempt" -ge "$CURL_MAX_ATTEMPTS" ]]; then
+      echo "failed to upload Gitee release asset after $CURL_MAX_ATTEMPTS attempts: $asset_name" >&2
+      exit 1
+    fi
+
+    retry_delay "$attempt"
+    attempt=$((attempt + 1))
+  done
 }
 
 uploaded_count=0
 skipped_count=0
 while IFS= read -r -d '' asset; do
-  verify_existing_asset "$asset"
+  classify_asset "$asset"
 done < <(find "$ASSETS_DIR" -maxdepth 1 -type f ! -name checksums.txt -print0 | sort -z)
-verify_existing_asset "$ASSETS_DIR/checksums.txt"
+classify_asset "$ASSETS_DIR/checksums.txt"
 
 while IFS= read -r -d '' asset; do
   upload_missing_asset "$asset"
