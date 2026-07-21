@@ -373,7 +373,7 @@ confirm_uploaded_asset() {
   local asset="$1"
   local check=1
 
-  while [[ "$check" -le 3 ]]; do
+  while [[ "$check" -le "$CURL_MAX_ATTEMPTS" ]]; do
     if ! refresh_attachments; then
       echo "unable to determine whether Gitee stored the uploaded asset; stopping safely" >&2
       exit 1
@@ -381,7 +381,7 @@ confirm_uploaded_asset() {
     if verify_existing_asset "$asset"; then
       return 0
     fi
-    if [[ "$check" -lt 3 ]]; then
+    if [[ "$check" -lt "$CURL_MAX_ATTEMPTS" ]]; then
       retry_delay "$check"
     fi
     check=$((check + 1))
@@ -393,60 +393,69 @@ confirm_uploaded_asset() {
 upload_missing_asset() {
   local asset="$1"
   local asset_name
-  local attempt=1
   local upload_file
   local upload_exit=0
   local upload_status=""
   asset_name="$(basename "$asset")"
   upload_file="$TMP_DIR/upload-${asset_name}.json"
 
-  while [[ "$attempt" -le "$CURL_MAX_ATTEMPTS" ]]; do
-    echo "uploading Gitee release asset: $asset_name (attempt $attempt/$CURL_MAX_ATTEMPTS)"
-    upload_exit=0
-    upload_status=""
-    if curl_request "$upload_file" 1 \
-      --request POST \
-      --header 'Expect:' \
-      --form "access_token=${GITEE_SYNC_TOKEN}" \
-      --form "file=@${asset}" \
-      "${RELEASES_URL}/${release_id}/attach_files"; then
-      upload_status="$CURL_HTTP_STATUS"
-    else
-      upload_exit=$?
-    fi
+  echo "uploading Gitee release asset: $asset_name"
+  if curl_request "$upload_file" 1 \
+    --request POST \
+    --header 'Expect:' \
+    --form "access_token=${GITEE_SYNC_TOKEN}" \
+    --form "file=@${asset}" \
+    "${RELEASES_URL}/${release_id}/attach_files"; then
+    upload_status="$CURL_HTTP_STATUS"
+  else
+    upload_exit=$?
+  fi
 
-    # Whether POST succeeded, timed out, or lost its response, the remote state
-    # is authoritative. This prevents an ambiguous retry from creating a
-    # duplicate attachment.
-    if confirm_uploaded_asset "$asset"; then
-      echo "confirmed Gitee release asset: $asset_name"
-      uploaded_count=$((uploaded_count + 1))
-      return
-    fi
+  # POST is attempted only once per workflow run. Whether it succeeded, timed
+  # out, or lost its response, query Gitee until the remote state is clear.
+  # If the asset remains absent, stop and let a later workflow run resume it;
+  # never repeat an ambiguous multipart POST in the same run.
+  if confirm_uploaded_asset "$asset"; then
+    echo "confirmed Gitee release asset: $asset_name"
+    uploaded_count=$((uploaded_count + 1))
+    return
+  fi
 
-    if [[ "$upload_exit" -eq 0 ]] && is_success_http_status "$upload_status"; then
-      echo "Gitee accepted the upload but the asset is not visible yet: $asset_name" >&2
-      echo "stopping safely instead of risking a duplicate attachment" >&2
-      exit 1
-    fi
-    if [[ "$upload_exit" -ne 0 ]] && ! is_retryable_curl_exit "$upload_exit"; then
-      echo "failed to upload Gitee release asset: $asset_name (curl exit $upload_exit)" >&2
-      exit 1
-    fi
-    if [[ "$upload_exit" -eq 0 ]] && ! is_success_http_status "$upload_status" && \
-      ! is_retryable_http_status "$upload_status"; then
-      echo "failed to upload Gitee release asset: $asset_name (HTTP $upload_status)" >&2
-      jq -c . "$upload_file" >&2 2>/dev/null || true
-      exit 1
-    fi
-    if [[ "$attempt" -ge "$CURL_MAX_ATTEMPTS" ]]; then
-      echo "failed to upload Gitee release asset after $CURL_MAX_ATTEMPTS attempts: $asset_name" >&2
-      exit 1
-    fi
+  if [[ "$upload_exit" -ne 0 ]]; then
+    echo "upload response was interrupted and the asset is not visible: $asset_name (curl exit $upload_exit)" >&2
+  elif is_success_http_status "$upload_status"; then
+    echo "Gitee accepted the upload but the asset is not visible yet: $asset_name" >&2
+  else
+    echo "Gitee rejected the upload and the asset is absent: $asset_name (HTTP $upload_status)" >&2
+    jq -c . "$upload_file" >&2 2>/dev/null || true
+  fi
+  echo "stopping safely instead of risking a duplicate attachment; rerun the workflow to resume" >&2
+  exit 1
+}
 
-    retry_delay "$attempt"
-    attempt=$((attempt + 1))
-  done
+verify_complete_asset_set() {
+  local expected_names="$TMP_DIR/expected-asset-names"
+  local remote_names="$TMP_DIR/remote-asset-names"
+  local remote_count
+  local unique_remote_count
+
+  {
+    find "$ASSETS_DIR" -maxdepth 1 -type f ! -name checksums.txt -exec basename {} \;
+    basename "$ASSETS_DIR/checksums.txt"
+  } | sort > "$expected_names"
+  jq -r '.[].name' "$attachments_file" | sort > "$remote_names"
+
+  remote_count="$(jq 'length' "$attachments_file")"
+  unique_remote_count="$(jq '[.[].name] | unique | length' "$attachments_file")"
+  if [[ "$remote_count" -ne "$unique_remote_count" ]]; then
+    echo "Gitee release contains duplicate asset names" >&2
+    exit 1
+  fi
+  if ! cmp -s "$expected_names" "$remote_names"; then
+    echo "Gitee release asset set does not exactly match GitHub" >&2
+    diff -u "$expected_names" "$remote_names" >&2 || true
+    exit 1
+  fi
 }
 
 uploaded_count=0
@@ -460,4 +469,6 @@ while IFS= read -r -d '' asset; do
   upload_missing_asset "$asset"
 done < "$missing_assets_file"
 
+refresh_attachments
+verify_complete_asset_set
 echo "published $uploaded_count missing assets and kept $skipped_count identical assets for $TAG"
