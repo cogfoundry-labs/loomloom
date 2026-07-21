@@ -202,10 +202,20 @@ jobs:
 
           tag_ref="refs/tags/${RELEASE_TAG}"
           release_sha="$(git rev-list -n 1 "$tag_ref")"
+          local_tag_object="$(git rev-parse "$tag_ref")"
           gitee_url="https://oauth2:${GITEE_SYNC_TOKEN}@gitee.com/${GITEE_REPOSITORY}.git"
 
           git remote add gitee "$gitee_url"
-          git push gitee "${tag_ref}:${tag_ref}"
+          remote_tag_object="$(git ls-remote gitee "$tag_ref" | awk 'NR == 1 { print $1 }')"
+          if [ -z "$remote_tag_object" ]; then
+            git push gitee "${tag_ref}:${tag_ref}"
+          elif [ "$remote_tag_object" = "$local_tag_object" ]; then
+            echo "Gitee tag already matches GitHub: ${RELEASE_TAG}"
+          else
+            echo "Gitee tag differs from GitHub: ${RELEASE_TAG}" >&2
+            echo "published tags are immutable; refusing to overwrite the Gitee tag" >&2
+            exit 1
+          fi
 
           if [ "$RELEASE_STABLE" = "true" ] && [ "$GITHUB_EVENT_NAME" = "push" ]; then
             current_main="$(git ls-remote gitee refs/heads/main | awk '{print $1}')"

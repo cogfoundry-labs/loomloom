@@ -76,7 +76,7 @@ if [[ -z "${GITEE_SYNC_TOKEN:-}" ]]; then
   exit 1
 fi
 
-for command in curl jq; do
+for command in curl git jq; do
   if ! command -v "$command" >/dev/null 2>&1; then
     echo "missing required command: $command" >&2
     exit 1
@@ -112,6 +112,11 @@ fi
 OWNER="${REPOSITORY%/*}"
 REPO="${REPOSITORY#*/}"
 RELEASES_URL="${API_BASE}/repos/${OWNER}/${REPO}/releases"
+TARGET_COMMITISH="$(git rev-list -n 1 "refs/tags/${TAG}" 2>/dev/null || true)"
+if [[ -z "$TARGET_COMMITISH" ]]; then
+  echo "unable to resolve release tag: $TAG" >&2
+  exit 1
+fi
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
@@ -134,6 +139,7 @@ create_release() {
     --form "tag_name=${TAG}" \
     --form "name=${TAG}" \
     --form "body=LoomLoom ${TAG}" \
+    --form "target_commitish=${TARGET_COMMITISH}" \
     --form "prerelease=${PRERELEASE}" \
     "$RELEASES_URL"
 }
