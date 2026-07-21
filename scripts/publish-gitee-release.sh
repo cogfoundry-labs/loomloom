@@ -125,21 +125,35 @@ status="$(
     "${RELEASES_URL}/tags/${TAG}"
 )"
 
+create_release() {
+  echo "creating Gitee release: $TAG"
+  curl -fsS \
+    --request POST \
+    --output "$release_file" \
+    --form "access_token=${GITEE_SYNC_TOKEN}" \
+    --form "tag_name=${TAG}" \
+    --form "name=${TAG}" \
+    --form "body=LoomLoom ${TAG}" \
+    --form "prerelease=${PRERELEASE}" \
+    "$RELEASES_URL"
+}
+
 case "$status" in
   200)
-    echo "refreshing existing Gitee release: $TAG"
+    if jq -e 'type == "object" and (.id != null)' "$release_file" >/dev/null; then
+      echo "refreshing existing Gitee release: $TAG"
+    elif jq -e '. == null' "$release_file" >/dev/null; then
+      # Gitee returns HTTP 200 with a JSON null body when the tag exists but
+      # no Release has been created for it yet.
+      create_release
+    else
+      echo "Gitee returned an invalid release response for $TAG (HTTP 200)" >&2
+      jq -c . "$release_file" >&2 2>/dev/null || true
+      exit 1
+    fi
     ;;
   404)
-    echo "creating Gitee release: $TAG"
-    curl -fsS \
-      --request POST \
-      --output "$release_file" \
-      --form "access_token=${GITEE_SYNC_TOKEN}" \
-      --form "tag_name=${TAG}" \
-      --form "name=${TAG}" \
-      --form "body=LoomLoom ${TAG}" \
-      --form "prerelease=${PRERELEASE}" \
-      "$RELEASES_URL"
+    create_release
     ;;
   *)
     echo "failed to query Gitee release $TAG (HTTP $status)" >&2
@@ -148,7 +162,11 @@ case "$status" in
     ;;
 esac
 
-release_id="$(jq -er '.id' "$release_file")"
+if ! release_id="$(jq -er 'if type == "object" and (.id != null) then .id else empty end' "$release_file")"; then
+  echo "Gitee release response does not contain an id for $TAG" >&2
+  jq -c . "$release_file" >&2 2>/dev/null || true
+  exit 1
+fi
 attachments_file="$TMP_DIR/attachments.json"
 curl -fsS \
   --get \
