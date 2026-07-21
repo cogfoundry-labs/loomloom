@@ -93,21 +93,34 @@ jobs:
           echo "state=$state" >> "$GITHUB_OUTPUT"
           echo "GitHub release state for $RELEASE_TAG: $state"
 
-      - name: Validate stable release source
-        if: github.event_name == 'push' && steps.release_channel.outputs.stable == 'true'
+      - name: Determine Gitee main sync
+        id: gitee_main
+        env:
+          RELEASE_STABLE: ${{ steps.release_channel.outputs.stable }}
         run: |
-          git fetch origin main
-          release_sha="$(git rev-list -n 1 "refs/tags/${RELEASE_TAG}")"
-          if ! git merge-base --is-ancestor "$release_sha" origin/main; then
-            echo "stable release tag must point to a commit on origin/main: $RELEASE_TAG" >&2
-            exit 1
+          set -euo pipefail
+
+          sync_main=false
+          if [ "$RELEASE_STABLE" != "true" ]; then
+            echo "sync=$sync_main" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
+          git fetch origin main
+          release_sha="$(git rev-list -n 1 "refs/tags/${RELEASE_TAG}")"
           latest_stable="$(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)"
-          if [ "$RELEASE_TAG" != "$latest_stable" ]; then
-            echo "stable release tag is not the latest stable version: $RELEASE_TAG (latest: $latest_stable)" >&2
+
+          if git merge-base --is-ancestor "$release_sha" origin/main && \
+            [ "$RELEASE_TAG" = "$latest_stable" ]; then
+            sync_main=true
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            echo "stable release tag must be the latest stable version on origin/main: $RELEASE_TAG" >&2
             exit 1
+          else
+            echo "manual republish will keep Gitee main unchanged for older stable tag: $RELEASE_TAG"
           fi
+
+          echo "sync=$sync_main" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-go@v5
         if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
@@ -190,46 +203,11 @@ jobs:
       - name: Sync release refs to Gitee
         env:
           GITEE_SYNC_TOKEN: ${{ secrets.GITEE_SYNC_TOKEN }}
-          GITEE_REPOSITORY: cogfoundry/loomloom
-          RELEASE_STABLE: ${{ steps.release_channel.outputs.stable }}
         run: |
-          set -euo pipefail
-
-          if [ -z "${GITEE_SYNC_TOKEN:-}" ]; then
-            echo "GITEE_SYNC_TOKEN is required" >&2
-            exit 1
-          fi
-
-          tag_ref="refs/tags/${RELEASE_TAG}"
-          release_sha="$(git rev-list -n 1 "$tag_ref")"
-          local_tag_object="$(git rev-parse "$tag_ref")"
-          gitee_url="https://oauth2:${GITEE_SYNC_TOKEN}@gitee.com/${GITEE_REPOSITORY}.git"
-
-          git remote add gitee "$gitee_url"
-          remote_tag_object="$(git ls-remote gitee "$tag_ref" | awk 'NR == 1 { print $1 }')"
-          if [ -z "$remote_tag_object" ]; then
-            git push gitee "${tag_ref}:${tag_ref}"
-          elif [ "$remote_tag_object" = "$local_tag_object" ]; then
-            echo "Gitee tag already matches GitHub: ${RELEASE_TAG}"
-          else
-            echo "Gitee tag differs from GitHub: ${RELEASE_TAG}" >&2
-            echo "published tags are immutable; refusing to overwrite the Gitee tag" >&2
-            exit 1
-          fi
-
-          if [ "$RELEASE_STABLE" = "true" ] && [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            current_main="$(git ls-remote gitee refs/heads/main | awk '{print $1}')"
-            if [ -n "$current_main" ]; then
-              git push \
-                --force-with-lease="refs/heads/main:${current_main}" \
-                gitee "${release_sha}:refs/heads/main"
-            else
-              git push gitee "${release_sha}:refs/heads/main"
-            fi
-            echo "synced stable ${RELEASE_TAG} to Gitee main"
-          else
-            echo "kept Gitee main unchanged for ${RELEASE_TAG}"
-          fi
+          scripts/sync-gitee-release-refs.sh \
+            --repo cogfoundry/loomloom \
+            --tag "$RELEASE_TAG" \
+            --sync-main "${{ steps.gitee_main.outputs.sync }}"
 
       - name: Publish the same assets to Gitee release
         env:
