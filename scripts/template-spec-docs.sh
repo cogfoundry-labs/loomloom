@@ -190,7 +190,7 @@ check_local_translation_map() {
 check_local_docs() {
   local failed=0 expected actual path relative english_norm chinese_norm reference_id anchor
   require_cmd jq || return 1
-  require_cmd rg || return 1
+  require_cmd grep || return 1
   require_cmd shasum || return 1
   check_local_json || failed=1
   check_local_translation_map || failed=1
@@ -211,8 +211,8 @@ check_local_docs() {
   jq -e '.owner == "loomloom-docs" and .default_language == "en" and .languages == ["en", "zh-CN"] and (.source_revision | startswith("sha256:"))' "$DOCS_DIR/manifest.json" >/dev/null || { echo "invalid TemplateSpec CLI manifest metadata" >&2; failed=1; }
   while IFS= read -r reference_id; do
     anchor="ref-${reference_id//./-}"
-    [[ $(rg -l "<a id=\"$anchor\"></a>" "$EN_DIR/reference"/*.md | wc -l | tr -d ' ') == 1 ]] || { echo "English reference anchor missing or duplicate: $anchor" >&2; failed=1; }
-    [[ $(rg -l "<a id=\"$anchor\"></a>" "$ZH_DIR/reference"/*.md | wc -l | tr -d ' ') == 1 ]] || { echo "Chinese reference anchor missing or duplicate: $anchor" >&2; failed=1; }
+    [[ $(grep -lF -- "<a id=\"$anchor\"></a>" "$EN_DIR/reference"/*.md | wc -l | tr -d ' ') == 1 ]] || { echo "English reference anchor missing or duplicate: $anchor" >&2; failed=1; }
+    [[ $(grep -lF -- "<a id=\"$anchor\"></a>" "$ZH_DIR/reference"/*.md | wc -l | tr -d ' ') == 1 ]] || { echo "Chinese reference anchor missing or duplicate: $anchor" >&2; failed=1; }
   done < <(jq -r '.rules[].referenceId' "$DOCS_DIR/machine/rules.json" | sort -u)
   [[ $failed -eq 0 ]] || return 1
   echo "TemplateSpec CLI local docs OK (source=$(jq -r '.source_revision' "$DOCS_DIR/manifest.json") generated=$actual)"
@@ -285,8 +285,8 @@ check_docs() {
   [[ $(jq -r '.chinese_revision' "$DOCS_DIR/manifest.json") == $(tree_revision "$ZH_DIR") ]] || { echo "Chinese revision mismatch" >&2; failed=1; }
   while IFS= read -r reference_id; do
     anchor="ref-${reference_id//./-}"
-    [[ $(rg -l "<a id=\"$anchor\"></a>" "$EN_DIR/reference"/*.md | wc -l | tr -d ' ') == 1 ]] || { echo "English reference anchor missing or duplicate: $anchor" >&2; failed=1; }
-    [[ $(rg -l "<a id=\"$anchor\"></a>" "$ZH_DIR/reference"/*.md | wc -l | tr -d ' ') == 1 ]] || { echo "Chinese reference anchor missing or duplicate: $anchor" >&2; failed=1; }
+    [[ $(grep -lF -- "<a id=\"$anchor\"></a>" "$EN_DIR/reference"/*.md | wc -l | tr -d ' ') == 1 ]] || { echo "English reference anchor missing or duplicate: $anchor" >&2; failed=1; }
+    [[ $(grep -lF -- "<a id=\"$anchor\"></a>" "$ZH_DIR/reference"/*.md | wc -l | tr -d ' ') == 1 ]] || { echo "Chinese reference anchor missing or duplicate: $anchor" >&2; failed=1; }
   done < <(jq -r '.rules[].referenceId' "$DOCS_DIR/machine/rules.json" | sort -u)
   [[ $failed -eq 0 ]] || exit 1
   echo "TemplateSpec CLI docs OK (source=$(jq -r '.source_revision' "$DOCS_DIR/manifest.json") generated=$actual)"
