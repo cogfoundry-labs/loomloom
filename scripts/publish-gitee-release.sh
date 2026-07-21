@@ -157,21 +157,58 @@ curl -fsS \
   --data-urlencode "per_page=100" \
   "${RELEASES_URL}/${release_id}/attach_files"
 
-upload_asset() {
+missing_assets_file="$TMP_DIR/missing-assets"
+: > "$missing_assets_file"
+
+verify_existing_asset() {
   local asset="$1"
   local asset_name
+  local attachment_count
   local attachment_id
+  local local_checksum
+  local remote_asset
+  local remote_checksum
   asset_name="$(basename "$asset")"
 
-  while IFS= read -r attachment_id; do
-    [[ -n "$attachment_id" ]] || continue
-    curl -fsS \
-      --request DELETE \
-      --data-urlencode "access_token=${GITEE_SYNC_TOKEN}" \
-      "${RELEASES_URL}/${release_id}/attach_files/${attachment_id}" \
-      >/dev/null
-  done < <(jq -r --arg name "$asset_name" '.[] | select(.name == $name) | .id' "$attachments_file")
+  attachment_count="$(
+    jq -r --arg name "$asset_name" '[.[] | select(.name == $name)] | length' "$attachments_file"
+  )"
+  if [[ "$attachment_count" -gt 1 ]]; then
+    echo "multiple Gitee release assets use the same name: $asset_name" >&2
+    exit 1
+  fi
 
+  if [[ "$attachment_count" -eq 1 ]]; then
+    attachment_id="$(
+      jq -r --arg name "$asset_name" '.[] | select(.name == $name) | .id' "$attachments_file"
+    )"
+    remote_asset="$TMP_DIR/remote-${attachment_id}"
+    curl -fsSL \
+      --get \
+      --output "$remote_asset" \
+      --data-urlencode "access_token=${GITEE_SYNC_TOKEN}" \
+      "${RELEASES_URL}/${release_id}/attach_files/${attachment_id}/download"
+    local_checksum="$("${CHECKSUM_COMMAND[@]}" "$asset" | awk '{print $1}')"
+    remote_checksum="$("${CHECKSUM_COMMAND[@]}" "$remote_asset" | awk '{print $1}')"
+
+    if [[ "$local_checksum" != "$remote_checksum" ]]; then
+      echo "published Gitee release asset differs from GitHub: $asset_name" >&2
+      echo "published release assets are immutable; create a new tag instead" >&2
+      exit 1
+    fi
+
+    echo "keeping identical Gitee release asset: $asset_name"
+    skipped_count=$((skipped_count + 1))
+    return
+  fi
+
+  printf '%s\0' "$asset" >> "$missing_assets_file"
+}
+
+upload_missing_asset() {
+  local asset="$1"
+  local asset_name
+  asset_name="$(basename "$asset")"
   echo "uploading Gitee release asset: $asset_name"
   curl -fsS \
     --request POST \
@@ -179,11 +216,18 @@ upload_asset() {
     --form "file=@${asset}" \
     "${RELEASES_URL}/${release_id}/attach_files" \
     >/dev/null
+  uploaded_count=$((uploaded_count + 1))
 }
 
+uploaded_count=0
+skipped_count=0
 while IFS= read -r -d '' asset; do
-  upload_asset "$asset"
+  verify_existing_asset "$asset"
 done < <(find "$ASSETS_DIR" -maxdepth 1 -type f ! -name checksums.txt -print0 | sort -z)
-upload_asset "$ASSETS_DIR/checksums.txt"
+verify_existing_asset "$ASSETS_DIR/checksums.txt"
 
-echo "published $((asset_count + 1)) assets to Gitee release $TAG"
+while IFS= read -r -d '' asset; do
+  upload_missing_asset "$asset"
+done < "$missing_assets_file"
+
+echo "published $uploaded_count missing assets and kept $skipped_count identical assets for $TAG"
