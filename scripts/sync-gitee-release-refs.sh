@@ -16,7 +16,7 @@ to Gitee main.
 
 Options:
   --repo <owner/repo>  Gitee repository
-  --tag <tag>          Existing release tag
+  --tag <tag>          Existing stable release tag (vX.Y.Z)
   --sync-main <bool>   Whether to update Gitee main (default: false)
   --help               Show this help text
 
@@ -54,8 +54,8 @@ if [[ ! "$REPOSITORY" =~ ^[^/]+/[^/]+$ ]]; then
   echo "--repo must use owner/repo format" >&2
   exit 1
 fi
-if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc|internal)\.[0-9]+)?$ ]]; then
-  echo "unsupported release tag: $TAG" >&2
+if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "only stable release tags can be synchronized to Gitee: $TAG" >&2
   exit 1
 fi
 if [[ "$SYNC_MAIN" != "true" && "$SYNC_MAIN" != "false" ]]; then
@@ -217,9 +217,11 @@ sync_main() {
   done
 }
 
-sync_tag
 if [[ "$SYNC_MAIN" == "true" ]]; then
+  # Update the mirrored branch before publishing the tag. Gitee Go reads its
+  # pipeline definition from main, while the tag push triggers the release.
   sync_main
 else
   echo "kept Gitee main unchanged for $TAG"
 fi
+sync_tag

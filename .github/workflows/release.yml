@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing release tag to republish to Gitee
+        description: Existing stable release tag whose Gitee refs should be verified or repaired
         required: true
         type: string
   push:
@@ -201,6 +201,7 @@ jobs:
           scripts/validate-release-assets.sh release
 
       - name: Sync release refs to Gitee
+        if: steps.release_channel.outputs.stable == 'true'
         env:
           GITEE_SYNC_TOKEN: ${{ secrets.GITEE_SYNC_TOKEN }}
         run: |
@@ -208,16 +209,6 @@ jobs:
             --repo cogfoundry/loomloom \
             --tag "$RELEASE_TAG" \
             --sync-main "${{ steps.gitee_main.outputs.sync }}"
-
-      - name: Publish the same assets to Gitee release
-        env:
-          GITEE_SYNC_TOKEN: ${{ secrets.GITEE_SYNC_TOKEN }}
-        run: |
-          scripts/publish-gitee-release.sh \
-            --repo cogfoundry/loomloom \
-            --tag "$RELEASE_TAG" \
-            --assets-dir release \
-            --prerelease "${{ steps.release_channel.outputs.prerelease }}"
 
       - name: Update Homebrew tap
         if: github.event_name == 'push' && steps.release_channel.outputs.homebrew == 'true'

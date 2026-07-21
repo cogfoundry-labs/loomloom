@@ -85,18 +85,87 @@ checksum_cmd() {
 }
 
 require_cmd go
+require_cmd gzip
 require_cmd tar
 require_cmd zip
 
 "$docs_script" prepare-checked
 "$references_script" prepare-checked
 
-zip_file() {
-  local archive_path="$1"
-  local source_dir="$2"
-  shift 2
-  (cd "$source_dir" && zip -qr "$archive_path" "$@")
-}
+create_archive() (
+  local format="$1"
+  local archive_path="$2"
+  local source_dir="$3"
+  local staging
+  local file_list
+  local tar_file
+  shift 3
+
+  staging="$(mktemp -d)"
+  file_list="$(mktemp)"
+  tar_file="$(mktemp)"
+  trap 'rm -rf "$staging" "$file_list" "$tar_file"' EXIT
+
+  for entry in "$@"; do
+    mkdir -p "$staging/$(dirname "$entry")"
+    cp -R "$source_dir/$entry" "$staging/$entry"
+  done
+
+  while IFS= read -r path; do
+    if [[ -x "$path" ]]; then
+      chmod 0755 "$path"
+    else
+      chmod 0644 "$path"
+    fi
+    TZ=UTC touch -t 200001010000 "$path"
+  done < <(find "$staging" -type f | LC_ALL=C sort)
+  while IFS= read -r path; do
+    chmod 0755 "$path"
+    TZ=UTC touch -t 200001010000 "$path"
+  done < <(find "$staging" -type d | LC_ALL=C sort -r)
+
+  (
+    cd "$staging"
+    find . ! -type d -print | LC_ALL=C sort | sed 's#^\./##' > "$file_list"
+  )
+  rm -f "$archive_path"
+
+  case "$format" in
+    tar.gz)
+      if tar --version 2>&1 | grep -q 'GNU tar'; then
+        COPYFILE_DISABLE=1 tar \
+          --format=ustar \
+          --owner=0 \
+          --group=0 \
+          --numeric-owner \
+          -C "$staging" \
+          -cf "$tar_file" \
+          -T "$file_list"
+      else
+        COPYFILE_DISABLE=1 tar \
+          --format ustar \
+          --uid 0 \
+          --gid 0 \
+          --uname root \
+          --gname root \
+          -C "$staging" \
+          -cf "$tar_file" \
+          -T "$file_list"
+      fi
+      gzip -n -9 -c "$tar_file" > "$archive_path"
+      ;;
+    zip)
+      (
+        cd "$staging"
+        COPYFILE_DISABLE=1 zip -X -q "$archive_path" -@ < "$file_list"
+      )
+      ;;
+    *)
+      echo "unsupported archive format: $format" >&2
+      exit 1
+      ;;
+  esac
+)
 
 rm -rf "$dist_dir" "$out_dir"
 mkdir -p "$dist_dir" "$out_dir"
@@ -147,11 +216,11 @@ package_binary() {
   staging="$(mktemp -d)"
   if [[ "$name" == *.exe ]]; then
     cp "$binary" "$staging/loomloom.exe"
-    zip_file "$staging/release.zip" "$staging" loomloom.exe
+    create_archive zip "$staging/release.zip" "$staging" loomloom.exe
     mv "$staging/release.zip" "$out_dir/${name%.exe}.zip"
   else
     cp "$binary" "$staging/loomloom"
-    tar -C "$staging" -czf "$out_dir/${name}.tar.gz" loomloom
+    create_archive tar.gz "$out_dir/${name}.tar.gz" "$staging" loomloom
   fi
   rm -rf "$staging"
 }
@@ -174,8 +243,8 @@ while IFS= read -r binary; do
 done < <(find "$dist_dir" -type f -name 'loomloom-*' | sort)
 
 echo "packaging skills"
-tar -C "$repo_root" -czf "$out_dir/loomloom-skills.tar.gz" skills
-zip_file "$out_dir/loomloom-skills.zip" "$repo_root" skills
+create_archive tar.gz "$out_dir/loomloom-skills.tar.gz" "$repo_root" skills
+create_archive zip "$out_dir/loomloom-skills.zip" "$repo_root" skills
 cp "$repo_root"/install.sh "$repo_root"/install-gitee.sh "$repo_root"/install.ps1 \
   "$repo_root"/uninstall.sh "$repo_root"/uninstall.ps1 \
   "$repo_root"/manifest.json "$repo_root"/README.md "$out_dir"/
