@@ -128,10 +128,6 @@ jobs:
           go-version-file: cli/go.mod
           cache-dependency-path: cli/go.sum
 
-      - name: Install documentation tooling
-        if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y ripgrep
-
       - name: Package release assets once
         if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
         run: |
