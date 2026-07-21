@@ -36,7 +36,9 @@ Only a successful Doctor may register a new Server. Ordinary business commands m
 
 ## Platform And Credential Messages
 
-When no Server is configured, output:
+The messages below define required business content, not verbatim wording. Render them under the global language rule while preserving commands, URLs, identifiers, and required actions.
+
+When no Server is configured, convey:
 
 ```text
 你还没有配置 LoomLoom 平台和密钥。请选择你的使用平台：
@@ -54,14 +56,14 @@ When no Server is configured, output:
 
 These are preset choices only. A user-provided compatible Server is also allowed.
 
-For a missing ShengSuanYun token, output:
+For a missing ShengSuanYun token, convey:
 
 ```text
 当前未检测到胜算云密钥。请前往胜算云控制台创建或复制密钥后配置到本地环境：
 https://console.shengsuanyun.com/user/keys
 ```
 
-For a missing CogFoundry token, output:
+For a missing CogFoundry token, convey:
 
 ```text
 当前未检测到 CogFoundry 密钥。请前往当前环境对应的 CogFoundry 密钥控制台创建或复制密钥，然后配置到本地环境。
@@ -70,7 +72,7 @@ CogFoundry 控制台地址必须读取当前环境配置，不得由 Agent 自�
 
 For a missing custom-platform token, use `credential_message`. Never guess its console, key, balance, or recharge URL.
 
-When Server authentication rejects a Token, output:
+When Server authentication rejects a Token, convey:
 
 ```text
 当前 Server 可以访问，但密钥认证未通过。该密钥可能无效、已过期、权限不足，或不适用于当前 Server。请确认密钥由当前 Server 对应的环境提供后重试。

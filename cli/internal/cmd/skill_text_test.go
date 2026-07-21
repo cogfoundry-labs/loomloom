@@ -17,6 +17,32 @@ var bundledSkillDirs = []string{
 
 const canonicalSkillReferencesDir = "skill-sources/references"
 
+func TestBundledSkillsMatchUserLanguage(t *testing.T) {
+	root := findRepoRoot(t)
+	for _, rel := range bundledSkillDirs {
+		text, err := os.ReadFile(filepath.Join(root, rel, "SKILL.md"))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		for _, want := range []string{
+			"Respond in the language evident from the user's messages",
+			"default to Chinese for ShengSuanYun and English for CogFoundry",
+			"including predefined templates, confirmations, warnings, and errors",
+			"only from the user's explicit selection or a successful `loomloom doctor --output json` result",
+			"Never infer it from a hostname, location, language, or other context",
+		} {
+			if !strings.Contains(string(text), want) {
+				t.Errorf("%s missing language rule %q", rel, want)
+			}
+		}
+	}
+
+	setup := readCanonicalSkillReference(t, root, "setup.md")
+	if !strings.Contains(setup, "required business content, not verbatim wording") {
+		t.Errorf("%s/setup.md must mark fixed messages as localizable business content", canonicalSkillReferencesDir)
+	}
+}
+
 func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
 	root := findRepoRoot(t)
 	caseData, err := os.ReadFile(filepath.Join(root, "cli/internal/cmd/testdata/template-spec-authoring/uploaded-text.json"))

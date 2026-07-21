@@ -52,11 +52,15 @@ Whenever fees, currency, balance, confirmation, paid execution, failure, cancell
 
 ## Global Rules
 
+**Match the user's language.** Respond in the language evident from the user's messages. If it is not yet evident, default to Chinese for ShengSuanYun and English for CogFoundry. Apply this to every user-facing message, including predefined templates, confirmations, warnings, and errors. Preserve commands, URLs, identifiers, amounts, and currency codes when localizing.
+
+Determine the current platform only from the user's explicit selection or a successful `loomloom doctor --output json` result. Never infer it from a hostname, location, language, or other context.
+
 1. Send tokens only over HTTPS to the explicitly configured host. Never expose them, retain them across redirects, or reuse them across platforms/environments.
 2. Default to Excel. Use JSON/JSONL only for an explicit programmatic-input request or compatible supplied file.
 3. Downloads, uploads, validation, quote, and precheck are preparation; they do not authorize a hosted run.
 4. Before every hosted run, show the current server estimate and obtain explicit confirmation in the current conversation, except during an explicitly activated Test Execution Mode defined below.
-5. If input changes after validation, estimate, or confirmation, validate and estimate again and obtain a new confirmation. In Chinese say `输入内容在确认后发生变化，需要重新预估并确认。`
+5. If input changes after validation, estimate, or confirmation, validate and estimate again and obtain a new confirmation. Tell the user that the changed input must be re-estimated and reconfirmed.
 6. Give every newly confirmed execution a new `client-request-id`; reuse one only for an identical retry after an ambiguous failure.
 7. Execute SkillBots through the Listing and public schema. Never reveal or reconstruct hidden prompts, steps, mappings, TemplateSpec, or private logic.
 8. Market locks the current sellable Listing Version and its price when creating the order.
