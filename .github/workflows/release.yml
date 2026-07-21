@@ -62,6 +62,37 @@ jobs:
           git fetch origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
           git show-ref --verify --quiet "refs/tags/${RELEASE_TAG}"
 
+      - name: Inspect GitHub release state
+        id: github_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          matches="$(
+            gh release list \
+              --repo "$GITHUB_REPOSITORY" \
+              --limit 1000 \
+              --json tagName,isDraft \
+              --jq ".[] | select(.tagName == \"${RELEASE_TAG}\") | if .isDraft then \"draft\" else \"published\" end" \
+              | sed '/^$/d'
+          )"
+          match_count="$(printf '%s\n' "$matches" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+          if [ "$match_count" -gt 1 ]; then
+            echo "multiple GitHub releases found for tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+          state="${matches:-none}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$state" != "published" ]; then
+            echo "manual republish requires an existing published GitHub release: $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          echo "GitHub release state for $RELEASE_TAG: $state"
+
       - name: Validate stable release source
         if: github.event_name == 'push' && steps.release_channel.outputs.stable == 'true'
         run: |
@@ -79,44 +110,82 @@ jobs:
           fi
 
       - uses: actions/setup-go@v5
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
         with:
           go-version-file: cli/go.mod
           cache-dependency-path: cli/go.sum
 
       - name: Install documentation tooling
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y ripgrep
 
       - name: Package release assets once
-        if: github.event_name == 'push'
-        run: scripts/package-release-assets.sh --version "$RELEASE_TAG"
+        if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
+        run: |
+          scripts/package-release-assets.sh --version "$RELEASE_TAG"
+          scripts/validate-release-assets.sh release
 
       - name: Upload packaged assets
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
         uses: actions/upload-artifact@v4
         with:
-          name: release-assets-${{ env.RELEASE_TAG }}
+          name: release-assets-${{ env.RELEASE_TAG }}-attempt-${{ github.run_attempt }}
           path: release/*
 
-      - name: Publish GitHub release
-        if: github.event_name == 'push'
+      - name: Upload assets to GitHub draft release
+        if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           files: release/*
+          draft: true
           prerelease: ${{ steps.release_channel.outputs.prerelease }}
-          make_latest: ${{ steps.release_channel.outputs.make_latest }}
+          overwrite_files: true
           fail_on_unmatched_files: true
 
-      - name: Download existing GitHub release assets for manual republish
-        if: github.event_name == 'workflow_dispatch'
+      - name: Verify GitHub draft release assets
+        if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          verification_dir="$RUNNER_TEMP/github-release-verification"
+          rm -rf "$verification_dir"
+          mkdir -p "$verification_dir"
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir "$verification_dir"
+          if ! cmp -s release/checksums.txt "$verification_dir/checksums.txt"; then
+            echo "GitHub draft release does not match the current build: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          scripts/validate-release-assets.sh "$verification_dir"
+
+      - name: Publish verified GitHub draft release
+        if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_STABLE: ${{ steps.release_channel.outputs.stable }}
+        run: |
+          set -euo pipefail
+
+          args=(
+            release edit "$RELEASE_TAG"
+            --repo "$GITHUB_REPOSITORY"
+            --draft=false
+          )
+          if [ "$RELEASE_STABLE" = "true" ]; then
+            args+=(--latest)
+          fi
+          gh "${args[@]}"
+
+      - name: Download published GitHub release assets
+        if: github.event_name == 'workflow_dispatch' || steps.github_release.outputs.state == 'published'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release
-          test -f release/checksums.txt
+          scripts/validate-release-assets.sh release
 
       - name: Sync release refs to Gitee
         env:
