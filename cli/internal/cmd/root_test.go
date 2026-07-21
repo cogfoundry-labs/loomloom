@@ -1,19 +1,76 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/client"
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
+	"github.com/spf13/cobra"
 )
+
+func TestMain(m *testing.M) {
+	temp, err := os.MkdirTemp("", "loomloom-cmd-tests-")
+	if err != nil {
+		panic(err)
+	}
+	_ = os.Setenv("XDG_CONFIG_HOME", filepath.Join(temp, ".config"))
+	for _, key := range []string{
+		"LOOMLOOM_SERVER",
+		"LOOMLOOM_TOKEN",
+		"LOOMLOOM_PLATFORM",
+	} {
+		_ = os.Unsetenv(key)
+	}
+	code := m.Run()
+	_ = os.RemoveAll(temp)
+	os.Exit(code)
+}
+
+func isolateCmdConfigHome(t *testing.T) {
+	t.Helper()
+	temp := t.TempDir()
+	t.Setenv("HOME", temp)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(temp, ".config"))
+}
+
+func saveTestProfile(t *testing.T, server string, platformID platform.ID, tokenEnv string) platform.Profile {
+	t.Helper()
+	state := platform.LoadState()
+	profile, err := state.UpsertVerified(server, platformID, "", time.Unix(1, 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tokenEnv != "" {
+		for i := range state.Servers {
+			if state.Servers[i].Name == profile.Name {
+				state.Servers[i].TokenEnv = tokenEnv
+				profile.TokenEnv = tokenEnv
+			}
+		}
+	}
+	if err := platform.SaveState(state); err != nil {
+		t.Fatal(err)
+	}
+	return profile
+}
+
+func newRootCmdWithVerifiedServer(t *testing.T, server string) *cobra.Command {
+	t.Helper()
+	isolateCmdConfigHome(t)
+	saveTestProfile(t, server, platform.InferFromServer(server).ID, "")
+	return NewRootCmd()
+}
 
 func TestRootRejectsUnsupportedOutputFormat(t *testing.T) {
 	cmd := NewRootCmd()
 	cmd.SetArgs([]string{"--output", "yaml", "doctor"})
-
 	err := cmd.Execute()
 	if err == nil || !strings.Contains(err.Error(), `unsupported output format "yaml"`) {
 		t.Fatalf("error=%v want unsupported output format", err)
@@ -29,214 +86,246 @@ func TestRootReadsVerboseEnvironment(t *testing.T) {
 	}
 }
 
-func isolateCmdConfigHome(t *testing.T) {
-	t.Helper()
-	temp := t.TempDir()
-	t.Setenv("HOME", temp)
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(temp, ".config"))
-}
-
-func TestRootReadsServerFromStoredConfig(t *testing.T) {
+func TestRootLetsDoctorReturnStructuredInvalidServerResult(t *testing.T) {
 	isolateCmdConfigHome(t)
-	const server = "https://loomloom.shengsuanyun.com/loom/v1"
-	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun, Server: server}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
-	}
 	cmd := NewRootCmd()
-	flag := cmd.PersistentFlags().Lookup("server")
-	if flag == nil || flag.Value.String() != server {
-		t.Fatalf("server default=%v want %q from stored config", flag, server)
+	cmd.SetArgs([]string{
+		"doctor",
+		"--server", "http://api.example.com/loom/v1",
+		"--output", "json",
+	})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("doctor error=%v output=%s", err, out.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("decode output=%q error=%v", out.String(), err)
+	}
+	if payload["healthy"] != false || payload["next_action"] != "fix_server" || payload["message"] != "invalid server URL" {
+		t.Fatalf("payload=%v want structured invalid server result", payload)
 	}
 }
 
-func TestRootEnvironmentServerOverridesStoredConfig(t *testing.T) {
+func TestRootBlocksEnvironmentOnlyServerBeforeBusinessRequest(t *testing.T) {
 	isolateCmdConfigHome(t)
-	if err := platform.SaveState(platform.State{
-		Platform: platform.ShengSuanYun,
-		Server:   "https://stored.shengsuanyun.com/loom/v1",
-	}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
-	}
-	const envServer = "https://env.shengsuanyun.com/loom/v1"
-	t.Setenv("LOOMLOOM_SERVER", envServer)
+	const server = "https://unverified.example.com/loom/v1"
+	t.Setenv("LOOMLOOM_SERVER", server)
 	cmd := NewRootCmd()
-	flag := cmd.PersistentFlags().Lookup("server")
-	if flag == nil || flag.Value.String() != envServer {
-		t.Fatalf("server default=%v want %q from environment", flag, envServer)
+	cmd.SetArgs([]string{"template", "list", "--output", "json"})
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "has not passed LoomLoom Doctor") {
+		t.Fatalf("error=%v want Doctor requirement", err)
+	}
+	if state := platform.LoadState(); len(state.Servers) != 0 {
+		t.Fatalf("environment-only server was registered before Doctor: %+v", state)
 	}
 }
 
-func TestRootLegacyEnvironmentServerOverridesStoredConfig(t *testing.T) {
+func TestRootBlocksExplicitTokenlessServerBeforeBusinessRequest(t *testing.T) {
 	isolateCmdConfigHome(t)
-	if err := platform.SaveState(platform.State{
-		Platform: platform.ShengSuanYun,
-		Server:   "https://stored.shengsuanyun.com/loom/v1",
-	}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
-	}
-	const envServer = "https://batchjob.shengsuanyun.com/loom/v1"
-	t.Setenv("BATCHJOB_SERVER", envServer)
 	cmd := NewRootCmd()
-	flag := cmd.PersistentFlags().Lookup("server")
-	if flag == nil || flag.Value.String() != envServer {
-		t.Fatalf("server default=%v want %q from legacy environment", flag, envServer)
+	cmd.SetArgs([]string{
+		"--server", "https://unverified.example.com/loom/v1",
+		"template", "list",
+		"--output", "json",
+	})
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "has not passed LoomLoom Doctor") {
+		t.Fatalf("error=%v want Doctor requirement", err)
 	}
 }
 
-func TestRootBlankEnvironmentServerFallsBackToStoredConfig(t *testing.T) {
+func TestConfiguredServerPrefersActiveProfileOverLegacyEnvironment(t *testing.T) {
 	isolateCmdConfigHome(t)
-	const storedServer = "https://stored.shengsuanyun.com/loom/v1"
-	if err := platform.SaveState(platform.State{
-		Platform: platform.ShengSuanYun,
-		Server:   storedServer,
-	}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
-	}
-	t.Setenv("LOOMLOOM_SERVER", "  ")
-	cmd := NewRootCmd()
-	flag := cmd.PersistentFlags().Lookup("server")
-	if flag == nil || flag.Value.String() != storedServer {
-		t.Fatalf("server default=%v want %q from stored config", flag, storedServer)
+	const activeServer = "https://active.cogfoundry.ai/loom/v1"
+	saveTestProfile(t, activeServer, platform.CogFoundry, "")
+	t.Setenv("LOOMLOOM_SERVER", "https://legacy.shengsuanyun.com/loom/v1")
+	if got := configuredServer(); got != activeServer {
+		t.Fatalf("configuredServer=%q want active profile %q", got, activeServer)
 	}
 }
 
-func TestValidateTokenPlatformBlocksCogFoundry(t *testing.T) {
+func TestConfiguredServerUsesEnvironmentWithoutRegisteringProfile(t *testing.T) {
 	isolateCmdConfigHome(t)
-	opts := &rootOptions{
-		server: "https://api.cogfoundry.ai/loom/v1",
-		token:  "token-1",
+	const server = "https://new.shengsuanyun.com/loom/v1"
+	t.Setenv("LOOMLOOM_SERVER", server)
+	if got := configuredServer(); got != server {
+		t.Fatalf("configuredServer=%q want environment server", got)
 	}
-	err := validateTokenPlatform(opts)
-	if err == nil || !strings.Contains(err.Error(), cogFoundryUnavailableMessage) {
-		t.Fatalf("error=%v want CogFoundry unavailable message", err)
+	if state := platform.LoadState(); len(state.Servers) != 0 {
+		t.Fatalf("environment-only server was registered before Doctor: %+v", state)
 	}
 }
 
-func TestValidateTokenPlatformBlocksBoundPlatformConflict(t *testing.T) {
+func TestConfiguredServerIgnoresRemovedBatchjobEnvironment(t *testing.T) {
 	isolateCmdConfigHome(t)
-	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
-	}
-	opts := &rootOptions{
-		server: "https://api.cogfoundry.ai/loom/v1",
-		token:  "token-1",
-	}
-	err := validateTokenPlatform(opts)
-	if err == nil || !strings.Contains(err.Error(), cogFoundryUnavailableMessage) {
-		t.Fatalf("error=%v want CogFoundry unavailable message", err)
+	t.Setenv("BATCHJOB_SERVER", "https://removed.example.com/loom/v1")
+	if got := configuredServer(); got != "" {
+		t.Fatalf("configuredServer=%q want removed BATCHJOB_SERVER ignored", got)
 	}
 }
 
-func TestResolvePlatformUsesStoredPlatformForUnknownHost(t *testing.T) {
+func TestConfiguredTokenUsesActiveProfileTokenEnvironment(t *testing.T) {
 	isolateCmdConfigHome(t)
-	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
-	}
-	got, err := resolvePlatform(&rootOptions{server: "http://127.0.0.1:8080/loom/v1"})
+	const server = "https://loomloom.cogfoundry.ai/loom/v1"
+	profile := saveTestProfile(t, server, platform.CogFoundry, "")
+	t.Setenv(profile.TokenEnv, "profile-token")
+	t.Setenv("LOOMLOOM_TOKEN", "legacy-token")
+	t.Setenv("LOOMLOOM_SERVER", "https://legacy.shengsuanyun.com/loom/v1")
+	token, source, err := configuredToken(server)
 	if err != nil {
-		t.Fatalf("resolvePlatform error=%v", err)
+		t.Fatal(err)
 	}
-	if got.ID != platform.ShengSuanYun {
-		t.Fatalf("platform=%q want %q", got.ID, platform.ShengSuanYun)
-	}
-}
-
-func TestResolvePlatformRejectsInvalidEnv(t *testing.T) {
-	isolateCmdConfigHome(t)
-	t.Setenv("LOOMLOOM_PLATFORM", "typo")
-	_, err := resolvePlatform(&rootOptions{server: "https://loomloom.shengsuanyun.com/loom/v1"})
-	if err == nil || !strings.Contains(err.Error(), "unsupported LOOMLOOM_PLATFORM") {
-		t.Fatalf("error=%v want unsupported LOOMLOOM_PLATFORM", err)
+	if token != "profile-token" || source != profile.TokenEnv {
+		t.Fatalf("token=%q source=%q want profile token from %q", token, source, profile.TokenEnv)
 	}
 }
 
-func TestMaybePersistVerifiedPlatformRequiresVerification(t *testing.T) {
+func TestConfiguredTokenIgnoresRemovedBatchjobEnvironment(t *testing.T) {
 	isolateCmdConfigHome(t)
-	opts := &rootOptions{server: "https://loomloom.shengsuanyun.com/loom/v1"}
-	maybePersistVerifiedPlatform(opts, false)
-	if got := platform.LoadState(); got.Platform != "" {
-		t.Fatalf("platform=%q want empty without verification", got.Platform)
-	}
-	maybePersistVerifiedPlatform(opts, true)
-	got := platform.LoadState()
-	if got.Platform != platform.ShengSuanYun {
-		t.Fatalf("platform=%q want %q", got.Platform, platform.ShengSuanYun)
-	}
-	if got.Server != opts.server {
-		t.Fatalf("server=%q want %q", got.Server, opts.server)
-	}
-}
-
-func TestMaybePersistVerifiedPlatformSkipsRewriteWhenAlreadyBoundWithSameServer(t *testing.T) {
-	isolateCmdConfigHome(t)
-	path, err := platform.StatePath()
+	t.Setenv("BATCHJOB_TOKEN", "removed-token")
+	token, source, err := configuredToken("https://api.example.com/loom/v1")
 	if err != nil {
-		t.Fatalf("StatePath error=%v", err)
+		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		t.Fatalf("MkdirAll error=%v", err)
-	}
-	original := []byte("{\n  \"platform\": \"shengsuanyun\",\n  \"server\": \"https://loomloom.shengsuanyun.com/loom/v1\",\n  \"kept\": true\n}\n")
-	if err := os.WriteFile(path, original, 0o600); err != nil {
-		t.Fatalf("WriteFile error=%v", err)
-	}
-
-	opts := &rootOptions{server: "https://loomloom.shengsuanyun.com/loom/v1"}
-	maybePersistVerifiedPlatform(opts, true)
-
-	got, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("ReadFile error=%v", err)
-	}
-	if string(got) != string(original) {
-		t.Fatalf("config was rewritten:\n%s", string(got))
+	if token != "" || source != "" {
+		t.Fatalf("token=%q source=%q want removed BATCHJOB_TOKEN ignored", token, source)
 	}
 }
 
-func TestAuthenticatedProductPath(t *testing.T) {
-	tests := []struct {
-		name string
-		meta client.SuccessMeta
-		want bool
-	}{
-		{name: "users me", meta: client.SuccessMeta{Path: "/loom/v1/users/me/executables", Authed: true}, want: true},
-		{name: "creators me", meta: client.SuccessMeta{Path: "/loom/v1/creators/me/earnings", Authed: true}, want: true},
-		{name: "public authed", meta: client.SuccessMeta{Path: "/loom/v1/marketListings", Authed: true}, want: false},
-		{name: "users unauthenticated", meta: client.SuccessMeta{Path: "/loom/v1/users/me/executables"}, want: false},
+func TestDoctorRejectsConflictingEnvironmentPairBeforeRequest(t *testing.T) {
+	isolateCmdConfigHome(t)
+	var requests int
+	activeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		http.Error(w, "must not be called", http.StatusInternalServerError)
+	}))
+	defer activeServer.Close()
+
+	saveTestProfile(t, activeServer.URL+"/loom/v1", platform.Custom, "LOOMLOOM_TOKEN")
+	t.Setenv("LOOMLOOM_SERVER", "https://loomloom-integration.test.cogfoundry.ai/loom/v1")
+	t.Setenv("LOOMLOOM_TOKEN", "new-server-token")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"doctor", "--output", "json"})
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "LOOMLOOM_SERVER conflicts with the selected Server") {
+		t.Fatalf("error=%v want conflicting Server/Token pair rejection", err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := isAuthenticatedProductPath(tt.meta); got != tt.want {
-				t.Fatalf("isAuthenticatedProductPath=%t want %t", got, tt.want)
+	if requests != 0 {
+		t.Fatalf("requests=%d want no request before credential pair validation", requests)
+	}
+}
+
+func TestDoctorExplicitServerAndTokenBypassConflictingLegacyEnvironment(t *testing.T) {
+	isolateCmdConfigHome(t)
+	activeServer := healthyDoctorServer(t, http.StatusOK)
+	defer activeServer.Close()
+	targetServer := healthyDoctorServer(t, http.StatusOK)
+	defer targetServer.Close()
+
+	saveTestProfile(t, activeServer.URL+"/loom/v1", platform.Custom, "LOOMLOOM_TOKEN")
+	t.Setenv("LOOMLOOM_SERVER", activeServer.URL+"/loom/v1")
+	t.Setenv("LOOMLOOM_TOKEN", "active-token")
+	t.Setenv("LOOMLOOM_CLI_RELEASE_API", targetServer.URL+"/release")
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{
+		"doctor",
+		"--server", targetServer.URL + "/loom/v1",
+		"--token", "target-token",
+		"--output", "json",
+	})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("doctor error=%v output=%s", err, out.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("decode output=%q error=%v", out.String(), err)
+	}
+	if payload["healthy"] != true || payload["server"] != targetServer.URL+"/loom/v1" {
+		t.Fatalf("payload=%v want explicit target Server healthy", payload)
+	}
+}
+
+func TestValidateTokenPlatformAllowsCogFoundryAndCustom(t *testing.T) {
+	isolateCmdConfigHome(t)
+	for _, server := range []string{
+		"https://api.cogfoundry.ai/loom/v1",
+		"https://api.example.com/loom/v1",
+	} {
+		if err := validateTokenPlatform(&rootOptions{server: server}, true); err != nil {
+			t.Fatalf("server=%s error=%v want allowed for Doctor", server, err)
+		}
+	}
+}
+
+func TestValidateTokenPlatformBlocksEveryUnverifiedBusinessServer(t *testing.T) {
+	for _, token := range []string{"", "token-1"} {
+		t.Run("token="+token, func(t *testing.T) {
+			isolateCmdConfigHome(t)
+			opts := &rootOptions{
+				server:                    "https://api.example.com/loom/v1",
+				token:                     token,
+				enforceServerVerification: true,
+			}
+			err := validateTokenPlatform(opts, false)
+			if err == nil || !strings.Contains(err.Error(), "has not passed LoomLoom Doctor") {
+				t.Fatalf("token=%q error=%v want Doctor requirement", token, err)
 			}
 		})
 	}
 }
 
-func TestMaybeInsufficientBalanceErrorUsesBoundShengSuanYunMessage(t *testing.T) {
+func TestValidateTokenPlatformAllowsMigratedLegacyConfig(t *testing.T) {
 	isolateCmdConfigHome(t)
-	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
+	const server = "https://loomloom.shengsuanyun.com/loom/v1"
+	path, err := platform.StatePath()
+	if err != nil {
+		t.Fatal(err)
 	}
-	opts := &rootOptions{server: "http://127.0.0.1:8080/loom/v1"}
-	err := maybeInsufficientBalanceError(opts, &templateBalanceCheck{IsSufficient: false})
-	if err == nil || err.Error() != insufficientShengSuanYunBalanceMessage {
-		t.Fatalf("error=%v want fixed ShengSuanYun balance message", err)
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(`{"platform":"shengsuanyun","server":"`+server+`"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateTokenPlatform(&rootOptions{
+		server:                    server,
+		enforceServerVerification: true,
+	}, false); err != nil {
+		t.Fatalf("legacy verified config error=%v want allowed", err)
 	}
 }
 
-func TestMaybeMapInsufficientBalanceErrorUsesBoundShengSuanYunMessage(t *testing.T) {
+func TestResolvePlatformRejectsConflictingEnvironmentHint(t *testing.T) {
 	isolateCmdConfigHome(t)
-	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
+	t.Setenv("LOOMLOOM_PLATFORM", "shengsuanyun")
+	_, err := resolvePlatform(&rootOptions{server: "https://api.cogfoundry.ai/loom/v1"})
+	if err == nil || !strings.Contains(err.Error(), "conflicts") {
+		t.Fatalf("error=%v want platform conflict", err)
 	}
-	opts := &rootOptions{server: "http://127.0.0.1:8080/loom/v1"}
-	err := maybeMapInsufficientBalanceError(opts, map[string]any{
-		"balanceCheck": map[string]any{
-			"isSufficient": false,
-		},
-	})
-	if err == nil || err.Error() != insufficientShengSuanYunBalanceMessage {
-		t.Fatalf("error=%v want fixed ShengSuanYun balance message", err)
+}
+
+func TestInsufficientBalanceMessagesArePlatformSpecific(t *testing.T) {
+	tests := []struct {
+		server string
+		want   string
+	}{
+		{"https://api.shengsuanyun.com/loom/v1", insufficientShengSuanYunBalanceMessage},
+		{"https://api.cogfoundry.ai/loom/v1", insufficientCogFoundryBalanceMessage},
+	}
+	for _, tt := range tests {
+		err := maybeInsufficientBalanceError(
+			&rootOptions{server: tt.server},
+			&templateBalanceCheck{IsSufficient: false},
+		)
+		if err == nil || err.Error() != tt.want {
+			t.Fatalf("server=%s error=%v want %q", tt.server, err, tt.want)
+		}
 	}
 }

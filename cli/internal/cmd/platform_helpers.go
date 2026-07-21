@@ -1,116 +1,99 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/client"
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
 )
 
 func resolvePlatform(opts *rootOptions) (platform.Platform, error) {
-	if envPlatform, ok, err := platformFromEnv(); ok || err != nil {
-		return envPlatform, err
-	}
 	inferred := platform.InferFromServer(opts.server)
 	if inferred.ID != platform.Unknown {
+		state := platform.LoadState()
+		if inferred.ID == platform.Custom && len(state.Servers) == 0 && strings.TrimSpace(state.Server) == "" {
+			if stored, found := platform.ByID(state.Platform); found &&
+				stored.ID != platform.Unknown && stored.ID != platform.Custom {
+				return stored, nil
+			}
+		}
+		if err := validatePlatformHint(inferred); err != nil {
+			return platform.Platform{}, err
+		}
 		return inferred, nil
 	}
 	state := platform.LoadState()
-	if stored, ok := platform.ByID(state.Platform); ok && stored.ID != platform.Unknown {
-		return stored, nil
+	if active, ok := state.ActiveProfile(); ok {
+		if stored, found := platform.ByID(active.Platform); found {
+			return stored, nil
+		}
 	}
 	return platform.UnknownPlatform(), nil
 }
 
-func platformFromEnv() (platform.Platform, bool, error) {
-	raw := strings.TrimSpace(os.Getenv("LOOMLOOM_PLATFORM"))
+func validatePlatformHint(inferred platform.Platform) error {
+	raw := strings.TrimSpace(strings.ToLower(os.Getenv("LOOMLOOM_PLATFORM")))
 	if raw == "" {
-		return platform.Platform{}, false, nil
-	}
-	p, ok := platform.ByID(platform.ID(strings.ToLower(raw)))
-	if !ok || p.ID == platform.Unknown {
-		return platform.Platform{}, true, fmt.Errorf("unsupported LOOMLOOM_PLATFORM %q; use shengsuanyun or cogfoundry", raw)
-	}
-	return p, true, nil
-}
-
-func validateTokenPlatform(opts *rootOptions) error {
-	resolved, err := resolvePlatform(opts)
-	if err != nil {
-		return err
-	}
-	inferred := platform.InferFromServer(opts.server)
-	if resolved.ID != platform.Unknown && !resolved.Operational {
-		return errors.New(cogFoundryUnavailableMessage)
-	}
-	if inferred.ID != platform.Unknown && !inferred.Operational {
-		return errors.New(cogFoundryUnavailableMessage)
-	}
-	if strings.TrimSpace(opts.token) == "" || inferred.ID == platform.Unknown {
 		return nil
 	}
-	state := platform.LoadState()
-	bound, ok := platform.ByID(state.Platform)
-	if !ok || bound.ID == platform.Unknown {
-		return nil
+	hinted, ok := platform.ByID(platform.ID(raw))
+	if !ok || hinted.ID == platform.Unknown {
+		return fmt.Errorf("unsupported LOOMLOOM_PLATFORM %q; use shengsuanyun, cogfoundry, or custom", raw)
 	}
-	if bound.ID != inferred.ID {
-		return fmt.Errorf(
-			"平台不一致：LOOMLOOM_SERVER 指向 %s，但本机已绑定 %s，已拦截请求；如确实要切换平台，请更新 LOOMLOOM_SERVER 与对应平台的 token",
-			inferred.DisplayName,
-			bound.DisplayName,
-		)
+	if inferred.ID != platform.Unknown && hinted.ID != inferred.ID {
+		return fmt.Errorf("LOOMLOOM_PLATFORM=%s conflicts with the platform inferred from LOOMLOOM_SERVER (%s)", hinted.ID, inferred.ID)
 	}
 	return nil
 }
 
-func maybePersistVerifiedPlatform(opts *rootOptions, verified bool) {
-	if !verified {
-		return
+func validateTokenPlatform(opts *rootOptions, allowUnverified bool) error {
+	resolved, err := resolvePlatform(opts)
+	if err != nil {
+		return err
 	}
-	server := strings.TrimSpace(opts.server)
-	if server == "" {
-		return
+	if allowUnverified || !opts.enforceServerVerification {
+		return nil
 	}
-	inferred := platform.InferFromServer(opts.server)
-	if inferred.ID == platform.Unknown || !inferred.Operational {
-		return
+	if strings.TrimSpace(opts.server) != "" {
+		state := platform.LoadState()
+		if _, ok := state.FindProfile(opts.server); !ok {
+			return fmt.Errorf("server has not passed LoomLoom Doctor; run `loomloom doctor --server %q --output json` first", opts.server)
+		}
 	}
-	state := platform.LoadState()
-	if state.Platform == inferred.ID && strings.TrimSpace(state.Server) == server {
-		return
+	if resolved.ID == platform.Unknown {
+		return nil
 	}
-	if state.Platform != "" && state.Platform != platform.Unknown && state.Platform != inferred.ID {
-		return
+	if !resolved.Operational {
+		return fmt.Errorf("platform %s is not operational", resolved.DisplayName)
 	}
-	_ = platform.SaveState(platform.State{Platform: inferred.ID, Server: server})
-}
-
-func isAuthenticatedProductPath(meta client.SuccessMeta) bool {
-	if !meta.Authed {
-		return false
-	}
-	return strings.Contains(meta.Path, "/loom/v1/users/me/") ||
-		strings.Contains(meta.Path, "/loom/v1/creators/me/")
+	return nil
 }
 
 func credentialMessageForPlatform(p platform.Platform) (string, string) {
-	if p.ID == platform.ShengSuanYun {
+	switch p.ID {
+	case platform.ShengSuanYun:
 		return "missing_token", missingShengSuanYunTokenMessage
+	case platform.CogFoundry:
+		return "missing_token", missingCogFoundryTokenMessage
+	case platform.Custom:
+		return "missing_token", missingCustomTokenMessage
+	default:
+		return "choose_platform", choosePlatformMessage
 	}
-	if p.ID == platform.CogFoundry {
-		return "cogfoundry_unavailable", cogFoundryUnavailableMessage
-	}
-	return "choose_platform", choosePlatformMessage
+}
+
+func tokenAuthenticationFailureMessage() string {
+	return tokenAuthenticationFailedMessage
 }
 
 func insufficientBalanceMessage(opts *rootOptions) string {
 	p, err := resolvePlatform(opts)
 	if err == nil && p.ID == platform.ShengSuanYun {
 		return insufficientShengSuanYunBalanceMessage
+	}
+	if err == nil && p.ID == platform.CogFoundry {
+		return insufficientCogFoundryBalanceMessage
 	}
 	return ""
 }
