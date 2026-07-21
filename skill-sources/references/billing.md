@@ -26,11 +26,7 @@ Every run requires a fresh confirmation unless the active LoomLoom Skill Test Ex
 
 Test Execution Mode is a conversation-scoped Agent prompt authorization, not a server-side billing control. It may skip repeated confirmation only within the user-approved Server, execution scope, task limits, per-run and total cost limits, and expiry. A missing, zero, or currency-unknown precheck estimate is never eligible for automatic submission: obtain a fresh confirmation before submission. If any other condition changes or is exceeded, also obtain a fresh confirmation before submission.
 
-If input changes after validation, quote/precheck, or confirmation, validate and estimate again, show the new estimate, and obtain a new confirmation. In Chinese, say:
-
-```text
-输入内容在确认后发生变化，需要重新预估并确认。
-```
+If input changes after validation, quote/precheck, or confirmation, validate and estimate again, show the new estimate, and obtain a new confirmation. Tell the user in their language that the changed input must be re-estimated and reconfirmed.
 
 Use natural confirmation wording. In English, use `Reply: Confirm`. In other languages, use the natural localized equivalent. Do not ask ordinary users to reply with a raw CLI phrase such as `confirm submit`.
 
