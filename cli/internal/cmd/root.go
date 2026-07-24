@@ -26,7 +26,7 @@ type rootOptions struct {
 func NewRootCmd() *cobra.Command {
 	opts := &rootOptions{
 		server:  configuredServer(),
-		token:   envOrDefault("LOOMLOOM_TOKEN", os.Getenv("BATCHJOB_TOKEN")),
+		token:   configuredToken(),
 		timeout: 30 * time.Second,
 		output:  "text",
 		verbose: envBool("LOOMLOOM_VERBOSE"),
@@ -62,6 +62,8 @@ func NewRootCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		newDoctorCmd(opts),
+		newLoginCmd(opts),
+		newLogoutCmd(opts),
 		newModelCmd(opts),
 		newAssetCmd(opts),
 		newMarketCmd(opts),
@@ -109,6 +111,13 @@ func configuredServer() string {
 		return value
 	}
 	return strings.TrimSpace(platform.LoadState().Server)
+}
+
+func configuredToken() string {
+	if value := envOrDefault("LOOMLOOM_TOKEN", os.Getenv("BATCHJOB_TOKEN")); value != "" {
+		return value
+	}
+	return strings.TrimSpace(platform.LoadState().Token)
 }
 
 func envBool(key string) bool {
