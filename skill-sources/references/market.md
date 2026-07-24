@@ -49,6 +49,8 @@ Build buyer input only from `inputSchemaSnapshot`:
 - Use `fields[].key` as the submitted input key.
 - Use `fields[].value_type` for type validation.
 - Use `fields[].required` for required-field validation.
+- Use `fields[].enum_values` as the allowed choices for enum fields, and present those choices before collecting the user's value.
+- Do not guess, normalize, or substitute enum choices. After normal interactive input trimming, forward the collected scalar value without local membership validation; the service remains authoritative for enum membership. Multi-value inputs retain the existing CLI behavior.
 - Use `sample_rows` as examples.
 
 Do not reveal, reconstruct, infer, or submit hidden `taskInputs`, `workflowDefinition`, `templateSpec`, internal prompts, internal step IDs, or private mappings.

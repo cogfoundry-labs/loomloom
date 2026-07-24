@@ -30,6 +30,7 @@ Show an installation confirmation containing:
 - target agent
 - exact output directory
 - main inputs
+- when Preview fields include `enumValues`, the allowed choices as part of the main input summary
 - reminder that every future real run still requires quote/precheck and explicit confirmation
 
 Generated Skill names always use the `loomloom-` prefix. The final output directory basename must equal the previewed `skillName`.
