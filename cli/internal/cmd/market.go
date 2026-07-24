@@ -16,8 +16,10 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"unicode"
 
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/client"
+	"github.com/Cogfoundry-ai/loomloom/cli/internal/publicinput"
 	"github.com/spf13/cobra"
 )
 
@@ -54,79 +56,8 @@ type marketListingPublicResponse struct {
 	Currency                    string    `json:"currency"`
 	SaleStatus                  string    `json:"saleStatus"`
 	ExecutionAvailabilityStatus string    `json:"executionAvailabilityStatus"`
-	InputSchemaSnapshot         string    `json:"inputSchemaSnapshot"`
-}
-
-type marketPublicInputSchema struct {
-	SchemaVersion string                   `json:"schema_version"`
-	Fields        []marketPublicInputField `json:"fields"`
-	Instructions  []string                 `json:"instructions"`
-	SampleRows    []map[string]any         `json:"sample_rows"`
-}
-
-func (s *marketPublicInputSchema) UnmarshalJSON(data []byte) error {
-	type alias struct {
-		SchemaVersion    string                   `json:"schema_version"`
-		SchemaVersionAlt string                   `json:"schemaVersion"`
-		Fields           []marketPublicInputField `json:"fields"`
-		Instructions     []string                 `json:"instructions"`
-		SampleRows       []map[string]any         `json:"sample_rows"`
-		SampleRowsAlt    []map[string]any         `json:"sampleRows"`
-	}
-	var parsed alias
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		return err
-	}
-	s.SchemaVersion = parsed.SchemaVersion
-	if s.SchemaVersion == "" {
-		s.SchemaVersion = parsed.SchemaVersionAlt
-	}
-	s.Fields = parsed.Fields
-	s.Instructions = parsed.Instructions
-	s.SampleRows = parsed.SampleRows
-	if len(s.SampleRows) == 0 {
-		s.SampleRows = parsed.SampleRowsAlt
-	}
-	return nil
-}
-
-type marketPublicInputField struct {
-	Key         string `json:"key"`
-	Label       string `json:"label"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
-	ValueType   string `json:"value_type"`
-	SourceKind  string `json:"source_kind"`
-}
-
-func (f *marketPublicInputField) UnmarshalJSON(data []byte) error {
-	type alias struct {
-		Key           string `json:"key"`
-		Label         string `json:"label"`
-		Description   string `json:"description"`
-		Required      bool   `json:"required"`
-		ValueType     string `json:"value_type"`
-		ValueTypeAlt  string `json:"valueType"`
-		SourceKind    string `json:"source_kind"`
-		SourceKindAlt string `json:"sourceKind"`
-	}
-	var parsed alias
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		return err
-	}
-	f.Key = parsed.Key
-	f.Label = parsed.Label
-	f.Description = parsed.Description
-	f.Required = parsed.Required
-	f.ValueType = parsed.ValueType
-	if f.ValueType == "" {
-		f.ValueType = parsed.ValueTypeAlt
-	}
-	f.SourceKind = parsed.SourceKind
-	if f.SourceKind == "" {
-		f.SourceKind = parsed.SourceKindAlt
-	}
-	return nil
+	// Preserve either snapshot representation for the shared parser.
+	InputSchemaSnapshot json.RawMessage `json:"inputSchemaSnapshot"`
 }
 
 type marketInputPayload struct {
@@ -599,16 +530,12 @@ func decodeJSONValue[T any](value any) (T, error) {
 	return out, nil
 }
 
-func parseMarketInputSchemaSnapshot(snapshot string) (marketPublicInputSchema, error) {
-	snapshot = strings.TrimSpace(snapshot)
-	if snapshot == "" {
-		return marketPublicInputSchema{}, errors.New("inputSchemaSnapshot is empty")
+func parseMarketInputSchemaSnapshot(snapshot json.RawMessage) (publicinput.Schema, error) {
+	snapshot = bytes.TrimSpace(snapshot)
+	if len(snapshot) == 0 || bytes.Equal(snapshot, []byte("null")) {
+		return publicinput.Schema{}, errors.New("inputSchemaSnapshot is empty")
 	}
-	var schema marketPublicInputSchema
-	if err := json.Unmarshal([]byte(snapshot), &schema); err != nil {
-		return marketPublicInputSchema{}, err
-	}
-	return schema, nil
+	return publicinput.ParseSnapshot(snapshot)
 }
 
 func loadMarketInputPayload(filePath string) (marketInputPayload, error) {
@@ -648,11 +575,11 @@ func loadMarketInputPayload(filePath string) (marketInputPayload, error) {
 	return payload, nil
 }
 
-func validateMarketInputRows(rows []map[string]any, schema marketPublicInputSchema) ([]map[string]any, error) {
+func validateMarketInputRows(rows []map[string]any, schema publicinput.Schema) ([]map[string]any, error) {
 	if len(rows) == 0 {
 		return nil, errors.New("inputRows is required")
 	}
-	fieldsByKey := make(map[string]marketPublicInputField, len(schema.Fields))
+	fieldsByKey := make(map[string]publicinput.Field, len(schema.Fields))
 	requiredKeys := make([]string, 0)
 	for _, field := range schema.Fields {
 		key := strings.TrimSpace(field.Key)
@@ -695,7 +622,7 @@ func validateMarketInputRows(rows []map[string]any, schema marketPublicInputSche
 	return out, nil
 }
 
-func validateMarketInputValue(field marketPublicInputField, value any) error {
+func validateMarketInputValue(field publicinput.Field, value any) error {
 	valueType := strings.ToLower(strings.TrimSpace(field.ValueType))
 	switch valueType {
 	case "", "string", "text":
@@ -754,19 +681,25 @@ func marketInputValueEmpty(value any) bool {
 	return false
 }
 
-func promptMarketInputRows(r io.Reader, w io.Writer, schema marketPublicInputSchema) ([]map[string]any, error) {
+func promptMarketInputRows(r io.Reader, w io.Writer, schema publicinput.Schema) ([]map[string]any, error) {
 	reader := bufio.NewReader(r)
 	row := make(map[string]any, len(schema.Fields))
 	for _, field := range schema.Fields {
-		label := strings.TrimSpace(field.Label)
-		if label == "" {
-			label = field.Key
+		displayLabel := oneLine(field.Label)
+		if displayLabel == "" {
+			displayLabel = oneLine(field.Key)
 		}
+		displayKey := oneLine(field.Key)
 		required := ""
 		if field.Required {
 			required = " required"
 		}
-		if _, err := fmt.Fprintf(w, "%s (%s%s): ", label, field.Key, required); err != nil {
+		if len(field.EnumValues) > 0 {
+			// Show enum choices without replacing the service's final validation.
+			if _, err := fmt.Fprintf(w, "%s (%s%s)\nAllowed values: %s\n> ", displayLabel, displayKey, required, displayStringList(field.EnumValues)); err != nil {
+				return nil, err
+			}
+		} else if _, err := fmt.Fprintf(w, "%s (%s%s): ", displayLabel, displayKey, required); err != nil {
 			return nil, err
 		}
 		raw, err := reader.ReadString('\n')
@@ -795,7 +728,7 @@ func promptMarketInputRows(r io.Reader, w io.Writer, schema marketPublicInputSch
 	return []map[string]any{row}, nil
 }
 
-func parseMarketInputString(field marketPublicInputField, value string) (any, error) {
+func parseMarketInputString(field publicinput.Field, value string) (any, error) {
 	switch strings.ToLower(strings.TrimSpace(field.ValueType)) {
 	case "number", "float", "double":
 		parsed, err := strconv.ParseFloat(value, 64)
@@ -875,6 +808,7 @@ func stableMarketClientRequestID(seed any) (string, error) {
 }
 
 func marketQuotePayload(input marketInputPayload) map[string]any {
+	// The Listing GET is not a version lock, so quote/execute send only inputRows.
 	return map[string]any{
 		"inputRows": input.InputRows,
 	}
@@ -979,7 +913,7 @@ func printMarketListingDetail(w io.Writer, listing marketListingPublicResponse) 
 		return err
 	}
 	if schema.SchemaVersion != "" {
-		if _, err := fmt.Fprintf(w, "input_schema_version\t%s\n", schema.SchemaVersion); err != nil {
+		if _, err := fmt.Fprintf(w, "input_schema_version\t%s\n", oneLine(schema.SchemaVersion)); err != nil {
 			return err
 		}
 	}
@@ -988,7 +922,7 @@ func printMarketListingDetail(w io.Writer, listing marketListingPublicResponse) 
 			return err
 		}
 		for _, instruction := range schema.Instructions {
-			if _, err := fmt.Fprintf(w, "- %s\n", instruction); err != nil {
+			if _, err := fmt.Fprintf(w, "- %s\n", oneLine(instruction)); err != nil {
 				return err
 			}
 		}
@@ -998,18 +932,19 @@ func printMarketListingDetail(w io.Writer, listing marketListingPublicResponse) 
 			return err
 		}
 		fieldWriter := newTabWriter(w)
-		if _, err := fmt.Fprintln(fieldWriter, "label\tkey\trequired\ttype\tsource\tdescription"); err != nil {
+		if _, err := fmt.Fprintln(fieldWriter, "label\tkey\trequired\ttype\tsource\tchoices\tdescription"); err != nil {
 			return err
 		}
 		for _, field := range schema.Fields {
 			if _, err := fmt.Fprintf(
 				fieldWriter,
-				"%s\t%s\t%t\t%s\t%s\t%s\n",
+				"%s\t%s\t%t\t%s\t%s\t%s\t%s\n",
 				oneLine(field.Label),
-				field.Key,
+				oneLine(field.Key),
 				field.Required,
-				field.ValueType,
-				field.SourceKind,
+				oneLine(field.ValueType),
+				oneLine(field.SourceKind),
+				displayStringList(field.EnumValues),
 				oneLine(field.Description),
 			); err != nil {
 				return err
@@ -1023,9 +958,12 @@ func printMarketListingDetail(w io.Writer, listing marketListingPublicResponse) 
 		if _, err := fmt.Fprintln(w, "sample_rows:"); err != nil {
 			return err
 		}
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(schema.SampleRows)
+		encoded, err := json.MarshalIndent(schema.SampleRows, "", "  ")
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintln(w, sanitizeRemoteText(string(encoded), true))
+		return err
 	}
 	return nil
 }
@@ -1131,13 +1069,45 @@ func displayJSONValue(value any) string {
 	}
 }
 
+func displayStringList(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	encoded, err := json.Marshal(values)
+	if err != nil {
+		return ""
+	}
+	return sanitizeRemoteText(string(encoded), false)
+}
+
 func oneLine(value string) string {
-	value = strings.ReplaceAll(strings.TrimSpace(value), "\n", " ")
-	value = strings.ReplaceAll(value, "\t", " ")
-	if len(value) > 160 {
-		return value[:157] + "..."
+	value = sanitizeRemoteText(strings.TrimSpace(value), false)
+	value = strings.Join(strings.Fields(value), " ")
+	runes := []rune(value)
+	if len(runes) > 160 {
+		return string(runes[:157]) + "..."
 	}
 	return value
+}
+
+func sanitizeRemoteText(value string, preserveNewlines bool) string {
+	return strings.Map(func(r rune) rune {
+		if preserveNewlines && r == '\n' {
+			return r
+		}
+		if unicode.IsControl(r) || isBidiControl(r) {
+			return ' '
+		}
+		return r
+	}, value)
+}
+
+func isBidiControl(r rune) bool {
+	switch r {
+	case '\u061c', '\u200e', '\u200f':
+		return true
+	}
+	return r >= '\u202a' && r <= '\u202e' || r >= '\u2066' && r <= '\u2069'
 }
 
 func newDeprecatedMarketPublishCmd(opts *rootOptions) *cobra.Command {

@@ -68,13 +68,28 @@ type Issue struct {
 	Message string `json:"message"`
 }
 
+// InputField is the public field projection used by Skill output.
 type InputField struct {
-	Key         string `json:"key"`
-	Label       string `json:"label"`
-	Description string `json:"description,omitempty"`
-	Required    bool   `json:"required"`
-	ValueType   string `json:"valueType,omitempty"`
-	SourceKind  string `json:"sourceKind,omitempty"`
+	Key               string             `json:"key"`
+	Label             string             `json:"label"`
+	Description       string             `json:"description,omitempty"`
+	Required          bool               `json:"required"`
+	ValueType         string             `json:"valueType,omitempty"`
+	EnumValues        []string           `json:"enumValues,omitempty"`
+	AcceptedMimeTypes []string           `json:"acceptedMimeTypes,omitempty"`
+	MultiValue        bool               `json:"multiValue,omitempty"`
+	MaxValues         int32              `json:"maxValues,omitempty"`
+	Order             int32              `json:"order,omitempty"`
+	DefaultValue      string             `json:"defaultValue,omitempty"`
+	SourceKind        string             `json:"sourceKind,omitempty"`
+	Presentation      *InputPresentation `json:"presentation,omitempty"`
+}
+
+type InputPresentation struct {
+	Widget      string   `json:"widget,omitempty"`
+	Placeholder string   `json:"placeholder,omitempty"`
+	Hint        string   `json:"hint,omitempty"`
+	Examples    []string `json:"examples,omitempty"`
 }
 
 type Metadata struct {
