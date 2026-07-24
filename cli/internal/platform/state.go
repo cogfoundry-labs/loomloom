@@ -9,6 +9,7 @@ import (
 type State struct {
 	Platform ID     `json:"platform,omitempty"`
 	Server   string `json:"server,omitempty"`
+	Token    string `json:"token,omitempty"`
 }
 
 func StatePath() (string, error) {
