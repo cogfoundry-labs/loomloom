@@ -7,11 +7,13 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
+	"github.com/Cogfoundry-ai/loomloom/cli/internal/publicinput"
 )
 
 func TestMarketPublishBuildsRequestWithoutGeneratedFields(t *testing.T) {
@@ -270,6 +272,108 @@ func TestMarketShowUsesDetailEndpoint(t *testing.T) {
 	assertContainsNone(t, out.String(), "task_fixed_fee_t")
 }
 
+func TestMarketShowDisplaysEnumChoices(t *testing.T) {
+	schema := `{"fields":[{"key":"stage","label":"Funding stage","required":true,"value_type":"enum","enum_values":["Seed","Series A"]}]}`
+	body, err := json.Marshal(map[string]any{
+		"id":                  "listing-1",
+		"displayName":         "Fundraising helper",
+		"inputSchemaSnapshot": json.RawMessage(schema),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(body)
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newMarketShowCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"listing-1"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("market show command error = %v", err)
+	}
+	assertContainsAll(t, out.String(), "choices", `["Seed","Series A"]`)
+}
+
+func TestMarketShowSanitizesRemoteSchemaText(t *testing.T) {
+	schema, err := json.Marshal(map[string]any{
+		"schema_version": "v1\nINJECTED_VERSION",
+		"instructions":   []string{"guide\nINJECTED_INSTRUCTION\tcell\x1b[31m"},
+		"fields": []map[string]any{{
+			"key":         "stage\nINJECTED_KEY",
+			"label":       "Funding\tstage\nINJECTED_LABEL",
+			"value_type":  "enum\nINJECTED_TYPE",
+			"source_kind": "user_input\tINJECTED_SOURCE",
+			"enum_values": []string{"Seed\u009b[31m", "Series\u202eA"},
+		}},
+		"sample_rows": []map[string]string{{"stage": "Seed\u009b[31m\u202e"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := json.Marshal(map[string]any{
+		"id":                  "listing-1",
+		"displayName":         "Fundraising helper",
+		"inputSchemaSnapshot": json.RawMessage(schema),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(body)
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newMarketShowCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"listing-1"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("market show command error = %v", err)
+	}
+	assertContainsAll(t, out.String(),
+		"v1 INJECTED_VERSION",
+		"guide INJECTED_INSTRUCTION cell [31m",
+		"Funding stage INJECTED_LABEL",
+		"stage INJECTED_KEY",
+		"enum INJECTED_TYPE",
+		"user_input INJECTED_SOURCE",
+		"Seed [31m",
+		"Series A",
+	)
+	assertContainsNone(t, out.String(), "\nINJECTED_", "\tINJECTED_", "\x1b", "\u009b", "\u202e")
+}
+
+func TestPromptMarketInputRowsSanitizesDisplayAndPreservesOriginalKey(t *testing.T) {
+	const key = "stage\nINJECTED_KEY"
+	var prompt bytes.Buffer
+	rows, err := promptMarketInputRows(strings.NewReader("Seed\n"), &prompt, publicinput.Schema{
+		Fields: []publicinput.Field{{
+			Key:        key,
+			Label:      "Funding\tstage\nINJECTED_LABEL\x1b[31m",
+			Required:   true,
+			ValueType:  "enum",
+			EnumValues: []string{"Seed\u009b[31m\u202e", "Series A"},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("promptMarketInputRows() error = %v", err)
+	}
+	assertContainsAll(t, prompt.String(), "Funding stage INJECTED_LABEL [31m", "stage INJECTED_KEY", "Seed [31m", "Series A")
+	assertContainsNone(t, prompt.String(), "\nINJECTED_", "\tINJECTED_", "\x1b", "\u009b", "\u202e")
+	if len(rows) != 1 || rows[0][key] != "Seed" {
+		t.Fatalf("rows = %#v, want value stored under original key %q", rows, key)
+	}
+}
+
 func TestMarketShowJSONPreservesUnknownFields(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -410,6 +514,56 @@ func TestMarketQuoteSendsOnlyPublicInputRows(t *testing.T) {
 	row := rows[0].(map[string]any)
 	if row["prompt"] != "review this" {
 		t.Fatalf("row=%#v want prompt", row)
+	}
+}
+
+func TestMarketQuoteInteractiveShowsEnumChoicesWithoutLocalMembershipValidation(t *testing.T) {
+	var body map[string]any
+	schema := `{"fields":[{"key":"stage","label":"Funding stage","required":true,"value_type":"enum","enum_values":["Seed","Series A"]}]}`
+	listingBody, err := json.Marshal(map[string]any{
+		"id":                          "listing-1",
+		"displayName":                 "Fundraising helper",
+		"listingVersionId":            "lv-1",
+		"executionAvailabilityStatus": "available",
+		"inputSchemaSnapshot":         json.RawMessage(schema),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/loom/v1/marketListings/listing-1":
+			_, _ = w.Write(listingBody)
+		case "/loom/v1/marketListings/listing-1:quote":
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode quote body: %v", err)
+			}
+			_, _ = w.Write([]byte(`{"quoteId":"quote-1"}`))
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newMarketQuoteCmd(opts)
+	var prompt bytes.Buffer
+	cmd.SetIn(strings.NewReader("Unknown stage\n"))
+	cmd.SetErr(&prompt)
+	cmd.SetArgs([]string{"listing-1"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("market quote command error = %v", err)
+	}
+	assertContainsAll(t, prompt.String(), "Funding stage", "Allowed values", `["Seed","Series A"]`)
+	rows, ok := body["inputRows"].([]any)
+	if !ok || len(rows) != 1 {
+		t.Fatalf("inputRows=%#v want one row", body["inputRows"])
+	}
+	row, ok := rows[0].(map[string]any)
+	if !ok || row["stage"] != "Unknown stage" {
+		t.Fatalf("row=%#v want unvalidated enum value forwarded", rows[0])
 	}
 }
 
@@ -882,6 +1036,9 @@ func TestMarketRunQuotesThenExecutesPublicInputRows(t *testing.T) {
 		if _, ok := body["user_id"]; ok {
 			t.Fatalf("run body should not include user_id: %#v", body)
 		}
+	}
+	if !reflect.DeepEqual(quoteBody["inputRows"], executeBody["inputRows"]) {
+		t.Fatalf("quote inputRows=%#v execute inputRows=%#v want identical rows", quoteBody["inputRows"], executeBody["inputRows"])
 	}
 	if executeBody["confirm"] != true {
 		t.Fatalf("confirm=%v want true", executeBody["confirm"])

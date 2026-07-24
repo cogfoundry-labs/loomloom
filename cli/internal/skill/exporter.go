@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/client"
+	"github.com/Cogfoundry-ai/loomloom/cli/internal/publicinput"
 )
 
 type Exporter struct {
@@ -154,78 +155,6 @@ type marketListing struct {
 	InputSchemaSnapshot         json.RawMessage `json:"inputSchemaSnapshot"`
 }
 
-type publicInputSchema struct {
-	SchemaVersion string           `json:"schema_version"`
-	Fields        []publicField    `json:"fields"`
-	Instructions  []string         `json:"instructions"`
-	SampleRows    []map[string]any `json:"sample_rows"`
-}
-
-func (s *publicInputSchema) UnmarshalJSON(data []byte) error {
-	type alias struct {
-		SchemaVersion    string           `json:"schema_version"`
-		SchemaVersionAlt string           `json:"schemaVersion"`
-		Fields           []publicField    `json:"fields"`
-		Instructions     []string         `json:"instructions"`
-		SampleRows       []map[string]any `json:"sample_rows"`
-		SampleRowsAlt    []map[string]any `json:"sampleRows"`
-	}
-	var parsed alias
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		return err
-	}
-	s.SchemaVersion = parsed.SchemaVersion
-	if s.SchemaVersion == "" {
-		s.SchemaVersion = parsed.SchemaVersionAlt
-	}
-	s.Fields = parsed.Fields
-	s.Instructions = parsed.Instructions
-	s.SampleRows = parsed.SampleRows
-	if len(s.SampleRows) == 0 {
-		s.SampleRows = parsed.SampleRowsAlt
-	}
-	return nil
-}
-
-type publicField struct {
-	Key         string `json:"key"`
-	Label       string `json:"label"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
-	ValueType   string `json:"value_type"`
-	SourceKind  string `json:"source_kind"`
-}
-
-func (f *publicField) UnmarshalJSON(data []byte) error {
-	type alias struct {
-		Key           string `json:"key"`
-		Label         string `json:"label"`
-		Description   string `json:"description"`
-		Required      bool   `json:"required"`
-		ValueType     string `json:"value_type"`
-		ValueTypeAlt  string `json:"valueType"`
-		SourceKind    string `json:"source_kind"`
-		SourceKindAlt string `json:"sourceKind"`
-	}
-	var parsed alias
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		return err
-	}
-	f.Key = parsed.Key
-	f.Label = parsed.Label
-	f.Description = parsed.Description
-	f.Required = parsed.Required
-	f.ValueType = parsed.ValueType
-	if f.ValueType == "" {
-		f.ValueType = parsed.ValueTypeAlt
-	}
-	f.SourceKind = parsed.SourceKind
-	if f.SourceKind == "" {
-		f.SourceKind = parsed.SourceKindAlt
-	}
-	return nil
-}
-
 type flexInt64 int64
 
 func (v *flexInt64) UnmarshalJSON(data []byte) error {
@@ -268,16 +197,17 @@ func (e *Exporter) loadMarket(ctx context.Context, opts Options) (TemplateData, 
 	skillName := SkillName(listing.DisplayName, listing.ID)
 	return TemplateData{
 		Metadata: Metadata{
-			SchemaVersion:             MetadataSchemaVersion,
-			GeneratedBy:               "loomloom-cli",
-			SourceType:                SourceMarketListing,
-			Agent:                     string(opts.Agent),
-			GeneratedAt:               e.now().UTC().Format(time.RFC3339),
-			SkillName:                 skillName,
-			DisplayName:               listing.DisplayName,
-			Description:               listing.Description,
-			SourceID:                  listing.ID,
-			InputSchemaMode:           InputSchemaModeSchema,
+			SchemaVersion:   MetadataSchemaVersion,
+			GeneratedBy:     "loomloom-cli",
+			SourceType:      SourceMarketListing,
+			Agent:           string(opts.Agent),
+			GeneratedAt:     e.now().UTC().Format(time.RFC3339),
+			SkillName:       skillName,
+			DisplayName:     listing.DisplayName,
+			Description:     listing.Description,
+			SourceID:        listing.ID,
+			InputSchemaMode: InputSchemaModeSchema,
+			// Keep the raw snapshot so unknown fields survive export.
 			InputSchemaSnapshot:       listing.InputSchemaSnapshot,
 			ListingID:                 listing.ID,
 			InstalledListingVersionID: listing.ListingVersionID,
@@ -286,7 +216,7 @@ func (e *Exporter) loadMarket(ctx context.Context, opts Options) (TemplateData, 
 		},
 		Fields:       fields,
 		Instructions: schema.Instructions,
-		SampleRows:   schema.SampleRows,
+		SampleRows:   sampleRowsFromSchema(schema.SampleRows),
 	}, nil
 }
 
@@ -306,37 +236,61 @@ func marketStatusLooksInstallable(listing marketListing) bool {
 	return true
 }
 
-func parseInputSchema(raw json.RawMessage) (publicInputSchema, error) {
+func parseInputSchema(raw json.RawMessage) (publicinput.Schema, error) {
 	if len(raw) == 0 || strings.TrimSpace(string(raw)) == "" || strings.TrimSpace(string(raw)) == `""` {
-		return publicInputSchema{}, fmt.Errorf("inputSchemaSnapshot is empty")
+		return publicinput.Schema{}, fmt.Errorf("inputSchemaSnapshot is empty")
 	}
-	var encoded string
-	if err := json.Unmarshal(raw, &encoded); err == nil {
-		raw = json.RawMessage(encoded)
-	}
-	var schema publicInputSchema
-	if err := json.Unmarshal(raw, &schema); err != nil {
-		return publicInputSchema{}, err
+	schema, err := publicinput.ParseSnapshot(raw)
+	if err != nil {
+		return publicinput.Schema{}, err
 	}
 	if len(schema.Fields) == 0 {
-		return publicInputSchema{}, fmt.Errorf("inputSchemaSnapshot has no fields")
+		return publicinput.Schema{}, fmt.Errorf("inputSchemaSnapshot has no fields")
 	}
 	return schema, nil
 }
 
-func fieldsFromSchema(schema publicInputSchema) []InputField {
+// Keep one mapping boundary for Preview and SKILL.md.
+func fieldsFromSchema(schema publicinput.Schema) []InputField {
 	fields := make([]InputField, 0, len(schema.Fields))
 	for _, field := range schema.Fields {
-		fields = append(fields, InputField{
-			Key:         field.Key,
-			Label:       field.Label,
-			Description: field.Description,
-			Required:    field.Required,
-			ValueType:   field.ValueType,
-			SourceKind:  field.SourceKind,
-		})
+		mapped := InputField{
+			Key:               field.Key,
+			Label:             field.Label,
+			Description:       field.Description,
+			Required:          field.Required,
+			ValueType:         field.ValueType,
+			EnumValues:        append([]string(nil), field.EnumValues...),
+			AcceptedMimeTypes: append([]string(nil), field.AcceptedMimeTypes...),
+			MultiValue:        field.MultiValue,
+			MaxValues:         field.MaxValues,
+			Order:             field.Order,
+			DefaultValue:      field.DefaultValue,
+			SourceKind:        field.SourceKind,
+		}
+		if field.Presentation != nil {
+			mapped.Presentation = &InputPresentation{
+				Widget:      field.Presentation.Widget,
+				Placeholder: field.Presentation.Placeholder,
+				Hint:        field.Presentation.Hint,
+				Examples:    append([]string(nil), field.Presentation.Examples...),
+			}
+		}
+		fields = append(fields, mapped)
 	}
 	return fields
+}
+
+func sampleRowsFromSchema(rows []map[string]string) []map[string]any {
+	out := make([]map[string]any, 0, len(rows))
+	for _, row := range rows {
+		mapped := make(map[string]any, len(row))
+		for key, value := range row {
+			mapped[key] = value
+		}
+		out = append(out, mapped)
+	}
+	return out
 }
 
 func (e *Exporter) loadUserTemplate(ctx context.Context, opts Options) (TemplateData, error) {
@@ -590,6 +544,7 @@ func walk(value any, visit func(map[string]any) bool) bool {
 	return true
 }
 
+// Private-template compatibility reuses only the public schema shape.
 func schemaFromAny(value any) (json.RawMessage, []InputField, []string, []map[string]any) {
 	var raw json.RawMessage
 	switch v := value.(type) {
@@ -606,7 +561,7 @@ func schemaFromAny(value any) (json.RawMessage, []InputField, []string, []map[st
 	if err != nil {
 		return raw, nil, nil, nil
 	}
-	return raw, fieldsFromSchema(schema), schema.Instructions, schema.SampleRows
+	return raw, fieldsFromSchema(schema), schema.Instructions, sampleRowsFromSchema(schema.SampleRows)
 }
 
 func previewFromData(opts Options, data TemplateData) Preview {

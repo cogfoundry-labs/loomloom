@@ -127,6 +127,31 @@ func printSkillPreview(w interface {
 			return err
 		}
 	}
+	if len(result.Fields) > 0 {
+		if _, err := fmt.Fprintln(w, "fields:"); err != nil {
+			return err
+		}
+		fieldWriter := newTabWriter(w)
+		if _, err := fmt.Fprintln(fieldWriter, "key\tlabel\trequired\ttype\tchoices"); err != nil {
+			return err
+		}
+		for _, field := range result.Fields {
+			if _, err := fmt.Fprintf(
+				fieldWriter,
+				"%s\t%s\t%t\t%s\t%s\n",
+				oneLine(field.Key),
+				oneLine(field.Label),
+				field.Required,
+				oneLine(field.ValueType),
+				displayStringList(field.EnumValues),
+			); err != nil {
+				return err
+			}
+		}
+		if err := fieldWriter.Flush(); err != nil {
+			return err
+		}
+	}
 	for _, warning := range result.Warnings {
 		if _, err := fmt.Fprintf(w, "warning\t%s\t%s\n", warning.Code, warning.Message); err != nil {
 			return err
