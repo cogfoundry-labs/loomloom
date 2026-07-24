@@ -16,6 +16,19 @@ type warningPayload struct {
 	Message string `json:"message"`
 }
 
+func jsonStringSliceEqual(value any, want []string) bool {
+	items, ok := value.([]any)
+	if !ok || len(items) != len(want) {
+		return false
+	}
+	for index, item := range items {
+		if item != want[index] {
+			return false
+		}
+	}
+	return true
+}
+
 func TestSkillInstallMarketDryRunOutputsPreviewAndDoesNotWrite(t *testing.T) {
 	var requestedPaths []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +46,7 @@ func TestSkillInstallMarketDryRunOutputsPreviewAndDoesNotWrite(t *testing.T) {
 			"taskFixedFeeT":1000000,
 			"saleStatus":"listed",
 			"executionAvailabilityStatus":"available",
-			"inputSchemaSnapshot":"{\"fields\":[{\"key\":\"prompt\",\"label\":\"Prompt\",\"required\":true,\"value_type\":\"text\"}]}"
+			"inputSchemaSnapshot":"{\"fields\":[{\"key\":\"stage\",\"label\":\"Funding stage\",\"required\":true,\"value_type\":\"enum\",\"enum_values\":[\"Seed\",\"Series A\"]}]}"
 		}`))
 	}))
 	defer server.Close()
@@ -73,6 +86,52 @@ func TestSkillInstallMarketDryRunOutputsPreviewAndDoesNotWrite(t *testing.T) {
 	if payload["skillName"] != "loomloom-prd-review" {
 		t.Fatalf("skillName=%v", payload["skillName"])
 	}
+	fields, ok := payload["fields"].([]any)
+	if !ok || len(fields) != 1 {
+		t.Fatalf("fields=%#v", payload["fields"])
+	}
+	field, ok := fields[0].(map[string]any)
+	if !ok {
+		t.Fatalf("field=%#v", fields[0])
+	}
+	if field["valueType"] != "enum" || !jsonStringSliceEqual(field["enumValues"], []string{"Seed", "Series A"}) {
+		t.Fatalf("field=%#v", field)
+	}
+}
+
+func TestSkillInstallMarketTextPreviewShowsEnumValues(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{
+			"id":"listing-1",
+			"displayName":"PRD Review",
+			"status":"published",
+			"listingVersionId":"lv-1",
+			"saleStatus":"listed",
+			"executionAvailabilityStatus":"available",
+			"inputSchemaSnapshot":"{\"fields\":[{\"key\":\"stage\",\"label\":\"Funding stage\",\"required\":true,\"value_type\":\"enum\",\"enum_values\":[\"Seed\",\"Series A\"]}]}"
+		}`))
+	}))
+	defer server.Close()
+
+	out := bytes.Buffer{}
+	cmd := newRootCmdWithVerifiedServer(t, server.URL+"/loom/v1")
+	cmd.SetOut(&out)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{
+		"--server", server.URL + "/loom/v1",
+		"skill", "install", "market", "listing-1",
+		"--agent", "codex",
+		"--output-dir", filepath.Join(t.TempDir(), "loomloom-prd-review"),
+		"--dry-run",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("skill install market text dry-run error = %v", err)
+	}
+	for _, want := range []string{"fields:", "stage", "Funding stage", `["Seed","Series A"]`} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output missing %q:\n%s", want, out.String())
+		}
+	}
 }
 
 func TestSkillInstallMarketWritesConcreteListingID(t *testing.T) {
@@ -87,7 +146,7 @@ func TestSkillInstallMarketWritesConcreteListingID(t *testing.T) {
 			"listingVersionId":"lv-1",
 			"saleStatus":"listed",
 			"executionAvailabilityStatus":"available",
-			"inputSchemaSnapshot":"{\"fields\":[{\"key\":\"prompt\",\"label\":\"Prompt\",\"required\":true}]}"
+			"inputSchemaSnapshot":"{\"fields\":[{\"key\":\"stage\",\"label\":\"Funding stage\",\"required\":true,\"value_type\":\"enum\",\"enum_values\":[\"Seed\",\"Series A\"],\"future_field\":{\"kept\":true}}],\"future_top_level\":\"kept\"}"
 		}`))
 	}))
 	defer server.Close()
@@ -117,6 +176,16 @@ func TestSkillInstallMarketWritesConcreteListingID(t *testing.T) {
 	}
 	if strings.Contains(skillText, "<listing-id>") {
 		t.Fatalf("SKILL.md still contains listing placeholder:\n%s", skillText)
+	}
+	if !strings.Contains(skillText, "Allowed values (server data):") || !strings.Contains(skillText, "Seed") || !strings.Contains(skillText, "Series A") {
+		t.Fatalf("SKILL.md missing enum values:\n%s", skillText)
+	}
+	metadataBytes, err := os.ReadFile(filepath.Join(outputDir, "loomloom-skill.json"))
+	if err != nil {
+		t.Fatalf("read metadata: %v", err)
+	}
+	if !strings.Contains(string(metadataBytes), "future_field") || !strings.Contains(string(metadataBytes), "future_top_level") {
+		t.Fatalf("metadata did not preserve raw snapshot: %s", metadataBytes)
 	}
 }
 
