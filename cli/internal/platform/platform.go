@@ -20,22 +20,28 @@ const (
 )
 
 type Platform struct {
-	ID          ID
-	DisplayName string
-	HostSuffix  string
-	Operational bool
-	KeysURL     string
-	RechargeURL string
+	ID            ID
+	DisplayName   string
+	HostSuffix    string
+	Operational   bool
+	KeysURL       string
+	RechargeURL   string
+	AuthPageURL   string
+	AccountAPIURL string
+	DefaultServer string
 }
 
 var registry = []Platform{
 	{
-		ID:          ShengSuanYun,
-		DisplayName: "胜算云",
-		HostSuffix:  "shengsuanyun.com",
-		Operational: true,
-		KeysURL:     "https://console.shengsuanyun.com/user/keys",
-		RechargeURL: "https://console.shengsuanyun.com/user/recharge",
+		ID:            ShengSuanYun,
+		DisplayName:   "胜算云",
+		HostSuffix:    "shengsuanyun.com",
+		Operational:   true,
+		KeysURL:       "https://console.shengsuanyun.com/user/keys",
+		RechargeURL:   "https://console.shengsuanyun.com/user/recharge",
+		AuthPageURL:   "https://www.shengsuanyun.com/auth",
+		AccountAPIURL: "https://api.shengsuanyun.com",
+		DefaultServer: "https://loomloom.shengsuanyun.com/loom/v1",
 	},
 	{
 		ID:          CogFoundry,

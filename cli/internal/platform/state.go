@@ -14,6 +14,7 @@ type Profile struct {
 	Platform   ID     `json:"platform"`
 	Server     string `json:"server"`
 	TokenEnv   string `json:"token_env"`
+	Token      string `json:"token,omitempty"`
 	VerifiedAt string `json:"verified_at,omitempty"`
 }
 
@@ -22,6 +23,7 @@ type State struct {
 	Servers      []Profile `json:"servers,omitempty"`
 	Platform     ID        `json:"platform,omitempty"`
 	Server       string    `json:"server,omitempty"`
+	Token        string    `json:"token,omitempty"`
 }
 
 func StatePath() (string, error) {
@@ -49,6 +51,9 @@ func LoadState() State {
 }
 
 func normalizeLoadedState(state State) State {
+	legacyServer := strings.TrimSpace(state.Server)
+	legacyToken := strings.TrimSpace(state.Token)
+	state.Token = ""
 	valid := make([]Profile, 0, len(state.Servers))
 	seenNames := map[string]bool{}
 	seenServers := map[string]bool{}
@@ -69,6 +74,7 @@ func normalizeLoadedState(state State) State {
 			profile.TokenEnv != TokenEnvName(profile.Name) {
 			profile.TokenEnv = TokenEnvName(profile.Name)
 		}
+		profile.Token = strings.TrimSpace(profile.Token)
 		seenNames[profile.Name] = true
 		seenServers[profile.Server] = true
 		valid = append(valid, profile)
@@ -88,6 +94,7 @@ func normalizeLoadedState(state State) State {
 					Platform: p.ID,
 					Server:   normalized,
 					TokenEnv: "LOOMLOOM_TOKEN",
+					Token:    legacyToken,
 				}}
 				state.ActiveServer = name
 			}
@@ -98,6 +105,20 @@ func normalizeLoadedState(state State) State {
 			state.Platform = ""
 		}
 		return state
+	}
+	if legacyToken != "" {
+		profile, ok := state.FindProfile(legacyServer)
+		if !ok {
+			profile, ok = state.ActiveProfile()
+		}
+		if ok {
+			for i := range state.Servers {
+				if state.Servers[i].Name == profile.Name && state.Servers[i].Token == "" {
+					state.Servers[i].Token = legacyToken
+					break
+				}
+			}
+		}
 	}
 	state.syncCompatibility()
 	return state
@@ -147,6 +168,7 @@ func (s *State) UpsertVerified(server string, platformID ID, requestedName strin
 	}
 	for i, existing := range s.Servers {
 		if existing.Server == normalized {
+			profile.Token = existing.Token
 			s.Servers[i] = profile
 			s.ActiveServer = profile.Name
 			s.syncCompatibility()
@@ -157,6 +179,21 @@ func (s *State) UpsertVerified(server string, platformID ID, requestedName strin
 	s.ActiveServer = profile.Name
 	s.syncCompatibility()
 	return profile, nil
+}
+
+func (s *State) SetToken(value, token string) (Profile, error) {
+	profile, ok := s.FindProfile(value)
+	if !ok {
+		return Profile{}, fmt.Errorf("server profile %q not found; run `loomloom server list`", value)
+	}
+	for i := range s.Servers {
+		if s.Servers[i].Name == profile.Name {
+			s.Servers[i].Token = strings.TrimSpace(token)
+			profile = s.Servers[i]
+			return profile, nil
+		}
+	}
+	return Profile{}, fmt.Errorf("server profile %q not found; run `loomloom server list`", value)
 }
 
 func (s *State) Use(value string) (Profile, error) {

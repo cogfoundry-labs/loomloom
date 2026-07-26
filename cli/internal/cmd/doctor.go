@@ -85,6 +85,8 @@ func newDoctorCmd(opts *rootOptions) *cobra.Command {
 			nextAction := "persist_token"
 			if stored := strings.TrimSpace(os.Getenv(profile.TokenEnv)); stored != "" && stored == strings.TrimSpace(opts.token) {
 				nextAction = "none"
+			} else if strings.TrimSpace(profile.Token) != "" && strings.TrimSpace(profile.Token) == strings.TrimSpace(opts.token) {
+				nextAction = "none"
 			}
 
 			versionStatus, versionErr := version.CheckLatest(ctx)

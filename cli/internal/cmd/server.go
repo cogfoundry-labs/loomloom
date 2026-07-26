@@ -57,7 +57,7 @@ func newServerListCmd(opts *rootOptions) *cobra.Command {
 					active,
 					profile.Name,
 					profile.Platform,
-					strings.TrimSpace(os.Getenv(profile.TokenEnv)) != "",
+					profileTokenSet(profile),
 					profile.Server,
 				)
 			}
@@ -80,7 +80,7 @@ func newServerUseCmd(opts *rootOptions) *cobra.Command {
 			if err := platform.SaveState(state); err != nil {
 				return fmt.Errorf("save active LoomLoom server: %w", err)
 			}
-			tokenSet := strings.TrimSpace(os.Getenv(profile.TokenEnv)) != ""
+			tokenSet := profileTokenSet(profile)
 			if opts.output == "json" {
 				return writeJSON(cmd, profileOutput(profile, true))
 			}
@@ -116,6 +116,9 @@ func newServerRemoveCmd(opts *rootOptions) *cobra.Command {
 				})
 			}
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "removed server: %s (%s)\n", profile.Name, profile.Server)
+			if strings.TrimSpace(profile.Token) != "" {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "saved login credential removed")
+			}
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "token environment variable was not removed: %s\n", profile.TokenEnv)
 			return nil
 		},
@@ -129,7 +132,11 @@ func profileOutput(profile platform.Profile, active bool) map[string]any {
 		"platform":    string(profile.Platform),
 		"server":      profile.Server,
 		"token_env":   profile.TokenEnv,
-		"token_set":   strings.TrimSpace(os.Getenv(profile.TokenEnv)) != "",
+		"token_set":   profileTokenSet(profile),
 		"verified_at": profile.VerifiedAt,
 	}
+}
+
+func profileTokenSet(profile platform.Profile) bool {
+	return strings.TrimSpace(os.Getenv(profile.TokenEnv)) != "" || strings.TrimSpace(profile.Token) != ""
 }
