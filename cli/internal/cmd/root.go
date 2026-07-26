@@ -54,7 +54,7 @@ func NewRootCmd() *cobra.Command {
 				}
 				opts.server = normalized
 			}
-			if !flagChanged(cmd, "token") {
+			if cmd.Name() != "login" && cmd.Name() != "logout" && !flagChanged(cmd, "token") {
 				var err error
 				opts.token, _, err = configuredToken(opts.server)
 				if err != nil {
@@ -79,6 +79,8 @@ func NewRootCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		newDoctorCmd(opts),
+		newLoginCmd(opts),
+		newLogoutCmd(opts),
 		newModelCmd(opts),
 		newAssetCmd(opts),
 		newMarketCmd(opts),
@@ -134,15 +136,20 @@ func configuredServer() string {
 
 func configuredToken(server string) (string, string, error) {
 	state := platform.LoadState()
-	if profile, ok := state.FindProfile(server); ok && strings.TrimSpace(profile.TokenEnv) != "" {
-		value := strings.TrimSpace(os.Getenv(profile.TokenEnv))
-		if value != "" && profile.TokenEnv == "LOOMLOOM_TOKEN" {
-			if err := validateGlobalTokenServer(server); err != nil {
-				return "", "", err
+	if profile, ok := state.FindProfile(server); ok {
+		if strings.TrimSpace(profile.TokenEnv) != "" {
+			value := strings.TrimSpace(os.Getenv(profile.TokenEnv))
+			if value != "" && profile.TokenEnv == "LOOMLOOM_TOKEN" {
+				if err := validateGlobalTokenServer(server); err != nil {
+					return "", "", err
+				}
+			}
+			if value != "" {
+				return value, profile.TokenEnv, nil
 			}
 		}
-		if value != "" {
-			return value, profile.TokenEnv, nil
+		if value := strings.TrimSpace(profile.Token); value != "" {
+			return value, "saved", nil
 		}
 		return "", profile.TokenEnv, nil
 	}
