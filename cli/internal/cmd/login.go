@@ -91,34 +91,45 @@ func newLoginCmd(opts *rootOptions) *cobra.Command {
 func newLogoutCmd(opts *rootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "logout",
-		Short: "Remove the API key saved by `loomloom login`",
+		Short: "Remove the browser login credential saved by `loomloom login`",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			state := platform.LoadState()
-			if state.Platform == "" || state.Platform == platform.Unknown {
-				return fmt.Errorf("no saved login found; run `loomloom login` first")
-			}
 			hadToken := state.Token != ""
-			state.Token = ""
-			if err := platform.SaveState(state); err != nil {
-				return fmt.Errorf("clear login credentials: %w", err)
+			environmentTokenSet := loginEnvironmentTokenSet()
+			if hadToken {
+				state.Token = ""
+				if err := platform.SaveState(state); err != nil {
+					return fmt.Errorf("clear login credentials: %w", err)
+				}
 			}
 			if opts.output == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
 				return enc.Encode(map[string]any{
-					"server":        state.Server,
-					"platform":      string(state.Platform),
-					"token_removed": hadToken,
+					"server":                state.Server,
+					"platform":              string(state.Platform),
+					"token_removed":         hadToken,
+					"environment_token_set": environmentTokenSet,
 				})
 			}
 			if hadToken {
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "已退出登录（保存的密钥已删除）。")
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "浏览器登录凭据已删除。")
 			} else {
-				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "当前没有保存的密钥，无需退出。")
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "当前没有保存的浏览器登录凭据，无需退出。")
+			}
+			if environmentTokenSet {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "当前仍检测到环境变量 API Token；该变量未被删除，CLI 后续仍会优先使用它。")
+			} else {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "当前未检测到环境变量 API Token。")
 			}
 			return nil
 		},
 	}
+}
+
+func loginEnvironmentTokenSet() bool {
+	return strings.TrimSpace(os.Getenv("LOOMLOOM_TOKEN")) != "" ||
+		strings.TrimSpace(os.Getenv("BATCHJOB_TOKEN")) != ""
 }
 
 func loginTarget(opts *rootOptions) (string, platform.Platform) {
