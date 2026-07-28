@@ -10,11 +10,11 @@ usage() {
   cat <<'EOF'
 Usage: scripts/publish-gitee-release.sh --repo <owner/repo> --tag <tag> [options]
 
-Create or refresh a stable Gitee Release with an existing directory of release assets.
+Create or refresh a Gitee Release with an existing directory of release assets.
 
 Options:
   --repo <owner/repo>       Gitee repository
-  --tag <tag>               Existing stable Git tag (vX.Y.Z)
+  --tag <tag>               Existing stable or prerelease Git tag
   --assets-dir <path>       Directory containing release assets (default: release)
   --help                    Show this help text
 
@@ -53,9 +53,13 @@ if [[ ! "$REPOSITORY" =~ ^[^/]+/[^/]+$ ]]; then
   echo "--repo must use owner/repo format" >&2
   exit 1
 fi
-if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "only stable release tags can be published to Gitee: $TAG" >&2
+if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc|internal)\.[0-9]+)?$ ]]; then
+  echo "unsupported release tag for Gitee publication: $TAG" >&2
   exit 1
+fi
+PRERELEASE=false
+if [[ "$TAG" =~ -(beta|rc|internal)\.[0-9]+$ ]]; then
+  PRERELEASE=true
 fi
 if [[ ! -d "$ASSETS_DIR" || ! -f "$ASSETS_DIR/checksums.txt" ]]; then
   echo "assets directory must contain checksums.txt: $ASSETS_DIR" >&2
@@ -210,7 +214,7 @@ create_release() {
     --form "name=${TAG}" \
     --form "body=LoomLoom ${TAG}" \
     --form "target_commitish=${TARGET_COMMITISH}" \
-    --form "prerelease=false" \
+    --form "prerelease=${PRERELEASE}" \
     "$RELEASES_URL"; then
     create_status="$CURL_HTTP_STATUS"
     if is_success_http_status "$create_status"; then

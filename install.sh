@@ -97,17 +97,6 @@ case "$RELEASE_SOURCE" in
     ;;
 esac
 
-if [[ "$RELEASE_SOURCE" == "gitee" ]]; then
-  if [[ "$CHANNEL" != "stable" ]]; then
-    echo "Gitee provides stable releases only; use --source github for the $CHANNEL channel" >&2
-    exit 1
-  fi
-  if [[ "$VERSION" != "latest" && ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo "Gitee provides stable releases only; use --source github for version $VERSION" >&2
-    exit 1
-  fi
-fi
-
 mkdir -p "$INSTALL_DIR"
 
 require_cmd() {

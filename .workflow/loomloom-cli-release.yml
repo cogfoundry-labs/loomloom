@@ -35,8 +35,6 @@ stages:
               tag_name="$ref_name"
             fi
             supported_tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc|internal)\.[0-9]+)?$'
-            stable_tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+$'
-
             if [ -z "$tag_name" ]; then
               tag_name="$(git tag --points-at "${GITEE_COMMIT:-HEAD}" | grep -E "$supported_tag_pattern" | head -n 1 || true)"
             fi
@@ -51,12 +49,7 @@ stages:
               exit 1
             fi
 
-            is_stable=false
-            if echo "$tag_name" | grep -Eq "$stable_tag_pattern"; then
-              is_stable=true
-            fi
-
-            if [ "$is_stable" = true ] && [ -z "${LOOMLOOM_GITEE_TOKEN:-}" ]; then
+            if [ -z "${LOOMLOOM_GITEE_TOKEN:-}" ]; then
               echo "LOOMLOOM_GITEE_TOKEN is required" >&2
               exit 1
             fi
@@ -81,17 +74,13 @@ stages:
             echo "verified Gitee-built release assets:"
             find release -maxdepth 1 -type f -print | sort
 
-            if [ "$is_stable" = true ]; then
-              GITEE_SYNC_TOKEN="$LOOMLOOM_GITEE_TOKEN" \
-                scripts/publish-gitee-release.sh \
-                  --repo cogfoundry/loomloom \
-                  --tag "$tag_name" \
-                  --assets-dir release
+            GITEE_SYNC_TOKEN="$LOOMLOOM_GITEE_TOKEN" \
+              scripts/publish-gitee-release.sh \
+                --repo cogfoundry/loomloom \
+                --tag "$tag_name" \
+                --assets-dir release
 
-              echo "published Gitee release: https://gitee.com/cogfoundry/loomloom/releases/tag/$tag_name"
-            else
-              echo "test tag build completed; skipping Gitee release publication: $tag_name"
-            fi
+            echo "published Gitee release: https://gitee.com/cogfoundry/loomloom/releases/tag/$tag_name"
 
         caches:
           - /go/pkg/mod
