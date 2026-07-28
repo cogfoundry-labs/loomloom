@@ -7,7 +7,7 @@ triggers:
   push:
     tags:
       include:
-        - ^v[0-9]+\.[0-9]+\.[0-9]+$
+        - ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc|internal)\.[0-9]+)?$
 
 variables:
   global:
@@ -34,27 +34,35 @@ stages:
             if [ -z "$tag_name" ] && echo "$ref_name" | grep -Eq '^v'; then
               tag_name="$ref_name"
             fi
+            supported_tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc|internal)\.[0-9]+)?$'
+            stable_tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+$'
+
             if [ -z "$tag_name" ]; then
-              tag_name="$(git tag --points-at "${GITEE_COMMIT:-HEAD}" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
+              tag_name="$(git tag --points-at "${GITEE_COMMIT:-HEAD}" | grep -E "$supported_tag_pattern" | head -n 1 || true)"
             fi
 
             if [ -z "$tag_name" ]; then
-              echo "no stable release tag detected; skipping non-tag pipeline run"
+              echo "no supported release tag detected; skipping non-tag pipeline run"
               exit 0
             fi
 
-            if ! echo "$tag_name" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-              echo "resolved tag '$tag_name' is not a stable release tag" >&2
+            if ! echo "$tag_name" | grep -Eq "$supported_tag_pattern"; then
+              echo "resolved tag '$tag_name' is not a supported release tag" >&2
               exit 1
             fi
 
-            if [ -z "${LOOMLOOM_GITEE_TOKEN:-}" ]; then
+            is_stable=false
+            if echo "$tag_name" | grep -Eq "$stable_tag_pattern"; then
+              is_stable=true
+            fi
+
+            if [ "$is_stable" = true ] && [ -z "${LOOMLOOM_GITEE_TOKEN:-}" ]; then
               echo "LOOMLOOM_GITEE_TOKEN is required" >&2
               exit 1
             fi
 
             echo "$tag_name" > .release-tag
-            echo "stable release tag: $tag_name"
+            echo "release tag: $tag_name"
 
             go env -w GOPROXY=https://goproxy.cn,direct
             go env -w GOSUMDB=sum.golang.google.cn
@@ -73,13 +81,17 @@ stages:
             echo "verified Gitee-built release assets:"
             find release -maxdepth 1 -type f -print | sort
 
-            GITEE_SYNC_TOKEN="$LOOMLOOM_GITEE_TOKEN" \
-              scripts/publish-gitee-release.sh \
-                --repo cogfoundry/loomloom \
-                --tag "$tag_name" \
-                --assets-dir release
+            if [ "$is_stable" = true ]; then
+              GITEE_SYNC_TOKEN="$LOOMLOOM_GITEE_TOKEN" \
+                scripts/publish-gitee-release.sh \
+                  --repo cogfoundry/loomloom \
+                  --tag "$tag_name" \
+                  --assets-dir release
 
-            echo "published Gitee release: https://gitee.com/cogfoundry/loomloom/releases/tag/$tag_name"
+              echo "published Gitee release: https://gitee.com/cogfoundry/loomloom/releases/tag/$tag_name"
+            else
+              echo "test tag build completed; skipping Gitee release publication: $tag_name"
+            fi
 
         caches:
           - /go/pkg/mod
