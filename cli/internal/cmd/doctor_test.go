@@ -120,11 +120,14 @@ func TestDoctorWithoutServerChoosesPlatform(t *testing.T) {
 		!strings.Contains(message, "CogFoundry") ||
 		!strings.Contains(message, "https://loomloom.shengsuanyun.com/loom/v1") ||
 		!strings.Contains(message, "https://console.shengsuanyun.com/user/keys") ||
-		!strings.Contains(message, "https://console.shengsuanyun.com/user/recharge") {
+		!strings.Contains(message, "https://console.shengsuanyun.com/user/recharge") ||
+		!strings.Contains(message, "https://loomloom.cogfoundry.ai/loom/v1") ||
+		!strings.Contains(message, "https://console.cogfoundry.ai/api-keys") ||
+		!strings.Contains(message, "https://console.cogfoundry.ai/credits") {
 		t.Fatalf("payload=%v want both preset platforms", payload)
 	}
-	if strings.Contains(message, "选择后，我会提供") {
-		t.Fatalf("payload=%v must not promise unknown platform configuration", payload)
+	if strings.Contains(message, "相关地址未知") || strings.Contains(message, "当前环境提供") {
+		t.Fatalf("payload=%v must not report known CogFoundry configuration as unknown", payload)
 	}
 }
 
@@ -139,7 +142,11 @@ func TestDoctorCogFoundryWithoutTokenDoesNotReportUnavailable(t *testing.T) {
 	if payload["platform_preset"] != true {
 		t.Fatalf("payload=%v want CogFoundry preset", payload)
 	}
-	if strings.Contains(strings.ToLower(payload["credential_message"].(string)), "unavailable") {
+	message, _ := payload["credential_message"].(string)
+	if !strings.Contains(message, "https://console.cogfoundry.ai/api-keys") {
+		t.Fatalf("payload=%v want CogFoundry API key guidance", payload)
+	}
+	if strings.Contains(strings.ToLower(message), "unavailable") || strings.Contains(message, "当前环境对应") {
 		t.Fatalf("payload=%v must not report CogFoundry unavailable", payload)
 	}
 }

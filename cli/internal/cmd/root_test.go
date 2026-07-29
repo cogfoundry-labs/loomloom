@@ -313,11 +313,12 @@ func TestResolvePlatformRejectsConflictingEnvironmentHint(t *testing.T) {
 
 func TestInsufficientBalanceMessagesArePlatformSpecific(t *testing.T) {
 	tests := []struct {
-		server string
-		want   string
+		server  string
+		want    string
+		wantURL string
 	}{
-		{"https://api.shengsuanyun.com/loom/v1", insufficientShengSuanYunBalanceMessage},
-		{"https://api.cogfoundry.ai/loom/v1", insufficientCogFoundryBalanceMessage},
+		{"https://api.shengsuanyun.com/loom/v1", insufficientShengSuanYunBalanceMessage, "https://console.shengsuanyun.com/user/recharge"},
+		{"https://api.cogfoundry.ai/loom/v1", insufficientCogFoundryBalanceMessage, "https://console.cogfoundry.ai/credits"},
 	}
 	for _, tt := range tests {
 		err := maybeInsufficientBalanceError(
@@ -326,6 +327,9 @@ func TestInsufficientBalanceMessagesArePlatformSpecific(t *testing.T) {
 		)
 		if err == nil || err.Error() != tt.want {
 			t.Fatalf("server=%s error=%v want %q", tt.server, err, tt.want)
+		}
+		if !strings.Contains(err.Error(), tt.wantURL) {
+			t.Fatalf("server=%s error=%v want URL %q", tt.server, err, tt.wantURL)
 		}
 	}
 }
