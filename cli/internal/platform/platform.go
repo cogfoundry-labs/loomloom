@@ -44,10 +44,13 @@ var registry = []Platform{
 		DefaultServer: "https://loomloom.shengsuanyun.com/loom/v1",
 	},
 	{
-		ID:          CogFoundry,
-		DisplayName: "CogFoundry",
-		HostSuffix:  "cogfoundry.ai",
-		Operational: true,
+		ID:            CogFoundry,
+		DisplayName:   "CogFoundry",
+		HostSuffix:    "cogfoundry.ai",
+		Operational:   true,
+		KeysURL:       "https://console.cogfoundry.ai/api-keys",
+		RechargeURL:   "https://console.cogfoundry.ai/credits",
+		DefaultServer: "https://loomloom.cogfoundry.ai/loom/v1",
 	},
 }
 

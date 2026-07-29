@@ -34,6 +34,18 @@ Run `loomloom doctor --output json` before advising about a token, server, platf
 
 If Doctor reports `healthy=true`, continue with the existing credential. Do not require browser login and do not ask the user for another Token.
 
+If Doctor does not report an already selected Server profile and the user has neither explicitly selected a platform nor provided a Server, the platform is unknown. In that state, present both preset platforms with their Server, credential, recharge, region, and authentication guidance, then ask the user to choose. Do not start either platform's authentication flow before the choice.
+
+Never treat any of these as a platform selection:
+
+- an unbound `LOOMLOOM_TOKEN` without a verified Server profile;
+- the LoomLoom repository owner or download source, including `Cogfoundry-ai/loomloom`;
+- the installed CLI version, release channel, or apparent documentation maturity;
+- the user's language, location, region, or a platform recommendation;
+- one platform having a more familiar or complete setup path.
+
+When the user asks where to get a Token/API key while the platform is unknown, present both platform choices and ask them to select one. Do not answer with only one platform's credential URL. A recommendation based on region may be shown as part of the comparison, but it must not silently select that platform.
+
 ShengSuanYun and CogFoundry are preset platforms, not a whitelist. If the user provides another Server, do not block it or replace it with a preset Server. Do not add `/loom/v1`; validate the exact URL the user provided.
 
 Only a successful Doctor may register a new Server. Ordinary business commands must not use an unverified Server.
@@ -42,7 +54,7 @@ Only a successful Doctor may register a new Server. Ordinary business commands m
 
 API Token authentication is available for every platform. Browser login is available only for ShengSuanYun. Determine the authentication flow from the user's explicit platform selection or the already selected Server profile reported by Doctor.
 
-1. If no platform or Server has been selected, ask the user to select one before starting authentication.
+1. If no platform or Server has been selected, show both preset platforms and ask the user to select one before starting authentication. Do not run `loomloom login` yet.
 2. After the user selects ShengSuanYun, or when the existing selected profile is ShengSuanYun, prefer `loomloom login` if the user can complete authorization in a browser.
 3. Ask the user to complete authorization in the browser. Do not handle, expose, or copy the browser credential yourself.
 4. If ShengSuanYun browser login fails, is unavailable in a headless/CI environment, or the user explicitly chooses Token authentication, use the explicit API Token fallback below.
@@ -57,21 +69,27 @@ If browser login succeeds while the selected profile's `token_env` is already se
 
 ## Platform And Credential Messages
 
-The messages below define required business content, not verbatim wording. Render them under the global language rule while preserving commands, URLs, identifiers, and required actions.
+All source templates in this reference are written in English and define required business content, not verbatim wording. Translate and localize every user-facing message under the global language rule while preserving commands, URLs, identifiers, amounts, and required actions. The official Chinese name of ShengSuanYun is `胜算云`: use `胜算云` in Chinese responses and `ShengSuanYun` in non-Chinese responses; `ShengSuanYun (胜算云)` may be used on first mention when both names help identification.
 
 When no Server is configured, convey:
 
 ```text
-你还没有配置 LoomLoom 平台和密钥。请选择你的使用平台：
+LoomLoom does not yet have a configured platform and credential. Choose a platform:
 
-1. 胜算云：面向中国大陆用户。
-本服务由 CogFoundry 联合支持，面向中国大陆用户推荐使用。
-- Server：https://loomloom.shengsuanyun.com/loom/v1
+1. ShengSuanYun: for users in Mainland China.
+This service is jointly supported by CogFoundry and is recommended for users in Mainland China.
+- Server: https://loomloom.shengsuanyun.com/loom/v1
+- API key console: https://console.shengsuanyun.com/user/keys
+- Recharge: https://console.shengsuanyun.com/user/recharge
+- Authentication after selection: prefer browser login; use an API Token if browser login does not complete or the user explicitly chooses Token authentication.
 
-2. CogFoundry：面向新加坡及其他国家或地区用户。
+2. CogFoundry: for users in Singapore and other countries or regions.
+- Server: https://loomloom.cogfoundry.ai/loom/v1
+- API key console: https://console.cogfoundry.ai/api-keys
+- Recharge and balance: https://console.cogfoundry.ai/credits
+- Authentication after selection: use an API Token directly; browser login is not supported.
 
-如选择 CogFoundry，请使用当前环境提供的 Server 信息；相关地址未知时，我不会自行猜测。
-选择胜算云后优先通过浏览器登录，浏览器登录未完成时可配置 API Token；选择 CogFoundry 或自定义平台时直接使用 API Token。
+Ask the user to choose one. Do not authenticate with either platform until they choose.
 ```
 
 These are preset choices only. A user-provided compatible Server is also allowed.
@@ -79,18 +97,18 @@ These are preset choices only. A user-provided compatible Server is also allowed
 When browser login fails or is unavailable for ShengSuanYun, or when the user explicitly requests Token-based setup, convey:
 
 ```text
-浏览器登录未完成，你也可以使用胜算云 API Token 进行配置。
-请前往胜算云控制台创建或复制密钥后配置到本地环境：
+Browser login did not complete. You can configure ShengSuanYun with an API Token instead.
+Create or copy an API key in the ShengSuanYun console, then configure it in the local environment:
 https://console.shengsuanyun.com/user/keys
 ```
 
 When a command passively reports `credential_action=missing_token` for ShengSuanYun, do not immediately output the Token fallback message. Attempt browser login first. Output the fallback message only if browser login does not complete or the user chooses Token authentication.
 
-For a missing CogFoundry token after browser login is unavailable or not selected, convey:
+For a missing CogFoundry token, convey:
 
 ```text
-当前未检测到 CogFoundry 密钥。请前往当前环境对应的 CogFoundry 密钥控制台创建或复制密钥，然后配置到本地环境。
-CogFoundry 控制台地址必须读取当前环境配置，不得由 Agent 自行猜测。
+No CogFoundry credential was detected. Create or copy an API key in the CogFoundry console, then configure it in the local environment:
+https://console.cogfoundry.ai/api-keys
 ```
 
 For a missing custom-platform token after browser login is unsupported or not selected, use `credential_message`. Never guess its console, key, balance, or recharge URL.
@@ -98,7 +116,7 @@ For a missing custom-platform token after browser login is unsupported or not se
 When Server authentication rejects a Token, convey:
 
 ```text
-当前 Server 可以访问，但密钥认证未通过。该密钥可能无效、已过期、权限不足，或不适用于当前 Server。请确认密钥由当前 Server 对应的环境提供后重试。
+The current Server is reachable, but credential authentication failed. The credential may be invalid, expired, insufficiently privileged, or intended for another Server. Confirm that it came from the environment corresponding to the current Server, then retry.
 ```
 
 ## Persist Verified Credentials
@@ -155,5 +173,20 @@ Never modify shell startup files or user-level environment configuration without
 
 - ShengSuanYun keys: `https://console.shengsuanyun.com/user/keys`
 - ShengSuanYun recharge: `https://console.shengsuanyun.com/user/recharge`
-- CogFoundry console URLs must come from the current environment or service; never guess them.
+- CogFoundry keys: `https://console.cogfoundry.ai/api-keys`
+- CogFoundry recharge and balance: `https://console.cogfoundry.ai/credits`
 - For a custom Server, use only service-returned guidance.
+
+When ShengSuanYun reports insufficient balance, convey:
+
+```text
+The current ShengSuanYun account has insufficient balance. Recharge in the ShengSuanYun console before continuing:
+https://console.shengsuanyun.com/user/recharge
+```
+
+When CogFoundry reports insufficient balance, convey:
+
+```text
+The current CogFoundry account has insufficient balance. Recharge in the CogFoundry console before continuing:
+https://console.cogfoundry.ai/credits
+```

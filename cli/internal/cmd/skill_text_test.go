@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"unicode"
 )
 
 var bundledSkillDirs = []string{
@@ -127,20 +128,38 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 		"API Token authentication is available for every platform",
 		"Browser login is available only for ShengSuanYun",
 		"user's explicit platform selection or the already selected Server profile reported by Doctor",
-		"ask the user to select one before starting authentication",
+		"neither explicitly selected a platform nor provided a Server",
+		"present both preset platforms",
+		"Do not start either platform's authentication flow before the choice",
+		"an unbound `LOOMLOOM_TOKEN` without a verified Server profile",
+		"the LoomLoom repository owner or download source",
+		"the installed CLI version, release channel, or apparent documentation maturity",
+		"the user's language, location, region, or a platform recommendation",
+		"Do not answer with only one platform's credential URL",
+		"show both preset platforms and ask the user to select one before starting authentication",
+		"Do not run `loomloom login` yet",
 		"After the user selects ShengSuanYun",
 		"loomloom login",
 		"After the user selects CogFoundry or a custom platform",
 		"After either authentication flow completes",
-		"你还没有配置 LoomLoom 平台和密钥。请选择你的使用平台：",
-		"本服务由 CogFoundry 联合支持，面向中国大陆用户推荐使用",
+		"All source templates in this reference are written in English",
+		"Translate and localize every user-facing message",
+		"The official Chinese name of ShengSuanYun is `胜算云`",
+		"LoomLoom does not yet have a configured platform and credential. Choose a platform:",
+		"This service is jointly supported by CogFoundry and is recommended for users in Mainland China",
 		"https://loomloom.shengsuanyun.com/loom/v1",
 		"https://console.shengsuanyun.com/user/keys",
-		"浏览器登录未完成，你也可以使用胜算云 API Token 进行配置。",
+		"Authentication after selection: prefer browser login",
+		"Authentication after selection: use an API Token directly; browser login is not supported",
+		"Ask the user to choose one. Do not authenticate with either platform until they choose",
+		"Browser login did not complete. You can configure ShengSuanYun with an API Token instead.",
 		"do not immediately output the Token fallback message",
 		"https://console.shengsuanyun.com/user/recharge",
-		"当前未检测到 CogFoundry 密钥",
-		"相关地址未知时，我不会自行猜测",
+		"No CogFoundry credential was detected",
+		"https://loomloom.cogfoundry.ai/loom/v1",
+		"https://console.cogfoundry.ai/api-keys",
+		"https://console.cogfoundry.ai/credits",
+		"The current CogFoundry account has insufficient balance",
 		"ShengSuanYun and CogFoundry are preset platforms, not a whitelist",
 		"treat that as a request to register and activate that Server",
 		"loomloom doctor --server <exact-server> --token <exact-token> --output json",
@@ -161,11 +180,18 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
 		}
 	}
+	englishSource := strings.ReplaceAll(text, "胜算云", "")
+	for _, r := range englishSource {
+		if unicode.Is(unicode.Han, r) {
+			t.Fatalf("%s must use English source guidance except for the official brand name 胜算云; found %q", canonicalSkillReferencesDir, r)
+		}
+	}
 	for _, forbidden := range []string{
 		"选择后，我会提供对应平台的 Server 和密钥配置指引",
-		"https://cogfoundry.ai",
+		"http://loomloom.cogfoundry.ai/loom/v1",
 		"https://console-dev.cogfoundry",
-		"https://console.cogfoundry",
+		"相关地址未知时，我不会自行猜测",
+		"CogFoundry 控制台地址必须读取当前环境配置",
 	} {
 		if strings.Contains(text, forbidden) {
 			t.Fatalf("%s should not include CogFoundry console URL %q", canonicalSkillReferencesDir, forbidden)
