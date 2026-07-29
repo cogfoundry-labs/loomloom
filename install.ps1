@@ -15,15 +15,6 @@ $GithubRepo = "Cogfoundry-ai/loomloom"
 $GiteeRepo = if ($env:GITEE_REPO) { $env:GITEE_REPO } else { "cogfoundry/loomloom" }
 
 if ($Source -eq "gitee") {
-  if ($Channel -ne "stable") {
-    throw "Gitee provides stable releases only; use -Source github for the $Channel channel"
-  }
-  if ($Version -ne "latest" -and $Version -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
-    throw "Gitee provides stable releases only; use -Source github for version $Version"
-  }
-}
-
-if ($Source -eq "gitee") {
   $Repo = $GiteeRepo
   $GitUrl = "https://gitee.com/$Repo.git"
   $ApiBase = "https://gitee.com/api/v5/repos/$Repo"
