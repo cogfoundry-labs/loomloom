@@ -15,18 +15,19 @@ import (
 // creatorMarketListingResponse mirrors the backend marketListingResponse
 // returned by /creators/me/marketListings endpoints.
 type creatorMarketListingResponse struct {
-	ID                          string    `json:"id"`
-	DisplayName                 string    `json:"displayName"`
-	Description                 string    `json:"description"`
-	Status                      string    `json:"status"`
-	PublishedVersionID          string    `json:"publishedVersionId"`
-	ListingVersionID            string    `json:"listingVersionId"`
-	ReviewStatus                string    `json:"reviewStatus"`
-	ReviewReason                string    `json:"reviewReason"`
-	TaskFixedFeeT               flexInt64 `json:"taskFixedFeeT"`
-	Currency                    string    `json:"currency"`
-	SaleStatus                  string    `json:"saleStatus"`
-	ExecutionAvailabilityStatus string    `json:"executionAvailabilityStatus"`
+	ID                          string         `json:"id"`
+	DisplayName                 string         `json:"displayName"`
+	Description                 string         `json:"description"`
+	Status                      string         `json:"status"`
+	PublishedVersionID          string         `json:"publishedVersionId"`
+	ListingVersionID            string         `json:"listingVersionId"`
+	ReviewStatus                string         `json:"reviewStatus"`
+	ReviewReason                string         `json:"reviewReason"`
+	TaskFixedFeeT               *flexInt64     `json:"taskFixedFeeT,omitempty"`
+	TaskFixedFee                *moneyResponse `json:"taskFixedFee,omitempty"`
+	Currency                    string         `json:"currency"`
+	SaleStatus                  string         `json:"saleStatus"`
+	ExecutionAvailabilityStatus string         `json:"executionAvailabilityStatus"`
 }
 
 type creatorMarketListingsResponse struct {
@@ -35,18 +36,19 @@ type creatorMarketListingsResponse struct {
 }
 
 type creatorMarketListingVersionResponse struct {
-	ID                          string    `json:"id"`
-	ListingID                   string    `json:"listingId"`
-	VersionNumber               flexInt64 `json:"versionNumber"`
-	Status                      string    `json:"status"`
-	SaleStatus                  string    `json:"saleStatus"`
-	ExecutionAvailabilityStatus string    `json:"executionAvailabilityStatus"`
-	ExecutionBlockReason        string    `json:"executionBlockReason"`
-	ReviewStatus                string    `json:"reviewStatus"`
-	ReviewReason                string    `json:"reviewReason"`
-	TaskFixedFeeT               flexInt64 `json:"taskFixedFeeT"`
-	Currency                    string    `json:"currency"`
-	CreatedAtUnix               flexInt64 `json:"createdAtUnix"`
+	ID                          string         `json:"id"`
+	ListingID                   string         `json:"listingId"`
+	VersionNumber               flexInt64      `json:"versionNumber"`
+	Status                      string         `json:"status"`
+	SaleStatus                  string         `json:"saleStatus"`
+	ExecutionAvailabilityStatus string         `json:"executionAvailabilityStatus"`
+	ExecutionBlockReason        string         `json:"executionBlockReason"`
+	ReviewStatus                string         `json:"reviewStatus"`
+	ReviewReason                string         `json:"reviewReason"`
+	TaskFixedFeeT               *flexInt64     `json:"taskFixedFeeT,omitempty"`
+	TaskFixedFee                *moneyResponse `json:"taskFixedFee,omitempty"`
+	Currency                    string         `json:"currency"`
+	CreatedAtUnix               flexInt64      `json:"createdAtUnix"`
 }
 
 // creatorMarketListingVersionsResponse mirrors the backend
@@ -432,12 +434,16 @@ func printCreatorListings(w io.Writer, resp creatorMarketListingsResponse) error
 		return err
 	}
 	for _, item := range resp.Items {
+		taskFixedFee, err := formatResponseMoney(item.TaskFixedFee, item.TaskFixedFeeT, item.Currency)
+		if err != nil {
+			return fmt.Errorf("listing %s taskFixedFee contract error: %w", item.ID, err)
+		}
 		if _, err := fmt.Fprintf(
 			tw,
 			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.ID,
 			oneLine(item.DisplayName),
-			formatMoneyT(int64(item.TaskFixedFeeT), item.Currency),
+			taskFixedFee,
 			oneLine(item.Status),
 			oneLine(item.SaleStatus),
 			oneLine(item.ExecutionAvailabilityStatus),
@@ -458,6 +464,10 @@ func printCreatorListings(w io.Writer, resp creatorMarketListingsResponse) error
 }
 
 func printCreatorListingDetail(w io.Writer, listing creatorMarketListingResponse) error {
+	taskFixedFee, err := formatResponseMoney(listing.TaskFixedFee, listing.TaskFixedFeeT, listing.Currency)
+	if err != nil {
+		return fmt.Errorf("listing %s taskFixedFee contract error: %w", listing.ID, err)
+	}
 	tw := newTabWriter(w)
 	for _, row := range [][2]string{
 		{"id", listing.ID},
@@ -468,7 +478,7 @@ func printCreatorListingDetail(w io.Writer, listing creatorMarketListingResponse
 		{"listing_version_id", listing.ListingVersionID},
 		{"review_status", listing.ReviewStatus},
 		{"review_reason", listing.ReviewReason},
-		{"task_fixed_fee", formatMoneyT(int64(listing.TaskFixedFeeT), listing.Currency)},
+		{"task_fixed_fee", taskFixedFee},
 		{"sale_status", listing.SaleStatus},
 		{"execution_availability_status", listing.ExecutionAvailabilityStatus},
 	} {
@@ -498,12 +508,16 @@ func printCreatorListingVersions(w io.Writer, resp creatorMarketListingVersionsR
 	}
 	notes := make([]versionNote, 0)
 	for _, item := range resp.Items {
+		taskFixedFee, err := formatResponseMoney(item.TaskFixedFee, item.TaskFixedFeeT, item.Currency)
+		if err != nil {
+			return fmt.Errorf("listing version %s taskFixedFee contract error: %w", item.ID, err)
+		}
 		if _, err := fmt.Fprintf(
 			tw,
 			"%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.ID,
 			int64(item.VersionNumber),
-			formatMoneyT(int64(item.TaskFixedFeeT), item.Currency),
+			taskFixedFee,
 			oneLine(item.Status),
 			oneLine(item.SaleStatus),
 			oneLine(item.ExecutionAvailabilityStatus),

@@ -46,16 +46,17 @@ type marketListingsResponse struct {
 }
 
 type marketListingPublicResponse struct {
-	ID                          string    `json:"id"`
-	DisplayName                 string    `json:"displayName"`
-	Description                 string    `json:"description"`
-	Status                      string    `json:"status"`
-	ListingVersionID            string    `json:"listingVersionId"`
-	PricingRuleVersion          string    `json:"pricingRuleVersion"`
-	TaskFixedFeeT               flexInt64 `json:"taskFixedFeeT"`
-	Currency                    string    `json:"currency"`
-	SaleStatus                  string    `json:"saleStatus"`
-	ExecutionAvailabilityStatus string    `json:"executionAvailabilityStatus"`
+	ID                          string         `json:"id"`
+	DisplayName                 string         `json:"displayName"`
+	Description                 string         `json:"description"`
+	Status                      string         `json:"status"`
+	ListingVersionID            string         `json:"listingVersionId"`
+	PricingRuleVersion          string         `json:"pricingRuleVersion"`
+	TaskFixedFeeT               *flexInt64     `json:"taskFixedFeeT,omitempty"`
+	TaskFixedFee                *moneyResponse `json:"taskFixedFee,omitempty"`
+	Currency                    string         `json:"currency"`
+	SaleStatus                  string         `json:"saleStatus"`
+	ExecutionAvailabilityStatus string         `json:"executionAvailabilityStatus"`
 	// Preserve either snapshot representation for the shared parser.
 	InputSchemaSnapshot json.RawMessage `json:"inputSchemaSnapshot"`
 }
@@ -863,12 +864,16 @@ func printMarketListings(w io.Writer, resp marketListingsResponse) error {
 		return err
 	}
 	for _, item := range resp.Items {
+		taskFixedFee, err := formatResponseMoney(item.TaskFixedFee, item.TaskFixedFeeT, item.Currency)
+		if err != nil {
+			return fmt.Errorf("listing %s taskFixedFee contract error: %w", item.ID, err)
+		}
 		if _, err := fmt.Fprintf(
 			tw,
 			"%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.ID,
 			oneLine(item.DisplayName),
-			formatMoneyT(int64(item.TaskFixedFeeT), item.Currency),
+			taskFixedFee,
 			oneLine(item.ExecutionAvailabilityStatus),
 			oneLine(item.ListingVersionID),
 			oneLine(item.Description),
@@ -887,13 +892,17 @@ func printMarketListings(w io.Writer, resp marketListingsResponse) error {
 }
 
 func printMarketListingDetail(w io.Writer, listing marketListingPublicResponse) error {
+	taskFixedFee, err := formatResponseMoney(listing.TaskFixedFee, listing.TaskFixedFeeT, listing.Currency)
+	if err != nil {
+		return fmt.Errorf("listing %s taskFixedFee contract error: %w", listing.ID, err)
+	}
 	tw := newTabWriter(w)
 	for _, row := range [][2]string{
 		{"id", listing.ID},
 		{"display_name", listing.DisplayName},
 		{"description", listing.Description},
 		{"listing_version_id", listing.ListingVersionID},
-		{"task_fixed_fee", formatMoneyT(int64(listing.TaskFixedFeeT), listing.Currency)},
+		{"task_fixed_fee", taskFixedFee},
 		{"sale_status", listing.SaleStatus},
 		{"execution_availability_status", listing.ExecutionAvailabilityStatus},
 	} {
@@ -979,10 +988,10 @@ func printMarketQuote(w io.Writer, resp map[string]any) error {
 			return err
 		}
 	}
-	if err := printMoneyMapField(tw, resp, "estimated_execution_cost", "estimatedExecutionCostT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "estimated_execution_cost", "estimatedExecutionCost", "estimatedExecutionCostT", currency); err != nil {
 		return err
 	}
-	if err := printMoneyMapField(tw, resp, "task_fixed_fee", "taskFixedFeeT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "task_fixed_fee", "taskFixedFee", "taskFixedFeeT", currency); err != nil {
 		return err
 	}
 	if value, ok := resp["taskCount"]; ok && value != nil {
@@ -990,7 +999,7 @@ func printMarketQuote(w io.Writer, resp map[string]any) error {
 			return err
 		}
 	}
-	if err := printMoneyMapField(tw, resp, "estimated_payable", "estimatedBuyerPayableT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "estimated_payable", "estimatedBuyerPayable", "estimatedBuyerPayableT", currency); err != nil {
 		return err
 	}
 	return tw.Flush()
@@ -1007,19 +1016,19 @@ func printMarketExecution(w io.Writer, resp map[string]any) error {
 			return err
 		}
 	}
-	if err := printMoneyMapField(tw, resp, "task_fixed_fee", "taskFixedFeeT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "task_fixed_fee", "taskFixedFee", "taskFixedFeeT", currency); err != nil {
 		return err
 	}
-	if err := printMoneyMapField(tw, resp, "estimated_execution_cost", "estimatedExecutionCostT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "estimated_execution_cost", "estimatedExecutionCost", "estimatedExecutionCostT", currency); err != nil {
 		return err
 	}
-	if err := printMoneyMapField(tw, resp, "estimated_payable", "estimatedBuyerPayableT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "estimated_payable", "estimatedBuyerPayable", "estimatedBuyerPayableT", currency); err != nil {
 		return err
 	}
-	if err := printMoneyMapField(tw, resp, "actual_execution_cost", "actualExecutionCostT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "actual_execution_cost", "actualExecutionCost", "actualExecutionCostT", currency); err != nil {
 		return err
 	}
-	if err := printMoneyMapField(tw, resp, "final_payable", "finalBuyerPayableT", currency); err != nil {
+	if err := printMoneyMapField(tw, resp, "final_payable", "finalBuyerPayable", "finalBuyerPayableT", currency); err != nil {
 		return err
 	}
 	if err := printStringMapField(tw, resp, "transactionStatus"); err != nil {
@@ -1044,14 +1053,38 @@ func printStringMapField(tw *tabwriter.Writer, resp map[string]any, key string) 
 	return err
 }
 
-// printMoneyMapField writes a readable-money row for a raw *T field present in
-// a decoded JSON map. It is a no-op if the field is absent.
-func printMoneyMapField(tw *tabwriter.Writer, resp map[string]any, label string, rawKey string, currency string) error {
+// printMoneyMapField prefers a public Money object and falls back to its legacy
+// raw *T sibling. When both are present they must be exactly equivalent.
+func printMoneyMapField(
+	tw *tabwriter.Writer,
+	resp map[string]any,
+	label string,
+	moneyKey string,
+	rawKey string,
+	currency string,
+) error {
+	var money *moneyResponse
+	if rawMoney, ok := resp[moneyKey]; ok && rawMoney != nil {
+		decoded, err := decodeJSONValue[moneyResponse](rawMoney)
+		if err != nil {
+			return fmt.Errorf("decode %s: %w", moneyKey, err)
+		}
+		money = &decoded
+	}
 	amountT, ok := int64MapValue(resp, rawKey)
-	if !ok {
+	if money == nil && !ok {
 		return nil
 	}
-	_, err := fmt.Fprintf(tw, "%s\t%s\n", label, formatMoneyT(amountT, currency))
+	var rawAmountT *flexInt64
+	if ok {
+		value := flexInt64(amountT)
+		rawAmountT = &value
+	}
+	rendered, err := formatResponseMoney(money, rawAmountT, currency)
+	if err != nil {
+		return fmt.Errorf("%s contract error: %w", label, err)
+	}
+	_, err = fmt.Fprintf(tw, "%s\t%s\n", label, rendered)
 	return err
 }
 

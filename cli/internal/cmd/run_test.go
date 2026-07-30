@@ -186,9 +186,11 @@ func TestRunPrecheckOnlyEstimatesRows(t *testing.T) {
 		case "/loom/v1/officialTemplates/text-v1:precheckRows":
 			_, _ = w.Write([]byte(`{
 				"estimatedTotalCostT":119350,
+				"estimatedTotalCost":{"amount":"0.0119350","currency":"CNY"},
 				"balanceCheck":{
 					"currency":"CNY",
 					"availableBalance":200000,
+					"availableBalanceMoney":{"amount":"0.0200000","currency":"CNY"},
 					"isSufficient":true
 				}
 			}`))
@@ -219,7 +221,15 @@ func TestRunPrecheckOnlyEstimatesRows(t *testing.T) {
 	if strings.Join(paths, ",") != strings.Join(wantPaths, ",") {
 		t.Fatalf("paths=%v want %v", paths, wantPaths)
 	}
-	assertContainsAll(t, out.String(), `"estimatedTotalCostT": 119350`, `"currency": "CNY"`)
+	assertContainsAll(
+		t,
+		out.String(),
+		`"estimatedTotalCostT": 119350`,
+		`"estimatedTotalCost": {`,
+		`"amount": "0.0119350"`,
+		`"availableBalanceMoney": {`,
+		`"currency": "CNY"`,
+	)
 	assertContainsNone(t, out.String(), `"runId"`)
 }
 
