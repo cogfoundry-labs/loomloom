@@ -9,6 +9,7 @@ Use this reference for installation, `doctor`, browser login, explicit API Token
 - [Browser-First Credential Flow](#browser-first-credential-flow)
 - [Platform And Credential Messages](#platform-and-credential-messages)
 - [Browser Logout](#browser-logout)
+- [Installer Uninstall Credential Cleanup](#installer-uninstall-credential-cleanup)
 - [Token And Server Safety](#token-and-server-safety)
 - [Console And Run Status](#console-and-run-status)
 
@@ -120,6 +121,24 @@ When `environment_token_set=false`, explain that no environment API Token was de
 Do not run Doctor merely to determine whether an environment Token exists; logout reports that fact locally without a network request. Run Doctor after logout only when the user asks whether the remaining Token is valid or whether authenticated commands still work.
 
 Never modify shell startup files or user-level environment configuration without the user's explicit confirmation.
+
+## Installer Uninstall Credential Cleanup
+
+The standalone LoomLoom uninstall scripts remove the CLI, the bundled LoomLoom Agent Skill, and `config.json`. They do not remove environment API Tokens from shell startup files or user-level environment configuration.
+
+Treat every output line in this form as an environment variable name that may require separate cleanup:
+
+```text
+environment token cleanup required: LOOMLOOM_TOKEN_<PROFILE>
+```
+
+When one or more names are reported:
+
+1. Show the exact reported variable names to the user without reading or exposing their values.
+2. Ask whether the user wants the Agent to remove those variables from permanent environment configuration.
+3. Only after explicit confirmation, remove definitions for those exact names without modifying unrelated configuration.
+
+Reported names are cleanup candidates and may not currently be configured. Do not claim that an environment variable is set without checking its permanent configuration after the user confirms cleanup.
 
 ## Token And Server Safety
 
