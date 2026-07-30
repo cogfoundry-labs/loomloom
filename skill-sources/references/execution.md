@@ -28,11 +28,7 @@ If input changes after validation, precheck, or confirmation:
 4. Obtain a new confirmation.
 5. Use a new client request ID.
 
-In a Chinese conversation, say:
-
-```text
-输入内容在确认后发生变化，需要重新预估并确认。
-```
+Tell the user in their language that the changed input must be re-estimated and reconfirmed.
 
 ## Official Templates
 
