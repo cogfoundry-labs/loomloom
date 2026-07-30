@@ -15,18 +15,23 @@ import (
 // creatorNetEarningT and creatorEarning: those are creator-earnings-specific
 // fields shown only via the `creator earnings` command.
 type creatorTransactionSummary struct {
-	RunTransactionID        string    `json:"runTransactionId"`
-	RunID                   string    `json:"runId"`
-	ListingID               string    `json:"listingId"`
-	ListingVersionID        string    `json:"listingVersionId"`
-	SkillName               string    `json:"skillName"`
-	TaskFixedFeeT           flexInt64 `json:"taskFixedFeeT"`
-	EstimatedExecutionCostT flexInt64 `json:"estimatedExecutionCostT"`
-	EstimatedBuyerPayableT  flexInt64 `json:"estimatedBuyerPayableT"`
-	ActualExecutionCostT    flexInt64 `json:"actualExecutionCostT"`
-	FinalBuyerPayableT      flexInt64 `json:"finalBuyerPayableT"`
-	Currency                string    `json:"currency"`
-	TransactionStatus       string    `json:"transactionStatus"`
+	RunTransactionID        string         `json:"runTransactionId"`
+	RunID                   string         `json:"runId"`
+	ListingID               string         `json:"listingId"`
+	ListingVersionID        string         `json:"listingVersionId"`
+	SkillName               string         `json:"skillName"`
+	TaskFixedFeeT           *flexInt64     `json:"taskFixedFeeT,omitempty"`
+	TaskFixedFee            *moneyResponse `json:"taskFixedFee,omitempty"`
+	EstimatedExecutionCostT *flexInt64     `json:"estimatedExecutionCostT,omitempty"`
+	EstimatedExecutionCost  *moneyResponse `json:"estimatedExecutionCost,omitempty"`
+	EstimatedBuyerPayableT  *flexInt64     `json:"estimatedBuyerPayableT,omitempty"`
+	EstimatedBuyerPayable   *moneyResponse `json:"estimatedBuyerPayable,omitempty"`
+	ActualExecutionCostT    *flexInt64     `json:"actualExecutionCostT,omitempty"`
+	ActualExecutionCost     *moneyResponse `json:"actualExecutionCost,omitempty"`
+	FinalBuyerPayableT      *flexInt64     `json:"finalBuyerPayableT,omitempty"`
+	FinalBuyerPayable       *moneyResponse `json:"finalBuyerPayable,omitempty"`
+	Currency                string         `json:"currency"`
+	TransactionStatus       string         `json:"transactionStatus"`
 }
 
 type creatorTransactionsListResponse struct {
@@ -123,14 +128,22 @@ func printCreatorTransactions(w io.Writer, resp creatorTransactionsListResponse)
 		return err
 	}
 	for _, item := range resp.Items {
+		taskFixedFee, err := formatResponseMoney(item.TaskFixedFee, item.TaskFixedFeeT, item.Currency)
+		if err != nil {
+			return fmt.Errorf("creator transaction %s taskFixedFee contract error: %w", item.RunTransactionID, err)
+		}
+		finalBuyerPayable, err := formatResponseMoney(item.FinalBuyerPayable, item.FinalBuyerPayableT, item.Currency)
+		if err != nil {
+			return fmt.Errorf("creator transaction %s finalBuyerPayable contract error: %w", item.RunTransactionID, err)
+		}
 		if _, err := fmt.Fprintf(
 			tw,
 			"%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.RunTransactionID,
 			item.ListingID,
 			oneLine(item.SkillName),
-			formatMoneyT(int64(item.TaskFixedFeeT), item.Currency),
-			formatMoneyT(int64(item.FinalBuyerPayableT), item.Currency),
+			taskFixedFee,
+			finalBuyerPayable,
 			oneLine(item.TransactionStatus),
 		); err != nil {
 			return err

@@ -57,7 +57,9 @@ func TestCreatorTransactionsTextShowsFormattedAmountsWithoutEarnings(t *testing.
 				"listingId":"listing-1",
 				"skillName":"Writer",
 				"taskFixedFeeT":5000000,
+				"taskFixedFee":{"amount":"0.5000000","currency":"CNY"},
 				"finalBuyerPayableT":9800000,
+				"finalBuyerPayable":{"amount":"0.9800000","currency":"CNY"},
 				"creatorNetEarningT":4500000,
 				"currency":"CNY",
 				"transactionStatus":"settled"

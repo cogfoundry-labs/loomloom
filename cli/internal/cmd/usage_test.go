@@ -18,10 +18,12 @@ func TestUsageListTextShowsFormattedAmounts(t *testing.T) {
 				"listingId":"listing-1",
 				"skillName":"Writer",
 				"taskFixedFeeT":5000000,
+				"taskFixedFee":{"amount":"0.5000000","currency":"CNY"},
 				"estimatedExecutionCostT":69300,
 				"estimatedBuyerPayableT":5069300,
 				"actualExecutionCostT":52000,
 				"finalBuyerPayableT":5052000,
+				"finalBuyerPayable":{"amount":"0.5052000","currency":"CNY"},
 				"currency":"CNY",
 				"transactionStatus":"settled"
 			}],
@@ -73,10 +75,35 @@ func TestUsageListTextUnknownCurrencyFallback(t *testing.T) {
 	}
 }
 
+func TestUsageListRejectsMoneyAndRawMismatch(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"items":[{
+			"runTransactionId":"rt-1",
+			"taskFixedFeeT":5000001,
+			"taskFixedFee":{"amount":"0.5000000","currency":"CNY"},
+			"currency":"CNY"
+		}],"totalCount":1}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newUsageListCmd(opts)
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "money amount 0.5000000 does not match raw amount 5000001") {
+		t.Fatalf("usage list error=%v want Money/T contract mismatch", err)
+	}
+}
+
 func TestUsageListJSONPreservesRawFields(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"items":[{"runTransactionId":"rt-1","taskFixedFeeT":5000000}],"totalCount":1,"newBackendField":"kept"}`))
+		_, _ = w.Write([]byte(`{"items":[{
+			"runTransactionId":"rt-1",
+			"taskFixedFeeT":5000000,
+			"taskFixedFee":{"amount":"0.5000000","currency":"CNY"}
+		}],"totalCount":1,"newBackendField":"kept"}`))
 	}))
 	defer server.Close()
 
@@ -88,7 +115,7 @@ func TestUsageListJSONPreservesRawFields(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("usage list command error = %v", err)
 	}
-	for _, want := range []string{`"taskFixedFeeT": 5000000`, `"newBackendField": "kept"`} {
+	for _, want := range []string{`"taskFixedFeeT": 5000000`, `"taskFixedFee": {`, `"newBackendField": "kept"`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output=%s missing %q", out.String(), want)
 		}

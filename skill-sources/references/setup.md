@@ -1,17 +1,19 @@
 # Setup
 
-Use this reference for installation, `doctor`, browser login, explicit API Token fallback, logout, platform selection, balance guidance, server configuration, console access, and token safety.
+Use this reference for installation, `doctor`, browser login, explicit API Token fallback, logout, platform selection, credentials, balance guidance, server profiles, console access, and token safety.
 
 ## Contents
 
 - [Installation](#installation)
-- [Diagnose Before Giving Account Guidance](#diagnose-before-giving-account-guidance)
+- [Diagnose Before Account Guidance](#diagnose-before-account-guidance)
 - [Browser-First Credential Flow](#browser-first-credential-flow)
 - [Platform And Credential Messages](#platform-and-credential-messages)
+- [Persist Verified Credentials](#persist-verified-credentials)
+- [Multiple Servers](#multiple-servers)
 - [Browser Logout](#browser-logout)
 - [Installer Uninstall Credential Cleanup](#installer-uninstall-credential-cleanup)
 - [Token And Server Safety](#token-and-server-safety)
-- [Console And Run Status](#console-and-run-status)
+- [Balance And Console Guidance](#balance-and-console-guidance)
 
 ## Installation
 
@@ -23,100 +25,138 @@ Use this reference for installation, `doctor`, browser login, explicit API Token
   curl -fsSL https://raw.githubusercontent.com/Cogfoundry-ai/loomloom/main/install.sh | bash -s -- --channel beta
   ```
 
-- If the GitHub release API returns HTTP 403 while resolving the latest release, retry after a short wait, install a known tag with `--version <tag>`, or ask the user which version to use.
+## Diagnose Before Account Guidance
 
-## Diagnose Before Giving Account Guidance
+Run `loomloom doctor --output json` before advising about a token, server, platform, balance, recharge, or console. Treat these fields as authoritative:
 
-Run `loomloom doctor --output json` when possible before advising about the account, token, balance, server, recharge, or console. Treat these returned fields as authoritative:
-
-- `server`
-- `platform`
-- `platform_operational`
-- `token_set`
-- `healthy`
-- `credential_action`
-- `credential_message`
+- `server`, `profile`, `platform`, `platform_preset`, `platform_operational`
+- `token_env`, `token_set`, `token_valid`
+- `healthy`, `credential_action`, `credential_message`, `next_action`
 
 If Doctor reports `healthy=true`, continue with the existing credential. Do not require browser login and do not ask the user for another Token.
 
-Do not infer a platform link when Doctor already returned the relevant state. If no Server is provided through `LOOMLOOM_SERVER` / `--server` and the CLI has no remembered Server, use the platform-selection guidance below.
+If Doctor does not report an already selected Server profile and the user has neither explicitly selected a platform nor provided a Server, the platform is unknown. In that state, present both preset platforms with their Server, credential, recharge, region, and authentication guidance, then ask the user to choose. Do not start either platform's authentication flow before the choice.
+
+Never treat any of these as a platform selection:
+
+- an unbound `LOOMLOOM_TOKEN` without a verified Server profile;
+- the LoomLoom repository owner or download source, including `Cogfoundry-ai/loomloom`;
+- the installed CLI version, release channel, or apparent documentation maturity;
+- the user's language, location, region, or a platform recommendation;
+- one platform having a more familiar or complete setup path.
+
+When the user asks where to get a Token/API key while the platform is unknown, present both platform choices and ask them to select one. Do not answer with only one platform's credential URL. A recommendation based on region may be shown as part of the comparison, but it must not silently select that platform.
+
+ShengSuanYun and CogFoundry are preset platforms, not a whitelist. If the user provides another Server, do not block it or replace it with a preset Server. Do not add `/loom/v1`; validate the exact URL the user provided.
+
+Only a successful Doctor may register a new Server. Ordinary business commands must not use an unverified Server.
 
 ## Browser-First Credential Flow
 
-When Doctor does not find a valid credential, prefer browser login before asking the user to obtain or provide an API Token:
+API Token authentication is available for every platform. Browser login is available only for ShengSuanYun. Determine the authentication flow from the user's explicit platform selection or the already selected Server profile reported by Doctor.
 
-1. If the platform is operational and the environment is interactive, run `loomloom login` for the selected Server.
-2. Ask the user to complete authorization in the browser. Do not handle, expose, or copy the browser credential yourself.
-3. After browser login succeeds, run `loomloom doctor --output json` again and continue only when `healthy=true`.
-4. Only after browser login fails, is unsupported, is unavailable in a headless/CI environment, or the user explicitly chooses Token authentication, use the explicit API Token fallback below.
+1. If no platform or Server has been selected, show both preset platforms and ask the user to select one before starting authentication. Do not run `loomloom login` yet.
+2. After the user selects ShengSuanYun, or when the existing selected profile is ShengSuanYun, prefer `loomloom login` if the user can complete authorization in a browser.
+3. Ask the user to complete authorization in the browser. Do not handle, expose, or copy the browser credential yourself.
+4. If ShengSuanYun browser login fails, is unavailable in a headless/CI environment, or the user explicitly chooses Token authentication, use the explicit API Token fallback below.
+5. After the user selects CogFoundry or a custom platform, or when the existing selected profile is one of those platforms, skip browser login and use the explicit API Token flow directly.
+6. After either authentication flow completes, run `loomloom doctor --output json` and continue only when `healthy=true`.
 
-Do not force browser login when Doctor already reports a healthy existing credential. Existing users may be authenticated through an explicit environment Token and should continue without interruption.
+Do not force browser login when Doctor already reports a healthy existing credential. Existing users may be authenticated through the selected profile's environment Token and should continue without interruption.
 
 When the user explicitly asks where to obtain a Token/API key or explicitly requests Token-based setup, skip the browser-first attempt and provide the applicable platform Token guidance directly.
 
-If browser login succeeds while an environment Token is already configured, explain that the browser credential was saved but the explicit environment Token remains the effective higher-priority credential. Do not describe this as a login conflict.
+If browser login succeeds while the selected profile's `token_env` is already set, explain that the browser credential was saved but that environment Token remains the effective higher-priority credential. Do not describe this as a login conflict.
 
 ## Platform And Credential Messages
 
-When `credential_action=choose_platform`, output this exact browser-first platform message:
+All source templates in this reference are written in English and define required business content, not verbatim wording. Translate and localize every user-facing message under the global language rule while preserving commands, URLs, identifiers, amounts, and required actions. The official Chinese name of ShengSuanYun is `胜算云`: use `胜算云` in Chinese responses and `ShengSuanYun` in non-Chinese responses; `ShengSuanYun (胜算云)` may be used on first mention when both names help identification.
+
+When no Server is configured, convey:
 
 ```text
-你还没有配置 LoomLoom 平台。请选择要使用的平台：
+LoomLoom does not yet have a configured platform and credential. Choose a platform:
 
-1. 胜算云：本服务由 CogFoundry 联合支持，面向中国大陆用户推荐使用。
-   - Server：https://loomloom.shengsuanyun.com/loom/v1
-2. CogFoundry：面向新加坡及其他海外地区用户，当前支付和交易能力敬请期待。
+1. ShengSuanYun: for users in Mainland China.
+This service is jointly supported by CogFoundry and is recommended for users in Mainland China.
+- Server: https://loomloom.shengsuanyun.com/loom/v1
+- API key console: https://console.shengsuanyun.com/user/keys
+- Recharge: https://console.shengsuanyun.com/user/recharge
+- Authentication after selection: prefer browser login; use an API Token if browser login does not complete or the user explicitly chooses Token authentication.
 
-当前阶段请先选择胜算云。选择后将优先通过浏览器登录；只有浏览器登录未完成时，才需要配置 API Token。
+2. CogFoundry: for users in Singapore and other countries or regions.
+- Server: https://loomloom.cogfoundry.ai/loom/v1
+- API key console: https://console.cogfoundry.ai/api-keys
+- Recharge and balance: https://console.cogfoundry.ai/credits
+- Authentication after selection: use an API Token directly; browser login is not supported.
+
+Ask the user to choose one. Do not authenticate with either platform until they choose.
 ```
 
-When browser login fails or is unavailable for ShengSuanYun, or when the user explicitly requests Token-based setup, output this exact fallback message:
+These are preset choices only. A user-provided compatible Server is also allowed.
+
+When browser login fails or is unavailable for ShengSuanYun, or when the user explicitly requests Token-based setup, convey:
 
 ```text
-浏览器登录未完成，你也可以使用胜算云 API Token 进行配置。
-请前往胜算云控制台创建或复制密钥后配置到本地环境：
+Browser login did not complete. You can configure ShengSuanYun with an API Token instead.
+Create or copy an API key in the ShengSuanYun console, then configure it in the local environment:
 https://console.shengsuanyun.com/user/keys
 ```
 
-When the user proactively asks which platforms are available, which Server to use, or how to set up an account, use the browser-first platform message above. When the user proactively asks where to obtain a Token/API key, use the Token fallback message. Do not provide a CogFoundry website or console URL.
+When a command passively reports `credential_action=missing_token` for ShengSuanYun, do not immediately output the Token fallback message. Attempt browser login first. Output the fallback message only if browser login does not complete or the user chooses Token authentication.
 
-When a command passively reports `credential_action=missing_token` for ShengSuanYun, do not immediately output the Token fallback message. Attempt browser login first according to the browser-first credential flow. Output the fallback message only if browser login does not complete or the user chooses Token authentication.
-
-When a command passively reports insufficient ShengSuanYun balance, output this exact message:
+For a missing CogFoundry token, convey:
 
 ```text
-当前胜算云账户余额不足，请前往胜算云控制台充值后再继续：
-https://console.shengsuanyun.com/user/recharge
+No CogFoundry credential was detected. Create or copy an API key in the CogFoundry console, then configure it in the local environment:
+https://console.cogfoundry.ai/api-keys
 ```
 
-When `credential_action=cogfoundry_unavailable`, or the user asks to switch to, try, browse, or use CogFoundry, output this exact message and stop:
+For a missing custom-platform token after browser login is unsupported or not selected, use `credential_message`. Never guess its console, key, balance, or recharge URL.
+
+When Server authentication rejects a Token, convey:
 
 ```text
-CogFoundry 面向新加坡及其他海外地区用户，当前支付和交易能力仍在建设中，敬请期待。当前阶段请继续使用胜算云。
+The current Server is reachable, but credential authentication failed. The credential may be invalid, expired, insufficiently privileged, or intended for another Server. Confirm that it came from the environment corresponding to the current Server, then retry.
 ```
 
-After that message:
+## Persist Verified Credentials
 
-- Do not offer or perform a switch to a CogFoundry host.
-- Do not ask for a CogFoundry URL, API key, or token.
-- Do not claim that CogFoundry read-only capabilities are usable.
-- Do not explain or hint at switching steps.
-- Do not provide a CogFoundry website or console URL.
+The CLI generates `profile` and `token_env`; the Agent must not invent either name.
+
+When the user provides both a Server URL and Token and asks to install, configure, use, switch, or health-check LoomLoom, treat that as a request to register and activate that Server. The user does not need to separately ask to add a platform, overwrite configuration, or switch profiles. Use the exact URL and its corresponding Token for Doctor; do not modify the URL or reuse another Server's Token. For the first Doctor check, pass the pair explicitly as `loomloom doctor --server <exact-server> --token <exact-token> --output json`. Do not use temporary `LOOMLOOM_SERVER=... LOOMLOOM_TOKEN=...` assignments because an existing active profile takes precedence over legacy environment configuration. If Doctor succeeds, persist the Token through the returned `token_env`, register the Server, and make it active. If the Server already exists, update its Token and make it active. If Doctor fails, do not persist or switch anything; keep the current configuration active.
+
+1. Run Doctor with the exact user-provided Server and Token.
+2. If Doctor fails, do not persist the Server or Token.
+3. When `next_action=persist_token`, write the Token to the returned `token_env` in the user's existing permanent environment configuration (`~/.zshrc`, `~/.bashrc`, the active bash profile, PowerShell `$PROFILE`, or the applicable user-level Windows environment).
+4. Update an existing variable instead of appending duplicates.
+5. Run `loomloom doctor --output json` again.
+6. Continue only when `healthy=true`, `token_valid=true`, and `next_action=none`.
+
+Never echo the Token while persisting or verifying it.
+
+## Multiple Servers
+
+- `loomloom server list` lists verified Server profiles.
+- `loomloom server use <name-or-server>` switches the active profile without rerunning Doctor.
+- `loomloom server remove <name-or-server>` removes local profile metadata, not the permanent Token variable.
+- Do not switch profiles unless the user requests it.
+- After a switch, run Doctor when platform or credential facts are needed.
 
 ## Browser Logout
 
-`loomloom logout` removes only the credential saved by `loomloom login`. It does not remove an explicit API Token from the user's environment or shell configuration.
+`loomloom logout` removes only the browser credential saved by `loomloom login` for the selected Server profile. It does not remove that profile's explicit API Token from the environment or shell configuration.
 
 Treat these logout fields as authoritative local state:
 
-- `token_removed=true` means the saved browser login credential was removed.
-- `environment_token_set=true` means a non-empty environment Token is still configured. It does not prove that the Token is valid.
+- `token_removed=true` means the selected profile's saved browser login credential was removed.
+- `environment_token_set=true` means the selected profile's non-empty environment Token is still configured. It does not prove that the Token is valid.
 
-When `environment_token_set=true`, explain that browser login was removed but the CLI will continue to prefer the environment API Token. Ask whether the user wants the Agent to remove the local environment Token configuration.
+When `environment_token_set=true`, explain that the browser credential was removed but the CLI will continue to prefer the selected profile's environment API Token. Ask whether the user wants the Agent to remove the local environment Token configuration.
 
-Only after the user explicitly confirms, locate and remove the definitions of `LOOMLOOM_TOKEN` and legacy `BATCHJOB_TOKEN` without exposing their values or modifying unrelated configuration. Explain that an already-running parent shell may require the user to unset the variables or open a new terminal.
+Only after the user explicitly confirms, identify the selected profile's CLI-generated `token_env` from an existing Doctor result or `loomloom server list --output json`, then remove that variable's definitions without exposing its value or modifying unrelated configuration. Never assume a fixed environment variable name. Explain that an already-running parent shell may require the user to unset the variable or open a new terminal.
 
-When `environment_token_set=false`, explain that no environment API Token was detected.
+When `environment_token_set=false`, explain that no environment API Token was detected for the selected profile.
 
 Do not run Doctor merely to determine whether an environment Token exists; logout reports that fact locally without a network request. Run Doctor after logout only when the user asks whether the remaining Token is valid or whether authenticated commands still work.
 
@@ -136,27 +176,36 @@ When one or more names are reported:
 
 1. Show the exact reported variable names to the user without reading or exposing their values.
 2. Ask whether the user wants the Agent to remove those variables from permanent environment configuration.
-3. Only after explicit confirmation, remove definitions for those exact names without modifying unrelated configuration.
+3. Only after explicit confirmation, remove definitions for those exact names without exposing their values or modifying unrelated configuration.
 
 Reported names are cleanup candidates and may not currently be configured. Do not claim that an environment variable is set without checking its permanent configuration after the user confirms cleanup.
 
 ## Token And Server Safety
 
-- The production default server is `https://loomloom.shengsuanyun.com/loom/v1`, but the active server is the explicit `LOOMLOOM_SERVER` / `--server` value.
-- Before every request, inspect the final URL scheme and host.
-- Send a token only over HTTPS and only to the explicitly configured host.
-- Do not automatically follow a redirect to another domain while retaining the token.
-- Use a token only for the environment and platform that issued it.
-- Never send a ShengSuanYun token to a CogFoundry host or a CogFoundry token to a ShengSuanYun host.
+- Inspect the final URL scheme and host before every request.
+- Send a remote token only over HTTPS and only to the explicitly selected Server.
+- Never retain a token across a redirect to a different scheme or host.
+- Never try one token against multiple Servers.
 - Never echo a real token in replies, logs, generated files, examples, or diagnostics.
 
-## Console And Run Status
+## Balance And Console Guidance
 
-For ShengSuanYun:
+- ShengSuanYun keys: `https://console.shengsuanyun.com/user/keys`
+- ShengSuanYun recharge: `https://console.shengsuanyun.com/user/recharge`
+- CogFoundry keys: `https://console.cogfoundry.ai/api-keys`
+- CogFoundry recharge and balance: `https://console.cogfoundry.ai/credits`
+- For a custom Server, use only service-returned guidance.
 
-- API keys: `https://console.shengsuanyun.com/user/keys`
-- Recharge: `https://console.shengsuanyun.com/user/recharge`
+When ShengSuanYun reports insufficient balance, convey:
 
-For run status, prefer `loomloom run watch <run-id>`, `loomloom run get <run-id>`, and `loomloom run result-workbook <run-id>`.
+```text
+The current ShengSuanYun account has insufficient balance. Recharge in the ShengSuanYun console before continuing:
+https://console.shengsuanyun.com/user/recharge
+```
 
-There is no stable URL template for a Workflow Run detail page. Use a URL only when the service explicitly returns it; otherwise do not construct one from a `runId`.
+When CogFoundry reports insufficient balance, convey:
+
+```text
+The current CogFoundry account has insufficient balance. Recharge in the CogFoundry console before continuing:
+https://console.cogfoundry.ai/credits
+```

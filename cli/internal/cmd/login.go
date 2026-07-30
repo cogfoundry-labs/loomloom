@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/authflow"
 	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
@@ -52,17 +53,22 @@ func newLoginCmd(opts *rootOptions) *cobra.Command {
 			}
 
 			state := platform.LoadState()
-			state.Platform = resolvedPlatform.ID
-			state.Server = server
-			state.Token = result.APIKey
+			profile, err := state.UpsertVerified(server, resolvedPlatform.ID, "", time.Now())
+			if err != nil {
+				return fmt.Errorf("save login server profile: %w", err)
+			}
+			profile, err = state.SetToken(profile.Name, result.APIKey)
+			if err != nil {
+				return fmt.Errorf("save login credentials: %w", err)
+			}
 			if err := platform.SaveState(state); err != nil {
 				return fmt.Errorf("save login credentials: %w", err)
 			}
 
-			if env := envOrDefault("LOOMLOOM_TOKEN", os.Getenv("BATCHJOB_TOKEN")); env != "" && env != result.APIKey {
+			if env := strings.TrimSpace(os.Getenv(profile.TokenEnv)); env != "" && env != result.APIKey {
 				_, _ = fmt.Fprintln(
 					cmd.ErrOrStderr(),
-					"警告：环境变量 LOOMLOOM_TOKEN/BATCHJOB_TOKEN 已设置且与本次登录的密钥不同；环境变量优先级更高，如需使用本次登录结果请先取消对应变量。",
+					"警告：当前服务器的 Token 环境变量已设置且与本次登录的密钥不同；环境变量优先级更高，如需使用本次登录结果请先取消对应变量。",
 				)
 			}
 
@@ -94,10 +100,15 @@ func newLogoutCmd(opts *rootOptions) *cobra.Command {
 		Short: "Remove the browser login credential saved by `loomloom login`",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			state := platform.LoadState()
-			hadToken := state.Token != ""
-			environmentTokenSet := loginEnvironmentTokenSet()
+			profile, ok := state.FindProfile(opts.server)
+			hadToken := ok && strings.TrimSpace(profile.Token) != ""
+			environmentTokenSet := ok && strings.TrimSpace(os.Getenv(profile.TokenEnv)) != ""
 			if hadToken {
-				state.Token = ""
+				var err error
+				profile, err = state.SetToken(profile.Name, "")
+				if err != nil {
+					return err
+				}
 				if err := platform.SaveState(state); err != nil {
 					return fmt.Errorf("clear login credentials: %w", err)
 				}
@@ -106,8 +117,8 @@ func newLogoutCmd(opts *rootOptions) *cobra.Command {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
 				return enc.Encode(map[string]any{
-					"server":                state.Server,
-					"platform":              string(state.Platform),
+					"server":                profile.Server,
+					"platform":              string(profile.Platform),
 					"token_removed":         hadToken,
 					"environment_token_set": environmentTokenSet,
 				})
@@ -127,11 +138,6 @@ func newLogoutCmd(opts *rootOptions) *cobra.Command {
 	}
 }
 
-func loginEnvironmentTokenSet() bool {
-	return strings.TrimSpace(os.Getenv("LOOMLOOM_TOKEN")) != "" ||
-		strings.TrimSpace(os.Getenv("BATCHJOB_TOKEN")) != ""
-}
-
 func loginTarget(opts *rootOptions) (string, platform.Platform) {
 	server := strings.TrimSpace(opts.server)
 	if server == "" {
@@ -141,7 +147,7 @@ func loginTarget(opts *rootOptions) (string, platform.Platform) {
 	return server, platform.InferFromServer(server)
 }
 func verifyLoginToken(cmd *cobra.Command, opts *rootOptions) error {
-	httpClient, err := newHTTPClient(opts)
+	httpClient, err := newHTTPClientForDoctor(opts)
 	if err != nil {
 		return err
 	}

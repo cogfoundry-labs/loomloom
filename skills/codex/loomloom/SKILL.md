@@ -113,11 +113,15 @@ Installation is not execution and does not authorize a paid run.
 
 ## Global Rules
 
+**Match the user's language.** Respond in the language evident from the user's messages. If it is not yet evident, default to Chinese for ShengSuanYun and English for CogFoundry. Apply this to every user-facing message, including predefined templates, confirmations, warnings, and errors. Preserve commands, URLs, identifiers, amounts, and currency codes when localizing.
+
+Determine the current platform only from the user's explicit selection or a successful `loomloom doctor --output json` result. Never infer it from a hostname, location, language, or other context.
+
 1. **Protect credentials.** Send a token only over HTTPS to the explicitly configured host. Never expose it, follow it across domains, or reuse it across platforms/environments.
 2. **Default to Excel.** Use JSON/JSONL only when the user explicitly requests programmatic input or supplies a compatible request file.
 3. **Separate preparation from execution.** Downloads, uploads, validation, quote, and precheck do not authorize a hosted run.
 4. **Confirm every run by default.** Show the current server-provided estimate and obtain explicit confirmation in the current conversation before creating a hosted run, except during an explicitly activated Test Execution Mode defined below.
-5. **Reconfirm changed input.** If input changes after validation, estimate, or confirmation, validate and estimate again and obtain a new confirmation. In Chinese, say `输入内容在确认后发生变化，需要重新预估并确认。`
+5. **Reconfirm changed input.** If input changes after validation, estimate, or confirmation, validate and estimate again and obtain a new confirmation. Tell the user that the changed input must be re-estimated and reconfirmed.
 6. **Use execution IDs safely.** Every newly confirmed execution gets a new `client-request-id`. Reuse one only for an identical retry of the same confirmed request after an ambiguous failure.
 7. **Do not bypass Market.** Execute a SkillBot through its Listing and public schema. Never expose or reconstruct hidden prompts, steps, mappings, TemplateSpec, or private execution logic.
 8. **Respect order locking.** Market resolves the current sellable Listing Version when creating the order and locks that version and price for the order.

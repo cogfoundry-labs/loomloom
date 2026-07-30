@@ -22,15 +22,29 @@ func TestLoginRefusesPlatformWithoutBrowserLogin(t *testing.T) {
 	}
 }
 
+func TestLoginDoesNotRequireExistingTokenBinding(t *testing.T) {
+	isolateCmdConfigHome(t)
+	t.Setenv("LOOMLOOM_TOKEN", "unbound-token")
+	cmd := NewRootCmd()
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"login", "--server", "http://127.0.0.1:39999/loom/v1"})
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "does not support browser login") {
+		t.Fatalf("error = %v want browser login platform refusal, not token binding failure", err)
+	}
+}
+
 func TestLogoutClearsSavedToken(t *testing.T) {
 	isolateCmdConfigHome(t)
-	t.Setenv("LOOMLOOM_TOKEN", "")
-	t.Setenv("BATCHJOB_TOKEN", "")
-	if err := platform.SaveState(platform.State{
-		Platform: platform.CogFoundry,
-		Server:   "https://test.shengsuanyun.com/loom/v1",
-		Token:    "sk-saved",
-	}); err != nil {
+	server := "https://test.shengsuanyun.com/loom/v1"
+	profile := saveTestProfile(t, server, platform.ShengSuanYun, "")
+	t.Setenv(profile.TokenEnv, "")
+	state := platform.LoadState()
+	if _, err := state.SetToken(profile.Name, "sk-saved"); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.SaveState(state); err != nil {
 		t.Fatal(err)
 	}
 
@@ -42,73 +56,63 @@ func TestLogoutClearsSavedToken(t *testing.T) {
 		t.Fatalf("logout error = %v", err)
 	}
 
-	if got := platform.LoadState(); got.Token != "" {
-		t.Fatalf("token=%q want cleared", got.Token)
+	got, ok := platform.LoadState().FindProfile(server)
+	if !ok || got.Token != "" {
+		t.Fatalf("profile=%+v ok=%t want cleared token", got, ok)
 	}
 }
 
 func TestLogoutReportsEnvironmentTokenWithoutRemovingIt(t *testing.T) {
-	tests := []struct {
-		name  string
-		env   string
-		value string
-	}{
-		{name: "loomloom token", env: "LOOMLOOM_TOKEN", value: "sk-loomloom"},
-		{name: "legacy batchjob token", env: "BATCHJOB_TOKEN", value: "sk-batchjob"},
+	isolateCmdConfigHome(t)
+	server := "https://loomloom.shengsuanyun.com/loom/v1"
+	profile := saveTestProfile(t, server, platform.ShengSuanYun, "")
+	state := platform.LoadState()
+	if _, err := state.SetToken(profile.Name, "sk-browser"); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.SaveState(state); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv(profile.TokenEnv, "sk-environment")
+
+	var output bytes.Buffer
+	cmd := NewRootCmd()
+	cmd.SetOut(&output)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"logout", "--output", "json"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("logout error = %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			isolateCmdConfigHome(t)
-			t.Setenv("LOOMLOOM_TOKEN", "")
-			t.Setenv("BATCHJOB_TOKEN", "")
-			t.Setenv(tt.env, tt.value)
-			if err := platform.SaveState(platform.State{
-				Platform: platform.ShengSuanYun,
-				Server:   "https://loomloom.shengsuanyun.com/loom/v1",
-				Token:    "sk-browser",
-			}); err != nil {
-				t.Fatal(err)
-			}
-
-			var output bytes.Buffer
-			cmd := NewRootCmd()
-			cmd.SetOut(&output)
-			cmd.SetErr(&bytes.Buffer{})
-			cmd.SetArgs([]string{"logout", "--output", "json"})
-			if err := cmd.Execute(); err != nil {
-				t.Fatalf("logout error = %v", err)
-			}
-
-			var payload map[string]any
-			if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
-				t.Fatalf("decode logout JSON: %v\n%s", err, output.String())
-			}
-			if payload["token_removed"] != true {
-				t.Fatalf("token_removed=%v want true", payload["token_removed"])
-			}
-			if payload["environment_token_set"] != true {
-				t.Fatalf("environment_token_set=%v want true", payload["environment_token_set"])
-			}
-			if got := platform.LoadState().Token; got != "" {
-				t.Fatalf("saved browser token=%q want cleared", got)
-			}
-			if got := strings.TrimSpace(os.Getenv(tt.env)); got != tt.value {
-				t.Fatalf("environment token=%q want unchanged", got)
-			}
-		})
+	var payload map[string]any
+	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
+		t.Fatalf("decode logout JSON: %v\n%s", err, output.String())
+	}
+	if payload["token_removed"] != true {
+		t.Fatalf("token_removed=%v want true", payload["token_removed"])
+	}
+	if payload["environment_token_set"] != true {
+		t.Fatalf("environment_token_set=%v want true", payload["environment_token_set"])
+	}
+	got, ok := platform.LoadState().FindProfile(server)
+	if !ok || got.Token != "" {
+		t.Fatalf("profile=%+v ok=%t want cleared browser token", got, ok)
+	}
+	if value := strings.TrimSpace(os.Getenv(profile.TokenEnv)); value != "sk-environment" {
+		t.Fatalf("environment token=%q want unchanged", value)
 	}
 }
 
 func TestLogoutReportsNoEnvironmentToken(t *testing.T) {
 	isolateCmdConfigHome(t)
-	t.Setenv("LOOMLOOM_TOKEN", "")
-	t.Setenv("BATCHJOB_TOKEN", "")
-	if err := platform.SaveState(platform.State{
-		Platform: platform.ShengSuanYun,
-		Server:   "https://loomloom.shengsuanyun.com/loom/v1",
-		Token:    "sk-browser",
-	}); err != nil {
+	server := "https://loomloom.shengsuanyun.com/loom/v1"
+	profile := saveTestProfile(t, server, platform.ShengSuanYun, "")
+	t.Setenv(profile.TokenEnv, "")
+	state := platform.LoadState()
+	if _, err := state.SetToken(profile.Name, "sk-browser"); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.SaveState(state); err != nil {
 		t.Fatal(err)
 	}
 
@@ -132,13 +136,13 @@ func TestLogoutReportsNoEnvironmentToken(t *testing.T) {
 
 func TestLogoutTextDistinguishesBrowserAndEnvironmentCredentials(t *testing.T) {
 	isolateCmdConfigHome(t)
-	t.Setenv("LOOMLOOM_TOKEN", "sk-from-env")
-	t.Setenv("BATCHJOB_TOKEN", "")
-	if err := platform.SaveState(platform.State{
-		Platform: platform.ShengSuanYun,
-		Server:   "https://loomloom.shengsuanyun.com/loom/v1",
-		Token:    "sk-browser",
-	}); err != nil {
+	profile := saveTestProfile(t, "https://loomloom.shengsuanyun.com/loom/v1", platform.ShengSuanYun, "")
+	t.Setenv(profile.TokenEnv, "sk-from-env")
+	state := platform.LoadState()
+	if _, err := state.SetToken(profile.Name, "sk-browser"); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.SaveState(state); err != nil {
 		t.Fatal(err)
 	}
 
@@ -164,8 +168,8 @@ func TestLogoutTextDistinguishesBrowserAndEnvironmentCredentials(t *testing.T) {
 
 func TestLogoutWithoutSavedLoginReportsLocalCredentialState(t *testing.T) {
 	isolateCmdConfigHome(t)
-	t.Setenv("LOOMLOOM_TOKEN", "sk-from-env")
-	t.Setenv("BATCHJOB_TOKEN", "")
+	profile := saveTestProfile(t, "https://loomloom.shengsuanyun.com/loom/v1", platform.ShengSuanYun, "")
+	t.Setenv(profile.TokenEnv, "sk-from-env")
 
 	var output bytes.Buffer
 	cmd := NewRootCmd()
@@ -188,25 +192,117 @@ func TestLogoutWithoutSavedLoginReportsLocalCredentialState(t *testing.T) {
 	}
 }
 
-func TestConfiguredTokenFallsBackToSavedToken(t *testing.T) {
+func TestLogoutWithoutProfileIsIdempotent(t *testing.T) {
 	isolateCmdConfigHome(t)
-	t.Setenv("LOOMLOOM_TOKEN", "")
-	t.Setenv("BATCHJOB_TOKEN", "")
-	if err := platform.SaveState(platform.State{
-		Platform: platform.CogFoundry,
-		Server:   "https://test.cogfoundry.ai/loom/v1",
-		Token:    "sk-saved",
-	}); err != nil {
+
+	var output bytes.Buffer
+	cmd := NewRootCmd()
+	cmd.SetOut(&output)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"logout", "--output", "json"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("logout error = %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
+		t.Fatalf("decode logout JSON: %v\n%s", err, output.String())
+	}
+	if payload["token_removed"] != false || payload["environment_token_set"] != false {
+		t.Fatalf("payload=%v want no saved or environment credential", payload)
+	}
+}
+
+func TestLogoutIgnoresRemovedBatchjobEnvironment(t *testing.T) {
+	isolateCmdConfigHome(t)
+	profile := saveTestProfile(t, "https://loomloom.shengsuanyun.com/loom/v1", platform.ShengSuanYun, "")
+	t.Setenv(profile.TokenEnv, "")
+	t.Setenv("BATCHJOB_TOKEN", "removed-token")
+
+	var output bytes.Buffer
+	cmd := NewRootCmd()
+	cmd.SetOut(&output)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"logout", "--output", "json"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("logout error = %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
+		t.Fatalf("decode logout JSON: %v\n%s", err, output.String())
+	}
+	if payload["environment_token_set"] != false {
+		t.Fatalf("environment_token_set=%v want false", payload["environment_token_set"])
+	}
+}
+
+func TestLogoutClearsOnlyActiveProfileSavedToken(t *testing.T) {
+	isolateCmdConfigHome(t)
+	first := saveTestProfile(t, "https://first.example.com/loom/v1", platform.Custom, "")
+	state := platform.LoadState()
+	if _, err := state.SetToken(first.Name, "sk-first"); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.SaveState(state); err != nil {
 		t.Fatal(err)
 	}
 
-	if got := configuredToken(); got != "sk-saved" {
-		t.Fatalf("token=%q want saved token", got)
+	second := saveTestProfile(t, "https://second.example.com/loom/v1", platform.Custom, "")
+	state = platform.LoadState()
+	if _, err := state.SetToken(second.Name, "sk-second"); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.SaveState(state); err != nil {
+		t.Fatal(err)
 	}
 
-	// Environment variables still win over the saved token.
-	t.Setenv("LOOMLOOM_TOKEN", "sk-from-env")
-	if got := configuredToken(); got != "sk-from-env" {
-		t.Fatalf("token=%q want env override", got)
+	cmd := NewRootCmd()
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"logout"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("logout error = %v", err)
+	}
+
+	loaded := platform.LoadState()
+	gotFirst, ok := loaded.FindProfile(first.Name)
+	if !ok || gotFirst.Token != "sk-first" {
+		t.Fatalf("first profile=%+v ok=%t want preserved token", gotFirst, ok)
+	}
+	gotSecond, ok := loaded.FindProfile(second.Name)
+	if !ok || gotSecond.Token != "" {
+		t.Fatalf("second profile=%+v ok=%t want cleared token", gotSecond, ok)
+	}
+}
+
+func TestConfiguredTokenFallsBackToSavedToken(t *testing.T) {
+	isolateCmdConfigHome(t)
+	server := "https://test.cogfoundry.ai/loom/v1"
+	profile := saveTestProfile(t, server, platform.CogFoundry, "")
+	state := platform.LoadState()
+	if _, err := state.SetToken(profile.Name, "sk-saved"); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.SaveState(state); err != nil {
+		t.Fatal(err)
+	}
+
+	got, source, err := configuredToken(server)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "sk-saved" || source != "saved" {
+		t.Fatalf("token=%q source=%q want saved token", got, source)
+	}
+
+	// The selected profile's environment variable still wins over the saved token.
+	t.Setenv(profile.TokenEnv, "sk-from-env")
+	got, source, err = configuredToken(server)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "sk-from-env" || source != profile.TokenEnv {
+		t.Fatalf("token=%q source=%q want profile environment override", got, source)
 	}
 }

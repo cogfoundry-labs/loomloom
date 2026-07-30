@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"unicode"
 )
 
 var bundledSkillDirs = []string{
@@ -16,6 +17,32 @@ var bundledSkillDirs = []string{
 }
 
 const canonicalSkillReferencesDir = "skill-sources/references"
+
+func TestBundledSkillsMatchUserLanguage(t *testing.T) {
+	root := findRepoRoot(t)
+	for _, rel := range bundledSkillDirs {
+		text, err := os.ReadFile(filepath.Join(root, rel, "SKILL.md"))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		for _, want := range []string{
+			"Respond in the language evident from the user's messages",
+			"default to Chinese for ShengSuanYun and English for CogFoundry",
+			"including predefined templates, confirmations, warnings, and errors",
+			"only from the user's explicit selection or a successful `loomloom doctor --output json` result",
+			"Never infer it from a hostname, location, language, or other context",
+		} {
+			if !strings.Contains(string(text), want) {
+				t.Errorf("%s missing language rule %q", rel, want)
+			}
+		}
+	}
+
+	setup := readCanonicalSkillReference(t, root, "setup.md")
+	if !strings.Contains(setup, "required business content, not verbatim wording") {
+		t.Errorf("%s/setup.md must mark fixed messages as localizable business content", canonicalSkillReferencesDir)
+	}
+}
 
 func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
 	root := findRepoRoot(t)
@@ -98,36 +125,78 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 		"loomloom doctor --output json",
 		"credential_action",
 		"If Doctor reports `healthy=true`, continue with the existing credential",
-		"prefer browser login before asking the user to obtain or provide an API Token",
+		"API Token authentication is available for every platform",
+		"Browser login is available only for ShengSuanYun",
+		"user's explicit platform selection or the already selected Server profile reported by Doctor",
+		"neither explicitly selected a platform nor provided a Server",
+		"present both preset platforms",
+		"Do not start either platform's authentication flow before the choice",
+		"an unbound `LOOMLOOM_TOKEN` without a verified Server profile",
+		"the LoomLoom repository owner or download source",
+		"the installed CLI version, release channel, or apparent documentation maturity",
+		"the user's language, location, region, or a platform recommendation",
+		"Do not answer with only one platform's credential URL",
+		"show both preset platforms and ask the user to select one before starting authentication",
+		"Do not run `loomloom login` yet",
+		"After the user selects ShengSuanYun",
 		"loomloom login",
-		"Only after browser login fails",
-		"你还没有配置 LoomLoom 平台。请选择要使用的平台：",
+		"After the user selects CogFoundry or a custom platform",
+		"After either authentication flow completes",
+		"All source templates in this reference are written in English",
+		"Translate and localize every user-facing message",
+		"The official Chinese name of ShengSuanYun is `胜算云`",
+		"LoomLoom does not yet have a configured platform and credential. Choose a platform:",
+		"This service is jointly supported by CogFoundry and is recommended for users in Mainland China",
 		"https://loomloom.shengsuanyun.com/loom/v1",
 		"https://console.shengsuanyun.com/user/keys",
-		"浏览器登录未完成，你也可以使用胜算云 API Token 进行配置。",
+		"Authentication after selection: prefer browser login",
+		"Authentication after selection: use an API Token directly; browser login is not supported",
+		"Ask the user to choose one. Do not authenticate with either platform until they choose",
+		"Browser login did not complete. You can configure ShengSuanYun with an API Token instead.",
 		"do not immediately output the Token fallback message",
+		"https://console.shengsuanyun.com/user/recharge",
+		"No CogFoundry credential was detected",
+		"https://loomloom.cogfoundry.ai/loom/v1",
+		"https://console.cogfoundry.ai/api-keys",
+		"https://console.cogfoundry.ai/credits",
+		"The current CogFoundry account has insufficient balance",
+		"ShengSuanYun and CogFoundry are preset platforms, not a whitelist",
+		"treat that as a request to register and activate that Server",
+		"loomloom doctor --server <exact-server> --token <exact-token> --output json",
+		"Do not use temporary `LOOMLOOM_SERVER=... LOOMLOOM_TOKEN=...` assignments",
+		"If Doctor fails, do not persist or switch anything; keep the current configuration active",
+		"next_action=persist_token",
+		"loomloom server use <name-or-server>",
 		"environment_token_set=true",
-		"It does not remove an explicit API Token",
+		"selected profile's `token_env`",
 		"Ask whether the user wants the Agent to remove the local environment Token configuration",
 		"Only after the user explicitly confirms",
+		"loomloom server list --output json",
+		"Never assume a fixed environment variable name",
+		"without exposing its value or modifying unrelated configuration",
 		"without exposing their values or modifying unrelated configuration",
 		"Installer Uninstall Credential Cleanup",
 		"environment token cleanup required: LOOMLOOM_TOKEN_<PROFILE>",
 		"Ask whether the user wants the Agent to remove those variables",
 		"Reported names are cleanup candidates and may not currently be configured",
 		"already-running parent shell",
-		"当前胜算云账户余额不足，请前往胜算云控制台充值后再继续：",
-		"https://console.shengsuanyun.com/user/recharge",
-		"CogFoundry 面向新加坡及其他海外地区用户，当前支付和交易能力仍在建设中，敬请期待。当前阶段请继续使用胜算云。",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
 		}
 	}
+	englishSource := strings.ReplaceAll(text, "胜算云", "")
+	for _, r := range englishSource {
+		if unicode.Is(unicode.Han, r) {
+			t.Fatalf("%s must use English source guidance except for the official brand name 胜算云; found %q", canonicalSkillReferencesDir, r)
+		}
+	}
 	for _, forbidden := range []string{
-		"https://cogfoundry.ai",
+		"选择后，我会提供对应平台的 Server 和密钥配置指引",
+		"http://loomloom.cogfoundry.ai/loom/v1",
 		"https://console-dev.cogfoundry",
-		"https://console.cogfoundry",
+		"相关地址未知时，我不会自行猜测",
+		"CogFoundry 控制台地址必须读取当前环境配置",
 	} {
 		if strings.Contains(text, forbidden) {
 			t.Fatalf("%s should not include CogFoundry console URL %q", canonicalSkillReferencesDir, forbidden)
