@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 )
@@ -52,4 +53,116 @@ func TestParseMoneyAmountTRejectsInvalidValues(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFormatResponseMoneyPrefersMoneyAndSupportsLegacyFallback(t *testing.T) {
+	raw := flexInt64(5_000_000)
+	tests := []struct {
+		name     string
+		money    *moneyResponse
+		raw      *flexInt64
+		currency string
+		want     string
+	}{
+		{
+			name:  "money only",
+			money: &moneyResponse{Amount: "0.5000000", Currency: "CNY"},
+			want:  "CNY 0.5000000",
+		},
+		{
+			name:     "money preferred when equivalent raw exists",
+			money:    &moneyResponse{Amount: "0.5000000", Currency: "CNY"},
+			raw:      &raw,
+			currency: "CNY",
+			want:     "CNY 0.5000000",
+		},
+		{
+			name:     "legacy fallback",
+			raw:      &raw,
+			currency: "CNY",
+			want:     "CNY 0.5000000",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := formatResponseMoney(tt.money, tt.raw, tt.currency)
+			if err != nil {
+				t.Fatalf("formatResponseMoney() error=%v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("formatResponseMoney()=%q want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFormatResponseMoneyRejectsContractMismatch(t *testing.T) {
+	raw := flexInt64(5_000_001)
+	tests := []struct {
+		name     string
+		money    *moneyResponse
+		raw      *flexInt64
+		currency string
+		want     string
+	}{
+		{
+			name:  "amount mismatch",
+			money: &moneyResponse{Amount: "0.5000000", Currency: "CNY"},
+			raw:   &raw,
+			want:  "money amount 0.5000000 does not match raw amount 5000001",
+		},
+		{
+			name:     "currency mismatch",
+			money:    &moneyResponse{Amount: "0.5000000", Currency: "USD"},
+			currency: "CNY",
+			want:     "money currency USD does not match response currency CNY",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := formatResponseMoney(tt.money, tt.raw, tt.currency)
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("formatResponseMoney() error=%v want containing %q", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestPrintPrecheckAndRunSummaryUseMoney(t *testing.T) {
+	t.Run("precheck", func(t *testing.T) {
+		var out bytes.Buffer
+		err := printPrecheck(&out, precheckTemplateRowsResponse{
+			EstimatedTotalCost: &moneyResponse{Amount: "1.7027920", Currency: "CNY"},
+			BalanceCheck: &templateBalanceCheck{
+				Currency:              "CNY",
+				AvailableBalanceMoney: &moneyResponse{Amount: "2.0000000", Currency: "CNY"},
+				IsSufficient:          true,
+			},
+		})
+		if err != nil {
+			t.Fatalf("printPrecheck() error=%v", err)
+		}
+		for _, want := range []string{"estimated_cost", "CNY 1.7027920", "available_balance", "CNY 2.0000000"} {
+			if !strings.Contains(out.String(), want) {
+				t.Fatalf("output=%q missing %q", out.String(), want)
+			}
+		}
+	})
+
+	t.Run("run summary", func(t *testing.T) {
+		var out bytes.Buffer
+		err := printRunSummary(&out, runStatusResponse{
+			RunID:      "run-1",
+			Status:     "completed",
+			ActualCost: &moneyResponse{Amount: "1.7027920", Currency: "CNY"},
+		})
+		if err != nil {
+			t.Fatalf("printRunSummary() error=%v", err)
+		}
+		if !strings.Contains(out.String(), "CNY 1.7027920") {
+			t.Fatalf("output=%q want Money amount", out.String())
+		}
+	})
 }

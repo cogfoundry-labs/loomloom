@@ -315,6 +315,7 @@ func TestListingListTextShowsFormattedFee(t *testing.T) {
 			"listingVersionId":"lv-1",
 			"reviewStatus":"approved",
 			"taskFixedFeeT":5000000,
+			"taskFixedFee":{"amount":"0.5000000","currency":"CNY"},
 			"currency":"CNY",
 			"saleStatus":"on_sale",
 			"executionAvailabilityStatus":"available"

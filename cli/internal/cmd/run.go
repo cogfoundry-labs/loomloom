@@ -125,10 +125,22 @@ func newRunPrecheckCmd(opts *rootOptions) *cobra.Command {
 				if err := maybeInsufficientBalanceError(opts, balance); err != nil {
 					return err
 				}
+				estimatedCost, err := formatResponseMoney(resp.EstimatedTotalCost, resp.EstimatedTotalCostT, balance.Currency)
+				if err != nil {
+					return err
+				}
+				availableBalance, err := formatResponseMoney(
+					balance.AvailableBalanceMoney,
+					balance.AvailableBalance,
+					balance.Currency,
+				)
+				if err != nil {
+					return err
+				}
 				return fmt.Errorf(
 					"insufficient balance: estimated_cost=%s available=%s",
-					formatMoney(int64(resp.EstimatedTotalCost), balance.Currency),
-					formatMoney(int64(balance.AvailableBalance), balance.Currency),
+					estimatedCost,
+					availableBalance,
 				)
 			}
 
@@ -422,10 +434,26 @@ func newRunSubmitCmd(opts *rootOptions) *cobra.Command {
 				if err := maybeInsufficientBalanceError(opts, balance); err != nil {
 					return err
 				}
+				estimatedCost, err := formatResponseMoney(
+					precheckResp.EstimatedTotalCost,
+					precheckResp.EstimatedTotalCostT,
+					balance.Currency,
+				)
+				if err != nil {
+					return err
+				}
+				availableBalance, err := formatResponseMoney(
+					balance.AvailableBalanceMoney,
+					balance.AvailableBalance,
+					balance.Currency,
+				)
+				if err != nil {
+					return err
+				}
 				return fmt.Errorf(
 					"insufficient balance: estimated_cost=%s available=%s",
-					formatMoney(int64(precheckResp.EstimatedTotalCost), balance.Currency),
-					formatMoney(int64(balance.AvailableBalance), balance.Currency),
+					estimatedCost,
+					availableBalance,
 				)
 			}
 
@@ -437,15 +465,20 @@ func newRunSubmitCmd(opts *rootOptions) *cobra.Command {
 			opts.debugf("official template run: submitted template_id=%s run_id=%s row_count=%d", args[0], submitResp.RunID, len(rows))
 
 			result := map[string]any{
-				"templateId":          args[0],
-				"inputPath":           inputPath,
-				"rowCount":            len(rows),
-				"estimatedTotalCostT": int64(precheckResp.EstimatedTotalCost),
-				"balanceCheck":        precheckResp.BalanceCheck,
-				"clientRequestId":     requestID,
-				"runId":               submitResp.RunID,
-				"status":              submitResp.Status,
-				"acceptedAt":          int64(submitResp.AcceptedAt),
+				"templateId":      args[0],
+				"inputPath":       inputPath,
+				"rowCount":        len(rows),
+				"balanceCheck":    precheckResp.BalanceCheck,
+				"clientRequestId": requestID,
+				"runId":           submitResp.RunID,
+				"status":          submitResp.Status,
+				"acceptedAt":      int64(submitResp.AcceptedAt),
+			}
+			if precheckResp.EstimatedTotalCostT != nil {
+				result["estimatedTotalCostT"] = int64(*precheckResp.EstimatedTotalCostT)
+			}
+			if precheckResp.EstimatedTotalCost != nil {
+				result["estimatedTotalCost"] = precheckResp.EstimatedTotalCost
 			}
 
 			if opts.output == "json" {
@@ -510,7 +543,11 @@ func newRunWatchCmd(opts *rootOptions) *cobra.Command {
 				latest := wrap.Run
 
 				if opts.output != "json" {
-					_, err := fmt.Fprintf(
+					actualCost, err := formatResponseMoney(latest.ActualCost, latest.ActualCostT, "")
+					if err != nil {
+						return err
+					}
+					_, err = fmt.Fprintf(
 						cmd.OutOrStdout(),
 						"status=%s completed=%d/%d failed=%d cancelled=%d cost=%s\n",
 						latest.Status,
@@ -518,7 +555,7 @@ func newRunWatchCmd(opts *rootOptions) *cobra.Command {
 						int(latest.TotalTasks),
 						int(latest.FailedTasks),
 						int(latest.CancelledTasks),
-						formatCost(int64(latest.ActualCost)),
+						actualCost,
 					)
 					if err != nil {
 						return err

@@ -741,9 +741,12 @@ func TestMarketQuoteTextShowsFormattedAmounts(t *testing.T) {
 				"listingVersionId":"lv-1",
 				"currency":"CNY",
 				"estimatedExecutionCostT":69300,
+				"estimatedExecutionCost":{"amount":"0.0069300","currency":"CNY"},
 				"taskFixedFeeT":5000000,
+				"taskFixedFee":{"amount":"0.5000000","currency":"CNY"},
 				"taskCount":2,
-				"estimatedBuyerPayableT":10069300
+				"estimatedBuyerPayableT":10069300,
+				"estimatedBuyerPayable":{"amount":"1.0069300","currency":"CNY"}
 			}`))
 		default:
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -810,7 +813,14 @@ func TestMarketQuoteJSONPreservesRawFields(t *testing.T) {
 		case "/loom/v1/marketListings/listing-1":
 			_, _ = w.Write([]byte(marketListingDetailBody(t)))
 		case "/loom/v1/marketListings/listing-1:quote":
-			_, _ = w.Write([]byte(`{"quoteId":"quote-1","currency":"CNY","taskFixedFeeT":5000000,"estimatedBuyerPayableT":5069300}`))
+			_, _ = w.Write([]byte(`{
+				"quoteId":"quote-1",
+				"currency":"CNY",
+				"taskFixedFeeT":5000000,
+				"taskFixedFee":{"amount":"0.5000000","currency":"CNY"},
+				"estimatedBuyerPayableT":5069300,
+				"estimatedBuyerPayable":{"amount":"0.5069300","currency":"CNY"}
+			}`))
 		default:
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
@@ -827,7 +837,13 @@ func TestMarketQuoteJSONPreservesRawFields(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("market quote command error = %v", err)
 	}
-	for _, want := range []string{`"currency": "CNY"`, `"taskFixedFeeT": 5000000`, `"estimatedBuyerPayableT": 5069300`} {
+	for _, want := range []string{
+		`"currency": "CNY"`,
+		`"taskFixedFeeT": 5000000`,
+		`"taskFixedFee": {`,
+		`"estimatedBuyerPayableT": 5069300`,
+		`"estimatedBuyerPayable": {`,
+	} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output=%s missing %q", out.String(), want)
 		}
@@ -840,7 +856,15 @@ func TestMarketQuoteJSONPreservesRawFields(t *testing.T) {
 func TestMarketListTextShowsFormattedFee(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"items":[{"id":"listing-1","displayName":"Writer","taskFixedFeeT":5000000,"currency":"CNY","executionAvailabilityStatus":"available","listingVersionId":"lv-1"}]}`))
+		_, _ = w.Write([]byte(`{"items":[{
+			"id":"listing-1",
+			"displayName":"Writer",
+			"taskFixedFeeT":5000000,
+			"taskFixedFee":{"amount":"0.5000000","currency":"CNY"},
+			"currency":"CNY",
+			"executionAvailabilityStatus":"available",
+			"listingVersionId":"lv-1"
+		}]}`))
 	}))
 	defer server.Close()
 
