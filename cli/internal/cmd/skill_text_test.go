@@ -174,6 +174,11 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 		"loomloom server list --output json",
 		"Never assume a fixed environment variable name",
 		"without exposing its value or modifying unrelated configuration",
+		"without exposing their values or modifying unrelated configuration",
+		"Installer Uninstall Credential Cleanup",
+		"environment token cleanup required: LOOMLOOM_TOKEN_<PROFILE>",
+		"Ask whether the user wants the Agent to remove those variables",
+		"Reported names are cleanup candidates and may not currently be configured",
 		"already-running parent shell",
 	} {
 		if !strings.Contains(text, want) {
