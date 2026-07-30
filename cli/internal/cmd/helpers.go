@@ -52,6 +52,11 @@ func (v *flexInt) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type moneyResponse struct {
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+}
+
 type templateDisplayRow struct {
 	Values map[string]string `json:"values"`
 }
@@ -68,14 +73,16 @@ type validateTemplateRowsResponse struct {
 }
 
 type templateBalanceCheck struct {
-	Currency         string    `json:"currency"`
-	AvailableBalance flexInt64 `json:"availableBalance"`
-	IsSufficient     bool      `json:"isSufficient"`
+	Currency              string         `json:"currency"`
+	AvailableBalance      *flexInt64     `json:"availableBalance,omitempty"`
+	AvailableBalanceMoney *moneyResponse `json:"availableBalanceMoney,omitempty"`
+	IsSufficient          bool           `json:"isSufficient"`
 }
 
 type precheckTemplateRowsResponse struct {
-	EstimatedTotalCost flexInt64             `json:"estimatedTotalCostT"`
-	BalanceCheck       *templateBalanceCheck `json:"balanceCheck"`
+	EstimatedTotalCostT *flexInt64            `json:"estimatedTotalCostT,omitempty"`
+	EstimatedTotalCost  *moneyResponse        `json:"estimatedTotalCost,omitempty"`
+	BalanceCheck        *templateBalanceCheck `json:"balanceCheck"`
 }
 
 type submitTemplateRowsResponse struct {
@@ -109,18 +116,21 @@ func (r *submitTemplateRowsResponse) UnmarshalJSON(data []byte) error {
 }
 
 type runStatusResponse struct {
-	RunID             string    `json:"runId"`
-	Status            string    `json:"status"`
-	DefinitionHash    string    `json:"definitionHash"`
-	ErrorMessage      string    `json:"errorMessage"`
-	FirstErrorMessage string    `json:"firstErrorMessage"`
-	TotalTasks        flexInt   `json:"totalTasks"`
-	CompletedTasks    flexInt   `json:"completedTasks"`
-	FailedTasks       flexInt   `json:"failedTasks"`
-	CancelledTasks    flexInt   `json:"cancelledTasks"`
-	ActualCost        flexInt64 `json:"actualCostT"`
-	StartedAtUnix     flexInt64 `json:"startedAtUnix"`
-	CompletedAtUnix   flexInt64 `json:"completedAtUnix"`
+	RunID             string         `json:"runId"`
+	Status            string         `json:"status"`
+	DefinitionHash    string         `json:"definitionHash"`
+	ErrorMessage      string         `json:"errorMessage"`
+	FirstErrorMessage string         `json:"firstErrorMessage"`
+	TotalTasks        flexInt        `json:"totalTasks"`
+	CompletedTasks    flexInt        `json:"completedTasks"`
+	FailedTasks       flexInt        `json:"failedTasks"`
+	CancelledTasks    flexInt        `json:"cancelledTasks"`
+	EstimatedCostT    *flexInt64     `json:"estimatedCostT,omitempty"`
+	EstimatedCost     *moneyResponse `json:"estimatedCost,omitempty"`
+	ActualCostT       *flexInt64     `json:"actualCostT,omitempty"`
+	ActualCost        *moneyResponse `json:"actualCost,omitempty"`
+	StartedAtUnix     flexInt64      `json:"startedAtUnix"`
+	CompletedAtUnix   flexInt64      `json:"completedAtUnix"`
 }
 
 type runGetResponse struct {
@@ -333,6 +343,55 @@ func formatMoneyT(amountT int64, currency string) string {
 	return strings.ToUpper(currency) + " " + sign + value.FloatString(7)
 }
 
+func formatResponseMoney(money *moneyResponse, amountT *flexInt64, fallbackCurrency string) (string, error) {
+	if money == nil {
+		rawAmountT := int64(0)
+		if amountT != nil {
+			rawAmountT = int64(*amountT)
+		}
+		return formatMoneyT(rawAmountT, fallbackCurrency), nil
+	}
+
+	amount := strings.TrimSpace(money.Amount)
+	parsedAmountT, err := parseMoneyAmountT(amount)
+	if err != nil {
+		return "", fmt.Errorf("invalid money amount %q: %w", money.Amount, err)
+	}
+	if amountT != nil && parsedAmountT != int64(*amountT) {
+		return "", fmt.Errorf(
+			"money amount %s does not match raw amount %d",
+			amount,
+			int64(*amountT),
+		)
+	}
+
+	currency := strings.ToUpper(strings.TrimSpace(money.Currency))
+	if !isCurrencyCode(currency) {
+		return "", fmt.Errorf("invalid money currency %q", money.Currency)
+	}
+	fallbackCurrency = strings.ToUpper(strings.TrimSpace(fallbackCurrency))
+	if fallbackCurrency != "" && currency != fallbackCurrency {
+		return "", fmt.Errorf(
+			"money currency %s does not match response currency %s",
+			currency,
+			fallbackCurrency,
+		)
+	}
+	return currency + " " + amount, nil
+}
+
+func isCurrencyCode(currency string) bool {
+	if len(currency) != 3 {
+		return false
+	}
+	for _, r := range currency {
+		if r < 'A' || r > 'Z' {
+			return false
+		}
+	}
+	return true
+}
+
 func parseMoneyAmountT(raw string) (int64, error) {
 	const unitsPerCurrency = int64(10_000_000)
 	value := strings.TrimSpace(raw)
@@ -455,13 +514,25 @@ func printPrecheck(w io.Writer, resp precheckTemplateRowsResponse) error {
 		currency = resp.BalanceCheck.Currency
 	}
 	tw := newTabWriter(w)
-	if _, err := fmt.Fprintf(tw, "estimated_cost\t%s\n", formatMoney(int64(resp.EstimatedTotalCost), currency)); err != nil {
+	estimatedCost, err := formatResponseMoney(resp.EstimatedTotalCost, resp.EstimatedTotalCostT, currency)
+	if err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(tw, "estimated_cost\t%s\n", estimatedCost); err != nil {
 		return err
 	}
 	if resp.BalanceCheck == nil {
 		return tw.Flush()
 	}
-	if _, err := fmt.Fprintf(tw, "available_balance\t%s\n", formatMoney(int64(resp.BalanceCheck.AvailableBalance), currency)); err != nil {
+	availableBalance, err := formatResponseMoney(
+		resp.BalanceCheck.AvailableBalanceMoney,
+		resp.BalanceCheck.AvailableBalance,
+		currency,
+	)
+	if err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(tw, "available_balance\t%s\n", availableBalance); err != nil {
 		return err
 	}
 	if _, err := fmt.Fprintf(tw, "sufficient\t%t\n", resp.BalanceCheck.IsSufficient); err != nil {
@@ -471,10 +542,16 @@ func printPrecheck(w io.Writer, resp precheckTemplateRowsResponse) error {
 }
 
 func precheckJSONPayload(resp precheckTemplateRowsResponse) map[string]any {
-	return map[string]any{
-		"estimatedTotalCostT": int64(resp.EstimatedTotalCost),
-		"balanceCheck":        resp.BalanceCheck,
+	result := map[string]any{
+		"balanceCheck": resp.BalanceCheck,
 	}
+	if resp.EstimatedTotalCostT != nil {
+		result["estimatedTotalCostT"] = int64(*resp.EstimatedTotalCostT)
+	}
+	if resp.EstimatedTotalCost != nil {
+		result["estimatedTotalCost"] = resp.EstimatedTotalCost
+	}
+	return result
 }
 
 func printRunSummary(w io.Writer, resp runStatusResponse) error {
@@ -500,6 +577,10 @@ func printRunSummary(w io.Writer, resp runStatusResponse) error {
 	if _, err := fmt.Fprintln(tw, "total\tcompleted\tfailed\tcancelled\tcost\tstarted_at\tcompleted_at\tduration"); err != nil {
 		return err
 	}
+	actualCost, err := formatResponseMoney(resp.ActualCost, resp.ActualCostT, "")
+	if err != nil {
+		return err
+	}
 	if _, err := fmt.Fprintf(
 		tw,
 		"%d\t%d\t%d\t%d\t%s\t%s\t%s\t%s\n",
@@ -507,7 +588,7 @@ func printRunSummary(w io.Writer, resp runStatusResponse) error {
 		int(resp.CompletedTasks),
 		int(resp.FailedTasks),
 		int(resp.CancelledTasks),
-		formatCost(int64(resp.ActualCost)),
+		actualCost,
 		formatUnix(int64(resp.StartedAtUnix)),
 		formatUnix(int64(resp.CompletedAtUnix)),
 		formatDuration(int64(resp.StartedAtUnix), int64(resp.CompletedAtUnix)),
