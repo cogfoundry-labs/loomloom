@@ -52,6 +52,7 @@ fi
 dist_dir="$repo_root/dist"
 docs_script="$repo_root/scripts/template-spec-docs.sh"
 references_script="$repo_root/scripts/skill-references.sh"
+uninstall_test_script="$repo_root/scripts/test-uninstall.sh"
 verification_dir=""
 
 cleanup() {
@@ -91,6 +92,7 @@ require_cmd zip
 
 "$docs_script" prepare-checked
 "$references_script" prepare-checked
+"$uninstall_test_script"
 
 create_archive() (
   local format="$1"
