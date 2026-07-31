@@ -6,8 +6,10 @@ triggers:
   trigger: auto
   push:
     tags:
-      include:
-        - ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc|internal)\.[0-9]+)?$
+      prefix:
+        - v
+      precise: []
+      include: []
 
 variables:
   global:
