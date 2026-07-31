@@ -50,4 +50,3 @@ if (cd "$test_root/work" && "$resolver" v1.0.1 >/dev/null 2>&1); then
 fi
 
 echo "release source branch tests passed"
-

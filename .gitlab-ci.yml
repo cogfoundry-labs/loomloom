@@ -1,3 +1,2 @@
 include:
   - local: '/.gitlab/ci/pipeline.yml'
-
