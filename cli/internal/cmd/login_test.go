@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/platform"
 )
 
 func TestLoginRefusesPlatformWithoutBrowserLogin(t *testing.T) {

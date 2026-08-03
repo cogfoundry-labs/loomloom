@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/publicinput"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/platform"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/publicinput"
 )
 
 func TestMarketPublishBuildsRequestWithoutGeneratedFields(t *testing.T) {

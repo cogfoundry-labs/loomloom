@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Thanks for taking the time to report a bug! Please search
-        [existing issues](https://github.com/Cogfoundry-ai/loomloom/issues) first to avoid duplicates.
+        [existing issues](https://github.com/cogfoundry-labs/loomloom/issues) first to avoid duplicates.
   - type: textarea
     id: what-happened
     attributes:

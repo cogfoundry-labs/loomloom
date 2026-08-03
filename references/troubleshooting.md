@@ -36,4 +36,4 @@ Yes. All workflows can be executed directly via CLI commands. AI agent integrati
 
 ## Something is broken. What should I do?
 
-Run `loomloom doctor` first, then open an issue at [github.com/Cogfoundry-ai/loomloom/issues](https://github.com/Cogfoundry-ai/loomloom/issues) with the doctor output attached.
+Run `loomloom doctor` first, then open an issue at [github.com/cogfoundry-labs/loomloom/issues](https://github.com/cogfoundry-labs/loomloom/issues) with the doctor output attached.

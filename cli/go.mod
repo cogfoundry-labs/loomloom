@@ -1,4 +1,4 @@
-module github.com/Cogfoundry-ai/loomloom/cli
+module github.com/cogfoundry-labs/loomloom/cli
 
 go 1.24.6
 

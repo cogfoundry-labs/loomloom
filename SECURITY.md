@@ -12,7 +12,7 @@ version before reporting an issue.
 
 Instead, report them privately using one of these channels:
 
-- **GitHub** — use [Report a vulnerability](https://github.com/Cogfoundry-ai/loomloom/security/advisories/new) to open a private security advisory, or
+- **GitHub** — use [Report a vulnerability](https://github.com/cogfoundry-labs/loomloom/security/advisories/new) to open a private security advisory, or
 - **Email** — send details to support@cogfoundry.ai.
 
 Please include:

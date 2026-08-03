@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/authflow"
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/authflow"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/platform"
 	"github.com/spf13/cobra"
 )
 

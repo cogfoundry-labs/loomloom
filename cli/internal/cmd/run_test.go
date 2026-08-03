@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/platform"
 )
 
 func TestRunCommandsExposeSplitFlowAndLegacySubmit(t *testing.T) {
