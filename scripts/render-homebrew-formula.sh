@@ -63,25 +63,25 @@ linux_amd64_sha="$(checksum_for "loomloom-linux-amd64.tar.gz")"
 cat <<EOF
 class Loomloom < Formula
   desc "Developer CLI for LoomLoom workflows"
-  homepage "https://github.com/Cogfoundry-ai/loomloom"
+  homepage "https://github.com/cogfoundry-labs/loomloom"
   version "$version"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/Cogfoundry-ai/loomloom/releases/download/$tag/loomloom-darwin-arm64.tar.gz"
+      url "https://github.com/cogfoundry-labs/loomloom/releases/download/$tag/loomloom-darwin-arm64.tar.gz"
       sha256 "$darwin_arm64_sha"
     else
-      url "https://github.com/Cogfoundry-ai/loomloom/releases/download/$tag/loomloom-darwin-amd64.tar.gz"
+      url "https://github.com/cogfoundry-labs/loomloom/releases/download/$tag/loomloom-darwin-amd64.tar.gz"
       sha256 "$darwin_amd64_sha"
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://github.com/Cogfoundry-ai/loomloom/releases/download/$tag/loomloom-linux-arm64.tar.gz"
+      url "https://github.com/cogfoundry-labs/loomloom/releases/download/$tag/loomloom-linux-arm64.tar.gz"
       sha256 "$linux_arm64_sha"
     else
-      url "https://github.com/Cogfoundry-ai/loomloom/releases/download/$tag/loomloom-linux-amd64.tar.gz"
+      url "https://github.com/cogfoundry-labs/loomloom/releases/download/$tag/loomloom-linux-amd64.tar.gz"
       sha256 "$linux_amd64_sha"
     end
   end

@@ -128,7 +128,7 @@ If you already use Codex, Claude Code, or OpenClaw, you can have the agent insta
 
 ```
 Install LoomLoom from the official repository:
-https://github.com/Cogfoundry-ai/loomloom
+https://github.com/cogfoundry-labs/loomloom
 
 Configure the runtime with the following settings:
 Server URL: https://loomloom.shengsuanyun.com/loom/v1

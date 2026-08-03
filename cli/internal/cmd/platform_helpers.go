@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/platform"
 )
 
 func resolvePlatform(opts *rootOptions) (platform.Platform, error) {

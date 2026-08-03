@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Cogfoundry-ai/loomloom/releases">
+  <a href="https://github.com/cogfoundry-labs/loomloom/releases">
     <img src="https://img.shields.io/github/v/release/Cogfoundry-ai/loomloom?style=for-the-badge" alt="Latest Release">
   </a>
   <img src="https://img.shields.io/badge/Status-Beta-orange?style=for-the-badge" alt="Status: Beta">
@@ -429,7 +429,7 @@ Full guidance: **[Security Notes](references/security.md)**. To report a vulnera
 
 ## Contributing
 
-Contributions are welcome — browse [open issues](https://github.com/Cogfoundry-ai/loomloom/issues) or open a pull request. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for guidelines on reporting bugs, proposing features, and submitting changes, and our **[Code of Conduct](CODE_OF_CONDUCT.md)** for community expectations.
+Contributions are welcome — browse [open issues](https://github.com/cogfoundry-labs/loomloom/issues) or open a pull request. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for guidelines on reporting bugs, proposing features, and submitting changes, and our **[Code of Conduct](CODE_OF_CONDUCT.md)** for community expectations.
 
 Having trouble? See **[Troubleshooting & FAQ](references/troubleshooting.md)**.
 

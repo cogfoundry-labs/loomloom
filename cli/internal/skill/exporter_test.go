@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/publicinput"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/publicinput"
 )
 
 func TestFieldsFromSchemaPreservesPublicContract(t *testing.T) {

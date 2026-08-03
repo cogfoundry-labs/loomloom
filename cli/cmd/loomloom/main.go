@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/cmd"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/cmd"
 )
 
 func main() {

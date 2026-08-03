@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/skill"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/skill"
 	"github.com/spf13/cobra"
 )
 

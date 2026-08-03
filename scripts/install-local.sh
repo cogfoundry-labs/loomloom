@@ -128,7 +128,7 @@ mkdir -p "$install_dir" "$skill_dir"
 (
   cd "$repo_root/cli"
   GOWORK=off go build \
-    -ldflags "-X github.com/Cogfoundry-ai/loomloom/cli/internal/version.Version=${VERSION}" \
+    -ldflags "-X github.com/cogfoundry-labs/loomloom/cli/internal/version.Version=${VERSION}" \
     -o "$tmp_dir/loomloom" \
     ./cmd/loomloom
 )

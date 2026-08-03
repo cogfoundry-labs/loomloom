@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/client"
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/version"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/client"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/platform"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/version"
 	"github.com/spf13/cobra"
 )
 

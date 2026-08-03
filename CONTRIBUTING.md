@@ -6,14 +6,14 @@ light — when in doubt, open an issue and ask.
 
 ## Ways to contribute
 
-- **Report a bug** — [open an issue](https://github.com/Cogfoundry-ai/loomloom/issues) with steps to reproduce.
+- **Report a bug** — [open an issue](https://github.com/cogfoundry-labs/loomloom/issues) with steps to reproduce.
 - **Request a feature** — describe the problem you're trying to solve, not just the solution.
 - **Improve the docs** — fixes to the README, `references/`, or examples are always welcome.
 - **Submit code** — bug fixes and small improvements via pull request.
 
 ## Before you start
 
-- **Search first.** Check [existing issues](https://github.com/Cogfoundry-ai/loomloom/issues) and open pull requests to avoid duplicates.
+- **Search first.** Check [existing issues](https://github.com/cogfoundry-labs/loomloom/issues) and open pull requests to avoid duplicates.
 - **Discuss big changes early.** For anything large or breaking, open an issue to
   align on the approach before writing code. This saves everyone time.
 - **One change per pull request.** Keep PRs focused and reviewable.

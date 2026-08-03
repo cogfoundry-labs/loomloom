@@ -13,8 +13,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/client"
-	templatespecdocs "github.com/Cogfoundry-ai/loomloom/cli/internal/template_spec_docs"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/client"
+	templatespecdocs "github.com/cogfoundry-labs/loomloom/cli/internal/template_spec_docs"
 	"github.com/spf13/cobra"
 )
 

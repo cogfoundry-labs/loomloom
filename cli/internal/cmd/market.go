@@ -18,8 +18,8 @@ import (
 	"text/tabwriter"
 	"unicode"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/client"
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/publicinput"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/client"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/publicinput"
 	"github.com/spf13/cobra"
 )
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Cogfoundry-ai/loomloom/cli/internal/platform"
+	"github.com/cogfoundry-labs/loomloom/cli/internal/platform"
 )
 
 func saveServerProfiles(t *testing.T) (platform.Profile, platform.Profile) {
