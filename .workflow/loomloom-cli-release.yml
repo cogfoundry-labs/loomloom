@@ -24,7 +24,7 @@ stages:
       - step: build@golang
         name: build_and_publish_gitee_release
         displayName: Build and Publish Gitee Release
-        golangVersion: 1.23
+        golangVersion: 1.24
         commands:
           - |
             set -euo pipefail
