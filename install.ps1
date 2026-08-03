@@ -11,7 +11,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$GithubRepo = "Cogfoundry-ai/loomloom"
+$GithubRepo = "cogfoundry-labs/loomloom"
 $GiteeRepo = if ($env:GITEE_REPO) { $env:GITEE_REPO } else { "cogfoundry/loomloom" }
 
 if ($Source -eq "gitee") {

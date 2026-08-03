@@ -19,7 +19,7 @@ var (
 )
 
 const (
-	repoOwnerRepo      = "Cogfoundry-ai/loomloom"
+	repoOwnerRepo      = "cogfoundry-labs/loomloom"
 	defaultReleaseAPI  = "https://api.github.com/repos/" + repoOwnerRepo + "/releases/latest"
 	defaultHTTPTimeout = 5 * time.Second
 )

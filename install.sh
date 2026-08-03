@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-GITHUB_REPO="Cogfoundry-ai/loomloom"
+GITHUB_REPO="cogfoundry-labs/loomloom"
 GITEE_REPO="${GITEE_REPO:-cogfoundry/loomloom}"
 VERSION="${VERSION:-latest}"
 CHANNEL="${CHANNEL:-stable}"
@@ -9,7 +9,7 @@ AGENT="codex"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 SKILL_DIR="${SKILL_DIR:-}"
 USE_HOMEBREW="auto"
-HOMEBREW_TAP="${LOOMLOOM_HOMEBREW_TAP:-Cogfoundry-ai/tap}"
+HOMEBREW_TAP="${LOOMLOOM_HOMEBREW_TAP:-cogfoundry-labs/tap}"
 RELEASE_SOURCE="${LOOMLOOM_RELEASE_SOURCE:-github}"
 
 usage() {

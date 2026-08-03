@@ -22,7 +22,7 @@ Use this reference for installation, `doctor`, browser login, explicit API Token
 - For an internal or beta CLI, install the prerelease channel explicitly:
 
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/Cogfoundry-ai/loomloom/main/install.sh | bash -s -- --channel beta
+  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --channel beta
   ```
 
 ## Diagnose Before Account Guidance
@@ -40,7 +40,7 @@ If Doctor does not report an already selected Server profile and the user has ne
 Never treat any of these as a platform selection:
 
 - an unbound `LOOMLOOM_TOKEN` without a verified Server profile;
-- the LoomLoom repository owner or download source, including `Cogfoundry-ai/loomloom`;
+- the LoomLoom repository owner or download source, including `cogfoundry-labs/loomloom`;
 - the installed CLI version, release channel, or apparent documentation maturity;
 - the user's language, location, region, or a platform recommendation;
 - one platform having a more familiar or complete setup path.
