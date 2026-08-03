@@ -128,6 +128,7 @@ jobs:
           bash -n scripts/sync-gitee-release-refs.sh
           scripts/test-release-source-branch.sh
           scripts/test-sync-release-refs.sh
+          scripts/test-release-repository-identity.sh
 
       - name: Package release assets once
         if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
@@ -285,7 +286,8 @@ jobs:
           fi
 
           tap_dir="$RUNNER_TEMP/homebrew-tap"
-          git clone "https://x-access-token:${HOMEBREW_TAP_GITHUB_TOKEN}@github.com/Cogfoundry-ai/homebrew-tap.git" "$tap_dir"
+          git clone "https://x-access-token:${HOMEBREW_TAP_GITHUB_TOKEN}@github.com/cogfoundry-labs/homebrew-tap.git" "$tap_dir"
+          mkdir -p "$tap_dir/Formula"
           ./scripts/render-homebrew-formula.sh --tag "$RELEASE_TAG" --checksums release/checksums.txt > "$tap_dir/Formula/loomloom.rb"
           rm -f "$tap_dir/Formula/batchjob-cli.rb"
 

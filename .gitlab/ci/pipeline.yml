@@ -37,6 +37,7 @@ test_release_scripts:
     - scripts/test-release-source-branch.sh
     - scripts/test-sync-release-refs.sh
     - scripts/test-publish-gitlab-release.sh
+    - scripts/test-release-repository-identity.sh
 
 package_release:
   stage: package

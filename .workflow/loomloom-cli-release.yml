@@ -66,6 +66,8 @@ stages:
             go version
             go env GOVERSION GOROOT GOPROXY GOSUMDB
 
+            scripts/test-release-repository-identity.sh
+
             cd cli
             go test ./...
             cd ..
