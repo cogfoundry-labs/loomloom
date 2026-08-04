@@ -168,6 +168,79 @@ run_sync gitlab "$test_root/annotated.git" v1.1.0-rc.1 release/cogfoundry-v0.2.0
 assert_ref "$test_root/annotated.git" refs/heads/release/cogfoundry-v0.2.0 "$annotated_commit"
 assert_ref "$test_root/annotated.git" refs/tags/v1.1.0-rc.1 "$annotated_object"
 
+# An annotated mirror tag that resolves to a different commit is still a
+# conflict. Reject it before changing either the published tag or its branch.
+git clone "$test_root/origin.git" "$test_root/annotated-conflict-work" >/dev/null
+git -C "$test_root/annotated-conflict-work" config user.name test
+git -C "$test_root/annotated-conflict-work" config user.email test@example.com
+git -C "$test_root/annotated-conflict-work" tag -d v1.1.0-rc.1 >/dev/null
+git -C "$test_root/annotated-conflict-work" tag \
+  -a v1.1.0-rc.1 \
+  -m conflicting \
+  "$release_branch_sha"
+conflicting_annotated_object="$(
+  git -C "$test_root/annotated-conflict-work" rev-parse refs/tags/v1.1.0-rc.1
+)"
+git init --bare "$test_root/annotated-conflict.git" >/dev/null
+git -C "$test_root/annotated-conflict-work" push \
+  "$test_root/annotated-conflict.git" \
+  "$release_branch_sha:refs/heads/release/cogfoundry-v0.2.0" \
+  refs/tags/v1.1.0-rc.1:refs/tags/v1.1.0-rc.1 >/dev/null
+if run_sync \
+  gitlab \
+  "$test_root/annotated-conflict.git" \
+  v1.1.0-rc.1 \
+  release/cogfoundry-v0.2.0 >/dev/null 2>&1; then
+  fail_test "an annotated remote tag at a different commit was accepted"
+fi
+assert_ref \
+  "$test_root/annotated-conflict.git" \
+  refs/tags/v1.1.0-rc.1 \
+  "$conflicting_annotated_object"
+assert_ref \
+  "$test_root/annotated-conflict.git" \
+  refs/heads/release/cogfoundry-v0.2.0 \
+  "$release_branch_sha"
+
+# A mirror may normalize an annotated source tag into a lightweight tag. The
+# tag remains immutable when both forms resolve to the same release commit.
+git init --bare "$test_root/normalized-lightweight.git" >/dev/null
+git -C "$test_root/work" push \
+  "$test_root/normalized-lightweight.git" \
+  "$annotated_commit:refs/heads/release/cogfoundry-v0.2.0" \
+  "$annotated_commit:refs/tags/v1.1.0-rc.1" >/dev/null
+run_sync \
+  gitlab \
+  "$test_root/normalized-lightweight.git" \
+  v1.1.0-rc.1 \
+  release/cogfoundry-v0.2.0 >/dev/null
+assert_ref \
+  "$test_root/normalized-lightweight.git" \
+  refs/tags/v1.1.0-rc.1 \
+  "$annotated_commit"
+
+# The inverse form is also equivalent: a lightweight source tag can match an
+# annotated mirror tag when both resolve to the same release commit.
+git -C "$test_root/work" tag -a v1.1.0-rc.2 -m annotated
+reverse_annotated_object="$(git -C "$test_root/work" rev-parse refs/tags/v1.1.0-rc.2)"
+git -C "$test_root/work" tag -d v1.1.0-rc.2 >/dev/null
+git -C "$test_root/work" tag v1.1.0-rc.2
+git -C "$test_root/work" push origin v1.1.0-rc.2 >/dev/null
+git init --bare "$test_root/normalized-annotated.git" >/dev/null
+git -C "$test_root/work" push \
+  "$test_root/normalized-annotated.git" \
+  "$annotated_commit:refs/heads/release/cogfoundry-v0.2.0" \
+  "$reverse_annotated_object:refs/tags/v1.1.0-rc.2" >/dev/null
+run_sync \
+  gitee \
+  "$test_root/normalized-annotated.git" \
+  v1.1.0-rc.2 \
+  release/cogfoundry-v0.2.0 >/dev/null
+assert_ref \
+  "$test_root/normalized-annotated.git" \
+  refs/tags/v1.1.0-rc.2 \
+  "$reverse_annotated_object"
+
 # Provider credentials are mandatory, including when a local test URL is used.
 if (
   cd "$test_root/work"
