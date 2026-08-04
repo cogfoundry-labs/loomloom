@@ -8,6 +8,7 @@ BRANCH=""
 ALLOW_HISTORY="false"
 MAX_ATTEMPTS="${RELEASE_SYNC_MAX_ATTEMPTS:-5}"
 REMOTE_REF_SHA=""
+REMOTE_TAG_COMMIT_SHA=""
 SYNC_REMOTE="release-sync"
 PROVIDER_LABEL=""
 
@@ -173,6 +174,55 @@ read_remote_ref() {
   done
 }
 
+read_remote_tag() {
+  local attempt=1
+  local output=""
+  local command_exit=0
+  local peeled_ref="${tag_ref}^{}"
+
+  REMOTE_REF_SHA=""
+  REMOTE_TAG_COMMIT_SHA=""
+
+  while [[ "$attempt" -le "$MAX_ATTEMPTS" ]]; do
+    if output="$(
+      git \
+        -c http.lowSpeedLimit=1 \
+        -c http.lowSpeedTime=60 \
+        ls-remote "$SYNC_REMOTE" "$tag_ref" "$peeled_ref"
+    )"; then
+      REMOTE_REF_SHA="$(awk -v ref="$tag_ref" '$2 == ref { print $1; exit }' <<< "$output")"
+      REMOTE_TAG_COMMIT_SHA="$(awk -v ref="$peeled_ref" '$2 == ref { print $1; exit }' <<< "$output")"
+      if [[ -n "$REMOTE_REF_SHA" && -z "$REMOTE_TAG_COMMIT_SHA" ]]; then
+        REMOTE_TAG_COMMIT_SHA="$REMOTE_REF_SHA"
+      fi
+      return 0
+    else
+      command_exit=$?
+    fi
+
+    if [[ "$attempt" -ge "$MAX_ATTEMPTS" ]]; then
+      echo "failed to query ${PROVIDER_LABEL} tag after $MAX_ATTEMPTS attempts: $TAG" >&2
+      return "$command_exit"
+    fi
+    echo "${PROVIDER_LABEL} tag query failed; retrying $TAG ($attempt/$MAX_ATTEMPTS)" >&2
+    retry_delay "$attempt"
+    attempt=$((attempt + 1))
+  done
+}
+
+remote_tag_matches_source() {
+  [[ "$REMOTE_REF_SHA" == "$local_tag_object" ]] || \
+    [[ -n "$REMOTE_TAG_COMMIT_SHA" && "$REMOTE_TAG_COMMIT_SHA" == "$release_sha" ]]
+}
+
+report_remote_tag_match() {
+  if [[ "$REMOTE_REF_SHA" == "$local_tag_object" ]]; then
+    echo "${PROVIDER_LABEL} tag already matches the source repository: $TAG"
+  else
+    echo "${PROVIDER_LABEL} tag points to the same release commit with different tag metadata: $TAG"
+  fi
+}
+
 push_ref() {
   git \
     -c http.lowSpeedLimit=1 \
@@ -181,9 +231,9 @@ push_ref() {
 }
 
 preflight_tag() {
-  read_remote_ref "$tag_ref"
-  if [[ "$REMOTE_REF_SHA" == "$local_tag_object" ]]; then
-    echo "${PROVIDER_LABEL} tag already matches the source repository: $TAG"
+  read_remote_tag
+  if remote_tag_matches_source; then
+    report_remote_tag_match
     return
   fi
   if [[ -n "$REMOTE_REF_SHA" ]]; then
@@ -198,9 +248,9 @@ sync_tag() {
   local push_exit=0
 
   while [[ "$attempt" -le "$MAX_ATTEMPTS" ]]; do
-    read_remote_ref "$tag_ref"
-    if [[ "$REMOTE_REF_SHA" == "$local_tag_object" ]]; then
-      echo "${PROVIDER_LABEL} tag already matches the source repository: $TAG"
+    read_remote_tag
+    if remote_tag_matches_source; then
+      report_remote_tag_match
       return
     fi
     if [[ -n "$REMOTE_REF_SHA" ]]; then
@@ -217,8 +267,8 @@ sync_tag() {
     fi
 
     # A failed push can still have reached the mirror before the response was lost.
-    read_remote_ref "$tag_ref"
-    if [[ "$REMOTE_REF_SHA" == "$local_tag_object" ]]; then
+    read_remote_tag
+    if remote_tag_matches_source; then
       echo "confirmed ${PROVIDER_LABEL} tag: $TAG"
       return
     fi
