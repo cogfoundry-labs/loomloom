@@ -143,12 +143,6 @@ validate_skill_frontmatter() {
   return 1
 }
 
-skill_references_file() {
-  local skill_file="$1" reference_name="$2"
-  grep -Fq -- "](references/$reference_name)" "$skill_file" ||
-    grep -Fq -- "](references/$reference_name#" "$skill_file"
-}
-
 is_dangerous_skill_dir() {
   local candidate="$1" dangerous
   if [[ "$(dirname -- "$candidate")" == "$candidate" ]]; then
@@ -167,7 +161,7 @@ is_dangerous_skill_dir() {
 }
 
 validate_skill_dir() {
-  local requested_dir="$1" link_check_dir canonical_dir skill_file references_dir entry name
+  local requested_dir="$1" link_check_dir canonical_dir skill_file references_dir generated_template_spec_dir
 
   link_check_dir="$requested_dir"
   while [[ "$link_check_dir" != "/" ]]; do
@@ -197,8 +191,18 @@ validate_skill_dir() {
 
   skill_file="$canonical_dir/SKILL.md"
   references_dir="$canonical_dir/references"
+  generated_template_spec_dir="$canonical_dir/generated-template-spec"
+  if [[ ! -e "$skill_file" && ! -L "$skill_file" ]]; then
+    if [[ -e "$references_dir" || -L "$references_dir" ||
+          ( -d "$generated_template_spec_dir" && ! -L "$generated_template_spec_dir" ) ]]; then
+      fail_skill_validation "SKILL.md is missing while LoomLoom Skill directories are still present"
+      return 1
+    fi
+    printf '%s\n' "$canonical_dir"
+    return
+  fi
   if [[ ! -f "$skill_file" || -L "$skill_file" ]]; then
-    fail_skill_validation "SKILL.md is missing, is not a regular file, or is a symbolic link"
+    fail_skill_validation "SKILL.md is not a regular file or is a symbolic link"
     return 1
   fi
   if ! validate_skill_frontmatter "$skill_file"; then
@@ -210,31 +214,100 @@ validate_skill_dir() {
     return 1
   fi
 
-  shopt -s dotglob nullglob
-  for entry in "$canonical_dir"/*; do
+  printf '%s\n' "$canonical_dir"
+}
+
+USER_SKILL_ENTRIES=()
+
+collect_user_skill_entries() {
+  local skill_dir="$1" entry name scan_file
+  USER_SKILL_ENTRIES=()
+
+  if ! scan_file="$(mktemp "${TMPDIR:-/tmp}/loomloom-uninstall.XXXXXX")"; then
+    fail_skill_validation "cannot create temporary file for Skill directory scan"
+    return 1
+  fi
+  if ! find "$skill_dir" -mindepth 1 -maxdepth 1 -print0 >"$scan_file"; then
+    rm -f -- "$scan_file"
+    fail_skill_validation "cannot enumerate Skill directory: $skill_dir"
+    return 1
+  fi
+  while IFS= read -r -d '' entry; do
     name="${entry##*/}"
     case "$name" in
-      SKILL.md|references) ;;
+      SKILL.md|references)
+        ;;
+      generated-template-spec)
+        if [[ ! -d "$entry" || -L "$entry" ]]; then
+          USER_SKILL_ENTRIES+=("$entry")
+        fi
+        ;;
       *)
-        fail_skill_validation "unexpected top-level entry: $name"
+        USER_SKILL_ENTRIES+=("$entry")
+        ;;
+    esac
+  done <"$scan_file"
+  rm -f -- "$scan_file"
+}
+
+print_user_skill_entries() {
+  local skill_dir="$1" entry relative
+  for entry in "${USER_SKILL_ENTRIES[@]}"; do
+    relative="${entry#"$skill_dir"/}"
+    if [[ -d "$entry" && ! -L "$entry" ]]; then
+      printf '  %q/\n' "$relative"
+    else
+      printf '  %q\n' "$relative"
+    fi
+  done
+}
+
+should_keep_user_skill_entries() {
+  local answer use_tty=0
+  echo "Detected user files in the LoomLoom Skill directory:"
+  print_user_skill_entries "$final_skill_dir"
+
+  if { : </dev/tty; } 2>/dev/null && { : >/dev/tty; } 2>/dev/null; then
+    use_tty=1
+  elif [[ -t 0 ]]; then
+    use_tty=0
+  else
+    echo "non-interactive environment: preserving detected user files by default"
+    return 0
+  fi
+
+  while true; do
+    if [[ "$use_tty" -eq 1 ]]; then
+      printf 'Keep these files? [Y/n] ' >/dev/tty
+      if ! IFS= read -r answer </dev/tty 2>/dev/null; then
+        echo "unable to read an interactive response: preserving detected user files by default"
+        return 0
+      fi
+    else
+      printf 'Keep these files? [Y/n] ' >&2
+      if ! IFS= read -r answer; then
+        echo "unable to read an interactive response: preserving detected user files by default"
+        return 0
+      fi
+    fi
+    answer="${answer#"${answer%%[![:space:]]*}"}"
+    answer="${answer%"${answer##*[![:space:]]}"}"
+    case "$answer" in
+      ""|[yY]|[yY][eE][sS])
+        return 0
+        ;;
+      [nN]|[nN][oO])
         return 1
+        ;;
+      *)
+        if [[ "$use_tty" -eq 1 ]]; then
+          echo "Please answer yes or no." >/dev/tty
+        else
+          echo "Please answer yes or no." >&2
+        fi
         ;;
     esac
   done
-
-  for entry in "$references_dir"/*; do
-    name="${entry##*/}"
-    if [[ ! -f "$entry" || -L "$entry" ]]; then
-      fail_skill_validation "unexpected reference entry: $name"
-      return 1
-    fi
-    if ! skill_references_file "$skill_file" "$name"; then
-      fail_skill_validation "reference is not explicitly referenced by SKILL.md: references/$name"
-      return 1
-    fi
-  done
-
-  printf '%s\n' "$canonical_dir"
 }
 
 add_token_env_name() {
@@ -286,12 +359,25 @@ removed_any=0
 config_file=""
 final_skill_dir=""
 skill_dir_present=0
+skill_content_present=0
+remove_entire_skill_dir=0
+remove_user_skill_entries=0
 
 if [[ "$REMOVE_SKILL" -eq 1 ]]; then
   requested_skill_dir="$(resolve_skill_dir)"
   if [[ -e "$requested_skill_dir" || -L "$requested_skill_dir" ]]; then
     final_skill_dir="$(validate_skill_dir "$requested_skill_dir")"
     skill_dir_present=1
+    collect_user_skill_entries "$final_skill_dir"
+    if [[ -f "$final_skill_dir/SKILL.md" && ! -L "$final_skill_dir/SKILL.md" ]]; then
+      skill_content_present=1
+      if [[ "${#USER_SKILL_ENTRIES[@]}" -eq 0 ]]; then
+        remove_entire_skill_dir=1
+      elif ! should_keep_user_skill_entries; then
+        remove_entire_skill_dir=1
+        remove_user_skill_entries=1
+      fi
+    fi
   else
     final_skill_dir="$requested_skill_dir"
   fi
@@ -329,9 +415,32 @@ fi
 
 if [[ "$REMOVE_SKILL" -eq 1 ]]; then
   if [[ "$skill_dir_present" -eq 1 ]]; then
-    rm -rf -- "$final_skill_dir"
-    echo "removed: $final_skill_dir"
-    removed_any=1
+    if [[ "$skill_content_present" -eq 0 ]]; then
+      echo "no LoomLoom Skill content found: $final_skill_dir"
+      if [[ "${#USER_SKILL_ENTRIES[@]}" -gt 0 ]]; then
+        echo "preserved existing files in: $final_skill_dir"
+        print_user_skill_entries "$final_skill_dir"
+      fi
+    elif [[ "$remove_entire_skill_dir" -eq 1 ]]; then
+      rm -rf -- "$final_skill_dir"
+      if [[ "$remove_user_skill_entries" -eq 1 ]]; then
+        echo "removed Skill directory and detected user files: $final_skill_dir"
+      else
+        echo "removed: $final_skill_dir"
+      fi
+      removed_any=1
+    else
+      generated_template_spec_dir="$final_skill_dir/generated-template-spec"
+      if [[ -d "$generated_template_spec_dir" && ! -L "$generated_template_spec_dir" ]]; then
+        rm -rf -- "$generated_template_spec_dir"
+      fi
+      rm -rf -- "$final_skill_dir/references"
+      rm -f -- "$final_skill_dir/SKILL.md"
+      echo "removed LoomLoom Skill content from: $final_skill_dir"
+      echo "preserved existing files in: $final_skill_dir"
+      print_user_skill_entries "$final_skill_dir"
+      removed_any=1
+    fi
   else
     echo "not found: $final_skill_dir"
   fi

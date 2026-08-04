@@ -42,7 +42,10 @@ shell_config_file() {
 
 write_skill_fixture() {
   local skill_dir="$1"
-  mkdir -p "$skill_dir/references"
+  mkdir -p \
+    "$skill_dir/references" \
+    "$skill_dir/generated-template-spec/en" \
+    "$skill_dir/generated-template-spec/machine"
   printf '%s\n' \
     '---' \
     'name: loomloom' \
@@ -52,14 +55,13 @@ write_skill_fixture() {
     '' \
     '- [Setup](references/setup.md)' >"$skill_dir/SKILL.md"
   printf '# Setup\n' >"$skill_dir/references/setup.md"
-}
-
-write_misleading_reference_fixture() {
-  local skill_dir="$1"
-  write_skill_fixture "$skill_dir"
-  sed 's#- \[Setup\](references/setup.md)#Plain text references/setup.md and [Different](references/setup.md.bak)#' \
-    "$skill_dir/SKILL.md" >"$skill_dir/SKILL.tmp"
-  mv "$skill_dir/SKILL.tmp" "$skill_dir/SKILL.md"
+  printf '%s\n' \
+    '{' \
+    '  "owner": "loomloom-docs",' \
+    '  "generator": "loomloom-template-docs/v2"' \
+    '}' >"$skill_dir/generated-template-spec/manifest.json"
+  printf '# TemplateSpec\n' >"$skill_dir/generated-template-spec/en/README.md"
+  printf '{}\n' >"$skill_dir/generated-template-spec/machine/template-spec.schema.json"
 }
 
 write_cli_fixture() {
@@ -218,7 +220,7 @@ run_shell_partial_uninstall_tests() {
 
 run_shell_safety_tests() {
   local case_root="$test_root/shell safety"
-  local home_dir skill_dir install_dir config_file output agent parent_dir
+  local home_dir skill_dir install_dir config_file output agent parent_dir external_file
 
   home_dir="$case_root/default/home"
   skill_dir="$home_dir/.codex/skills/loomloom"
@@ -273,21 +275,42 @@ run_shell_safety_tests() {
   skill_dir="$case_root/unrelated/skill"
   write_skill_fixture "$skill_dir"
   printf 'keep\n' >"$skill_dir/unrelated.txt"
-  expect_shell_skill_refusal "$home_dir" "$skill_dir" "unexpected top-level entry"
-  [[ -e "$skill_dir/unrelated.txt" ]] || fail "Skill directory with unrelated file was removed"
+  printf 'hidden\n' >"$skill_dir/.user-settings"
+  printf 'special\n' >"$skill_dir/"$'line\nbreak.txt'
+  mkdir -p "$skill_dir/custom"
+  printf 'nested\n' >"$skill_dir/custom/file.txt"
+  output="$(
+    env -i HOME="$home_dir" PATH="$test_path" \
+      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
+  )"
+  [[ -e "$skill_dir/unrelated.txt" ]] || fail "top-level user file was not preserved"
+  [[ -e "$skill_dir/.user-settings" ]] || fail "hidden user file was not preserved"
+  [[ -e "$skill_dir/"$'line\nbreak.txt' ]] || fail "user file containing a newline was not preserved"
+  [[ -e "$skill_dir/custom/file.txt" ]] || fail "top-level user directory was not preserved"
+  [[ ! -e "$skill_dir/SKILL.md" ]] || fail "official SKILL.md was not removed"
+  [[ ! -e "$skill_dir/references" ]] || fail "official references directory was not removed"
+  [[ ! -e "$skill_dir/generated-template-spec" ]] || fail "official TemplateSpec directory was not removed"
+  assert_contains "$output" "unrelated.txt"
+  assert_contains "$output" ".user-settings"
+  assert_contains "$output" '\nbreak.txt'
+  assert_not_contains "$output" $'line\nbreak.txt'
+  assert_contains "$output" "non-interactive environment: preserving detected user files by default"
+
+  output="$(
+    env -i HOME="$home_dir" PATH="$test_path" \
+      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
+  )"
+  [[ -e "$skill_dir/unrelated.txt" ]] || fail "repeat uninstall removed preserved user file"
+  assert_contains "$output" "no LoomLoom Skill content found"
 
   home_dir="$case_root/unreferenced/home"
   skill_dir="$case_root/unreferenced/skill"
   write_skill_fixture "$skill_dir"
   printf '# Extra\n' >"$skill_dir/references/extra.md"
-  expect_shell_skill_refusal "$home_dir" "$skill_dir" "reference is not explicitly"
-  [[ -e "$skill_dir/references/extra.md" ]] || fail "unreferenced reference was removed"
-
-  home_dir="$case_root/misleading reference/home"
-  skill_dir="$case_root/misleading reference/skill"
-  write_misleading_reference_fixture "$skill_dir"
-  expect_shell_skill_refusal "$home_dir" "$skill_dir" "reference is not explicitly"
-  [[ -e "$skill_dir/references/setup.md" ]] || fail "misleading reference removed the Skill"
+  printf '# Extra\n' >"$skill_dir/generated-template-spec/custom-inside.md"
+  env -i HOME="$home_dir" PATH="$test_path" \
+    /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" >/dev/null
+  [[ ! -e "$skill_dir" ]] || fail "official directories with extra files were not removed"
 
   home_dir="$case_root/referenced/home"
   skill_dir="$case_root/referenced/parent/skill"
@@ -308,13 +331,79 @@ run_shell_safety_tests() {
   config_file="$(shell_config_file "$home_dir")"
   write_cli_fixture "$install_dir" loomloom
   write_skill_fixture "$skill_dir"
-  printf 'keep\n' >"$skill_dir/unrelated.txt"
+  sed 's/^name: loomloom$/name: another-skill/' "$skill_dir/SKILL.md" >"$skill_dir/SKILL.tmp"
+  mv "$skill_dir/SKILL.tmp" "$skill_dir/SKILL.md"
   mkdir -p "$(dirname "$config_file")"
   printf '{}\n' >"$config_file"
   expect_failure env -i HOME="$home_dir" PATH="$test_path" XDG_CONFIG_HOME="$home_dir/.config" \
     /bin/bash "$repo_root/uninstall.sh" --install-dir "$install_dir" --skill-dir "$skill_dir"
   [[ -e "$install_dir/loomloom" ]] || fail "CLI was removed before Skill validation failed"
   [[ -e "$config_file" ]] || fail "config was removed before Skill validation failed"
+
+  home_dir="$case_root/scan failure/home"
+  install_dir="$case_root/scan failure/bin"
+  skill_dir="$case_root/scan failure/skill"
+  config_file="$(shell_config_file "$home_dir")"
+  local fake_find_bin="$case_root/scan failure/fake-bin"
+  write_cli_fixture "$install_dir" loomloom
+  write_skill_fixture "$skill_dir"
+  printf 'keep\n' >"$skill_dir/user.txt"
+  mkdir -p "$(dirname "$config_file")" "$fake_find_bin"
+  printf '%s\n' '#!/usr/bin/env bash' 'exit 23' >"$fake_find_bin/find"
+  chmod +x "$fake_find_bin/find"
+  printf '{}\n' >"$config_file"
+  expect_failure env -i HOME="$home_dir" PATH="$fake_find_bin:$test_path" XDG_CONFIG_HOME="$home_dir/.config" \
+    /bin/bash "$repo_root/uninstall.sh" --install-dir "$install_dir" --skill-dir "$skill_dir"
+  assert_contains "$failure_output" "cannot enumerate Skill directory"
+  [[ -e "$install_dir/loomloom" ]] || fail "CLI was removed after Skill directory scan failed"
+  [[ -e "$config_file" ]] || fail "config was removed after Skill directory scan failed"
+  [[ -e "$skill_dir/user.txt" ]] || fail "user file was removed after Skill directory scan failed"
+
+  home_dir="$case_root/incomplete/home"
+  skill_dir="$case_root/incomplete/skill"
+  write_skill_fixture "$skill_dir"
+  rm -f "$skill_dir/SKILL.md"
+  expect_shell_skill_refusal "$home_dir" "$skill_dir" "SKILL.md is missing while"
+  [[ -e "$skill_dir/references/setup.md" ]] || fail "incomplete Skill references were removed"
+
+  home_dir="$case_root/generated name collision/home"
+  skill_dir="$case_root/generated name collision/skill"
+  write_skill_fixture "$skill_dir"
+  rm -rf "$skill_dir/generated-template-spec"
+  printf 'user file\n' >"$skill_dir/generated-template-spec"
+  output="$(
+    env -i HOME="$home_dir" PATH="$test_path" \
+      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
+  )"
+  [[ -f "$skill_dir/generated-template-spec" ]] || fail "generated-template-spec user file was not preserved"
+  [[ ! -e "$skill_dir/SKILL.md" && ! -e "$skill_dir/references" ]] || fail "official Skill content was not removed around name collision"
+
+  home_dir="$case_root/generated symlink collision/home"
+  skill_dir="$case_root/generated symlink collision/skill"
+  external_file="$case_root/generated symlink collision/external"
+  write_skill_fixture "$skill_dir"
+  rm -rf "$skill_dir/generated-template-spec"
+  mkdir -p "$external_file"
+  printf 'external\n' >"$external_file/keep.txt"
+  ln -s "$external_file" "$skill_dir/generated-template-spec"
+  output="$(
+    env -i HOME="$home_dir" PATH="$test_path" \
+      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
+  )"
+  [[ -L "$skill_dir/generated-template-spec" ]] || fail "generated-template-spec user symlink was not preserved"
+  [[ -e "$external_file/keep.txt" ]] || fail "generated-template-spec user symlink target was changed"
+  assert_contains "$output" "generated-template-spec"
+
+  home_dir="$case_root/internal symlink/home"
+  skill_dir="$case_root/internal symlink/skill"
+  external_file="$case_root/internal symlink/external.txt"
+  mkdir -p "$(dirname "$external_file")"
+  printf 'external\n' >"$external_file"
+  write_skill_fixture "$skill_dir"
+  ln -s "$external_file" "$skill_dir/generated-template-spec/external-link"
+  env -i HOME="$home_dir" PATH="$test_path" \
+    /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" >/dev/null
+  [[ -e "$external_file" ]] || fail "official directory removal followed an internal symbolic link"
 
   home_dir="$case_root/mutual/home"
   install_dir="$case_root/mutual/bin"
@@ -332,6 +421,356 @@ run_shell_safety_tests() {
       --install-dir "$install_dir" --skill-dir "$skill_dir"
   assert_contains "$failure_output" "cli-only and skill-only cannot be used together"
   [[ -e "$install_dir/loomloom" && -e "$skill_dir" ]] || fail "reversed mutually exclusive Bash flags removed files"
+}
+
+run_shell_interactive_user_file_tests() {
+  local expect_path
+  expect_path="$(command -v expect || true)"
+  if [[ -z "$expect_path" ]]; then
+    echo "expect unavailable; skipped interactive uninstall.sh tests"
+    return
+  fi
+
+  local case_root="$test_root/shell interactive"
+  local home_dir="$case_root/home" skill_dir output external_dir
+
+  skill_dir="$case_root/remove user files"
+  write_skill_fixture "$skill_dir"
+  printf 'remove\n' >"$skill_dir/user-file.txt"
+  external_dir="$case_root/remove external target"
+  mkdir -p "$external_dir"
+  printf 'external\n' >"$external_dir/keep.txt"
+  rm -rf "$skill_dir/generated-template-spec"
+  ln -s "$external_dir" "$skill_dir/generated-template-spec"
+  # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
+  output="$(
+    UNINSTALL_TEST_HOME="$home_dir" \
+    UNINSTALL_TEST_PATH="$test_path" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.sh" \
+    UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
+    UNINSTALL_TEST_ANSWER="n" \
+      "$expect_path" -c '
+        set timeout 10
+        spawn env -i HOME=$env(UNINSTALL_TEST_HOME) PATH=$env(UNINSTALL_TEST_PATH) /bin/bash $env(UNINSTALL_TEST_SCRIPT) --skill-only --skill-dir $env(UNINSTALL_TEST_SKILL_DIR)
+        expect {
+          -exact {Keep these files? [Y/n] } {}
+          timeout { puts stderr "timed out waiting for uninstall prompt"; exit 124 }
+          eof { puts stderr "uninstaller exited before showing prompt"; exit 125 }
+        }
+        send -- "$env(UNINSTALL_TEST_ANSWER)\r"
+        expect {
+          eof {}
+          timeout { puts stderr "timed out waiting for uninstaller to exit"; exit 126 }
+        }
+        set result [wait]
+        exit [lindex $result 3]
+      '
+  )"
+  [[ ! -e "$skill_dir" ]] || fail "interactive no response did not remove user files"
+  [[ -e "$external_dir/keep.txt" ]] || fail "interactive no response followed a user symlink"
+  assert_contains "$output" "Keep these files? [Y/n]"
+  assert_contains "$output" "removed Skill directory and detected user files:"
+
+  skill_dir="$case_root/keep user files"
+  write_skill_fixture "$skill_dir"
+  printf 'keep\n' >"$skill_dir/user-file.txt"
+  mkdir -p "$skill_dir/custom"
+  # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
+  output="$(
+    UNINSTALL_TEST_HOME="$home_dir" \
+    UNINSTALL_TEST_PATH="$test_path" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.sh" \
+    UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
+    UNINSTALL_TEST_ANSWER="y" \
+      "$expect_path" -c '
+        set timeout 10
+        spawn env -i HOME=$env(UNINSTALL_TEST_HOME) PATH=$env(UNINSTALL_TEST_PATH) /bin/bash $env(UNINSTALL_TEST_SCRIPT) --skill-only --skill-dir $env(UNINSTALL_TEST_SKILL_DIR)
+        expect {
+          -exact {Keep these files? [Y/n] } {}
+          timeout { puts stderr "timed out waiting for uninstall prompt"; exit 124 }
+          eof { puts stderr "uninstaller exited before showing prompt"; exit 125 }
+        }
+        send -- "$env(UNINSTALL_TEST_ANSWER)\r"
+        expect {
+          eof {}
+          timeout { puts stderr "timed out waiting for uninstaller to exit"; exit 126 }
+        }
+        set result [wait]
+        exit [lindex $result 3]
+      '
+  )"
+  [[ -e "$skill_dir/user-file.txt" ]] || fail "interactive yes response did not preserve user file"
+  [[ ! -e "$skill_dir/SKILL.md" && ! -e "$skill_dir/references" && ! -e "$skill_dir/generated-template-spec" ]] ||
+    fail "interactive yes response did not remove official Skill content"
+  assert_contains "$output" "Keep these files? [Y/n]"
+  assert_contains "$output" "custom/"
+
+  skill_dir="$case_root/default answer"
+  write_skill_fixture "$skill_dir"
+  printf 'keep\n' >"$skill_dir/user-file.txt"
+  # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
+  output="$(
+    UNINSTALL_TEST_HOME="$home_dir" \
+    UNINSTALL_TEST_PATH="$test_path" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.sh" \
+    UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
+      "$expect_path" -c '
+        set timeout 10
+        spawn env -i HOME=$env(UNINSTALL_TEST_HOME) PATH=$env(UNINSTALL_TEST_PATH) /bin/bash $env(UNINSTALL_TEST_SCRIPT) --skill-only --skill-dir $env(UNINSTALL_TEST_SKILL_DIR)
+        expect {
+          -exact {Keep these files? [Y/n] } {}
+          timeout { puts stderr "timed out waiting for uninstall prompt"; exit 124 }
+          eof { puts stderr "uninstaller exited before showing prompt"; exit 125 }
+        }
+        send -- "\r"
+        expect {
+          eof {}
+          timeout { puts stderr "timed out waiting for uninstaller to exit"; exit 126 }
+        }
+        set result [wait]
+        exit [lindex $result 3]
+      '
+  )"
+  [[ -e "$skill_dir/user-file.txt" ]] || fail "interactive default answer did not preserve user file"
+
+  skill_dir="$case_root/invalid then mixed-case answer"
+  write_skill_fixture "$skill_dir"
+  printf 'keep\n' >"$skill_dir/user-file.txt"
+  # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
+  output="$(
+    UNINSTALL_TEST_HOME="$home_dir" \
+    UNINSTALL_TEST_PATH="$test_path" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.sh" \
+    UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
+      "$expect_path" -c '
+        set timeout 10
+        spawn env -i HOME=$env(UNINSTALL_TEST_HOME) PATH=$env(UNINSTALL_TEST_PATH) /bin/bash $env(UNINSTALL_TEST_SCRIPT) --skill-only --skill-dir $env(UNINSTALL_TEST_SKILL_DIR)
+        expect {
+          -exact {Keep these files? [Y/n] } {}
+          timeout { puts stderr "timed out waiting for uninstall prompt"; exit 124 }
+          eof { puts stderr "uninstaller exited before showing prompt"; exit 125 }
+        }
+        send -- "invalid\r"
+        expect {
+          -exact {Please answer yes or no.} {}
+          timeout { puts stderr "timed out waiting for validation message"; exit 127 }
+          eof { puts stderr "uninstaller exited before validating the answer"; exit 128 }
+        }
+        expect {
+          -exact {Keep these files? [Y/n] } {}
+          timeout { puts stderr "timed out waiting for repeated uninstall prompt"; exit 129 }
+          eof { puts stderr "uninstaller exited before repeating the prompt"; exit 130 }
+        }
+        send -- "yEs\r"
+        expect {
+          eof {}
+          timeout { puts stderr "timed out waiting for uninstaller to exit"; exit 126 }
+        }
+        set result [wait]
+        exit [lindex $result 3]
+      '
+  )"
+  [[ -e "$skill_dir/user-file.txt" ]] || fail "mixed-case yes answer did not preserve user file"
+  assert_contains "$output" "Please answer yes or no."
+
+  local install_dir="$case_root/cancel/bin"
+  local config_file
+  home_dir="$case_root/cancel/home"
+  skill_dir="$case_root/cancel/skill"
+  config_file="$(shell_config_file "$home_dir")"
+  mkdir -p "$(dirname "$config_file")"
+  write_cli_fixture "$install_dir" loomloom
+  write_skill_fixture "$skill_dir"
+  printf 'keep\n' >"$skill_dir/user-file.txt"
+  printf '{}\n' >"$config_file"
+  # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
+  UNINSTALL_TEST_HOME="$home_dir" \
+  UNINSTALL_TEST_XDG_CONFIG_HOME="$home_dir/.config" \
+  UNINSTALL_TEST_PATH="$test_path" \
+  UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.sh" \
+  UNINSTALL_TEST_INSTALL_DIR="$install_dir" \
+  UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
+    "$expect_path" -c '
+      set timeout 10
+      spawn env -i HOME=$env(UNINSTALL_TEST_HOME) XDG_CONFIG_HOME=$env(UNINSTALL_TEST_XDG_CONFIG_HOME) PATH=$env(UNINSTALL_TEST_PATH) /bin/bash $env(UNINSTALL_TEST_SCRIPT) --install-dir $env(UNINSTALL_TEST_INSTALL_DIR) --skill-dir $env(UNINSTALL_TEST_SKILL_DIR)
+      expect {
+        -exact {Keep these files? [Y/n] } {}
+        timeout { puts stderr "timed out waiting for uninstall prompt"; exit 124 }
+        eof { puts stderr "uninstaller exited before showing prompt"; exit 125 }
+      }
+      send -- "\003"
+      expect {
+        eof {}
+        timeout { puts stderr "timed out waiting for cancelled uninstaller to exit"; exit 126 }
+      }
+    ' >/dev/null
+  [[ -e "$install_dir/loomloom" ]] || fail "Ctrl-C removed the CLI"
+  [[ -e "$skill_dir/SKILL.md" ]] || fail "Ctrl-C removed SKILL.md"
+  [[ -e "$skill_dir/references/setup.md" ]] || fail "Ctrl-C removed references"
+  [[ -e "$skill_dir/generated-template-spec/manifest.json" ]] || fail "Ctrl-C removed generated TemplateSpec docs"
+  [[ -e "$skill_dir/user-file.txt" ]] || fail "Ctrl-C removed a top-level user file"
+  [[ -e "$config_file" ]] || fail "Ctrl-C removed config.json"
+}
+
+run_powershell_interactive_user_file_tests() {
+  local expect_path pwsh_path
+  expect_path="$(command -v expect || true)"
+  pwsh_path="$(command -v pwsh || true)"
+  if [[ -z "$expect_path" || -z "$pwsh_path" ]]; then
+    echo "expect or PowerShell unavailable; skipped interactive uninstall.ps1 tests"
+    return
+  fi
+
+  local case_root="$test_root/powershell interactive"
+  local home_dir="$case_root/home" skill_dir output external_dir
+  local app_data="$home_dir/AppData/Roaming"
+
+  skill_dir="$case_root/remove user files"
+  write_skill_fixture "$skill_dir"
+  printf 'remove\n' >"$skill_dir/user-file.txt"
+  external_dir="$case_root/remove external target"
+  mkdir -p "$external_dir"
+  printf 'external\n' >"$external_dir/keep.txt"
+  rm -rf "$skill_dir/generated-template-spec"
+  ln -s "$external_dir" "$skill_dir/generated-template-spec"
+  # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
+  output="$(
+    UNINSTALL_TEST_HOME="$home_dir" \
+    UNINSTALL_TEST_APPDATA="$app_data" \
+    UNINSTALL_TEST_PATH="$test_path" \
+    UNINSTALL_TEST_PWSH="$pwsh_path" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.ps1" \
+    UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
+    UNINSTALL_TEST_ANSWER="n" \
+      "$expect_path" -c '
+        set timeout 10
+        spawn env -i HOME=$env(UNINSTALL_TEST_HOME) APPDATA=$env(UNINSTALL_TEST_APPDATA) PATH=$env(UNINSTALL_TEST_PATH) $env(UNINSTALL_TEST_PWSH) -NoProfile -File $env(UNINSTALL_TEST_SCRIPT) -SkillOnly -SkillDir $env(UNINSTALL_TEST_SKILL_DIR)
+        expect {
+          -exact {Keep these files? [Y/n] } {}
+          timeout { puts stderr "timed out waiting for uninstall prompt"; exit 124 }
+          eof { puts stderr "uninstaller exited before showing prompt"; exit 125 }
+        }
+        send -- "$env(UNINSTALL_TEST_ANSWER)\r"
+        expect {
+          eof {}
+          timeout { puts stderr "timed out waiting for uninstaller to exit"; exit 126 }
+        }
+        set result [wait]
+        exit [lindex $result 3]
+      '
+  )"
+  [[ ! -e "$skill_dir" ]] || fail "PowerShell interactive no answer did not remove user files"
+  [[ -e "$external_dir/keep.txt" ]] || fail "PowerShell interactive no answer followed a user symlink"
+  assert_contains "$output" "Keep these files? [Y/n]"
+  assert_contains "$output" "removed Skill directory and detected user files:"
+
+  skill_dir="$case_root/keep user files"
+  write_skill_fixture "$skill_dir"
+  printf 'keep\n' >"$skill_dir/user-file.txt"
+  mkdir -p "$skill_dir/custom"
+  # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
+  output="$(
+    UNINSTALL_TEST_HOME="$home_dir" \
+    UNINSTALL_TEST_APPDATA="$app_data" \
+    UNINSTALL_TEST_PATH="$test_path" \
+    UNINSTALL_TEST_PWSH="$pwsh_path" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.ps1" \
+    UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
+    UNINSTALL_TEST_ANSWER="y" \
+      "$expect_path" -c '
+        set timeout 10
+        spawn env -i HOME=$env(UNINSTALL_TEST_HOME) APPDATA=$env(UNINSTALL_TEST_APPDATA) PATH=$env(UNINSTALL_TEST_PATH) $env(UNINSTALL_TEST_PWSH) -NoProfile -File $env(UNINSTALL_TEST_SCRIPT) -SkillOnly -SkillDir $env(UNINSTALL_TEST_SKILL_DIR)
+        expect {
+          -exact {Keep these files? [Y/n] } {}
+          timeout { puts stderr "timed out waiting for uninstall prompt"; exit 124 }
+          eof { puts stderr "uninstaller exited before showing prompt"; exit 125 }
+        }
+        send -- "$env(UNINSTALL_TEST_ANSWER)\r"
+        expect {
+          eof {}
+          timeout { puts stderr "timed out waiting for uninstaller to exit"; exit 126 }
+        }
+        set result [wait]
+        exit [lindex $result 3]
+      '
+  )"
+  [[ -e "$skill_dir/user-file.txt" ]] || fail "PowerShell interactive yes answer did not preserve user file"
+  [[ ! -e "$skill_dir/SKILL.md" && ! -e "$skill_dir/references" && ! -e "$skill_dir/generated-template-spec" ]] ||
+    fail "PowerShell interactive yes answer did not remove official Skill content"
+  assert_contains "$output" "Keep these files? [Y/n]"
+  assert_contains "$output" "custom/"
+
+  skill_dir="$case_root/default answer"
+  write_skill_fixture "$skill_dir"
+  printf 'keep\n' >"$skill_dir/user-file.txt"
+  # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
+  output="$(
+    UNINSTALL_TEST_HOME="$home_dir" \
+    UNINSTALL_TEST_APPDATA="$app_data" \
+    UNINSTALL_TEST_PATH="$test_path" \
+    UNINSTALL_TEST_PWSH="$pwsh_path" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.ps1" \
+    UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
+      "$expect_path" -c '
+        set timeout 10
+        spawn env -i HOME=$env(UNINSTALL_TEST_HOME) APPDATA=$env(UNINSTALL_TEST_APPDATA) PATH=$env(UNINSTALL_TEST_PATH) $env(UNINSTALL_TEST_PWSH) -NoProfile -File $env(UNINSTALL_TEST_SCRIPT) -SkillOnly -SkillDir $env(UNINSTALL_TEST_SKILL_DIR)
+        expect {
+          -exact {Keep these files? [Y/n] } {}
+          timeout { puts stderr "timed out waiting for uninstall prompt"; exit 124 }
+          eof { puts stderr "uninstaller exited before showing prompt"; exit 125 }
+        }
+        send -- "\r"
+        expect {
+          eof {}
+          timeout { puts stderr "timed out waiting for uninstaller to exit"; exit 126 }
+        }
+        set result [wait]
+        exit [lindex $result 3]
+      '
+  )"
+  [[ -e "$skill_dir/user-file.txt" ]] || fail "PowerShell interactive default answer did not preserve user file"
+
+  skill_dir="$case_root/invalid then mixed-case answer"
+  write_skill_fixture "$skill_dir"
+  printf 'keep\n' >"$skill_dir/user-file.txt"
+  # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
+  output="$(
+    UNINSTALL_TEST_HOME="$home_dir" \
+    UNINSTALL_TEST_APPDATA="$app_data" \
+    UNINSTALL_TEST_PATH="$test_path" \
+    UNINSTALL_TEST_PWSH="$pwsh_path" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.ps1" \
+    UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
+      "$expect_path" -c '
+        set timeout 10
+        spawn env -i HOME=$env(UNINSTALL_TEST_HOME) APPDATA=$env(UNINSTALL_TEST_APPDATA) PATH=$env(UNINSTALL_TEST_PATH) $env(UNINSTALL_TEST_PWSH) -NoProfile -File $env(UNINSTALL_TEST_SCRIPT) -SkillOnly -SkillDir $env(UNINSTALL_TEST_SKILL_DIR)
+        expect {
+          -exact {Keep these files? [Y/n] } {}
+          timeout { puts stderr "timed out waiting for uninstall prompt"; exit 124 }
+          eof { puts stderr "uninstaller exited before showing prompt"; exit 125 }
+        }
+        send -- "invalid\r"
+        expect {
+          -exact {Please answer yes or no.} {}
+          timeout { puts stderr "timed out waiting for validation message"; exit 127 }
+          eof { puts stderr "uninstaller exited before validating the answer"; exit 128 }
+        }
+        expect {
+          -exact {Keep these files? [Y/n] } {}
+          timeout { puts stderr "timed out waiting for repeated uninstall prompt"; exit 129 }
+          eof { puts stderr "uninstaller exited before repeating the prompt"; exit 130 }
+        }
+        send -- "yEs\r"
+        expect {
+          eof {}
+          timeout { puts stderr "timed out waiting for uninstaller to exit"; exit 126 }
+        }
+        set result [wait]
+        exit [lindex $result 3]
+      '
+  )"
+  [[ -e "$skill_dir/user-file.txt" ]] || fail "PowerShell mixed-case yes answer did not preserve user file"
+  assert_contains "$output" "Please answer yes or no."
 }
 
 run_powershell_full_uninstall_test() {
@@ -456,7 +895,8 @@ run_powershell_safety_tests() {
   local preflight_config_file="$preflight_app_data/loomloom/config.json"
   write_cli_fixture "$preflight_install_dir" loomloom.exe
   write_skill_fixture "$preflight_skill_dir"
-  printf 'keep\n' >"$preflight_skill_dir/unrelated.txt"
+  sed 's/^name: loomloom$/name: another-skill/' "$preflight_skill_dir/SKILL.md" >"$preflight_skill_dir/SKILL.tmp"
+  mv "$preflight_skill_dir/SKILL.tmp" "$preflight_skill_dir/SKILL.md"
   mkdir -p "$(dirname "$preflight_config_file")"
   printf '{}\n' >"$preflight_config_file"
   expect_failure env -i HOME="$preflight_home" APPDATA="$preflight_app_data" PATH="$test_path" \
@@ -468,19 +908,42 @@ run_powershell_safety_tests() {
   local unrelated_dir="$case_root/unrelated skill"
   write_skill_fixture "$unrelated_dir"
   printf 'keep\n' >"$unrelated_dir/unrelated.txt"
-  expect_powershell_skill_refusal "$pwsh_path" "$home_dir" "$unrelated_dir" "unexpected top-level entry"
-  [[ -e "$unrelated_dir/unrelated.txt" ]] || fail "PowerShell removed unrelated Skill file"
+  printf 'hidden\n' >"$unrelated_dir/.user-settings"
+  printf 'special\n' >"$unrelated_dir/"$'line\nbreak.txt'
+  mkdir -p "$unrelated_dir/custom"
+  printf 'nested\n' >"$unrelated_dir/custom/file.txt"
+  local output
+  output="$(
+    env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
+      "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$unrelated_dir" </dev/null
+  )"
+  [[ -e "$unrelated_dir/unrelated.txt" ]] || fail "PowerShell did not preserve top-level user file"
+  [[ -e "$unrelated_dir/.user-settings" ]] || fail "PowerShell did not preserve hidden user file"
+  [[ -e "$unrelated_dir/"$'line\nbreak.txt' ]] || fail "PowerShell did not preserve user file containing a newline"
+  [[ -e "$unrelated_dir/custom/file.txt" ]] || fail "PowerShell did not preserve top-level user directory"
+  [[ ! -e "$unrelated_dir/SKILL.md" ]] || fail "PowerShell did not remove official SKILL.md"
+  [[ ! -e "$unrelated_dir/references" ]] || fail "PowerShell did not remove official references"
+  [[ ! -e "$unrelated_dir/generated-template-spec" ]] || fail "PowerShell did not remove official TemplateSpec directory"
+  assert_contains "$output" "unrelated.txt"
+  assert_contains "$output" ".user-settings"
+  assert_contains "$output" '\nbreak.txt'
+  assert_not_contains "$output" $'line\nbreak.txt'
+  assert_contains "$output" "non-interactive environment: preserving detected user files by default"
+
+  output="$(
+    env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
+      "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$unrelated_dir" </dev/null
+  )"
+  [[ -e "$unrelated_dir/unrelated.txt" ]] || fail "PowerShell repeat uninstall removed user file"
+  assert_contains "$output" "no LoomLoom Skill content found"
 
   local unreferenced_dir="$case_root/unreferenced skill"
   write_skill_fixture "$unreferenced_dir"
   printf '# Extra\n' >"$unreferenced_dir/references/extra.md"
-  expect_powershell_skill_refusal "$pwsh_path" "$home_dir" "$unreferenced_dir" "reference is not explicitly"
-  [[ -e "$unreferenced_dir/references/extra.md" ]] || fail "PowerShell removed unreferenced reference"
-
-  local misleading_dir="$case_root/misleading reference skill"
-  write_misleading_reference_fixture "$misleading_dir"
-  expect_powershell_skill_refusal "$pwsh_path" "$home_dir" "$misleading_dir" "reference is not explicitly"
-  [[ -e "$misleading_dir/references/setup.md" ]] || fail "PowerShell removed misleading reference Skill"
+  printf '# Extra\n' >"$unreferenced_dir/generated-template-spec/custom-inside.md"
+  env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
+    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$unreferenced_dir" >/dev/null
+  [[ ! -e "$unreferenced_dir" ]] || fail "PowerShell did not remove official directories with extra files"
 
   local referenced_dir="$case_root/referenced skill"
   write_skill_fixture "$referenced_dir"
@@ -489,6 +952,47 @@ run_powershell_safety_tests() {
   env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
     "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$referenced_dir" >/dev/null
   [[ ! -e "$referenced_dir" ]] || fail "PowerShell did not remove explicitly referenced reference"
+
+  local incomplete_dir="$case_root/incomplete skill"
+  write_skill_fixture "$incomplete_dir"
+  rm -f "$incomplete_dir/SKILL.md"
+  expect_powershell_skill_refusal "$pwsh_path" "$home_dir" "$incomplete_dir" "SKILL.md is missing while"
+  [[ -e "$incomplete_dir/references/setup.md" ]] || fail "PowerShell removed incomplete Skill references"
+
+  local generated_collision_dir="$case_root/generated name collision"
+  write_skill_fixture "$generated_collision_dir"
+  rm -rf "$generated_collision_dir/generated-template-spec"
+  printf 'user file\n' >"$generated_collision_dir/generated-template-spec"
+  output="$(
+    env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
+      "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$generated_collision_dir" </dev/null
+  )"
+  [[ -f "$generated_collision_dir/generated-template-spec" ]] || fail "PowerShell did not preserve generated-template-spec user file"
+  [[ ! -e "$generated_collision_dir/SKILL.md" && ! -e "$generated_collision_dir/references" ]] || fail "PowerShell did not remove official content around name collision"
+
+  local generated_symlink_dir="$case_root/generated symlink collision"
+  local generated_symlink_target="$case_root/generated symlink external"
+  write_skill_fixture "$generated_symlink_dir"
+  rm -rf "$generated_symlink_dir/generated-template-spec"
+  mkdir -p "$generated_symlink_target"
+  printf 'external\n' >"$generated_symlink_target/keep.txt"
+  ln -s "$generated_symlink_target" "$generated_symlink_dir/generated-template-spec"
+  output="$(
+    env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
+      "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$generated_symlink_dir" </dev/null
+  )"
+  [[ -L "$generated_symlink_dir/generated-template-spec" ]] || fail "PowerShell did not preserve generated-template-spec user symlink"
+  [[ -e "$generated_symlink_target/keep.txt" ]] || fail "PowerShell changed generated-template-spec user symlink target"
+  assert_contains "$output" "generated-template-spec"
+
+  local internal_link_dir="$case_root/internal symlink skill"
+  local external_file="$case_root/internal symlink external.txt"
+  printf 'external\n' >"$external_file"
+  write_skill_fixture "$internal_link_dir"
+  ln -s "$external_file" "$internal_link_dir/generated-template-spec/external-link"
+  env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
+    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$internal_link_dir" >/dev/null
+  [[ -e "$external_file" ]] || fail "PowerShell followed an internal symbolic link while removing official content"
 
   local brew_bin="$case_root/brew-bin"
   mkdir -p "$brew_bin"
@@ -509,7 +1013,9 @@ run_shell_full_uninstall_test
 run_shell_legacy_config_test
 run_shell_partial_uninstall_tests
 run_shell_safety_tests
+run_shell_interactive_user_file_tests
 run_powershell_full_uninstall_test
 run_powershell_safety_tests
+run_powershell_interactive_user_file_tests
 
 echo "uninstall script tests passed"
