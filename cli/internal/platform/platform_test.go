@@ -35,16 +35,15 @@ func TestCogFoundryIsOperationalWithKnownEndpoints(t *testing.T) {
 		t.Fatalf("CogFoundry=%+v ok=%t want operational", got, ok)
 	}
 	for name, values := range map[string][2]string{
-		"keys URL":       {got.KeysURL, "https://console.cogfoundry.ai/api-keys"},
-		"recharge URL":   {got.RechargeURL, "https://console.cogfoundry.ai/credits"},
-		"default server": {got.DefaultServer, "https://loomloom.cogfoundry.ai/loom/v1"},
+		"keys URL":        {got.KeysURL, "https://console.cogfoundry.ai/api-keys"},
+		"recharge URL":    {got.RechargeURL, "https://console.cogfoundry.ai/credits"},
+		"auth page URL":   {got.AuthPageURL, "https://console.cogfoundry.ai/auth"},
+		"account API URL": {got.AccountAPIURL, "https://api.cogfoundry.ai"},
+		"default server":  {got.DefaultServer, "https://loomloom.cogfoundry.ai/loom/v1"},
 	} {
 		if values[0] != values[1] {
 			t.Fatalf("CogFoundry %s=%q want %q", name, values[0], values[1])
 		}
-	}
-	if got.AuthPageURL != "" || got.AccountAPIURL != "" {
-		t.Fatalf("CogFoundry must not enable browser login: %+v", got)
 	}
 }
 
