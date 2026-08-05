@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -15,28 +16,39 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
-	DefaultTimeout = 5 * time.Minute
+	DefaultAuthorizationTimeout = 5 * time.Minute
+	DefaultExchangeTimeout      = 30 * time.Second
+	DefaultTimeout              = DefaultAuthorizationTimeout
 
-	callbackPath        = "/callback"
-	codeChallengeMethod = "S256"
+	callbackPath              = "/callback"
+	codeChallengeMethod       = "S256"
+	callbackServerTimeout     = 5 * time.Second
+	callbackShutdownTimeout   = time.Second
+	maxExchangeResponseLength = 64 << 10
 )
 
+var ErrAuthorizationTimeout = errors.New("browser authorization timed out")
+
 type Config struct {
-	AuthPageURL   string
-	AccountAPIURL string
-	AppName       string
-	Timeout       time.Duration
-	HTTPClient    *http.Client
-	OpenURL       func(url string) error
-	Notify        func(url string)
+	AuthPageURL          string
+	AccountAPIURL        string
+	AppName              string
+	CallbackPageVariant  CallbackPageVariant
+	AuthorizationTimeout time.Duration
+	ExchangeTimeout      time.Duration
+	HTTPClient           *http.Client
+	OpenURL              func(url string) error
+	Notify               func(url string)
+	Timeout              time.Duration
 }
 
 type Result struct {
-	APIKey string
+	Token string
 }
 
 type callbackOutcome struct {
@@ -45,8 +57,15 @@ type callbackOutcome struct {
 }
 
 func Login(ctx context.Context, cfg Config) (*Result, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(cfg.AuthPageURL) == "" || strings.TrimSpace(cfg.AccountAPIURL) == "" {
 		return nil, fmt.Errorf("browser login is not available: missing authorize page or account API URL")
+	}
+	authorizationTimeout, exchangeTimeout, err := resolveTimeouts(cfg)
+	if err != nil {
+		return nil, err
 	}
 	verifier, err := randomToken(32)
 	if err != nil {
@@ -70,13 +89,30 @@ func Login(ctx context.Context, cfg Config) (*Result, error) {
 	}
 
 	outcomes := make(chan callbackOutcome, 1)
-	server := &http.Server{Handler: callbackHandler(state, outcomes)}
-	go func() { _ = server.Serve(listener) }()
-	defer func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		_ = server.Shutdown(shutdownCtx)
+	server := &http.Server{
+		Handler:           callbackHandler(state, cfg.CallbackPageVariant, outcomes),
+		ReadHeaderTimeout: callbackServerTimeout,
+		WriteTimeout:      callbackServerTimeout,
+		IdleTimeout:       callbackServerTimeout,
+		MaxHeaderBytes:    8 << 10,
+	}
+	serveResult := make(chan error, 1)
+	go func() {
+		serveResult <- server.Serve(listener)
+		close(serveResult)
 	}()
+	var stopServerOnce sync.Once
+	stopServer := func() {
+		stopServerOnce.Do(func() {
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), callbackShutdownTimeout)
+			defer cancel()
+			if err := server.Shutdown(shutdownCtx); err != nil {
+				_ = server.Close()
+			}
+			<-serveResult
+		})
+	}
+	defer stopServer()
 
 	if cfg.Notify != nil {
 		cfg.Notify(authorizeURL)
@@ -86,51 +122,112 @@ func Login(ctx context.Context, cfg Config) (*Result, error) {
 		openURL = openInBrowser
 	}
 	_ = openURL(authorizeURL)
-
-	timeout := cfg.Timeout
-	if timeout <= 0 {
-		timeout = DefaultTimeout
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
+
+	timer := time.NewTimer(authorizationTimeout)
+	defer timer.Stop()
 	select {
 	case outcome := <-outcomes:
+		stopServer()
 		if outcome.err != nil {
 			return nil, outcome.err
 		}
-		return exchangeCode(ctx, cfg, outcome.code, verifier, callbackURL)
-	case <-time.After(timeout):
-		return nil, fmt.Errorf("timed out after %s waiting for browser login", timeout)
+		return exchangeCodeWithTimeout(ctx, cfg, exchangeTimeout, outcome.code, verifier, callbackURL)
+	case <-timer.C:
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("%w after %s; run login again or increase --login-timeout", ErrAuthorizationTimeout, authorizationTimeout)
 	case <-ctx.Done():
 		return nil, ctx.Err()
+	case serveErr := <-serveResult:
+		if errors.Is(serveErr, http.ErrServerClosed) {
+			return nil, fmt.Errorf("local callback server stopped before authorization completed")
+		}
+		return nil, fmt.Errorf("serve local authorization callback: %w", serveErr)
 	}
 }
 
-func callbackHandler(expectedState string, outcomes chan<- callbackOutcome) http.Handler {
+func resolveTimeouts(cfg Config) (time.Duration, time.Duration, error) {
+	authorizationTimeout := cfg.AuthorizationTimeout
+	if authorizationTimeout == 0 {
+		authorizationTimeout = cfg.Timeout
+	}
+	if authorizationTimeout < 0 {
+		return 0, 0, fmt.Errorf("authorization timeout must be greater than 0")
+	}
+	if authorizationTimeout == 0 {
+		authorizationTimeout = DefaultAuthorizationTimeout
+	}
+
+	exchangeTimeout := cfg.ExchangeTimeout
+	if exchangeTimeout < 0 {
+		return 0, 0, fmt.Errorf("exchange timeout must be greater than 0")
+	}
+	if exchangeTimeout == 0 {
+		exchangeTimeout = DefaultExchangeTimeout
+	}
+	return authorizationTimeout, exchangeTimeout, nil
+}
+
+func exchangeCodeWithTimeout(
+	ctx context.Context,
+	cfg Config,
+	timeout time.Duration,
+	code string,
+	verifier string,
+	callbackURL string,
+) (*Result, error) {
+	exchangeCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	result, err := exchangeCode(exchangeCtx, cfg, code, verifier, callbackURL)
+	if err == nil {
+		return result, nil
+	}
+	if parentErr := ctx.Err(); parentErr != nil {
+		return nil, parentErr
+	}
+	if errors.Is(exchangeCtx.Err(), context.DeadlineExceeded) {
+		return nil, fmt.Errorf("timed out after %s exchanging authorization code: %w", timeout, context.DeadlineExceeded)
+	}
+	return nil, err
+}
+
+func callbackHandler(expectedState string, pageVariant CallbackPageVariant, outcomes chan<- callbackOutcome) http.Handler {
 	mux := http.NewServeMux()
+	var deliverOutcome sync.Once
 	mux.HandleFunc(callbackPath, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.Header().Set("Allow", http.MethodGet)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
 		query := r.URL.Query()
-		outcome := callbackOutcome{code: query.Get("code")}
+		states := query["state"]
+		codes := query["code"]
+		errors := query["error"]
+		if len(states) != 1 || states[0] != expectedState {
+			writeCallbackPage(w, pageVariant, false)
+			return
+		}
+		outcome := callbackOutcome{}
 		switch {
-		case query.Get("error") != "":
-			outcome.err = fmt.Errorf("authorization was denied: %s", query.Get("error"))
-		case query.Get("state") != expectedState:
-			outcome.err = fmt.Errorf("authorization response state mismatch; retry the login")
-		case outcome.code == "":
+		case len(errors) == 1 && errors[0] != "" && len(codes) == 0:
+			outcome.err = fmt.Errorf("authorization was denied")
+		case len(errors) > 0:
+			outcome.err = fmt.Errorf("authorization response contains conflicting error parameters")
+		case len(codes) != 1 || strings.TrimSpace(codes[0]) == "":
 			outcome.err = fmt.Errorf("authorization response is missing the code parameter")
-		}
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if outcome.err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			_, _ = io.WriteString(w, "<html><body>登录未完成，请关闭此页面并回到终端重试。</body></html>")
-		} else {
-			_, _ = io.WriteString(w, "<html><body><script>window.close();</script>登录成功！请返回终端继续操作。</body></html>")
-		}
-
-		// Deliver only the first callback; ignore stray repeats.
-		select {
-		case outcomes <- outcome:
 		default:
+			outcome.code = codes[0]
 		}
+
+		writeCallbackPage(w, pageVariant, outcome.err == nil)
+		deliverOutcome.Do(func() { outcomes <- outcome })
 	})
 	return mux
 }
@@ -156,7 +253,8 @@ type keysEnvelope struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data struct {
-		APIKey string `json:"api_key"`
+		APIKey   string `json:"api_key"`
+		JWTToken string `json:"jwt_token"`
 	} `json:"data"`
 }
 
@@ -177,19 +275,19 @@ func exchangeCode(ctx context.Context, cfg Config, code string, verifier string,
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	httpClient := cfg.HTTPClient
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
+	httpClient := exchangeHTTPClient(cfg.HTTPClient)
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("exchange authorization code: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxExchangeResponseLength+1))
 	if err != nil {
 		return nil, fmt.Errorf("read key exchange response: %w", err)
+	}
+	if len(body) > maxExchangeResponseLength {
+		return nil, fmt.Errorf("key exchange response exceeds %d bytes", maxExchangeResponseLength)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("key exchange failed: status=%d", resp.StatusCode)
@@ -205,11 +303,25 @@ func exchangeCode(ctx context.Context, cfg Config, code string, verifier string,
 		}
 		return nil, fmt.Errorf("key exchange failed: %s", message)
 	}
-	apiKey := strings.TrimSpace(envelope.Data.APIKey)
-	if apiKey == "" {
-		return nil, fmt.Errorf("key exchange succeeded but returned an empty API key")
+	token := strings.TrimSpace(envelope.Data.APIKey)
+	if token == "" {
+		token = strings.TrimSpace(envelope.Data.JWTToken)
 	}
-	return &Result{APIKey: apiKey}, nil
+	if token == "" {
+		return nil, fmt.Errorf("key exchange succeeded but returned an empty credential")
+	}
+	return &Result{Token: token}, nil
+}
+
+func exchangeHTTPClient(configured *http.Client) *http.Client {
+	if configured == nil {
+		configured = http.DefaultClient
+	}
+	client := *configured
+	client.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	return &client
 }
 
 func challengeFor(verifier string) string {

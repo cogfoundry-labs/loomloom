@@ -14,6 +14,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const defaultHTTPTimeout = 30 * time.Second
+
 type rootOptions struct {
 	server                    string
 	token                     string
@@ -30,7 +32,7 @@ func NewRootCmd() *cobra.Command {
 		server:                    server,
 		token:                     "",
 		enforceServerVerification: true,
-		timeout:                   30 * time.Second,
+		timeout:                   defaultHTTPTimeout,
 		output:                    "text",
 		verbose:                   envBool("LOOMLOOM_VERBOSE"),
 	}
@@ -43,6 +45,9 @@ func NewRootCmd() *cobra.Command {
 		Version:       version.Version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.logWriter = cmd.ErrOrStderr()
+			if opts.timeout <= 0 {
+				return fmt.Errorf("--timeout must be greater than 0")
+			}
 			opts.output = strings.ToLower(strings.TrimSpace(opts.output))
 			if opts.output != "text" && opts.output != "json" {
 				return fmt.Errorf("unsupported output format %q; use text or json", opts.output)
@@ -70,7 +75,7 @@ func NewRootCmd() *cobra.Command {
 		serverFlag.DefValue = ""
 	}
 	cmd.PersistentFlags().StringVarP(&opts.token, "token", "t", opts.token, "Bearer token")
-	cmd.PersistentFlags().DurationVar(&opts.timeout, "timeout", opts.timeout, "HTTP timeout")
+	cmd.PersistentFlags().DurationVar(&opts.timeout, "timeout", opts.timeout, "HTTP request timeout")
 	cmd.PersistentFlags().StringVarP(&opts.output, "output", "o", opts.output, "Output format: text|json")
 	cmd.PersistentFlags().BoolVarP(&opts.verbose, "verbose", "v", opts.verbose, "Write debug logs to stderr")
 	if tokenFlag := cmd.PersistentFlags().Lookup("token"); tokenFlag != nil {

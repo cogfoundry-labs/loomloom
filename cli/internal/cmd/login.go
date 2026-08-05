@@ -17,12 +17,27 @@ import (
 const loginAppName = "LoomLoom CLI"
 
 func newLoginCmd(opts *rootOptions) *cobra.Command {
-	var noBrowser bool
+	return newLoginCmdWithRunner(opts, authflow.Login)
+}
+
+type loginRunner func(context.Context, authflow.Config) (*authflow.Result, error)
+
+func newLoginCmdWithRunner(opts *rootOptions, runLogin loginRunner) *cobra.Command {
+	var (
+		noBrowser    bool
+		loginTimeout time.Duration
+	)
 	cmd := &cobra.Command{
 		Use:   "login",
-		Short: "Log in through the platform website and save the API key",
+		Short: "Log in through the platform website and save the credential",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			server, resolvedPlatform := loginTarget(opts)
+			if loginTimeout <= 0 {
+				return fmt.Errorf("--login-timeout must be greater than 0")
+			}
+			server, resolvedPlatform, err := resolveLoginPlatform(cmd, opts)
+			if err != nil {
+				return err
+			}
 			if resolvedPlatform.AuthPageURL == "" || resolvedPlatform.AccountAPIURL == "" {
 				return fmt.Errorf(
 					"platform %s does not support browser login; configure a token instead (see `loomloom doctor`)",
@@ -31,9 +46,12 @@ func newLoginCmd(opts *rootOptions) *cobra.Command {
 			}
 
 			flowConfig := authflow.Config{
-				AuthPageURL:   resolvedPlatform.AuthPageURL,
-				AccountAPIURL: resolvedPlatform.AccountAPIURL,
-				AppName:       loginAppName,
+				AuthPageURL:          resolvedPlatform.AuthPageURL,
+				AccountAPIURL:        resolvedPlatform.AccountAPIURL,
+				AppName:              loginAppName,
+				CallbackPageVariant:  callbackPageVariantForPlatform(resolvedPlatform.ID),
+				AuthorizationTimeout: loginTimeout,
+				ExchangeTimeout:      opts.timeout,
 				Notify: func(authorizeURL string) {
 					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "请在浏览器中完成登录（如未自动打开，请手动访问）：\n%s\n", authorizeURL)
 				},
@@ -41,13 +59,13 @@ func newLoginCmd(opts *rootOptions) *cobra.Command {
 			if noBrowser {
 				flowConfig.OpenURL = func(string) error { return nil }
 			}
-			result, err := authflow.Login(cmd.Context(), flowConfig)
+			result, err := runLogin(cmd.Context(), flowConfig)
 			if err != nil {
 				return err
 			}
 
 			opts.server = server
-			opts.token = result.APIKey
+			opts.token = result.Token
 			if err := verifyLoginToken(cmd, opts); err != nil {
 				return err
 			}
@@ -57,7 +75,7 @@ func newLoginCmd(opts *rootOptions) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("save login server profile: %w", err)
 			}
-			profile, err = state.SetToken(profile.Name, result.APIKey)
+			profile, err = state.SetToken(profile.Name, result.Token)
 			if err != nil {
 				return fmt.Errorf("save login credentials: %w", err)
 			}
@@ -65,10 +83,10 @@ func newLoginCmd(opts *rootOptions) *cobra.Command {
 				return fmt.Errorf("save login credentials: %w", err)
 			}
 
-			if env := strings.TrimSpace(os.Getenv(profile.TokenEnv)); env != "" && env != result.APIKey {
+			if env := strings.TrimSpace(os.Getenv(profile.TokenEnv)); env != "" && env != result.Token {
 				_, _ = fmt.Fprintln(
 					cmd.ErrOrStderr(),
-					"警告：当前服务器的 Token 环境变量已设置且与本次登录的密钥不同；环境变量优先级更高，如需使用本次登录结果请先取消对应变量。",
+					"警告：当前服务器的 Token 环境变量已设置且与本次登录凭据不同；环境变量优先级更高，如需使用本次登录结果请先取消对应变量。",
 				)
 			}
 
@@ -80,18 +98,35 @@ func newLoginCmd(opts *rootOptions) *cobra.Command {
 					"platform":      string(resolvedPlatform.ID),
 					"platform_name": resolvedPlatform.DisplayName,
 					"token_saved":   true,
-					"token":         maskToken(result.APIKey),
+					"token":         maskToken(result.Token),
 					"message":       "ok",
 				})
 			}
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "登录成功：%s\n", resolvedPlatform.DisplayName)
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "server: %s\n", server)
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "token: %s（已保存，可直接使用其他命令）\n", maskToken(result.APIKey))
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "token: %s（已保存，可直接使用其他命令）\n", maskToken(result.Token))
 			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&noBrowser, "no-browser", false, "Print the login URL instead of opening a browser")
+	cmd.Flags().DurationVar(
+		&loginTimeout,
+		"login-timeout",
+		authflow.DefaultAuthorizationTimeout,
+		"Maximum time to wait for browser authorization",
+	)
 	return cmd
+}
+
+func callbackPageVariantForPlatform(platformID platform.ID) authflow.CallbackPageVariant {
+	switch platformID {
+	case platform.CogFoundry:
+		return authflow.CallbackPageCogFoundry
+	case platform.ShengSuanYun:
+		return authflow.CallbackPageShengSuanYun
+	default:
+		return authflow.CallbackPageGeneric
+	}
 }
 
 func newLogoutCmd(opts *rootOptions) *cobra.Command {
@@ -138,14 +173,6 @@ func newLogoutCmd(opts *rootOptions) *cobra.Command {
 	}
 }
 
-func loginTarget(opts *rootOptions) (string, platform.Platform) {
-	server := strings.TrimSpace(opts.server)
-	if server == "" {
-		fallback, _ := platform.ByID(platform.ShengSuanYun)
-		return fallback.DefaultServer, fallback
-	}
-	return server, platform.InferFromServer(server)
-}
 func verifyLoginToken(cmd *cobra.Command, opts *rootOptions) error {
 	httpClient, err := newHTTPClientForDoctor(opts)
 	if err != nil {
@@ -158,7 +185,7 @@ func verifyLoginToken(cmd *cobra.Command, opts *rootOptions) error {
 	var probeResp map[string]any
 	if err := httpClient.GetProductJSONWithQuery(ctx, "/users/me/executables", query, &probeResp); err != nil {
 		if isAuthenticationFailure(err) {
-			return fmt.Errorf("登录获取的密钥未通过当前 Server 验证，请确认 Server 与登录平台一致后重试")
+			return fmt.Errorf("登录获取的凭据未通过当前 Server 验证，请确认 Server 与登录平台一致后重试")
 		}
 		return fmt.Errorf("verify login token against %s: %w", opts.server, err)
 	}
