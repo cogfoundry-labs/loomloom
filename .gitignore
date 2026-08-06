@@ -4,6 +4,7 @@ release/
 .release-tag
 .DS_Store
 cli/batchjob-cli
+cli/loomloom
 intro/
 cli/internal/template_spec_docs/generated/*
 !cli/internal/template_spec_docs/generated/placeholder.txt

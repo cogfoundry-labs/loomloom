@@ -126,7 +126,7 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 		"credential_action",
 		"If Doctor reports `healthy=true`, continue with the existing credential",
 		"API Token authentication is available for every platform",
-		"Browser login is available only for ShengSuanYun",
+		"Browser login is available for both preset platforms, ShengSuanYun and CogFoundry",
 		"user's explicit platform selection or the already selected Server profile reported by Doctor",
 		"neither explicitly selected a platform nor provided a Server",
 		"present both preset platforms",
@@ -138,9 +138,9 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 		"Do not answer with only one platform's credential URL",
 		"show both preset platforms and ask the user to select one before starting authentication",
 		"Do not run `loomloom login` yet",
-		"After the user selects ShengSuanYun",
+		"After the user selects ShengSuanYun or CogFoundry",
 		"loomloom login",
-		"After the user selects CogFoundry or a custom platform",
+		"After the user selects a custom platform",
 		"After either authentication flow completes",
 		"All source templates in this reference are written in English",
 		"Translate and localize every user-facing message",
@@ -150,7 +150,7 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 		"https://loomloom.shengsuanyun.com/loom/v1",
 		"https://console.shengsuanyun.com/user/keys",
 		"Authentication after selection: prefer browser login",
-		"Authentication after selection: use an API Token directly; browser login is not supported",
+		"Browser login did not complete. You can configure CogFoundry with an API Token instead.",
 		"Ask the user to choose one. Do not authenticate with either platform until they choose",
 		"Browser login did not complete. You can configure ShengSuanYun with an API Token instead.",
 		"do not immediately output the Token fallback message",
@@ -252,6 +252,70 @@ func TestBundledSkillsExposeTemplateSpecDocsLanguageOption(t *testing.T) {
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
+		}
+	}
+}
+
+func TestBundledSkillsDocumentLoginTimeoutBoundaries(t *testing.T) {
+	root := findRepoRoot(t)
+	setup := readCanonicalSkillReference(t, root, "setup.md")
+	cli := readCanonicalSkillReference(t, root, "cli.md")
+
+	for _, want := range []string{
+		"loomloom login --login-timeout 10m",
+		"loomloom login --no-browser --login-timeout 10m",
+		"`--login-timeout` controls only the human authorization window",
+		"the global `--timeout` flag controls individual HTTP requests",
+	} {
+		if !strings.Contains(setup, want) {
+			t.Fatalf("%s/setup.md missing %q", canonicalSkillReferencesDir, want)
+		}
+	}
+
+	for _, want := range []string{
+		"loomloom login [--no-browser] [--login-timeout <duration>]",
+		"The global `--timeout` flag remains the per-request HTTP timeout",
+	} {
+		if !strings.Contains(cli, want) {
+			t.Fatalf("%s/cli.md missing %q", canonicalSkillReferencesDir, want)
+		}
+	}
+}
+
+func TestBundledSkillsDocumentDistributionFallbackAndAPIReferences(t *testing.T) {
+	root := findRepoRoot(t)
+	setup := readCanonicalSkillReference(t, root, "setup.md")
+
+	for _, want := range []string{
+		"Use GitHub as the default distribution source",
+		"If the user explicitly requests Gitee, use the Gitee installer directly",
+		"ask whether they want to retry through Gitee",
+		"Do not switch to Gitee until the user agrees",
+		"must not select or change the LoomLoom platform, Server, or credentials",
+		"https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh",
+		"-Source gitee",
+	} {
+		if !strings.Contains(setup, want) {
+			t.Fatalf("%s/setup.md missing %q", canonicalSkillReferencesDir, want)
+		}
+	}
+
+	for _, rel := range bundledSkillDirs {
+		text, err := os.ReadFile(filepath.Join(root, rel, "SKILL.md"))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		for _, want := range []string{
+			"Use platform-specific official API documentation when needed",
+			"successful `loomloom doctor --output json` result",
+			"https://lean.shengsuanyun.com/apidocs/loomloom/api",
+			"authoritative source for ShengSuanYun API contracts",
+			"CogFoundry API documentation is not yet publicly available",
+			"Do not use ShengSuanYun-specific API contracts to infer CogFoundry behavior",
+		} {
+			if !strings.Contains(string(text), want) {
+				t.Fatalf("%s/SKILL.md missing %q", rel, want)
+			}
 		}
 	}
 }

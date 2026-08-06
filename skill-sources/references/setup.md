@@ -17,7 +17,20 @@ Use this reference for installation, `doctor`, browser login, explicit API Token
 
 ## Installation
 
-- Install through the GitHub install script by default.
+- Use GitHub as the default distribution source.
+- If the user explicitly requests Gitee, use the Gitee installer directly.
+- If the GitHub installer or release download is unavailable or fails, tell the user that the official Gitee mirror is available and ask whether they want to retry through Gitee. Do not switch to Gitee until the user agrees.
+- GitHub and Gitee are distribution sources only. Choosing either source must not select or change the LoomLoom platform, Server, or credentials.
+- After the user chooses Gitee, use the matching installer:
+
+  ```bash
+  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash
+  ```
+
+  ```powershell
+  & ([scriptblock]::Create((irm https://gitee.com/cogfoundry/loomloom/raw/main/install.ps1))) -Source gitee
+  ```
+
 - On macOS and Linux, the default installation uses Homebrew. Do not add `--no-brew` unless the user explicitly requests it.
 - For an internal or beta CLI, install the prerelease channel explicitly:
 
@@ -49,24 +62,37 @@ When the user asks where to get a Token/API key while the platform is unknown, p
 
 ShengSuanYun and CogFoundry are preset platforms, not a whitelist. If the user provides another Server, do not block it or replace it with a preset Server. Do not add `/loom/v1`; validate the exact URL the user provided.
 
-Only a successful Doctor may register a new Server. Ordinary business commands must not use an unverified Server.
+Only a successful Doctor or a browser login whose returned credential has been verified against the selected LoomLoom Server may register and activate a Server profile. Ordinary business commands must not use an unverified Server.
 
 ## Browser-First Credential Flow
 
-API Token authentication is available for every platform. Browser login is available only for ShengSuanYun. Determine the authentication flow from the user's explicit platform selection or the already selected Server profile reported by Doctor.
+API Token authentication is available for every platform. Browser login is available for both preset platforms, ShengSuanYun and CogFoundry. Determine the authentication flow from the user's explicit platform selection or the already selected Server profile reported by Doctor.
 
 1. If no platform or Server has been selected, show both preset platforms and ask the user to select one before starting authentication. Do not run `loomloom login` yet.
-2. After the user selects ShengSuanYun, or when the existing selected profile is ShengSuanYun, prefer `loomloom login` if the user can complete authorization in a browser.
+2. After the user selects ShengSuanYun or CogFoundry, or when the existing selected profile is either preset platform, prefer `loomloom login` if the user can complete authorization in a browser.
 3. Ask the user to complete authorization in the browser. Do not handle, expose, or copy the browser credential yourself.
-4. If ShengSuanYun browser login fails, is unavailable in a headless/CI environment, or the user explicitly chooses Token authentication, use the explicit API Token fallback below.
-5. After the user selects CogFoundry or a custom platform, or when the existing selected profile is one of those platforms, skip browser login and use the explicit API Token flow directly.
+4. If browser login for either preset platform fails, is unavailable in a headless/CI environment, or the user explicitly chooses Token authentication, use the applicable explicit API Token fallback below.
+5. After the user selects a custom platform, or when the existing selected profile is custom, skip browser login and use the explicit API Token flow directly.
 6. After either authentication flow completes, run `loomloom doctor --output json` and continue only when `healthy=true`.
+
+When an interactive user runs bare `loomloom login` without a selected Server profile, the CLI can present its preset-platform selector. An Agent, CI job, piped command, or `--output json` invocation must not depend on that interactive selector or on an implicit platform default. After the user chooses a preset platform, pass its exact Server explicitly:
+
+```bash
+loomloom login --server https://loomloom.shengsuanyun.com/loom/v1
+loomloom login --server https://loomloom.cogfoundry.ai/loom/v1
+```
+
+If Doctor already reports a selected preset Server profile, bare `loomloom login` uses that profile. Do not override it with another platform unless the user explicitly requests a switch.
 
 Do not force browser login when Doctor already reports a healthy existing credential. Existing users may be authenticated through the selected profile's environment Token and should continue without interruption.
 
 When the user explicitly asks where to obtain a Token/API key or explicitly requests Token-based setup, skip the browser-first attempt and provide the applicable platform Token guidance directly.
 
 If browser login succeeds while the selected profile's `token_env` is already set, explain that the browser credential was saved but that environment Token remains the effective higher-priority credential. Do not describe this as a login conflict.
+
+`loomloom login` waits up to five minutes for browser authorization by default. If the user needs more time, run `loomloom login --login-timeout 10m`. If automatic browser opening is unavailable but a browser can reach the same machine's loopback callback, use `loomloom login --no-browser --login-timeout 10m` and open the printed URL manually. In a truly headless or CI environment, use API Token authentication instead. `--login-timeout` controls only the human authorization window; the global `--timeout` flag controls individual HTTP requests, including the authorization-code exchange and credential verification.
+
+The browser callback page only confirms that the authorization response returned to the CLI; it is not the final login result. Wait for the terminal command to complete. Browser login verifies the returned credential against the selected LoomLoom Server before saving or activating the profile. If code exchange or verification fails, do not claim that login succeeded and do not persist or switch configuration manually.
 
 ## Platform And Credential Messages
 
@@ -88,7 +114,7 @@ This service is jointly supported by CogFoundry and is recommended for users in 
 - Server: https://loomloom.cogfoundry.ai/loom/v1
 - API key console: https://console.cogfoundry.ai/api-keys
 - Recharge and balance: https://console.cogfoundry.ai/credits
-- Authentication after selection: use an API Token directly; browser login is not supported.
+- Authentication after selection: prefer browser login; use an API Token if browser login does not complete or the user explicitly chooses Token authentication.
 
 Ask the user to choose one. Do not authenticate with either platform until they choose.
 ```
@@ -105,9 +131,12 @@ https://console.shengsuanyun.com/user/keys
 
 When a command passively reports `credential_action=missing_token` for ShengSuanYun, do not immediately output the Token fallback message. Attempt browser login first. Output the fallback message only if browser login does not complete or the user chooses Token authentication.
 
-For a missing CogFoundry token, convey:
+When a command passively reports `credential_action=missing_token` for CogFoundry, do not immediately output the Token fallback message. Attempt browser login first. Output the fallback message only if browser login does not complete or the user chooses Token authentication.
+
+When browser login fails or is unavailable for CogFoundry, or when the user explicitly requests Token-based setup, convey:
 
 ```text
+Browser login did not complete. You can configure CogFoundry with an API Token instead.
 No CogFoundry credential was detected. Create or copy an API key in the CogFoundry console, then configure it in the local environment:
 https://console.cogfoundry.ai/api-keys
 ```
@@ -139,7 +168,9 @@ Never echo the Token while persisting or verifying it.
 
 - `loomloom server list` lists verified Server profiles.
 - `loomloom server use <name-or-server>` switches the active profile without rerunning Doctor.
-- `loomloom server remove <name-or-server>` removes local profile metadata, not the permanent Token variable.
+- `token_set=true` from `server list` means only that a local environment Token or saved browser credential exists; it does not establish current validity.
+- `verified_at` records the last successful registration or verification, not current health. Use Doctor's current `token_valid` and `healthy` fields when validity matters.
+- `loomloom server remove <name-or-server>` removes local profile metadata and its saved browser credential, not the permanent Token variable.
 - Do not switch profiles unless the user requests it.
 - After a switch, run Doctor when platform or credential facts are needed.
 

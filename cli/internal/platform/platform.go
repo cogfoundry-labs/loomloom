@@ -50,6 +50,8 @@ var registry = []Platform{
 		Operational:   true,
 		KeysURL:       "https://console.cogfoundry.ai/api-keys",
 		RechargeURL:   "https://console.cogfoundry.ai/credits",
+		AuthPageURL:   "https://console.cogfoundry.ai/auth",
+		AccountAPIURL: "https://api.cogfoundry.ai",
 		DefaultServer: "https://loomloom.cogfoundry.ai/loom/v1",
 	},
 }

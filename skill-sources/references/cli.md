@@ -54,6 +54,8 @@ Keep raw field names for internal command chaining, not ordinary user summaries.
 
 ### Environment and inputs
 
+- `loomloom login [--no-browser] [--login-timeout <duration>]`
+- `loomloom logout`
 - `loomloom doctor`
 - `loomloom doctor --server <url> [--name <profile>] --output json`
 - `loomloom server list`
@@ -61,6 +63,14 @@ Keep raw field names for internal command chaining, not ordinary user summaries.
 - `loomloom server remove <name-or-server>`
 - `loomloom input-asset upload <file>`
 - `loomloom orchestration-input upload <file.jsonl>`
+
+When no Server profile is selected, bare `loomloom login` offers the preset-platform selector only in an interactive terminal. Agents, CI jobs, piped commands, and `--output json` invocations must first obtain the user's platform choice and then pass the matching preset Server with `--server`; never treat an implicit fallback as platform selection. Browser login is supported for the ShengSuanYun and CogFoundry presets. Custom Servers use explicit API Token authentication.
+
+`login` waits up to five minutes for browser authorization by default. `--login-timeout` changes that human authorization window. The global `--timeout` flag remains the per-request HTTP timeout and applies to both the authorization-code exchange and credential verification. Non-positive values are invalid. A login profile is saved and activated only after the returned credential passes verification against the selected Server.
+
+On successful `login --output json`, the `token` field is masked and is not a reusable credential. Do not extract, persist, or present it as an API Token. Login failures use a non-zero exit status and stderr; do not assume every failure is a JSON object.
+
+`logout` removes only the saved browser credential for the selected Server profile. It does not remove the profile or any environment API Token; follow the cleanup rules in `setup.md` when the user requests those additional changes.
 
 ### Official templates
 

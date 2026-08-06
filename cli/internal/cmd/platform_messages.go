@@ -13,7 +13,7 @@ const choosePlatformMessage = `你还没有配置 LoomLoom 平台和密钥。请
 - 密钥控制台：https://console.cogfoundry.ai/api-keys
 - 充值入口：https://console.cogfoundry.ai/credits
 
-选择胜算云后优先通过浏览器登录，浏览器登录未完成时可配置 API Token；选择 CogFoundry 或自定义平台时直接使用 API Token。`
+选择胜算云或 CogFoundry 后优先通过浏览器登录，浏览器登录未完成时可配置 API Token；自定义平台直接使用 API Token。`
 
 const missingShengSuanYunTokenMessage = `当前未检测到胜算云密钥。请前往胜算云控制台创建或复制密钥后配置到本地环境：
 https://console.shengsuanyun.com/user/keys`
@@ -21,7 +21,7 @@ https://console.shengsuanyun.com/user/keys`
 const insufficientShengSuanYunBalanceMessage = `当前胜算云账户余额不足，请前往胜算云控制台充值后再继续：
 https://console.shengsuanyun.com/user/recharge`
 
-const missingCogFoundryTokenMessage = `当前未检测到 CogFoundry 密钥。请前往 CogFoundry 控制台创建或复制密钥后配置到本地环境：
+const missingCogFoundryTokenMessage = `当前未检测到 CogFoundry 凭据。请优先运行 loomloom login 完成浏览器登录；若浏览器登录未完成或你明确选择 API Token，请前往 CogFoundry 控制台创建或复制密钥后配置到本地环境：
 https://console.cogfoundry.ai/api-keys`
 
 const missingCustomTokenMessage = `当前 Server 尚未配置密钥。请从该 Server 的提供方获取 LoomLoom API Token，并配置到本地环境后重试。`

@@ -123,9 +123,11 @@ jobs:
       - name: Test release scripts
         if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
         run: |
+          bash -n scripts/download-github-release-assets.sh
           bash -n scripts/resolve-release-source-branch.sh
           bash -n scripts/sync-release-refs.sh
           bash -n scripts/sync-gitee-release-refs.sh
+          scripts/test-download-github-release-assets.sh
           scripts/test-release-source-branch.sh
           scripts/test-sync-release-refs.sh
           scripts/test-release-repository-identity.sh
@@ -191,12 +193,11 @@ jobs:
 
       - name: Download published GitHub release assets
         if: github.event_name == 'workflow_dispatch' || steps.github_release.outputs.state == 'published'
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p release
-          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release
-          scripts/validate-release-assets.sh release
+          scripts/download-github-release-assets.sh \
+            --repo "$GITHUB_REPOSITORY" \
+            --tag "$RELEASE_TAG" \
+            --output-dir release
 
   sync_gitee:
     needs: github_release
@@ -257,7 +258,7 @@ jobs:
           scripts/sync-release-refs.sh "${args[@]}"
 
   update_homebrew:
-    if: github.event_name == 'push' && needs.github_release.outputs.homebrew == 'true'
+    if: needs.github_release.outputs.homebrew == 'true'
     needs: github_release
     runs-on: ubuntu-latest
     permissions:
@@ -268,12 +269,11 @@ jobs:
           fetch-depth: 0
 
       - name: Download published GitHub release assets
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p release
-          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release
-          scripts/validate-release-assets.sh release
+          scripts/download-github-release-assets.sh \
+            --repo "$GITHUB_REPOSITORY" \
+            --tag "$RELEASE_TAG" \
+            --output-dir release
 
       - name: Update Homebrew tap
         env:

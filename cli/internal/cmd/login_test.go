@@ -2,13 +2,198 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/cogfoundry-labs/loomloom/cli/internal/authflow"
 	"github.com/cogfoundry-labs/loomloom/cli/internal/platform"
 )
+
+func TestLoginHelpDistinguishesAuthorizationAndHTTPTimeouts(t *testing.T) {
+	isolateCmdConfigHome(t)
+	var output bytes.Buffer
+	cmd := NewRootCmd()
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+	cmd.SetArgs([]string{"login", "--help"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("login help error = %v", err)
+	}
+	for _, want := range []string{
+		"--login-timeout duration",
+		"Maximum time to wait for browser authorization",
+		"default 5m0s",
+		"--timeout duration",
+		"HTTP request timeout",
+		"default 30s",
+	} {
+		if !strings.Contains(output.String(), want) {
+			t.Fatalf("login help missing %q:\n%s", want, output.String())
+		}
+	}
+}
+
+func TestLoginRejectsNonPositiveTimeouts(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "zero login timeout",
+			args:    []string{"--login-timeout", "0s"},
+			wantErr: "--login-timeout must be greater than 0",
+		},
+		{
+			name:    "negative login timeout",
+			args:    []string{"--login-timeout", "-1s"},
+			wantErr: "--login-timeout must be greater than 0",
+		},
+		{
+			name:    "zero HTTP timeout",
+			args:    []string{"--timeout", "0s"},
+			wantErr: "--timeout must be greater than 0",
+		},
+		{
+			name:    "negative HTTP timeout",
+			args:    []string{"--timeout", "-1s"},
+			wantErr: "--timeout must be greater than 0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isolateCmdConfigHome(t)
+			cmd := NewRootCmd()
+			cmd.SetOut(&bytes.Buffer{})
+			cmd.SetErr(&bytes.Buffer{})
+			args := []string{"login", "--server", "https://loomloom.cogfoundry.ai/loom/v1"}
+			args = append(args, tt.args...)
+			cmd.SetArgs(args)
+			err := cmd.Execute()
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("error = %v want %q", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestLoginPropagatesSeparateTimeoutsToAuthFlow(t *testing.T) {
+	tests := []struct {
+		name         string
+		args         []string
+		wantLogin    time.Duration
+		wantExchange time.Duration
+	}{
+		{
+			name:         "defaults",
+			args:         []string{"--no-browser"},
+			wantLogin:    authflow.DefaultAuthorizationTimeout,
+			wantExchange: defaultHTTPTimeout,
+		},
+		{
+			name:         "custom values",
+			args:         []string{"--no-browser", "--login-timeout", "2m"},
+			wantLogin:    2 * time.Minute,
+			wantExchange: 250 * time.Millisecond,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			httpTimeout := tt.wantExchange
+			opts := &rootOptions{
+				server:  "https://loomloom.cogfoundry.ai/loom/v1",
+				timeout: httpTimeout,
+				output:  "text",
+			}
+			var captured authflow.Config
+			stop := errors.New("stop after capturing login config")
+			runner := func(_ context.Context, cfg authflow.Config) (*authflow.Result, error) {
+				captured = cfg
+				return nil, stop
+			}
+			cmd := newLoginCmdWithRunner(opts, runner)
+			cmd.SetOut(&bytes.Buffer{})
+			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetArgs(tt.args)
+			if err := cmd.Execute(); !errors.Is(err, stop) {
+				t.Fatalf("login error = %v want capture sentinel", err)
+			}
+			if captured.AuthorizationTimeout != tt.wantLogin {
+				t.Fatalf("authorization timeout = %s want %s", captured.AuthorizationTimeout, tt.wantLogin)
+			}
+			if captured.ExchangeTimeout != tt.wantExchange {
+				t.Fatalf("exchange timeout = %s want %s", captured.ExchangeTimeout, tt.wantExchange)
+			}
+			if captured.CallbackPageVariant != authflow.CallbackPageCogFoundry {
+				t.Fatalf("callback page variant = %q want %q", captured.CallbackPageVariant, authflow.CallbackPageCogFoundry)
+			}
+			if captured.OpenURL == nil {
+				t.Fatal("--no-browser did not disable automatic browser opening")
+			}
+		})
+	}
+}
+
+func TestLoginSelectsCallbackPageVariantForPlatform(t *testing.T) {
+	tests := []struct {
+		name   string
+		server string
+		want   authflow.CallbackPageVariant
+	}{
+		{
+			name:   "CogFoundry",
+			server: "https://loomloom.cogfoundry.ai/loom/v1",
+			want:   authflow.CallbackPageCogFoundry,
+		},
+		{
+			name:   "ShengSuanYun",
+			server: "https://loomloom.shengsuanyun.com/loom/v1",
+			want:   authflow.CallbackPageShengSuanYun,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := &rootOptions{
+				server:  tt.server,
+				timeout: defaultHTTPTimeout,
+				output:  "text",
+			}
+			var captured authflow.Config
+			stop := errors.New("stop after capturing login config")
+			runner := func(_ context.Context, cfg authflow.Config) (*authflow.Result, error) {
+				captured = cfg
+				return nil, stop
+			}
+			cmd := newLoginCmdWithRunner(opts, runner)
+			cmd.SetOut(&bytes.Buffer{})
+			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetArgs([]string{"--no-browser"})
+
+			if err := cmd.Execute(); !errors.Is(err, stop) {
+				t.Fatalf("login error = %v want capture sentinel", err)
+			}
+			if captured.CallbackPageVariant != tt.want {
+				t.Fatalf("callback page variant = %q want %q", captured.CallbackPageVariant, tt.want)
+			}
+		})
+	}
+}
+
+func TestCallbackPageVariantForUnknownPlatformUsesGenericFallback(t *testing.T) {
+	for _, platformID := range []platform.ID{platform.Custom, platform.Unknown, platform.ID("future-platform")} {
+		if got := callbackPageVariantForPlatform(platformID); got != authflow.CallbackPageGeneric {
+			t.Errorf("callback page variant for %q = %q want generic", platformID, got)
+		}
+	}
+}
 
 func TestLoginRefusesPlatformWithoutBrowserLogin(t *testing.T) {
 	isolateCmdConfigHome(t)
