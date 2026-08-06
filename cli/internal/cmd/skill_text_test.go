@@ -282,6 +282,44 @@ func TestBundledSkillsDocumentLoginTimeoutBoundaries(t *testing.T) {
 	}
 }
 
+func TestBundledSkillsDocumentDistributionFallbackAndAPIReferences(t *testing.T) {
+	root := findRepoRoot(t)
+	setup := readCanonicalSkillReference(t, root, "setup.md")
+
+	for _, want := range []string{
+		"Use GitHub as the default distribution source",
+		"If the user explicitly requests Gitee, use the Gitee installer directly",
+		"ask whether they want to retry through Gitee",
+		"Do not switch to Gitee until the user agrees",
+		"must not select or change the LoomLoom platform, Server, or credentials",
+		"https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh",
+		"-Source gitee",
+	} {
+		if !strings.Contains(setup, want) {
+			t.Fatalf("%s/setup.md missing %q", canonicalSkillReferencesDir, want)
+		}
+	}
+
+	for _, rel := range bundledSkillDirs {
+		text, err := os.ReadFile(filepath.Join(root, rel, "SKILL.md"))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		for _, want := range []string{
+			"Use platform-specific official API documentation when needed",
+			"successful `loomloom doctor --output json` result",
+			"https://lean.shengsuanyun.com/apidocs/loomloom/api",
+			"authoritative source for ShengSuanYun API contracts",
+			"CogFoundry API documentation is not yet publicly available",
+			"Do not use ShengSuanYun-specific API contracts to infer CogFoundry behavior",
+		} {
+			if !strings.Contains(string(text), want) {
+				t.Fatalf("%s/SKILL.md missing %q", rel, want)
+			}
+		}
+	}
+}
+
 func TestBundledSkillReferenceLayout(t *testing.T) {
 	root := findRepoRoot(t)
 	expected := []string{

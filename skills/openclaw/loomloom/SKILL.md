@@ -69,6 +69,15 @@ Determine the current platform only from the user's explicit selection or a succ
 11. Use CLI help for syntax, CLI-bundled TemplateSpec docs for the contract, workbooks for input shape, and returned service fields for state/IDs.
 12. Translate CLI/JSON/internal fields into business language unless raw CLI/API detail was requested.
 13. Upload large files instead of placing them in context.
+14. Use platform-specific official API documentation when needed. When a task requires HTTP API details not covered by the local references—such as endpoints, authentication, request or response fields, OpenAPI definitions, or newly introduced APIs—first determine the current LoomLoom platform from the user's explicit selection or a successful `loomloom doctor --output json` result.
+
+    For ShengSuanYun, consult the official LoomLoom API documentation:
+
+    `https://lean.shengsuanyun.com/apidocs/loomloom/api`
+
+    Treat this documentation as the authoritative source for ShengSuanYun API contracts. Do not guess or fabricate behavior that can be verified there.
+
+    CogFoundry API documentation is not yet publicly available. Do not use ShengSuanYun-specific API contracts to infer CogFoundry behavior. For CogFoundry, rely on the local references, installed CLI help, and actual service responses until official CogFoundry API documentation becomes available.
 
 ## Test Execution Mode
 

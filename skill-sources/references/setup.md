@@ -17,7 +17,20 @@ Use this reference for installation, `doctor`, browser login, explicit API Token
 
 ## Installation
 
-- Install through the GitHub install script by default.
+- Use GitHub as the default distribution source.
+- If the user explicitly requests Gitee, use the Gitee installer directly.
+- If the GitHub installer or release download is unavailable or fails, tell the user that the official Gitee mirror is available and ask whether they want to retry through Gitee. Do not switch to Gitee until the user agrees.
+- GitHub and Gitee are distribution sources only. Choosing either source must not select or change the LoomLoom platform, Server, or credentials.
+- After the user chooses Gitee, use the matching installer:
+
+  ```bash
+  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash
+  ```
+
+  ```powershell
+  & ([scriptblock]::Create((irm https://gitee.com/cogfoundry/loomloom/raw/main/install.ps1))) -Source gitee
+  ```
+
 - On macOS and Linux, the default installation uses Homebrew. Do not add `--no-brew` unless the user explicitly requests it.
 - For an internal or beta CLI, install the prerelease channel explicitly:
 
