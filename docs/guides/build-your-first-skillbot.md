@@ -56,7 +56,7 @@ loomloom market show <listing-id>
 loomloom market quote <listing-id> --input-file ./request.json
 
 # 3A. JSON input: review the quote, confirm, and run
-loomloom market run <listing-id> --input-file ./request.json --confirm --client-request-id <stable-id>
+loomloom market run <listing-id> --input-file ./request.json --confirm --client-request-id <client-request-id>
 
 # 2B. Workbook input: download, fill, validate, and estimate cost
 loomloom market workbook download <listing-id> --output-file ./market-input.xlsx
@@ -64,7 +64,7 @@ loomloom market workbook validate <listing-id> --file ./market-input.xlsx
 loomloom market workbook quote <listing-id> --file ./market-input.xlsx
 
 # 3B. Workbook input: review the quote, confirm, and run
-loomloom market workbook run <listing-id> --file ./market-input.xlsx --confirm --client-request-id <stable-id>
+loomloom market workbook run <listing-id> --file ./market-input.xlsx --confirm --client-request-id <client-request-id>
 
 # 4. Review usage and download results
 loomloom usage list
@@ -134,7 +134,7 @@ Notes:
 - `listing publish --listing-id <listing-id>` submits a new version for the existing listing. The currently published version stays active until the new review is approved.
 - `listing update`, `listing unlist`, `listing relist`, and review withdrawal change remote state. Agents should summarize the action and ask for explicit confirmation before invoking them.
 - For Market SkillBots, `market quote` estimates the buyer payable amount before execution. The platform takes 10% from each call fee; creator net earnings are 90% of the call fee.
-- Reuse the same `--client-request-id` only when retrying the identical paid Market payload. Use a new ID when any input changes.
+- Use a new `--client-request-id` for every newly confirmed Market execution. Reuse it only for an identical retry of the same confirmed request after an ambiguous failure.
 - Workbook `content` is sent as Base64 inside JSON requests; do not print the full Base64. `accessUrl` values in result rows are temporary signed URLs; do not put them in long-lived logs or docs.
 - User-facing monetary inputs and default text output use normal currency units, for example `--task-fixed-fee 0.1` and `CNY 0.1000000`. JSON output preserves raw `*FeeT` / `*AmountT` / `*PayableT` API fields where 10,000,000 units equal 1 currency unit.
 - If a response does not include `currency`, do not guess CNY or USD; show the currency as unknown and preserve the raw `*T` value in that display.

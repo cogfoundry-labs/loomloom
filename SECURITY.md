@@ -68,7 +68,7 @@ AI agents should always obtain explicit user approval before:
 Examples include:
 
 - `submit-file`
-- `run submit`
+- `run execute`
 - `template-spec run`
 - `market run`
 - `listing publish`

@@ -8,7 +8,7 @@ The following sections describe how to install, configure, and uninstall loomloo
 [macOS / Linux](#macos--linux) · [Windows (PowerShell)](#windows-powershell) · [Agent-assisted setup](#agent-assisted-setup)
 
 **Configure:**
-[Manual setup](#manual-setup) · [Manual verification](#manual-verification)
+[Browser login](#browser-login) · [API token fallback](#api-token-fallback) · [Verification and server profiles](#verification-and-server-profiles)
 
 **Uninstall:**
 [macOS / Linux](#macos--linux-uninstallation) · [Windows (PowerShell)](#windows-powershell-uninstallation)
@@ -36,8 +36,8 @@ Notes:
 
 - To install a specific version or release channel, use the `--version` or `--channel` option:
   ```bash
-  # Install a specific version
-  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --version v0.1.0-beta.1
+  # Install a specific release tag
+  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --version <release-tag>
 
   # Install the latest beta release
   curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --channel beta
@@ -74,8 +74,8 @@ Notes:
 
 - To install a specific version or release channel, use the `-Version` or `-Channel` option:
   ```powershell
-  # Install a specific version
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -Version v0.1.0-beta.1
+  # Install a specific release tag
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -Version <release-tag>
 
   # Install the latest beta release
   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -Channel beta
@@ -95,18 +95,16 @@ Notes:
 
 If you already use Codex, Claude Code, or OpenClaw, you can ask your AI agent to install and configure loomloom for you.
 
-Copy the following prompt, replace `YOUR_API_KEY` with your [CogFoundry API key](https://console.cogfoundry.ai/api-keys), and send it to your AI agent:
+Copy the following prompt and send it to your AI agent:
 
 ```text
 Install loomloom from:
 https://github.com/cogfoundry-labs/loomloom
 
-Configure loomloom:
-Server: https://loomloom.cogfoundry.ai/loom/v1
-API Key: YOUR_API_KEY
-
 After installation, run:
-loomloom doctor
+loomloom doctor --output json
+
+If no healthy server profile is configured, show me both preset platforms and let me choose one. Use browser login for the selected platform when possible, then run doctor again.
 ```
 
 Notes:
@@ -115,43 +113,51 @@ Notes:
 
 ## Configure
 
-### Manual setup
+### Browser login
 
-To get the loomloom CLI working, you need to connect it to a loomloom server with a valid API key.
+To get the loomloom CLI working, connect it to a loomloom server with a valid credential. Browser login is the preferred setup method for the CogFoundry and ShengSuanYun presets.
 
-A loomloom server is an endpoint provided by a loomloom execution platform that provides a managed runtime for compiled AI systems. Choose a compatible platform, obtain an API key after registration, and replace `YOUR_LOOMLOOM_SERVER` and `YOUR_API_KEY` with the corresponding values.
-
-| Execution platform | loomloom server | API key | Notes |
-|:---|:---|:---|:---|
-| <img src="../../assets/images/logo/logo-cogfoundry-light.svg" width="24" align="center" /> **CogFoundry** | `https://loomloom.cogfoundry.ai/loom/v1` | [Get API key](https://console.cogfoundry.ai/api-keys) | Official reference execution platform. |
-| <img src="../../assets/images/logo/logo-shengsuanyun-light.svg" width="24" align="center" /> **ShengSuanYun** | `https://loomloom.shengsuanyun.com/loom/v1` | [Get API key](https://console.shengsuanyun.com/user/keys) | Managed platform deployed in mainland China. |
-
-Configure the environment variables:
-
-- macOS / Linux:
-
-  ```bash
-  export LOOMLOOM_SERVER="YOUR_LOOMLOOM_SERVER"
-  export LOOMLOOM_TOKEN="YOUR_API_KEY"
-  ```
-
-- Windows (PowerShell):
-
-  ```powershell
-  $env:LOOMLOOM_SERVER = "YOUR_LOOMLOOM_SERVER"
-  $env:LOOMLOOM_TOKEN = "YOUR_API_KEY"
-  ```
-
-- To persist these settings, add them to your `~/.zshrc`, `~/.bashrc`, or shell profile on macOS/Linux, or your `$PROFILE` on PowerShell.
-- If you do not have an API key yet, choose a loomloom execution platform above and register for access.
-
-### Manual verification
-
-Run the following command to verify that your loomloom installation and configuration are correct:
+A loomloom server is an endpoint provided by a loomloom execution platform that provides a managed runtime for compiled AI systems. In an interactive terminal, `loomloom login` lets you choose between the preset platforms. You can also pass the selected server explicitly:
 
 ```bash
-loomloom doctor
+loomloom login --server https://loomloom.shengsuanyun.com/loom/v1
+loomloom login --server https://loomloom.cogfoundry.ai/loom/v1
 ```
+
+The CLI verifies the returned credential before saving and activating the server profile. Use `--no-browser` to print the authorization URL, or `--login-timeout 10m` when more than the default five minutes is needed.
+
+| Execution platform | loomloom server | API key fallback | Account and balance |
+|:---|:---|:---|:---|
+| <img src="../../assets/images/logo/logo-cogfoundry-light.svg" width="24" align="center" /> **CogFoundry** | `https://loomloom.cogfoundry.ai/loom/v1` | [API keys](https://console.cogfoundry.ai/api-keys) | [Credits](https://console.cogfoundry.ai/credits) |
+| <img src="../../assets/images/logo/logo-shengsuanyun-light.svg" width="24" align="center" /> **ShengSuanYun** | `https://loomloom.shengsuanyun.com/loom/v1` | [API keys](https://console.shengsuanyun.com/user/keys) | [Recharge](https://console.shengsuanyun.com/user/recharge) |
+
+### API token fallback
+
+Use an API token for a custom server, a headless or CI environment, or when you explicitly prefer token authentication. Verify the exact server/token pair first:
+
+```bash
+loomloom doctor --server <exact-server-url> --token <api-token> --output json
+```
+
+On success, `doctor` registers and activates the verified server profile. If it returns `next_action: "persist_token"`, store the token in the exact profile-specific environment variable returned in `token_env`. Do not reuse a token with another server or modify a custom server URL.
+
+### Verification and server profiles
+
+Run the following command after either authentication flow:
+
+```bash
+loomloom doctor --output json
+```
+
+Continue when it reports `healthy: true`. Manage verified server profiles with:
+
+```bash
+loomloom server list
+loomloom server use <name-or-server>
+loomloom server remove <name-or-server>
+```
+
+`loomloom logout` removes the saved browser credential for the selected profile. It does not remove an environment API token or the profile itself.
 
 ## Uninstall
 
