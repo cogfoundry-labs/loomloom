@@ -1,10 +1,10 @@
 # Troubleshooting & FAQ
 
-Common questions and fixes. If something isn't working, always run `loomloom doctor` first — it checks your server URL, token, and environment.
+Common questions and fixes. For authentication, server, network, or service-version problems, run `loomloom doctor --output json`. Correct local flag, file, JSON, workbook, and schema errors directly.
 
 ## Where do I get a token?
 
-If `LOOMLOOM_TOKEN` is not configured yet, choose the platform you want to use:
+If no server profile is selected, choose the platform you want to use:
 
 1. **ShengSuanYun**
    Recommended for users in Mainland China. This service is jointly supported by CogFoundry. Create an API key and recharge your account in the ShengSuanYun Console.
@@ -13,14 +13,12 @@ If `LOOMLOOM_TOKEN` is not configured yet, choose the platform you want to use:
    - Recharge: <https://console.shengsuanyun.com/user/recharge>
 
 2. **CogFoundry**
-   Recommended for users in Singapore and other overseas regions. CogFoundry payment and transaction capabilities are coming soon.
+   Recommended for users in Singapore and other countries or regions.
 
-   Until CogFoundry billing is available, use the ShengSuanYun Console to create an API key and recharge your account:
+   - API keys: <https://console.cogfoundry.ai/api-keys>
+   - Credits and balance: <https://console.cogfoundry.ai/credits>
 
-   - API keys: <https://console.shengsuanyun.com/user/keys>
-   - Recharge: <https://console.shengsuanyun.com/user/recharge>
-
-The API key is only valid for the `LOOMLOOM_SERVER` you explicitly configured.
+For either preset platform, prefer `loomloom login --server <selected-server-url>`. Use an API token when browser login is unavailable or when you explicitly prefer token authentication. A token is only valid for the exact server for which it was issued.
 
 ## Where can I check run status?
 
@@ -36,4 +34,4 @@ Yes. All workflows can be executed directly via CLI commands. AI agent integrati
 
 ## Something is broken. What should I do?
 
-Run `loomloom doctor` first, then open an issue at [github.com/cogfoundry-labs/loomloom/issues](https://github.com/cogfoundry-labs/loomloom/issues) with the doctor output attached.
+For authentication, server, network, or service-version failures, run `loomloom doctor --output json`, redact private data, then open an issue at [github.com/cogfoundry-labs/loomloom/issues](https://github.com/cogfoundry-labs/loomloom/issues) with the relevant output attached.

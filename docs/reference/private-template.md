@@ -50,7 +50,7 @@ loomloom template-spec download-workbook <template-id> <version-id> --output-fil
 loomloom template-spec validate-workbook <template-id> <version-id> ./input.xlsx
 loomloom template-spec precheck-workbook <template-id> <version-id> ./input.xlsx
 # Review the estimate and confirm before submitting.
-loomloom template-spec submit-workbook <template-id> <version-id> ./input.xlsx --client-request-id <stable-id>
+loomloom template-spec submit-workbook <template-id> <version-id> ./input.xlsx --client-request-id <client-request-id>
 ```
 
 Notes:
@@ -64,7 +64,7 @@ Notes:
 - Precheck text output includes `estimated_cost`, `available_balance`, and `sufficient`; JSON output uses `estimatedTotalCostT`.
 - `submit-workbook` creates a real hosted run; agents should ask for explicit confirmation before submitting.
 - `template-spec run` also creates a real hosted run and requires the same confirmation.
-- Pass a stable `--client-request-id` for `submit-workbook` and `template-spec run`; reuse it only when retrying the identical payload.
+- Use a new `--client-request-id` for every newly confirmed `submit-workbook` or `template-spec run` execution. Reuse it only for an identical retry of the same confirmed request after an ambiguous failure.
 
 ## Running from JSONL rows (no workbook)
 
@@ -78,5 +78,5 @@ loomloom orchestration-input upload ./rows.jsonl
 loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>
 
 # 3. Review the estimate, confirm, then run the version with that input
-loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <stable-id>
+loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <client-request-id>
 ```

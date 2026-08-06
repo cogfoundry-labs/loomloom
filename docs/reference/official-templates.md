@@ -12,7 +12,9 @@ loomloom template schema <template-id> --output json
 
 For more CLI command options, see [CLI reference](cli.md).
 
-## PRD review template: `prd-four-perspective-review-v1`
+## ShengSuanYun PRD review template: `prd-four-perspective-review-v1`
+
+This template is currently available from the ShengSuanYun template catalog. Confirm availability on the selected Server with `loomloom template list` before using it.
 
 | Field | Required | Description |
 |---|---|---|
@@ -36,7 +38,7 @@ For more CLI command options, see [CLI reference](cli.md).
 
 ## Video template: `text-image-video-v1`
 
-Current schema version in the test environment: `v2`.
+Schema versions and available model values can differ between platforms. Inspect the selected Server with `loomloom template schema text-image-video-v1 --output json` before preparing input.
 
 | Field | Required | Description |
 |---|---|---|

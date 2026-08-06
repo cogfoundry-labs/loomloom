@@ -48,7 +48,7 @@ loomloom separates workflow orchestration from agent execution. Installing looml
 
 - Only send `LOOMLOOM_TOKEN` to the `LOOMLOOM_SERVER` you configured, over HTTPS.
 - Never put real tokens in source, docs, screenshots, or logs.
-- AI agents must get explicit user confirmation before paid or state-changing operations (for example, `submit-file`, `run submit`, `template-spec run`, `market run`, `listing publish`, or `listing unlist`).
+- AI agents must get explicit user confirmation before paid or state-changing operations (for example, `submit-file`, `run execute`, `template-spec run`, `market run`, `listing publish`, or `listing unlist`).
 - Do not blindly retry paid or state-changing commands after an ambiguous failure; check the relevant run, listing, review, or usage state first.
 
 Full guidance: **[Security Notes](../../SECURITY.md)**. loomloom is **beta** — breaking changes are possible before the first stable release.

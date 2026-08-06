@@ -14,7 +14,7 @@ For how to install, configure, and uninstall loomloom CLI on your local developm
 
 loomloom's CLI is organized into the following command groups, in the order they appear below:
 
-1. **Diagnostics** → check system health
+1. **Configuration and diagnostics** → authenticate, manage servers, and check system health
 2. **Inputs** → upload data for workflows
 3. **Official templates** → run official workflows (Excel-based)
 4. **Runs** → monitor execution results
@@ -54,13 +54,11 @@ All monetary fields like `taskFixedFeeT` and `amountT` use:
 - Prices are shown as normal currency: `USD 0.5000000`
 - Raw `*T` fields are not shown as primary text output
 - If a response does not include `currency`, the CLI must not guess CNY or USD; keep the raw `*T` value in the currency-unknown display.
+- Market, listing, usage, and creator commands convert returned `*T` fields when rendering text.
 
 ### JSON mode (`--output json`)
 - Returns raw backend values only
 - No conversion is applied
-
-- Market and usage-related commands automatically convert `*T` fields into currency values (e.g., `USD 0.5000000`)
-- The original `*T` values remain available in JSON output for reconciliation
 
 ### Affected commands
 
@@ -72,13 +70,20 @@ These commands show monetary values:
 - Usage tracking: `usage list/get`
 - Creator earnings: `creator transactions`
 
-## 1. Diagnostics
+## 1. Configuration and diagnostics
 
-Check whether your CLI is correctly configured.
+Authenticate, manage verified server profiles, and check whether the CLI is correctly configured.
 
 | Command | Description |
 |---|---|
+| `loomloom login [--server <url>]` | Log in through a preset platform's website, verify the credential, and save it to the active server profile. |
+| `loomloom logout` | Remove the saved browser credential for the selected profile; the profile and any environment token remain. |
 | `loomloom doctor` | Validate CLI configuration, server connectivity, token wiring, and version info. |
+| `loomloom server list` | List verified server profiles. |
+| `loomloom server use <name-or-server>` | Select a verified server profile. |
+| `loomloom server remove <name-or-server>` | Remove a profile and its saved browser credential; any environment token remains. |
+
+Browser login supports the CogFoundry and ShengSuanYun presets. Custom servers use API token authentication. Bare `loomloom login` offers the preset selector only in an interactive terminal when no profile is selected; non-interactive use must pass the selected server explicitly.
 
 ## 2. Inputs (optional advanced)
 
@@ -108,12 +113,13 @@ This is the **recommended starting point for most users**.
 
 ## 4. Runs
 
-After submitting a workflow, you use run commands.
-`run submit` validates and prechecks official-template JSON/JSONL rows, then creates a hosted run. Use it only after the user has confirmed execution; prefer the workbook `validate-file` / `precheck-file` flow when you need a separate review step before submission.
+Use these commands for programmatic official-template JSON or JSONL input and for monitoring hosted runs. Validate and precheck the input, show the estimate, obtain confirmation, and then execute. `run submit` is a hidden legacy combined flow and should not be used for new workflows.
 
 | Command | Description |
 |---|---|
-| `loomloom run submit <id> -f rows.json --client-request-id <id>` | Submit input from a JSON array or JSONL file after confirmation. |
+| `loomloom run validate <template-id> -f <rows.json-or-jsonl>` | Validate official-template rows without submitting. |
+| `loomloom run precheck <template-id> -f <rows.json-or-jsonl>` | Estimate official-template row cost without submitting. |
+| `loomloom run execute <template-id> -f <rows.json-or-jsonl> --client-request-id <id>` | Submit prechecked rows after confirmation. |
 | `loomloom run list` | List runs with optional Market context. |
 | `loomloom run get <run-id>` | Show one run's detail. |
 | `loomloom run watch <run-id>` | Watch run progress until a terminal state. |
@@ -230,7 +236,7 @@ When building multi-step workflows, agents must treat CLI commands as a determin
 > orchestration-input upload → inputFileId → template-spec precheck → confirm → template-spec run
 
 ### 2. Run lifecycle flow
-> confirmed template-spec run / run submit → runId → run watch / result commands
+> confirmed template-spec run / run execute → runId → run watch / result commands
 
 ### 3. Listing review flow
 > confirm → listing publish → reviewRequestId → creator review get/withdraw
@@ -247,6 +253,6 @@ Confirm before any listing or review state change, including `listing publish`, 
 
 - Text output uses labels such as `input_file_id`; JSON output uses Product API field names such as `inputFileId`.
 
-- For `template submit-file`, `template-spec submit-workbook`, `run submit`, `template-spec run`, `market run`, and `market workbook run`, pass an explicit `--client-request-id`, retain it with the request, and reuse it only when retrying the identical payload.
+- For `template submit-file`, `template-spec submit-workbook`, `run execute`, `template-spec run`, `market run`, and `market workbook run`, pass an explicit `--client-request-id`, retain it with the request, and reuse it only when retrying the identical payload.
 - Use a new ID if the payload changes.
 - Do not blindly retry paid or remote-state-changing commands after an ambiguous failure — first check whether the original request succeeded.
