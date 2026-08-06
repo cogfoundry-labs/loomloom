@@ -2,10 +2,7 @@
 
 ## Our pledge
 
-We want LoomLoom to be a welcoming, harassment-free community for everyone,
-regardless of experience, background, or identity. Everyone who participates —
-in issues, pull requests, discussions, and chat — is expected to help keep it
-that way.
+We want loomloom to be a welcoming, harassment-free community for everyone, regardless of experience, background, or identity. Everyone who participates — in issues, pull requests, discussions, and chat — is expected to help keep it that way.
 
 ## Expected behavior
 
@@ -24,23 +21,16 @@ that way.
 
 ## Scope
 
-This Code of Conduct applies in all project spaces — the repository, issues,
-pull requests, and any official community channels — and when an individual is
-representing the project in public spaces.
+This Code of Conduct applies in all project spaces — the repository, issues, pull requests, and any official community channels — and when an individual is representing the project in public spaces.
 
 ## Reporting
 
-If you experience or witness unacceptable behavior, please report it privately to
-the maintainers at support@cogfoundry.ai. All reports will be reviewed and
-handled confidentially.
+If you experience or witness unacceptable behavior, please report it privately to the maintainers at engineering@cogfoundry.ai. All reports will be reviewed and handled confidentially.
 
 ## Enforcement
 
-Maintainers are responsible for clarifying and enforcing this Code of Conduct and
-may remove, edit, or reject contributions, or ban contributors, for behavior they
-deem inappropriate, threatening, or harmful.
+Maintainers are responsible for clarifying and enforcing this Code of Conduct and may remove, edit, or reject contributions, or ban contributors, for behavior they deem inappropriate, threatening, or harmful.
 
 ---
 
-This is a lightweight code of conduct for an early-stage project. As the community
-grows, we may adopt the full [Contributor Covenant](https://www.contributor-covenant.org).
+This is a lightweight code of conduct for an early-stage project. As the community grows, we may adopt the full [Contributor Covenant](https://www.contributor-covenant.org).
