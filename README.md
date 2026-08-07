@@ -61,7 +61,7 @@ During compilation, loomloom analyzes the components of your AI work across its 
 
 <br />
 
-<img src="assets/images/diagrams/ai-work-vs-software.svg"
+<img src="assets/images/diagrams/ai-work-vs-software.webp"
      alt="The same compiler pipeline — now for AI systems"
      width="750" />
 
