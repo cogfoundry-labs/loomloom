@@ -6,7 +6,7 @@
 
 ## Abstract
 
-This RFC proposes redesigning the loomloom CLI so that commands express
+This RFC proposes redesigning the [loomloom](../../README.md) CLI so that commands express
 **what the user wants to do**, not which internal resources they are talking to.
 
 The current CLI maps closely to backend concepts. That worked for early
@@ -15,7 +15,7 @@ and AI agents.
 
 ## Motivation
 
-The current CLI works, but it has clear problems:
+The current [CLI](../reference/cli.md) works, but it has clear problems:
 
 - Commands are organized around internal resources (`template`, `template-spec`,
   `listing`, etc.) instead of user goals.
@@ -89,11 +89,11 @@ Only the command-line interface is in scope.
 
 This RFC only sets the direction. Follow-up RFCs will cover:
 
-- **RFC-0002** — Command hierarchy
-- **RFC-0003** — Naming
-- **RFC-0004** — Output format
-- **RFC-0005** — Agent guidelines
-- **RFC-0006** — Migration plan
+- Command hierarchy
+- Naming
+- Output format
+- Agent guidelines
+- Migration plan
 
 Comments on the principles and open questions are welcome before those are
 written.
