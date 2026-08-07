@@ -11,6 +11,8 @@ REMOTE_REF_SHA=""
 REMOTE_TAG_COMMIT_SHA=""
 SYNC_REMOTE="release-sync"
 PROVIDER_LABEL=""
+HTTP_LOW_SPEED_LIMIT=1024
+HTTP_LOW_SPEED_TIME=60
 
 usage() {
   cat <<'EOF'
@@ -145,6 +147,13 @@ retry_delay() {
   sleep $((attempt * 2))
 }
 
+run_network_git() {
+  GIT_TERMINAL_PROMPT=0 git \
+    -c http.lowSpeedLimit="$HTTP_LOW_SPEED_LIMIT" \
+    -c http.lowSpeedTime="$HTTP_LOW_SPEED_TIME" \
+    "$@"
+}
+
 read_remote_ref() {
   local ref="$1"
   local attempt=1
@@ -152,11 +161,9 @@ read_remote_ref() {
   local command_exit=0
 
   while [[ "$attempt" -le "$MAX_ATTEMPTS" ]]; do
+    echo "checking ${PROVIDER_LABEL} ref $ref ($attempt/$MAX_ATTEMPTS)" >&2
     if output="$(
-      git \
-        -c http.lowSpeedLimit=1 \
-        -c http.lowSpeedTime=60 \
-        ls-remote --refs "$SYNC_REMOTE" "$ref"
+      run_network_git ls-remote --refs "$SYNC_REMOTE" "$ref"
     )"; then
       REMOTE_REF_SHA="$(awk 'NR == 1 { print $1 }' <<< "$output")"
       return 0
@@ -184,11 +191,9 @@ read_remote_tag() {
   REMOTE_TAG_COMMIT_SHA=""
 
   while [[ "$attempt" -le "$MAX_ATTEMPTS" ]]; do
+    echo "checking ${PROVIDER_LABEL} tag $TAG ($attempt/$MAX_ATTEMPTS)" >&2
     if output="$(
-      git \
-        -c http.lowSpeedLimit=1 \
-        -c http.lowSpeedTime=60 \
-        ls-remote "$SYNC_REMOTE" "$tag_ref" "$peeled_ref"
+      run_network_git ls-remote "$SYNC_REMOTE" "$tag_ref" "$peeled_ref"
     )"; then
       REMOTE_REF_SHA="$(awk -v ref="$tag_ref" '$2 == ref { print $1; exit }' <<< "$output")"
       REMOTE_TAG_COMMIT_SHA="$(awk -v ref="$peeled_ref" '$2 == ref { print $1; exit }' <<< "$output")"
@@ -224,10 +229,7 @@ report_remote_tag_match() {
 }
 
 push_ref() {
-  git \
-    -c http.lowSpeedLimit=1 \
-    -c http.lowSpeedTime=60 \
-    push "$@"
+  run_network_git push --progress "$@"
 }
 
 preflight_tag() {
@@ -260,6 +262,7 @@ sync_tag() {
     fi
 
     push_exit=0
+    echo "pushing ${PROVIDER_LABEL} tag $TAG ($attempt/$MAX_ATTEMPTS)" >&2
     if push_ref "$SYNC_REMOTE" "${tag_ref}:${tag_ref}"; then
       :
     else
@@ -307,6 +310,7 @@ sync_branch() {
 
   while [[ "$attempt" -le "$MAX_ATTEMPTS" ]]; do
     push_exit=0
+    echo "pushing ${PROVIDER_LABEL} branch $branch ($attempt/$MAX_ATTEMPTS)" >&2
     if [[ -n "$initial_branch" ]]; then
       if push_ref \
         --force-with-lease="${branch_ref}:${initial_branch}" \
@@ -346,6 +350,7 @@ sync_branch() {
   done
 }
 
+echo "starting ${PROVIDER_LABEL} release synchronization: branch=${BRANCH:-unchanged}, tag=$TAG" >&2
 preflight_tag
 if [[ -n "$BRANCH" ]]; then
   sync_branch "$BRANCH"
