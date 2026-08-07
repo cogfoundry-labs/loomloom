@@ -195,6 +195,10 @@ We are developing a collection of open-source SkillBot examples to demonstrate h
 - [loomloom workflows](docs/guides/workflows.md)
 - [Developer docs](https://docs.cogfoundry.ai/documentation/overview/quickstart)
 
+#### Design proposals (RFCs)
+
+- [RFC-0001: Intent-first CLI](docs/rfc/0001-intent-first-cli.md)
+
 ## Contributing
 
 - Contributions are welcome — browse open issues or submit pull requests.
