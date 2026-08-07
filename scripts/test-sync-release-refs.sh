@@ -11,6 +11,13 @@ fail_test() {
   exit 1
 }
 
+assert_contains() {
+  local output="$1"
+  local expected="$2"
+  [[ "$output" == *"$expected"* ]] || \
+    fail_test "expected output to contain '$expected'"
+}
+
 assert_ref() {
   local repository="$1"
   local ref="$2"
@@ -73,7 +80,11 @@ git -C "$test_root/work" tag v1.0.0
 git -C "$test_root/work" push origin main v1.0.0 >/dev/null
 
 git init --bare "$test_root/gitee.git" >/dev/null
-run_sync gitee "$test_root/gitee.git" v1.0.0 main >/dev/null
+sync_output="$(run_sync gitee "$test_root/gitee.git" v1.0.0 main 2>&1)"
+assert_contains "$sync_output" "starting Gitee release synchronization: branch=main, tag=v1.0.0"
+assert_contains "$sync_output" "checking Gitee tag v1.0.0 (1/1)"
+assert_contains "$sync_output" "pushing Gitee branch main (1/1)"
+assert_contains "$sync_output" "pushing Gitee tag v1.0.0 (1/1)"
 assert_ref "$test_root/gitee.git" refs/heads/main "$release_sha"
 assert_ref "$test_root/gitee.git" refs/tags/v1.0.0 "$release_sha"
 

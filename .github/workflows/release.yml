@@ -202,6 +202,7 @@ jobs:
   sync_gitee:
     needs: github_release
     runs-on: ubuntu-latest
+    timeout-minutes: 7
     permissions:
       contents: read
     steps:
