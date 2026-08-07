@@ -5,9 +5,8 @@ GITHUB_REPO="cogfoundry-labs/loomloom"
 GITEE_REPO="${GITEE_REPO:-cogfoundry/loomloom}"
 VERSION="${VERSION:-latest}"
 CHANNEL="${CHANNEL:-stable}"
-AGENT="codex"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
-SKILL_DIR="${SKILL_DIR:-}"
+SKILL_DIR=""
 USE_HOMEBREW="auto"
 HOMEBREW_TAP="${LOOMLOOM_HOMEBREW_TAP:-cogfoundry-labs/tap}"
 RELEASE_SOURCE="${LOOMLOOM_RELEASE_SOURCE:-github}"
@@ -17,9 +16,8 @@ usage() {
 Usage: install.sh [options]
 
 Options:
-  --agent <codex|claude|openclaw>   Install the matching skill pack (default: codex)
   --install-dir <path>     Directory for loomloom (default: ~/.local/bin)
-  --skill-dir <path>       Override the destination directory for SKILL.md
+  --skill-dir <path>       Complete destination directory for the LoomLoom Skill
   --version <tag|latest>   Release tag to install (default: latest)
   --channel <stable|beta|rc|internal>
                             Release channel to resolve when --version is latest (default: stable)
@@ -31,16 +29,16 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --agent)
-      AGENT="${2:-codex}"
-      shift 2
-      ;;
     --install-dir)
       INSTALL_DIR="${2:-$HOME/.local/bin}"
       shift 2
       ;;
     --skill-dir)
-      SKILL_DIR="${2:-}"
+      if [[ $# -lt 2 || -z "${2:-}" || "${2:-}" == --* ]]; then
+        echo "--skill-dir requires a value" >&2
+        exit 1
+      fi
+      SKILL_DIR="$2"
       shift 2
       ;;
     --version)
@@ -69,6 +67,57 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+validate_loomloom_skill_frontmatter() {
+  local skill_file="$1" line state="start" name_count=0 value
+  [[ -f "$skill_file" && ! -L "$skill_file" ]] || return 1
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    case "$state" in
+      start)
+        [[ "$line" == "---" ]] || return 1
+        state="frontmatter"
+        ;;
+      frontmatter)
+        if [[ "$line" == "---" ]]; then
+          [[ "$name_count" -eq 1 ]] || return 1
+          return 0
+        fi
+        if [[ "$line" =~ ^[[:space:]]*name[[:space:]]*:[[:space:]]*(.*)$ ]]; then
+          value="${BASH_REMATCH[1]}"
+          value="${value#"${value%%[![:space:]]*}"}"
+          value="${value%"${value##*[![:space:]]}"}"
+          case "$value" in
+            loomloom|'"loomloom"'|"'loomloom'") ;;
+            *) return 1 ;;
+          esac
+          name_count=$((name_count + 1))
+        fi
+        ;;
+    esac
+  done <"$skill_file"
+  return 1
+}
+
+if [[ -z "$SKILL_DIR" ]]; then
+  echo "--skill-dir is required" >&2
+  echo "Provide the complete destination ending in /loomloom." >&2
+  exit 1
+fi
+
+SKILL_DIR="${SKILL_DIR%/}"
+if [[ "$(basename -- "$SKILL_DIR")" != "loomloom" ]]; then
+  echo "--skill-dir must be the complete LoomLoom Skill directory ending in /loomloom" >&2
+  exit 1
+fi
+
+EXISTING_SKILL_FILE="$SKILL_DIR/SKILL.md"
+if [[ -e "$EXISTING_SKILL_FILE" || -L "$EXISTING_SKILL_FILE" ]]; then
+  if ! validate_loomloom_skill_frontmatter "$EXISTING_SKILL_FILE"; then
+    echo "refusing to overwrite an existing non-LoomLoom Skill: $SKILL_DIR" >&2
+    exit 1
+  fi
+fi
 
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
@@ -104,28 +153,6 @@ require_cmd() {
     echo "missing required command: $1" >&2
     exit 1
   fi
-}
-
-resolve_skill_dir() {
-  if [[ -n "$SKILL_DIR" ]]; then
-    printf '%s\n' "$SKILL_DIR"
-    return
-  fi
-  case "$AGENT" in
-    codex)
-      printf '%s\n' "$HOME/.codex/skills/loomloom"
-      ;;
-    claude)
-      printf '%s\n' "$HOME/.claude/skills/loomloom"
-      ;;
-    openclaw)
-      printf '%s\n' "$HOME/.openclaw/workspace/skills/loomloom"
-      ;;
-    *)
-      echo "unsupported agent for automatic skill install: $AGENT" >&2
-      exit 1
-      ;;
-  esac
 }
 
 resolve_tag() {
@@ -276,13 +303,12 @@ echo "repo: $(release_repo)"
 echo "source: $RELEASE_SOURCE"
 echo "version: $TAG"
 echo "channel: $CHANNEL"
-echo "agent: $AGENT"
 if can_use_homebrew; then
   echo "cli install: homebrew"
 else
   echo "install dir: $INSTALL_DIR"
 fi
-echo "skill dir: $(resolve_skill_dir)"
+echo "skill dir: $SKILL_DIR"
 echo
 
 if can_use_homebrew; then
@@ -323,13 +349,22 @@ verify_checksum "$VERIFY_TOOL" "$TMP_DIR/$CHECKSUM_ASSET" "$SKILL_ASSET" "$TMP_D
 
 mkdir -p "$TMP_DIR/skills"
 tar -xzf "$TMP_DIR/$SKILL_ASSET" -C "$TMP_DIR/skills"
-FINAL_SKILL_DIR="$(resolve_skill_dir)"
+SKILL_SOURCE="$TMP_DIR/skills/skills/loomloom"
+if [[ ! -f "$SKILL_SOURCE/SKILL.md" ]]; then
+  echo "release asset does not contain skills/loomloom/SKILL.md" >&2
+  exit 1
+fi
+FINAL_SKILL_DIR="$SKILL_DIR"
 mkdir -p "$FINAL_SKILL_DIR"
-cp -R "$TMP_DIR/skills/skills/$AGENT/loomloom/." "$FINAL_SKILL_DIR/"
+cp -R "$SKILL_SOURCE/." "$FINAL_SKILL_DIR/"
+if [[ ! -f "$FINAL_SKILL_DIR/SKILL.md" ]]; then
+  echo "Skill installation verification failed" >&2
+  exit 1
+fi
 
 echo "installed:"
 echo "  $CLI_PATH"
-echo "  $(resolve_skill_dir)/SKILL.md"
+echo "  $FINAL_SKILL_DIR/SKILL.md"
 echo
 echo "next:"
 echo "  export LOOMLOOM_SERVER=<your LoomLoom server URL>"

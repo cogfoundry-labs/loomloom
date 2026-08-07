@@ -52,6 +52,7 @@ fi
 dist_dir="$repo_root/dist"
 docs_script="$repo_root/scripts/template-spec-docs.sh"
 references_script="$repo_root/scripts/skill-references.sh"
+install_test_script="$repo_root/scripts/test-install.sh"
 uninstall_test_script="$repo_root/scripts/test-uninstall.sh"
 verification_dir=""
 
@@ -88,8 +89,10 @@ checksum_cmd() {
 require_cmd go
 require_cmd gzip
 require_cmd tar
+require_cmd unzip
 require_cmd zip
 
+"$install_test_script"
 "$docs_script" prepare-checked
 "$references_script" prepare-checked
 "$uninstall_test_script"
@@ -247,6 +250,35 @@ done < <(find "$dist_dir" -type f -name 'loomloom-*' | sort)
 echo "packaging skills"
 create_archive tar.gz "$out_dir/loomloom-skills.tar.gz" "$repo_root" skills
 create_archive zip "$out_dir/loomloom-skills.zip" "$repo_root" skills
+
+verify_skill_archive_entries() {
+  local archive_path="$1" format="$2" entry listing found_skill=0
+  case "$format" in
+    tar.gz) listing="$(tar -tzf "$archive_path")" ;;
+    zip) listing="$(unzip -Z1 "$archive_path")" ;;
+  esac
+  while IFS= read -r entry; do
+    [[ -z "$entry" || "$entry" == */ ]] && continue
+    case "$entry" in
+      skills/loomloom/*) ;;
+      *)
+        echo "unexpected Skill archive entry: $entry" >&2
+        return 1
+        ;;
+    esac
+    if [[ "$entry" == "skills/loomloom/SKILL.md" ]]; then
+      found_skill=1
+    fi
+  done <<<"$listing"
+  if [[ "$found_skill" -ne 1 ]]; then
+    echo "Skill archive is missing skills/loomloom/SKILL.md: $archive_path" >&2
+    return 1
+  fi
+}
+
+verify_skill_archive_entries "$out_dir/loomloom-skills.tar.gz" tar.gz
+verify_skill_archive_entries "$out_dir/loomloom-skills.zip" zip
+
 cp "$repo_root"/install.sh "$repo_root"/install-gitee.sh "$repo_root"/install.ps1 \
   "$repo_root"/uninstall.sh "$repo_root"/uninstall.ps1 \
   "$repo_root"/manifest.json "$repo_root"/README.md "$out_dir"/

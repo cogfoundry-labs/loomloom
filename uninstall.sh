@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-AGENT="codex"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
-SKILL_DIR="${SKILL_DIR:-}"
+SKILL_DIR=""
 REMOVE_CLI=1
 REMOVE_SKILL=1
 REMOVE_CONFIG=1
@@ -16,9 +15,8 @@ usage() {
 Usage: uninstall.sh [options]
 
 Options:
-  --agent <codex|claude|openclaw>   Remove the matching skill pack (default: codex)
   --install-dir <path>     Directory containing loomloom (default: ~/.local/bin)
-  --skill-dir <path>       Override the destination directory for SKILL.md
+  --skill-dir <path>       Complete LoomLoom Skill directory to remove
   --cli-only               Remove only the CLI
   --skill-only             Remove only the skill pack
   --help                   Show this help text
@@ -27,16 +25,16 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --agent)
-      AGENT="${2:-codex}"
-      shift 2
-      ;;
     --install-dir)
       INSTALL_DIR="${2:-$HOME/.local/bin}"
       shift 2
       ;;
     --skill-dir)
-      SKILL_DIR="${2:-}"
+      if [[ $# -lt 2 || -z "${2:-}" || "${2:-}" == --* ]]; then
+        echo "--skill-dir requires a value" >&2
+        exit 1
+      fi
+      SKILL_DIR="$2"
       shift 2
       ;;
     --cli-only)
@@ -70,27 +68,15 @@ elif [[ "$SKILL_ONLY_REQUESTED" -eq 1 ]]; then
   REMOVE_CONFIG=0
 fi
 
-resolve_skill_dir() {
-  if [[ -n "$SKILL_DIR" ]]; then
-    printf '%s\n' "$SKILL_DIR"
-    return
+if [[ "$REMOVE_SKILL" -eq 1 ]]; then
+  if [[ -z "$SKILL_DIR" ]]; then
+    echo "--skill-dir is required unless --cli-only is used" >&2
+    exit 1
   fi
-  case "$AGENT" in
-    codex)
-      printf '%s\n' "$HOME/.codex/skills/loomloom"
-      ;;
-    claude)
-      printf '%s\n' "$HOME/.claude/skills/loomloom"
-      ;;
-    openclaw)
-      printf '%s\n' "$HOME/.openclaw/workspace/skills/loomloom"
-      ;;
-    *)
-      echo "unsupported agent for automatic skill uninstall: $AGENT" >&2
-      exit 1
-      ;;
-  esac
-}
+  if [[ "$SKILL_DIR" != "/" ]]; then
+    SKILL_DIR="${SKILL_DIR%/}"
+  fi
+fi
 
 resolve_config_file() {
   case "$(uname -s)" in
@@ -144,19 +130,13 @@ validate_skill_frontmatter() {
 }
 
 is_dangerous_skill_dir() {
-  local candidate="$1" dangerous
+  local candidate="$1"
   if [[ "$(dirname -- "$candidate")" == "$candidate" ]]; then
     return 0
   fi
-  for dangerous in \
-    "$HOME" \
-    "$HOME/.codex/skills" \
-    "$HOME/.claude/skills" \
-    "$HOME/.openclaw/workspace/skills"; do
-    if [[ -d "$dangerous" && "$candidate" -ef "$dangerous" ]]; then
-      return 0
-    fi
-  done
+  if [[ -d "$HOME" && "$candidate" -ef "$HOME" ]]; then
+    return 0
+  fi
   return 1
 }
 
@@ -186,6 +166,10 @@ validate_skill_dir() {
   fi
   if is_dangerous_skill_dir "$canonical_dir"; then
     fail_skill_validation "dangerous path: $canonical_dir"
+    return 1
+  fi
+  if [[ "$(basename -- "$canonical_dir")" != "loomloom" ]]; then
+    fail_skill_validation "target basename must be loomloom"
     return 1
   fi
 
@@ -364,7 +348,7 @@ remove_entire_skill_dir=0
 remove_user_skill_entries=0
 
 if [[ "$REMOVE_SKILL" -eq 1 ]]; then
-  requested_skill_dir="$(resolve_skill_dir)"
+  requested_skill_dir="$SKILL_DIR"
   if [[ -e "$requested_skill_dir" || -L "$requested_skill_dir" ]]; then
     final_skill_dir="$(validate_skill_dir "$requested_skill_dir")"
     skill_dir_present=1

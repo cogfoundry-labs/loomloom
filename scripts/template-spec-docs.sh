@@ -9,9 +9,7 @@ ZH_DIR="$DOCS_DIR/zh-CN"
 TRANSLATION_MAP="$DOCS_DIR/translation-map.json"
 EMBED_DIR="$ROOT_DIR/cli/internal/template_spec_docs/generated"
 SKILL_GENERATED_DIRS=(
-  "$ROOT_DIR/skills/codex/loomloom/generated-template-spec"
-  "$ROOT_DIR/skills/claude/loomloom/generated-template-spec"
-  "$ROOT_DIR/skills/openclaw/loomloom/generated-template-spec"
+  "$ROOT_DIR/skills/loomloom/generated-template-spec"
 )
 
 usage() {

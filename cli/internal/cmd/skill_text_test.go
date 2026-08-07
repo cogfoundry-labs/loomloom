@@ -11,9 +11,7 @@ import (
 )
 
 var bundledSkillDirs = []string{
-	"skills/codex/loomloom",
-	"skills/claude/loomloom",
-	"skills/openclaw/loomloom",
+	"skills/loomloom",
 }
 
 const canonicalSkillReferencesDir = "skill-sources/references"
