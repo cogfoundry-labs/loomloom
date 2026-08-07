@@ -1,5 +1,4 @@
 param(
-  [string]$Agent = "codex",
   [string]$InstallDir = "$HOME\AppData\Local\Programs\loomloom",
   [string]$SkillDir = "",
   [switch]$CliOnly,
@@ -12,17 +11,6 @@ if ($CliOnly -and $SkillOnly) {
   throw "cli-only and skill-only cannot be used together"
 }
 
-function Resolve-SkillDir {
-  param([string]$AgentName, [string]$Override)
-  if ($Override) { return $Override }
-  switch ($AgentName) {
-    "codex" { return "$HOME\.codex\skills\loomloom" }
-    "claude" { return "$HOME\.claude\skills\loomloom" }
-    "openclaw" { return "$HOME\.openclaw\workspace\skills\loomloom" }
-    default { throw "unsupported agent: $AgentName" }
-  }
-}
-
 $removeCli = $true
 $removeSkill = $true
 $removeConfig = $true
@@ -32,6 +20,12 @@ if ($CliOnly) {
 } elseif ($SkillOnly) {
   $removeCli = $false
   $removeConfig = $false
+}
+
+if ($removeSkill) {
+  if (-not $SkillDir) {
+    throw "-SkillDir is required unless -CliOnly is used"
+  }
 }
 
 $removedAny = $false
@@ -159,19 +153,15 @@ function Assert-SafeSkillDirectory {
     throw "refusing to remove unsafe Skill directory: dangerous path: $canonicalPath"
   }
 
-  $dangerousPaths = @(
-    $HOME,
-    (Join-Path (Join-Path $HOME ".codex") "skills"),
-    (Join-Path (Join-Path $HOME ".claude") "skills"),
-    (Join-Path (Join-Path (Join-Path $HOME ".openclaw") "workspace") "skills")
-  )
-  foreach ($dangerousPath in $dangerousPaths) {
-    if (Test-Path -LiteralPath $dangerousPath -PathType Container) {
-      $canonicalDangerousPath = Resolve-CanonicalExistingDirectory -Path $dangerousPath
-      if (Test-PathEqual -Left $canonicalPath -Right $canonicalDangerousPath) {
-        throw "refusing to remove unsafe Skill directory: dangerous path: $canonicalPath"
-      }
+  if (Test-Path -LiteralPath $HOME -PathType Container) {
+    $canonicalHome = Resolve-CanonicalExistingDirectory -Path $HOME
+    if (Test-PathEqual -Left $canonicalPath -Right $canonicalHome) {
+      throw "refusing to remove unsafe Skill directory: dangerous path: $canonicalPath"
     }
+  }
+
+  if ([System.IO.Path]::GetFileName($canonicalPath) -ine "loomloom") {
+    throw "refusing to remove unsafe Skill directory: target basename must be loomloom"
   }
 
   $skillFile = Join-Path $canonicalPath "SKILL.md"
@@ -287,7 +277,7 @@ $removeEntireSkillDir = $false
 $removeUserSkillEntries = $false
 $userSkillEntries = @()
 if ($removeSkill) {
-  $requestedSkillDir = Resolve-SkillDir -AgentName $Agent -Override $SkillDir
+  $requestedSkillDir = $SkillDir
   if (Test-Path -LiteralPath $requestedSkillDir) {
     $finalSkillDir = Assert-SafeSkillDirectory -Path $requestedSkillDir
     $skillDirPresent = $true

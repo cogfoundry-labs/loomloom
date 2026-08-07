@@ -1,5 +1,4 @@
 param(
-  [string]$Agent = "codex",
   [string]$InstallDir = "$HOME\AppData\Local\Programs\loomloom",
   [string]$SkillDir = "",
   [string]$Version = "latest",
@@ -10,6 +9,50 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+function Test-LoomLoomSkillFrontmatter {
+  param([string]$SkillFile)
+
+  $lines = @(Get-Content -LiteralPath $SkillFile)
+  if ($lines.Count -eq 0 -or $lines[0] -cne "---") { return $false }
+
+  $nameCount = 0
+  for ($index = 1; $index -lt $lines.Count; $index++) {
+    $line = [string]$lines[$index]
+    if ($line -cmatch '^---\s*$') {
+      return $nameCount -eq 1
+    }
+    if ($line -cmatch '^\s*name\s*:\s*(.*?)\s*$') {
+      $value = $Matches[1]
+      if ($value -cnotin @("loomloom", '"loomloom"', "'loomloom'")) { return $false }
+      $nameCount++
+    }
+  }
+  return $false
+}
+
+if (-not $SkillDir) {
+  throw "-SkillDir is required"
+}
+
+$skillDirTrimChars = [char[]]@(
+  [System.IO.Path]::DirectorySeparatorChar,
+  [System.IO.Path]::AltDirectorySeparatorChar
+)
+$SkillDir = $SkillDir.TrimEnd($skillDirTrimChars)
+if ([System.IO.Path]::GetFileName($SkillDir) -ine "loomloom") {
+  throw "-SkillDir must be the complete LoomLoom Skill directory ending in loomloom"
+}
+
+$existingSkillFile = Join-Path $SkillDir "SKILL.md"
+if (Test-Path -LiteralPath $existingSkillFile) {
+  $existingSkillItem = Get-Item -LiteralPath $existingSkillFile -Force
+  if ((-not (Test-Path -LiteralPath $existingSkillFile -PathType Leaf)) -or
+      (($existingSkillItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) -or
+      (-not (Test-LoomLoomSkillFrontmatter -SkillFile $existingSkillFile))) {
+    throw "refusing to overwrite an existing non-LoomLoom Skill: $SkillDir"
+  }
+}
 
 $GithubRepo = "cogfoundry-labs/loomloom"
 $GiteeRepo = if ($env:GITEE_REPO) { $env:GITEE_REPO } else { "cogfoundry/loomloom" }
@@ -32,17 +75,6 @@ function Get-ReleaseHeaders {
     return @{ Accept = "application/vnd.github+json"; "User-Agent" = "loomloom-installer" }
   }
   return @{ "User-Agent" = "loomloom-installer" }
-}
-
-function Resolve-SkillDir {
-  param([string]$AgentName, [string]$Override)
-  if ($Override) { return $Override }
-  switch ($AgentName) {
-    "codex" { return "$HOME\.codex\skills\loomloom" }
-    "claude" { return "$HOME\.claude\skills\loomloom" }
-    "openclaw" { return "$HOME\.openclaw\workspace\skills\loomloom" }
-    default { throw "unsupported agent: $AgentName" }
-  }
 }
 
 function Get-RemoteTags {
@@ -127,9 +159,8 @@ try {
   Write-Host "source: $Source"
   Write-Host "version: $tag"
   Write-Host "channel: $Channel"
-  Write-Host "agent: $Agent"
   Write-Host "install dir: $InstallDir"
-  Write-Host "skill dir: $(Resolve-SkillDir -AgentName $Agent -Override $SkillDir)"
+  Write-Host "skill dir: $SkillDir"
   Write-Host ""
 
   Invoke-WebRequest -Uri "$baseUrl/$cliAsset" -OutFile $cliZip
@@ -147,13 +178,23 @@ try {
 
   $skillsExtract = Join-Path $tmpDir "skills"
   Expand-Archive -LiteralPath $skillsZip -DestinationPath $skillsExtract -Force
-  $finalSkillDir = Resolve-SkillDir -AgentName $Agent -Override $SkillDir
+  $skillSource = Join-Path $skillsExtract "skills\loomloom"
+  $sourceSkillFile = Join-Path $skillSource "SKILL.md"
+  if (-not (Test-Path -LiteralPath $sourceSkillFile -PathType Leaf)) {
+    throw "release asset does not contain skills\loomloom\SKILL.md"
+  }
+  $finalSkillDir = $SkillDir
   New-Item -ItemType Directory -Force -Path $finalSkillDir | Out-Null
-  Copy-Item -Path (Join-Path $skillsExtract "skills\$Agent\loomloom\*") -Destination $finalSkillDir -Recurse -Force
+  Copy-Item -Path (Join-Path $skillSource "*") -Destination $finalSkillDir -Recurse -Force
+
+  $installedSkillFile = Join-Path $finalSkillDir "SKILL.md"
+  if (-not (Test-Path -LiteralPath $installedSkillFile -PathType Leaf)) {
+    throw "Skill installation verification failed"
+  }
 
   Write-Host "installed:"
   Write-Host "  $(Join-Path $InstallDir 'loomloom.exe')"
-  Write-Host "  $(Join-Path (Resolve-SkillDir -AgentName $Agent -Override $SkillDir) 'SKILL.md')"
+  Write-Host "  $installedSkillFile"
   Write-Host ""
   Write-Host "next:"
   Write-Host "  Add $InstallDir to PATH if needed"

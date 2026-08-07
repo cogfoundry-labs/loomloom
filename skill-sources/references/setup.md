@@ -17,25 +17,43 @@ Use this reference for installation, `doctor`, browser login, explicit API Token
 
 ## Installation
 
+- Determine the current Agent's supported Skill root from its runtime configuration or official conventions.
+- Use `<agent-skill-root>/loomloom` as the complete LoomLoom Skill destination and pass it to the installer with `--skill-dir` or `-SkillDir`.
+- Do not use another Agent's directory as a fallback. If the current Agent's Skill root is unknown, ask the user for it.
+- After installation, verify that `<agent-skill-root>/loomloom/SKILL.md` exists.
 - Use GitHub as the default distribution source.
 - If the user explicitly requests Gitee, use the Gitee installer directly.
 - If the GitHub installer or release download is unavailable or fails, tell the user that the official Gitee mirror is available and ask whether they want to retry through Gitee. Do not switch to Gitee until the user agrees.
 - GitHub and Gitee are distribution sources only. Choosing either source must not select or change the LoomLoom platform, Server, or credentials.
+- On macOS or Linux, set the complete destination and use the GitHub installer:
+
+  ```bash
+  LOOMLOOM_SKILL_DIR="/absolute/path/to/your/agent/skills/loomloom"
+  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
+  ```
+
+- On Windows, set the complete destination and use the GitHub installer:
+
+  ```powershell
+  $LoomLoomSkillDir = "C:\path\to\your\agent\skills\loomloom"
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -SkillDir $LoomLoomSkillDir
+  ```
+
 - After the user chooses Gitee, use the matching installer:
 
   ```bash
-  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash
+  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
   ```
 
   ```powershell
-  & ([scriptblock]::Create((irm https://gitee.com/cogfoundry/loomloom/raw/main/install.ps1))) -Source gitee
+  & ([scriptblock]::Create((irm https://gitee.com/cogfoundry/loomloom/raw/main/install.ps1))) -SkillDir $LoomLoomSkillDir -Source gitee
   ```
 
 - On macOS and Linux, the default installation uses Homebrew. Do not add `--no-brew` unless the user explicitly requests it.
 - For an internal or beta CLI, install the prerelease channel explicitly:
 
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --channel beta
+  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR" --channel beta
   ```
 
 ## Diagnose Before Account Guidance

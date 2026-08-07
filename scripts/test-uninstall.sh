@@ -87,7 +87,7 @@ expect_powershell_skill_refusal() {
 run_shell_full_uninstall_test() {
   local case_root="$test_root/shell full"
   local home_dir="$case_root/home"
-  local install_dir="$case_root/bin" skill_dir="$case_root/skill pack"
+  local install_dir="$case_root/bin" skill_dir="$case_root/skill pack/loomloom"
   local config_file output count
   config_file="$(shell_config_file "$home_dir")"
   mkdir -p "$(dirname "$config_file")"
@@ -155,7 +155,7 @@ run_shell_full_uninstall_test() {
 run_shell_legacy_config_test() {
   local case_root="$test_root/shell legacy"
   local home_dir="$case_root/home"
-  local install_dir="$case_root/bin" skill_dir="$case_root/skill"
+  local install_dir="$case_root/bin" skill_dir="$case_root/skill/loomloom"
   local config_file output
   config_file="$(shell_config_file "$home_dir")"
   mkdir -p "$(dirname "$config_file")"
@@ -190,7 +190,7 @@ run_shell_legacy_config_test() {
 run_shell_partial_uninstall_tests() {
   local case_root="$test_root/shell partial"
   local home_dir="$case_root/home"
-  local install_dir="$case_root/bin" skill_dir="$case_root/skill"
+  local install_dir="$case_root/bin" skill_dir="$case_root/skill/loomloom"
   local config_file output
   config_file="$(shell_config_file "$home_dir")"
   mkdir -p "$(dirname "$config_file")"
@@ -220,16 +220,21 @@ run_shell_partial_uninstall_tests() {
 
 run_shell_safety_tests() {
   local case_root="$test_root/shell safety"
-  local home_dir skill_dir install_dir config_file output agent parent_dir external_file
+  local home_dir skill_dir install_dir config_file output parent_dir external_file
 
-  home_dir="$case_root/default/home"
-  skill_dir="$home_dir/.codex/skills/loomloom"
+  home_dir="$case_root/missing target/home"
+  skill_dir="$home_dir/custom-runtime/skills/loomloom"
   write_skill_fixture "$skill_dir"
+  expect_failure env -i HOME="$home_dir" PATH="$test_path" \
+    /bin/bash "$repo_root/uninstall.sh" --skill-only
+  assert_contains "$failure_output" "--skill-dir is required"
+  [[ -e "$skill_dir/SKILL.md" ]] || fail "missing --skill-dir removed the LoomLoom Skill"
+
   output="$(
     env -i HOME="$home_dir" PATH="$test_path" \
-      /bin/bash "$repo_root/uninstall.sh" --skill-only
+      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir"
   )"
-  [[ ! -e "$skill_dir" ]] || fail "default LoomLoom Skill was not removed"
+  [[ ! -e "$skill_dir" ]] || fail "explicit LoomLoom Skill was not removed"
   assert_contains "$output" "removed:"
 
   home_dir="$case_root/home target"
@@ -237,16 +242,14 @@ run_shell_safety_tests() {
   expect_shell_skill_refusal "$home_dir" "$home_dir/./" "dangerous path"
   [[ -e "$home_dir/SKILL.md" ]] || fail "HOME was removed"
 
-  for agent in codex claude openclaw; do
-    home_dir="$case_root/$agent parent/home"
-    case "$agent" in
-      codex) parent_dir="$home_dir/.codex/skills" ;;
-      claude) parent_dir="$home_dir/.claude/skills" ;;
-      openclaw) parent_dir="$home_dir/.openclaw/workspace/skills" ;;
-    esac
+  home_dir="$case_root/generic parent/home"
+  for parent_dir in \
+    "$case_root/custom-runtime/skills" \
+    "$case_root/unknown-platform/extensions" \
+    "$case_root/agent with spaces/skills"; do
     write_skill_fixture "$parent_dir"
-    expect_shell_skill_refusal "$home_dir" "$parent_dir" "dangerous path"
-    [[ -e "$parent_dir/SKILL.md" ]] || fail "$agent Skills parent was removed"
+    expect_shell_skill_refusal "$home_dir" "$parent_dir" "target basename"
+    [[ -e "$parent_dir/SKILL.md" ]] || fail "generic Skill parent was removed: $parent_dir"
   done
 
   home_dir="$case_root/symlink/home"
@@ -264,7 +267,7 @@ run_shell_safety_tests() {
   assert_contains "$failure_output" "dangerous path"
 
   home_dir="$case_root/identity/home"
-  skill_dir="$case_root/identity/skill"
+  skill_dir="$case_root/identity/loomloom"
   write_skill_fixture "$skill_dir"
   sed 's/^name: loomloom$/name: another-skill/' "$skill_dir/SKILL.md" >"$skill_dir/SKILL.tmp"
   mv "$skill_dir/SKILL.tmp" "$skill_dir/SKILL.md"
@@ -272,7 +275,7 @@ run_shell_safety_tests() {
   [[ -e "$skill_dir" ]] || fail "non-LoomLoom Skill was removed"
 
   home_dir="$case_root/unrelated/home"
-  skill_dir="$case_root/unrelated/skill"
+  skill_dir="$case_root/unrelated/loomloom"
   write_skill_fixture "$skill_dir"
   printf 'keep\n' >"$skill_dir/unrelated.txt"
   printf 'hidden\n' >"$skill_dir/.user-settings"
@@ -304,7 +307,7 @@ run_shell_safety_tests() {
   assert_contains "$output" "no LoomLoom Skill content found"
 
   home_dir="$case_root/unreferenced/home"
-  skill_dir="$case_root/unreferenced/skill"
+  skill_dir="$case_root/unreferenced/loomloom"
   write_skill_fixture "$skill_dir"
   printf '# Extra\n' >"$skill_dir/references/extra.md"
   printf '# Extra\n' >"$skill_dir/generated-template-spec/custom-inside.md"
@@ -313,21 +316,21 @@ run_shell_safety_tests() {
   [[ ! -e "$skill_dir" ]] || fail "official directories with extra files were not removed"
 
   home_dir="$case_root/referenced/home"
-  skill_dir="$case_root/referenced/parent/skill"
+  skill_dir="$case_root/referenced/parent/loomloom"
   write_skill_fixture "$skill_dir"
   printf '\n- [Extra](references/extra.md#details)\n' >>"$skill_dir/SKILL.md"
   printf '# Extra\n' >"$skill_dir/references/extra.md"
   output="$(
     env -i HOME="$home_dir" PATH="$test_path" \
       /bin/bash "$repo_root/uninstall.sh" --skill-only \
-        --skill-dir "$skill_dir/../skill/"
+        --skill-dir "$skill_dir/../loomloom/"
   )"
   [[ ! -e "$skill_dir" ]] || fail "new explicitly referenced reference was not removed"
   assert_contains "$output" "removed:"
 
   home_dir="$case_root/preflight/home"
   install_dir="$case_root/preflight/bin"
-  skill_dir="$case_root/preflight/skill"
+  skill_dir="$case_root/preflight/loomloom"
   config_file="$(shell_config_file "$home_dir")"
   write_cli_fixture "$install_dir" loomloom
   write_skill_fixture "$skill_dir"
@@ -342,7 +345,7 @@ run_shell_safety_tests() {
 
   home_dir="$case_root/scan failure/home"
   install_dir="$case_root/scan failure/bin"
-  skill_dir="$case_root/scan failure/skill"
+  skill_dir="$case_root/scan failure/loomloom"
   config_file="$(shell_config_file "$home_dir")"
   local fake_find_bin="$case_root/scan failure/fake-bin"
   write_cli_fixture "$install_dir" loomloom
@@ -360,14 +363,14 @@ run_shell_safety_tests() {
   [[ -e "$skill_dir/user.txt" ]] || fail "user file was removed after Skill directory scan failed"
 
   home_dir="$case_root/incomplete/home"
-  skill_dir="$case_root/incomplete/skill"
+  skill_dir="$case_root/incomplete/loomloom"
   write_skill_fixture "$skill_dir"
   rm -f "$skill_dir/SKILL.md"
   expect_shell_skill_refusal "$home_dir" "$skill_dir" "SKILL.md is missing while"
   [[ -e "$skill_dir/references/setup.md" ]] || fail "incomplete Skill references were removed"
 
   home_dir="$case_root/generated name collision/home"
-  skill_dir="$case_root/generated name collision/skill"
+  skill_dir="$case_root/generated name collision/loomloom"
   write_skill_fixture "$skill_dir"
   rm -rf "$skill_dir/generated-template-spec"
   printf 'user file\n' >"$skill_dir/generated-template-spec"
@@ -379,7 +382,7 @@ run_shell_safety_tests() {
   [[ ! -e "$skill_dir/SKILL.md" && ! -e "$skill_dir/references" ]] || fail "official Skill content was not removed around name collision"
 
   home_dir="$case_root/generated symlink collision/home"
-  skill_dir="$case_root/generated symlink collision/skill"
+  skill_dir="$case_root/generated symlink collision/loomloom"
   external_file="$case_root/generated symlink collision/external"
   write_skill_fixture "$skill_dir"
   rm -rf "$skill_dir/generated-template-spec"
@@ -395,7 +398,7 @@ run_shell_safety_tests() {
   assert_contains "$output" "generated-template-spec"
 
   home_dir="$case_root/internal symlink/home"
-  skill_dir="$case_root/internal symlink/skill"
+  skill_dir="$case_root/internal symlink/loomloom"
   external_file="$case_root/internal symlink/external.txt"
   mkdir -p "$(dirname "$external_file")"
   printf 'external\n' >"$external_file"
@@ -407,7 +410,7 @@ run_shell_safety_tests() {
 
   home_dir="$case_root/mutual/home"
   install_dir="$case_root/mutual/bin"
-  skill_dir="$case_root/mutual/skill"
+  skill_dir="$case_root/mutual/loomloom"
   write_cli_fixture "$install_dir" loomloom
   write_skill_fixture "$skill_dir"
   expect_failure env -i HOME="$home_dir" PATH="$test_path" \
@@ -434,7 +437,7 @@ run_shell_interactive_user_file_tests() {
   local case_root="$test_root/shell interactive"
   local home_dir="$case_root/home" skill_dir output external_dir
 
-  skill_dir="$case_root/remove user files"
+  skill_dir="$case_root/remove user files/loomloom"
   write_skill_fixture "$skill_dir"
   printf 'remove\n' >"$skill_dir/user-file.txt"
   external_dir="$case_root/remove external target"
@@ -471,7 +474,7 @@ run_shell_interactive_user_file_tests() {
   assert_contains "$output" "Keep these files? [Y/n]"
   assert_contains "$output" "removed Skill directory and detected user files:"
 
-  skill_dir="$case_root/keep user files"
+  skill_dir="$case_root/keep user files/loomloom"
   write_skill_fixture "$skill_dir"
   printf 'keep\n' >"$skill_dir/user-file.txt"
   mkdir -p "$skill_dir/custom"
@@ -505,7 +508,7 @@ run_shell_interactive_user_file_tests() {
   assert_contains "$output" "Keep these files? [Y/n]"
   assert_contains "$output" "custom/"
 
-  skill_dir="$case_root/default answer"
+  skill_dir="$case_root/default answer/loomloom"
   write_skill_fixture "$skill_dir"
   printf 'keep\n' >"$skill_dir/user-file.txt"
   # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
@@ -533,7 +536,7 @@ run_shell_interactive_user_file_tests() {
   )"
   [[ -e "$skill_dir/user-file.txt" ]] || fail "interactive default answer did not preserve user file"
 
-  skill_dir="$case_root/invalid then mixed-case answer"
+  skill_dir="$case_root/invalid then mixed-case answer/loomloom"
   write_skill_fixture "$skill_dir"
   printf 'keep\n' >"$skill_dir/user-file.txt"
   # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
@@ -576,7 +579,7 @@ run_shell_interactive_user_file_tests() {
   local install_dir="$case_root/cancel/bin"
   local config_file
   home_dir="$case_root/cancel/home"
-  skill_dir="$case_root/cancel/skill"
+  skill_dir="$case_root/cancel/skill/loomloom"
   config_file="$(shell_config_file "$home_dir")"
   mkdir -p "$(dirname "$config_file")"
   write_cli_fixture "$install_dir" loomloom
@@ -625,7 +628,7 @@ run_powershell_interactive_user_file_tests() {
   local home_dir="$case_root/home" skill_dir output external_dir
   local app_data="$home_dir/AppData/Roaming"
 
-  skill_dir="$case_root/remove user files"
+  skill_dir="$case_root/remove user files/loomloom"
   write_skill_fixture "$skill_dir"
   printf 'remove\n' >"$skill_dir/user-file.txt"
   external_dir="$case_root/remove external target"
@@ -664,7 +667,7 @@ run_powershell_interactive_user_file_tests() {
   assert_contains "$output" "Keep these files? [Y/n]"
   assert_contains "$output" "removed Skill directory and detected user files:"
 
-  skill_dir="$case_root/keep user files"
+  skill_dir="$case_root/keep user files/loomloom"
   write_skill_fixture "$skill_dir"
   printf 'keep\n' >"$skill_dir/user-file.txt"
   mkdir -p "$skill_dir/custom"
@@ -700,7 +703,7 @@ run_powershell_interactive_user_file_tests() {
   assert_contains "$output" "Keep these files? [Y/n]"
   assert_contains "$output" "custom/"
 
-  skill_dir="$case_root/default answer"
+  skill_dir="$case_root/default answer/loomloom"
   write_skill_fixture "$skill_dir"
   printf 'keep\n' >"$skill_dir/user-file.txt"
   # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
@@ -730,7 +733,7 @@ run_powershell_interactive_user_file_tests() {
   )"
   [[ -e "$skill_dir/user-file.txt" ]] || fail "PowerShell interactive default answer did not preserve user file"
 
-  skill_dir="$case_root/invalid then mixed-case answer"
+  skill_dir="$case_root/invalid then mixed-case answer/loomloom"
   write_skill_fixture "$skill_dir"
   printf 'keep\n' >"$skill_dir/user-file.txt"
   # shellcheck disable=SC2016 # Expect expands these environment variables in the spawned process.
@@ -784,7 +787,7 @@ run_powershell_full_uninstall_test() {
   local case_root="$test_root/powershell full"
   local home_dir="$case_root/home"
   local app_data="$home_dir/AppData/Roaming" install_dir="$case_root/bin"
-  local skill_dir="$case_root/skill pack" config_file="$app_data/loomloom/config.json"
+  local skill_dir="$case_root/skill pack/loomloom" config_file="$app_data/loomloom/config.json"
   local output
   mkdir -p "$(dirname "$config_file")"
   write_cli_fixture "$install_dir" loomloom.exe
@@ -832,7 +835,11 @@ run_powershell_safety_tests() {
   local case_root="$test_root/powershell safety"
   local home_dir="$case_root/home"
   local app_data="$home_dir/AppData/Roaming"
-  local install_dir="$case_root/bin" skill_dir="$case_root/skill"
+  local install_dir="$case_root/bin" skill_dir="$case_root/skill/loomloom"
+
+  expect_failure env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
+    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly
+  assert_contains "$failure_output" "-SkillDir is required"
 
   write_cli_fixture "$install_dir" loomloom.exe
   write_skill_fixture "$skill_dir"
@@ -847,17 +854,14 @@ run_powershell_safety_tests() {
   expect_powershell_skill_refusal "$pwsh_path" "$dangerous_home" "$dangerous_home/./" "dangerous path"
   [[ -e "$dangerous_home/SKILL.md" ]] || fail "PowerShell removed HOME"
 
-  local agent parent_home parent_dir
-  for agent in codex claude openclaw; do
-    parent_home="$case_root/$agent parent/home"
-    case "$agent" in
-      codex) parent_dir="$parent_home/.codex/skills" ;;
-      claude) parent_dir="$parent_home/.claude/skills" ;;
-      openclaw) parent_dir="$parent_home/.openclaw/workspace/skills" ;;
-    esac
+  local parent_home="$case_root/generic parent/home" parent_dir
+  for parent_dir in \
+    "$case_root/custom-runtime/skills" \
+    "$case_root/unknown-platform/extensions" \
+    "$case_root/agent with spaces/skills"; do
     write_skill_fixture "$parent_dir"
-    expect_powershell_skill_refusal "$pwsh_path" "$parent_home" "$parent_dir" "dangerous path"
-    [[ -e "$parent_dir/SKILL.md" ]] || fail "PowerShell removed $agent Skills parent"
+    expect_powershell_skill_refusal "$pwsh_path" "$parent_home" "$parent_dir" "target basename"
+    [[ -e "$parent_dir/SKILL.md" ]] || fail "PowerShell removed generic Skill parent: $parent_dir"
   done
 
   local real_skill="$case_root/symlink/real-skill"
@@ -881,7 +885,7 @@ run_powershell_safety_tests() {
   assert_contains "$failure_output" "dangerous path"
   assert_not_contains "$failure_output" "Remove-Item must not be called"
 
-  local invalid_dir="$case_root/invalid skill"
+  local invalid_dir="$case_root/invalid skill/loomloom"
   write_skill_fixture "$invalid_dir"
   sed 's/^name: loomloom$/name: another-skill/' "$invalid_dir/SKILL.md" >"$invalid_dir/SKILL.tmp"
   mv "$invalid_dir/SKILL.tmp" "$invalid_dir/SKILL.md"
@@ -891,7 +895,7 @@ run_powershell_safety_tests() {
   local preflight_home="$case_root/preflight/home"
   local preflight_app_data="$preflight_home/AppData/Roaming"
   local preflight_install_dir="$case_root/preflight/bin"
-  local preflight_skill_dir="$case_root/preflight/skill"
+  local preflight_skill_dir="$case_root/preflight/loomloom"
   local preflight_config_file="$preflight_app_data/loomloom/config.json"
   write_cli_fixture "$preflight_install_dir" loomloom.exe
   write_skill_fixture "$preflight_skill_dir"
@@ -905,7 +909,7 @@ run_powershell_safety_tests() {
   [[ -e "$preflight_install_dir/loomloom.exe" ]] || fail "PowerShell removed CLI before Skill validation failed"
   [[ -e "$preflight_config_file" ]] || fail "PowerShell removed config before Skill validation failed"
 
-  local unrelated_dir="$case_root/unrelated skill"
+  local unrelated_dir="$case_root/unrelated skill/loomloom"
   write_skill_fixture "$unrelated_dir"
   printf 'keep\n' >"$unrelated_dir/unrelated.txt"
   printf 'hidden\n' >"$unrelated_dir/.user-settings"
@@ -937,7 +941,7 @@ run_powershell_safety_tests() {
   [[ -e "$unrelated_dir/unrelated.txt" ]] || fail "PowerShell repeat uninstall removed user file"
   assert_contains "$output" "no LoomLoom Skill content found"
 
-  local unreferenced_dir="$case_root/unreferenced skill"
+  local unreferenced_dir="$case_root/unreferenced skill/loomloom"
   write_skill_fixture "$unreferenced_dir"
   printf '# Extra\n' >"$unreferenced_dir/references/extra.md"
   printf '# Extra\n' >"$unreferenced_dir/generated-template-spec/custom-inside.md"
@@ -945,7 +949,7 @@ run_powershell_safety_tests() {
     "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$unreferenced_dir" >/dev/null
   [[ ! -e "$unreferenced_dir" ]] || fail "PowerShell did not remove official directories with extra files"
 
-  local referenced_dir="$case_root/referenced skill"
+  local referenced_dir="$case_root/referenced skill/loomloom"
   write_skill_fixture "$referenced_dir"
   printf '\n- [Extra](references/extra.md#details)\n' >>"$referenced_dir/SKILL.md"
   printf '# Extra\n' >"$referenced_dir/references/extra.md"
@@ -953,13 +957,13 @@ run_powershell_safety_tests() {
     "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$referenced_dir" >/dev/null
   [[ ! -e "$referenced_dir" ]] || fail "PowerShell did not remove explicitly referenced reference"
 
-  local incomplete_dir="$case_root/incomplete skill"
+  local incomplete_dir="$case_root/incomplete skill/loomloom"
   write_skill_fixture "$incomplete_dir"
   rm -f "$incomplete_dir/SKILL.md"
   expect_powershell_skill_refusal "$pwsh_path" "$home_dir" "$incomplete_dir" "SKILL.md is missing while"
   [[ -e "$incomplete_dir/references/setup.md" ]] || fail "PowerShell removed incomplete Skill references"
 
-  local generated_collision_dir="$case_root/generated name collision"
+  local generated_collision_dir="$case_root/generated name collision/loomloom"
   write_skill_fixture "$generated_collision_dir"
   rm -rf "$generated_collision_dir/generated-template-spec"
   printf 'user file\n' >"$generated_collision_dir/generated-template-spec"
@@ -970,7 +974,7 @@ run_powershell_safety_tests() {
   [[ -f "$generated_collision_dir/generated-template-spec" ]] || fail "PowerShell did not preserve generated-template-spec user file"
   [[ ! -e "$generated_collision_dir/SKILL.md" && ! -e "$generated_collision_dir/references" ]] || fail "PowerShell did not remove official content around name collision"
 
-  local generated_symlink_dir="$case_root/generated symlink collision"
+  local generated_symlink_dir="$case_root/generated symlink collision/loomloom"
   local generated_symlink_target="$case_root/generated symlink external"
   write_skill_fixture "$generated_symlink_dir"
   rm -rf "$generated_symlink_dir/generated-template-spec"
@@ -985,7 +989,7 @@ run_powershell_safety_tests() {
   [[ -e "$generated_symlink_target/keep.txt" ]] || fail "PowerShell changed generated-template-spec user symlink target"
   assert_contains "$output" "generated-template-spec"
 
-  local internal_link_dir="$case_root/internal symlink skill"
+  local internal_link_dir="$case_root/internal symlink skill/loomloom"
   local external_file="$case_root/internal symlink external.txt"
   printf 'external\n' >"$external_file"
   write_skill_fixture "$internal_link_dir"

@@ -4,9 +4,7 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 SOURCE_DIR="$ROOT_DIR/skill-sources/references"
 TARGET_DIRS=(
-  "$ROOT_DIR/skills/codex/loomloom/references"
-  "$ROOT_DIR/skills/claude/loomloom/references"
-  "$ROOT_DIR/skills/openclaw/loomloom/references"
+  "$ROOT_DIR/skills/loomloom/references"
 )
 REFERENCE_FILES=(
   billing.md
@@ -77,13 +75,13 @@ check_source() {
 
   for skill_dir in "${TARGET_DIRS[@]}"; do
     if [[ ! -f "${skill_dir%/references}/SKILL.md" ]]; then
-      echo "missing Agent SKILL.md: ${skill_dir%/references}/SKILL.md" >&2
+      echo "missing LoomLoom SKILL.md: ${skill_dir%/references}/SKILL.md" >&2
       failed=1
       continue
     fi
     for file in "${REFERENCE_FILES[@]}"; do
       if ! grep -Fq "references/$file" "${skill_dir%/references}/SKILL.md"; then
-        echo "Agent SKILL.md does not route to references/$file: ${skill_dir%/references}/SKILL.md" >&2
+        echo "LoomLoom SKILL.md does not route to references/$file: ${skill_dir%/references}/SKILL.md" >&2
         failed=1
       fi
     done

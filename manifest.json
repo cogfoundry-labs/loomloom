@@ -68,8 +68,6 @@
     ]
   },
   "skills": [
-    "codex/loomloom",
-    "claude/loomloom",
-    "openclaw/loomloom"
+    "loomloom"
   ]
 }

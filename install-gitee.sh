@@ -13,8 +13,11 @@ This wrapper forces:
   --source gitee
 
 Examples:
-  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash
-  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash -s -- --version v0.1.11
+  LOOMLOOM_SKILL_DIR="/absolute/path/to/your/agent/skills/loomloom"
+  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
+  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR" --version v0.1.11
+
+Set LOOMLOOM_SKILL_DIR to the complete Skill destination determined by the current Agent or the user before running the command.
 
 EOF
 }
