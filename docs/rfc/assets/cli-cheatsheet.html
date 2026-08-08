@@ -1,0 +1,215 @@
+<title>loomloom CLI — Cheat Sheet</title>
+<style>
+  :root{
+    --ground:#f5faf9; --panel:#ffffff; --panel-2:#f9fcfb;
+    --ink:#11201e; --muted:#5b6f6c; --line:#e3edea;
+    --teal:#0d9488; --cyan:#0891b2; --green:#00a862; --orange:#ea6a1e; --purple:#7c56e6;
+    --cmd-bg:#eef4f3; --cmd-ink:#0c2b28; --cmd-flag:#5b7a76;
+    --shadow:0 1px 2px rgba(16,40,38,.06),0 6px 20px rgba(16,40,38,.05);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#0c1312; --panel:#121c1b; --panel-2:#0f1817;
+      --ink:#e7f0ee; --muted:#93a6a2; --line:#213230;
+      --teal:#2dd4bf; --cyan:#22d3ee; --green:#34d399; --orange:#fb9d52; --purple:#a78bfa;
+      --cmd-bg:#0a1716; --cmd-ink:#d6efeb; --cmd-flag:#7fa39d;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#f5faf9; --panel:#ffffff; --panel-2:#f9fcfb; --ink:#11201e; --muted:#5b6f6c; --line:#e3edea;
+    --teal:#0d9488; --cyan:#0891b2; --green:#00a862; --orange:#ea6a1e; --purple:#7c56e6;
+    --cmd-bg:#eef4f3; --cmd-ink:#0c2b28; --cmd-flag:#5b7a76; --shadow:0 1px 2px rgba(16,40,38,.06),0 6px 20px rgba(16,40,38,.05);
+  }
+  :root[data-theme="dark"]{
+    --ground:#0c1312; --panel:#121c1b; --panel-2:#0f1817; --ink:#e7f0ee; --muted:#93a6a2; --line:#213230;
+    --teal:#2dd4bf; --cyan:#22d3ee; --green:#34d399; --orange:#fb9d52; --purple:#a78bfa;
+    --cmd-bg:#0a1716; --cmd-ink:#d6efeb; --cmd-flag:#7fa39d; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45; -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1120px; margin:0 auto; padding:28px 24px 48px}
+
+  /* ---- header ---- */
+  header{display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px 28px; padding-bottom:18px; border-bottom:1px solid var(--line)}
+  .brand{display:flex; align-items:center; gap:14px}
+  .loom{width:46px; height:46px; flex:0 0 auto}
+  h1{font-size:30px; margin:0; letter-spacing:-.02em; font-weight:800}
+  h1 .slash{color:var(--muted); font-weight:500}
+  .tag{margin:2px 0 0; color:var(--muted); font-size:14px}
+  .meta{margin-left:auto; text-align:right; color:var(--muted); font-size:12px; max-width:340px}
+  .meta code{background:var(--cmd-bg); color:var(--cmd-ink); padding:1px 5px; border-radius:5px; font-size:11.5px}
+
+  /* ---- core loop hero ---- */
+  .loop{margin:22px 0 26px; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow)}
+  .loop h2{margin:0 0 12px; font-size:12px; text-transform:uppercase; letter-spacing:.11em; color:var(--muted)}
+  .flow{display:flex; flex-wrap:wrap; align-items:center; gap:8px 6px}
+  .step{display:inline-flex; align-items:baseline; gap:7px; padding:7px 12px; border-radius:999px; background:var(--panel-2); border:1px solid var(--line); font-size:14px; font-weight:600}
+  .step code{font-family:ui-monospace,"Cascadia Code","SF Mono",Consolas,monospace; font-weight:700; font-size:13px}
+  .step small{color:var(--muted); font-weight:500}
+  .step.paid{border-color:var(--orange); background:color-mix(in srgb,var(--orange) 12%,var(--panel))}
+  .step.paid .gate{color:var(--orange); font-weight:800}
+  .arrow{color:var(--muted); font-weight:700}
+  .loop .note{margin:12px 0 0; font-size:12.5px; color:var(--muted)}
+
+  /* ---- section grid ---- */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 16px 6px; box-shadow:var(--shadow); break-inside:avoid}
+  .card > h3{display:flex; align-items:center; gap:9px; margin:0 0 4px; font-size:15.5px; font-weight:750}
+  .dot{width:10px; height:10px; border-radius:3px; flex:0 0 auto}
+  .card .role{margin:0 0 12px 19px; color:var(--muted); font-size:12.5px}
+  .item{padding:9px 0; border-top:1px solid var(--line)}
+  .item:first-of-type{border-top:0}
+  .item .task{font-size:13px; color:var(--muted); margin-bottom:5px}
+  .cmd{display:block; font-family:ui-monospace,"Cascadia Code","SF Mono",Consolas,monospace; font-size:13px; line-height:1.5;
+       background:var(--cmd-bg); color:var(--cmd-ink); border-radius:7px; padding:6px 9px; overflow-x:auto; white-space:pre}
+  .cmd .f{color:var(--cmd-flag)}
+  .cmd .p{color:var(--muted)}
+
+  .t-teal{color:var(--teal)} .b-teal{background:var(--teal)}
+  .t-cyan{color:var(--cyan)} .b-cyan{background:var(--cyan)}
+  .t-green{color:var(--green)} .b-green{background:var(--green)}
+  .t-orange{color:var(--orange)} .b-orange{background:var(--orange)}
+  .t-purple{color:var(--purple)} .b-purple{background:var(--purple)}
+
+  .card.span2{grid-column:span 2}
+  @media (max-width:720px){ .card.span2{grid-column:span 1} .meta{margin-left:0; text-align:left} }
+
+  /* ---- footer punchline ---- */
+  .kicker{margin:26px 0 0; padding:18px 20px; border-radius:14px; border:1px dashed var(--line);
+          background:var(--panel-2); font-size:14.5px}
+  .kicker b{font-weight:750}
+  .kicker code{font-family:ui-monospace,Consolas,monospace; background:var(--cmd-bg); color:var(--cmd-ink); padding:1px 6px; border-radius:5px; font-size:13px}
+  footer{margin-top:22px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px}
+
+  @media print{
+    body{background:#fff}
+    .card,.loop{box-shadow:none}
+    .page{padding:0}
+    a{color:inherit; text-decoration:none}
+  }
+</style>
+
+<div class="page">
+  <header>
+    <div class="brand">
+      <svg class="loom" viewBox="0 0 46 46" fill="none" aria-hidden="true">
+        <rect x="1" y="1" width="44" height="44" rx="11" fill="none" stroke="var(--line)"/>
+        <line x1="10" y1="7" x2="10" y2="39" stroke="var(--teal)" stroke-width="2.4"/>
+        <line x1="18" y1="7" x2="18" y2="39" stroke="var(--green)" stroke-width="2.4"/>
+        <line x1="26" y1="7" x2="26" y2="39" stroke="var(--orange)" stroke-width="2.4"/>
+        <line x1="34" y1="7" x2="34" y2="39" stroke="var(--purple)" stroke-width="2.4"/>
+        <line x1="7" y1="16" x2="39" y2="16" stroke="var(--ink)" stroke-width="2.4" opacity=".85"/>
+        <line x1="7" y1="30" x2="39" y2="30" stroke="var(--ink)" stroke-width="2.4" opacity=".85"/>
+      </svg>
+      <div>
+        <h1>loomloom <span class="slash">/ CLI cheat sheet</span></h1>
+        <p class="tag">The whole intent-first CLI on one page — every common task, one command.</p>
+      </div>
+    </div>
+    <div class="meta">
+      Proposed surface from <b>RFC-0002</b>. Names provisional. Binary shown as <code>loom</code>;
+      <code>loomloom</code> stays a permanent alias.
+    </div>
+  </header>
+
+  <!-- CORE LOOP -->
+  <section class="loop">
+    <h2>The core loop — run any AI work</h2>
+    <div class="flow">
+      <span class="step"><code>run download</code></span>
+      <span class="arrow">→</span>
+      <span class="step"><code>run check</code> <small>free</small></span>
+      <span class="arrow">→</span>
+      <span class="step"><code>run quote</code> <small>free</small></span>
+      <span class="arrow">→</span>
+      <span class="step paid"><code>run start</code> <span class="gate">--yes</span> <small>paid · wallet gate</small></span>
+      <span class="arrow">→</span>
+      <span class="step"><code>run watch</code></span>
+      <span class="arrow">→</span>
+      <span class="step"><code>run results</code></span>
+    </div>
+    <p class="note">Or the whole safe loop in one line: <b>loom run &lt;work&gt; --input input.xlsx</b>. The same
+      command runs an official template, a private one, or a Market SkillBot — the CLI resolves which.</p>
+  </section>
+
+  <!-- SECTIONS -->
+  <div class="grid">
+
+    <div class="card">
+      <h3><span class="dot b-teal"></span> Set up &amp; check</h3>
+      <p class="role t-teal">Get connected and confirm your setup.</p>
+      <div class="item"><div class="task">Log in</div><code class="cmd">loom login</code></div>
+      <div class="item"><div class="task">Who am I / which server / token source</div><code class="cmd">loom whoami</code></div>
+      <div class="item"><div class="task">Check my setup is healthy</div><code class="cmd">loom doctor</code></div>
+      <div class="item"><div class="task">Switch server profile</div><code class="cmd">loom use <span class="p">&lt;server&gt;</span></code></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot b-cyan"></span> Find &amp; inspect</h3>
+      <p class="role t-cyan">Two readers cover everything you own or can run.</p>
+      <div class="item"><div class="task">Find AI work to run (official + Market)</div><code class="cmd">loom search <span class="p">"&lt;query&gt;"</span></code></div>
+      <div class="item"><div class="task">The list <em>of</em> my own work / runs / SkillBots / usage <span class="p">(“list” only enumerates — publishing is <code style="font-family:ui-monospace,Consolas,monospace">publish</code>)</span></div><code class="cmd">loom list <span class="p">work</span>   <span class="p">runs</span>   <span class="p">skillbots</span>   <span class="p">usage</span></code></div>
+      <div class="item"><div class="task">Inspect anything by id</div><code class="cmd">loom get <span class="p">&lt;id&gt;</span></code></div>
+    </div>
+
+    <div class="card span2">
+      <h3><span class="dot b-green"></span> Run AI work</h3>
+      <p class="role t-green">One verb set — official template, private template, or Market SkillBot.</p>
+      <div class="item"><div class="task">Get a blank input template</div><code class="cmd">loom run download <span class="p">&lt;work&gt;</span> <span class="f">-o</span> input.xlsx</code></div>
+      <div class="item"><div class="task">Validate my input (free)</div><code class="cmd">loom run check <span class="p">&lt;work&gt;</span> <span class="f">--input</span> input.xlsx</code></div>
+      <div class="item"><div class="task">Estimate the cost (free)</div><code class="cmd">loom run quote <span class="p">&lt;work&gt;</span> <span class="f">--input</span> input.xlsx</code></div>
+      <div class="item"><div class="task">Run it (paid — needs <span class="f">--yes</span>)</div><code class="cmd">loom run start <span class="p">&lt;work&gt;</span> <span class="f">--input</span> input.xlsx <span class="f">--yes</span></code></div>
+      <div class="item"><div class="task">…or do the whole safe loop in one line</div><code class="cmd">loom run <span class="p">&lt;work&gt;</span> <span class="f">--input</span> input.xlsx</code></div>
+      <div class="item"><div class="task">Watch a run to completion</div><code class="cmd">loom run watch <span class="p">&lt;run-id&gt;</span></code></div>
+      <div class="item"><div class="task">Get the results</div><code class="cmd">loom run results <span class="p">&lt;run-id&gt;</span> <span class="f">-o</span> results.xlsx</code></div>
+      <div class="item"><div class="task">Cancel a run</div><code class="cmd">loom run cancel <span class="p">&lt;run-id&gt;</span> <span class="f">--yes</span></code></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot b-orange"></span> Build &amp; publish</h3>
+      <p class="role t-orange">Turn your method into a sellable SkillBot.</p>
+      <div class="item"><div class="task">Compile my TemplateSpec (the .json that defines my AI work) into a SkillBot</div><code class="cmd">loom build spec.json</code></div>
+      <div class="item"><div class="task">Add a new version</div><code class="cmd">loom build spec.json <span class="f">--as-version</span> <span class="p">&lt;id&gt;</span></code></div>
+      <div class="item"><div class="task">Publish it on the Market</div><code class="cmd">loom publish <span class="p">&lt;work&gt;</span> <span class="f">--fee</span> 0.5</code></div>
+      <div class="item"><div class="task">Change price / profile</div><code class="cmd">loom publish update <span class="p">&lt;id&gt;</span></code></div>
+      <div class="item"><div class="task">Take off Market / put back</div><code class="cmd">loom publish pause <span class="p">&lt;id&gt;</span>   <span class="p">·</span>   loom publish resume <span class="p">&lt;id&gt;</span></code></div>
+      <div class="item"><div class="task">See my earnings</div><code class="cmd">loom list earnings</code></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot b-purple"></span> Use in your agent</h3>
+      <p class="role t-purple">Install a SkillBot as a local agent skill.</p>
+      <div class="item"><div class="task">Install as a local agent skill</div><code class="cmd">loom install <span class="p">&lt;ref&gt;</span> <span class="f">-o</span> <span class="p">&lt;dir&gt;</span></code></div>
+      <div class="item"><div class="task">Remove it</div><code class="cmd">loom uninstall <span class="p">&lt;dir&gt;</span></code></div>
+    </div>
+
+    <div class="card span2">
+      <h3><span class="dot b-purple"></span> For agents &amp; scripts — machine mode</h3>
+      <p class="role t-purple">Stable, parseable, non-interactive by default.</p>
+      <div class="item"><div class="task">Get JSON on any command (data at <code style="font-family:ui-monospace,Consolas,monospace">.data</code>, cursor at <code style="font-family:ui-monospace,Consolas,monospace">.meta.nextCursor</code>)</div><code class="cmd">loom <span class="p">&lt;cmd&gt;</span> <span class="f">--json</span></code></div>
+      <div class="item"><div class="task">Pick exact fields</div><code class="cmd">loom get <span class="p">&lt;id&gt;</span> <span class="f">--json --fields</span> id,status,url</code></div>
+      <div class="item"><div class="task">Confirm without a prompt · plan without doing it</div><code class="cmd">... <span class="f">--yes</span>      ... <span class="f">--dry-run</span></code></div>
+      <div class="item"><div class="task">Pass a large input from a file</div><code class="cmd">loom run start <span class="p">&lt;work&gt;</span> <span class="f">--input</span> <span class="p">@</span>rows.jsonl <span class="f">--yes</span></code></div>
+    </div>
+
+  </div>
+
+  <p class="kicker">
+    Every command is <code>loom &lt;verb&gt; …</code>. There are <b>no</b>
+    <code>template</code> / <code>template-spec</code> / <code>market</code> / <code>listing</code> /
+    <code>creator</code> groups to learn, <b>no</b> <code>client-request-id</code> to mint, and
+    <b>no</b> <code>*T</code> units to convert — the same knowledge runs an official template, a
+    private one, or a Market SkillBot.
+  </p>
+
+  <footer>
+    <span>loomloom CLI cheat sheet · companion to RFC-0002 (intent-first CLI)</span>
+    <span>Proposed &amp; provisional — see the RFC open questions</span>
+  </footer>
+</div>

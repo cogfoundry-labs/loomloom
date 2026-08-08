@@ -14,6 +14,10 @@
 
 </div>
 
+## What's new
+
+- 🚀 0.2.1 — First public beta release → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.2.1)
+
 ## AI work as software
 
 The main goal of loomloom is to enable `AI work` to be compiled, packaged, and executed as reusable software — from local development to production-scale execution.
