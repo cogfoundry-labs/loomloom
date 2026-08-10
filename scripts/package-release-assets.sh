@@ -55,12 +55,15 @@ references_script="$repo_root/scripts/skill-references.sh"
 install_test_script="$repo_root/scripts/test-install.sh"
 uninstall_test_script="$repo_root/scripts/test-uninstall.sh"
 verification_dir=""
+skill_archive_staging=""
 
 cleanup() {
-  "$references_script" clean
   "$docs_script" clean
   if [[ -n "$verification_dir" ]]; then
     rm -rf "$verification_dir"
+  fi
+  if [[ -n "$skill_archive_staging" ]]; then
+    rm -rf "$skill_archive_staging"
   fi
 }
 
@@ -94,7 +97,7 @@ require_cmd zip
 
 "$install_test_script"
 "$docs_script" prepare-checked
-"$references_script" prepare-checked
+"$references_script" check
 "$uninstall_test_script"
 
 create_archive() (
@@ -185,11 +188,11 @@ build_cli() {
 
   echo "building CLI: ${goos}/${goarch}"
   (
-    cd "$repo_root/cli"
+    cd "$repo_root/src/cli"
     CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" GOWORK=off \
       go build \
         -buildvcs=false \
-        -ldflags "-X github.com/cogfoundry-labs/loomloom/cli/internal/version.Version=${VERSION}" \
+        -ldflags "-X github.com/cogfoundry-labs/loomloom/src/cli/internal/version.Version=${VERSION}" \
         -o "$output_path" \
         ./cmd/loomloom
   )
@@ -201,10 +204,10 @@ verify_bundled_docs() {
 
   echo "verifying bundled TemplateSpec docs"
   (
-    cd "$repo_root/cli"
+    cd "$repo_root/src/cli"
     GOWORK=off go build \
       -buildvcs=false \
-      -ldflags "-X github.com/cogfoundry-labs/loomloom/cli/internal/version.Version=${VERSION}" \
+      -ldflags "-X github.com/cogfoundry-labs/loomloom/src/cli/internal/version.Version=${VERSION}" \
       -o "$binary" \
       ./cmd/loomloom
   )
@@ -248,8 +251,11 @@ while IFS= read -r binary; do
 done < <(find "$dist_dir" -type f -name 'loomloom-*' | sort)
 
 echo "packaging skills"
-create_archive tar.gz "$out_dir/loomloom-skills.tar.gz" "$repo_root" skills
-create_archive zip "$out_dir/loomloom-skills.zip" "$repo_root" skills
+skill_archive_staging="$(mktemp -d)"
+mkdir -p "$skill_archive_staging/skills"
+cp -R "$repo_root/agent-guidance/loomloom" "$skill_archive_staging/skills/loomloom"
+create_archive tar.gz "$out_dir/loomloom-skills.tar.gz" "$skill_archive_staging" skills
+create_archive zip "$out_dir/loomloom-skills.zip" "$skill_archive_staging" skills
 
 verify_skill_archive_entries() {
   local archive_path="$1" format="$2" entry listing found_skill=0
@@ -279,8 +285,8 @@ verify_skill_archive_entries() {
 verify_skill_archive_entries "$out_dir/loomloom-skills.tar.gz" tar.gz
 verify_skill_archive_entries "$out_dir/loomloom-skills.zip" zip
 
-cp "$repo_root"/install.sh "$repo_root"/install-gitee.sh "$repo_root"/install.ps1 \
-  "$repo_root"/uninstall.sh "$repo_root"/uninstall.ps1 \
+cp "$repo_root"/scripts/install.sh "$repo_root"/scripts/install-gitee.sh "$repo_root"/scripts/install.ps1 \
+  "$repo_root"/scripts/uninstall.sh "$repo_root"/scripts/uninstall.ps1 \
   "$repo_root"/manifest.json "$repo_root"/README.md "$out_dir"/
 
 (cd "$out_dir" && $(checksum_cmd) -- * > checksums.txt)

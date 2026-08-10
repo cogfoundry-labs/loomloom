@@ -43,7 +43,7 @@ Every non-obvious choice below carries a **Design consideration** box explaining
 
 This RFC uses loomloom's established vocabulary from the
 [README](../../README.md) and the
-[agent skill](../../skills/loomloom/SKILL.md). It deliberately **avoids the
+[agent skill](../../agent-guidance/loomloom/SKILL.md). It deliberately **avoids the
 word "workflow"**, which is off-vocabulary.
 
 | Term | Meaning | Not called |
@@ -95,7 +95,7 @@ request" while the argument is `<pr>`.)
 
 ## Part 0 — Gap analysis: where the current CLI stands today
 
-Evidence base for the rest of the RFC. (Source: `cli/internal/cmd/*.go`,
+Evidence base for the rest of the RFC. (Source: `src/cli/internal/cmd/*.go`,
 [`docs/reference/cli.md`](../reference/cli.md), commit at time of writing.)
 
 > **Verification method.** The numbers below were verified against the **built
@@ -1054,7 +1054,7 @@ mint, no `*T` units to convert. (Names provisional per the open questions.)
 
 - [RFC-0001: Intent-first CLI](0001-intent-first-cli.md)
 - [Current CLI reference](../reference/cli.md)
-- [loomloom agent skill (SKILL.md)](../../skills/loomloom/SKILL.md) — canonical vocabulary
+- [loomloom agent skill (SKILL.md)](../../agent-guidance/loomloom/SKILL.md) — canonical vocabulary
 - Zbigniew Sobiecki, *Building agent-friendly CLIs* — https://zbigniew.me/writing/building-agent-friendly-clis/
 - *A Survey on Intent-Based Networking* — https://www.cse.wustl.edu/~jain/cse5700-25/ftp/ibn/index.html
 - IETF NMRG, *Use Cases and Practices for Intent-Based Networking* — https://www.ietf.org/archive/id/draft-irtf-nmrg-ibn-usecases-00.html

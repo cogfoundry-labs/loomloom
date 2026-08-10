@@ -41,17 +41,17 @@ write_skill_fixture() {
 }
 
 missing_install_dir="$test_root/missing install dir"
-output="$(expect_failure /bin/bash "$repo_root/install.sh" --install-dir "$missing_install_dir")"
+output="$(expect_failure /bin/bash "$repo_root/scripts/install.sh" --install-dir "$missing_install_dir")"
 [[ "$output" == *"--skill-dir is required"* ]] || fail "install.sh did not require --skill-dir"
 [[ ! -e "$missing_install_dir" ]] || fail "install.sh wrote files before validating --skill-dir"
 
-output="$(expect_failure /bin/bash "$repo_root/install.sh" --skill-dir "$test_root/not-loomloom")"
+output="$(expect_failure /bin/bash "$repo_root/scripts/install.sh" --skill-dir "$test_root/not-loomloom")"
 [[ "$output" == *"ending in /loomloom"* ]] || fail "install.sh accepted an incomplete Skill directory"
 
 other_skill_dir="$test_root/official other skill/loomloom"
 other_install_dir="$test_root/official other bin"
 write_skill_fixture "$other_skill_dir" "another-skill"
-output="$(expect_failure /bin/bash "$repo_root/install.sh" \
+output="$(expect_failure /bin/bash "$repo_root/scripts/install.sh" \
   --install-dir "$other_install_dir" \
   --skill-dir "$other_skill_dir")"
 [[ "$output" == *"refusing to overwrite an existing non-LoomLoom Skill"* ]] || fail "install.sh accepted another Skill"
@@ -123,7 +123,7 @@ official_skill_dir="$test_root/custom-runtime/skills/loomloom"
 write_skill_fixture "$official_skill_dir" "loomloom"
 printf 'preserve\n' >"$official_skill_dir/user-file.txt"
 env PATH="$fake_bin:$PATH" INSTALL_TEST_ASSET_DIR="$release_assets" \
-  /bin/bash "$repo_root/install.sh" \
+  /bin/bash "$repo_root/scripts/install.sh" \
     --no-brew \
     --version v0.0.0-test \
     --install-dir "$official_install_dir" \
@@ -136,16 +136,16 @@ assert_file_contains "$official_skill_dir/SKILL.md" "name: loomloom"
 
 pwsh_path="$(command -v pwsh || true)"
 if [[ -n "$pwsh_path" ]]; then
-  output="$(expect_failure "$pwsh_path" -NoProfile -File "$repo_root/install.ps1")"
+  output="$(expect_failure "$pwsh_path" -NoProfile -File "$repo_root/scripts/install.ps1")"
   [[ "$output" == *"-SkillDir is required"* ]] || fail "install.ps1 did not require -SkillDir"
 
-  output="$(expect_failure "$pwsh_path" -NoProfile -File "$repo_root/install.ps1" -SkillDir "$test_root/not-loomloom")"
+  output="$(expect_failure "$pwsh_path" -NoProfile -File "$repo_root/scripts/install.ps1" -SkillDir "$test_root/not-loomloom")"
   [[ "$output" == *"complete LoomLoom Skill directory"* ]] || fail "install.ps1 accepted an incomplete Skill directory"
 
   other_ps_skill_dir="$test_root/powershell other skill/loomloom"
   other_ps_install_dir="$test_root/powershell other bin"
   write_skill_fixture "$other_ps_skill_dir" "another-skill"
-  output="$(expect_failure "$pwsh_path" -NoProfile -File "$repo_root/install.ps1" \
+  output="$(expect_failure "$pwsh_path" -NoProfile -File "$repo_root/scripts/install.ps1" \
     -InstallDir "$other_ps_install_dir" \
     -SkillDir "$other_ps_skill_dir")"
   [[ "$output" == *"refusing to overwrite an existing non-LoomLoom Skill"* ]] || fail "install.ps1 accepted another Skill"
@@ -172,7 +172,7 @@ if [[ -n "$pwsh_path" ]]; then
   ps_install_dir="$test_root/powershell bin"
   ps_skill_dir="$test_root/unknown-platform/extensions/loomloom"
   INSTALL_TEST_PS_ASSETS="$ps_release_assets" \
-  INSTALL_TEST_PS_SCRIPT="$repo_root/install.ps1" \
+  INSTALL_TEST_PS_SCRIPT="$repo_root/scripts/install.ps1" \
   INSTALL_TEST_PS_INSTALL_DIR="$ps_install_dir" \
   INSTALL_TEST_PS_SKILL_DIR="$ps_skill_dir" \
   PROCESSOR_ARCHITECTURE="AMD64" \

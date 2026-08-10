@@ -24,20 +24,21 @@ assert_not_contains() {
   fi
 }
 
-assert_contains install.sh "GITHUB_REPO=\"$expected_repo\""
-assert_contains install.sh "LOOMLOOM_HOMEBREW_TAP:-$expected_tap"
-assert_contains install.ps1 "\$GithubRepo = \"$expected_repo\""
-assert_contains cli/internal/version/version.go "repoOwnerRepo      = \"$expected_repo\""
+assert_contains scripts/install.sh "GITHUB_REPO=\"$expected_repo\""
+assert_contains scripts/install.sh "LOOMLOOM_HOMEBREW_TAP:-$expected_tap"
+assert_contains scripts/install.ps1 "\$GithubRepo = \"$expected_repo\""
+assert_contains src/cli/internal/version/version.go "repoOwnerRepo      = \"$expected_repo\""
 assert_contains .github/workflows/release.yml "github.com/$expected_tap_repo.git"
 assert_contains .github/workflows/release.yml 'mkdir -p "$tap_dir/Formula"'
-assert_contains skill-sources/references/setup.md "raw.githubusercontent.com/$expected_repo/main/install.sh"
+assert_contains .workflow/loomloom-cli-release.yml 'scripts/resolve-release-source-branch.sh "$tag_name"'
+assert_contains agent-guidance/loomloom/references/setup.md "raw.githubusercontent.com/$expected_repo/main/scripts/install.sh"
 
 for file in \
-  install.sh \
-  install.ps1 \
-  cli/internal/version/version.go \
+  scripts/install.sh \
+  scripts/install.ps1 \
+  src/cli/internal/version/version.go \
   .github/workflows/release.yml \
-  skill-sources/references/setup.md
+  agent-guidance/loomloom/references/setup.md
 do
   assert_not_contains "$file" "Cogfoundry-ai"
 done

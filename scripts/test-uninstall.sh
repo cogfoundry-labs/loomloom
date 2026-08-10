@@ -73,14 +73,14 @@ write_cli_fixture() {
 expect_shell_skill_refusal() {
   local home_dir="$1" skill_dir="$2" expected="$3"
   expect_failure env -i HOME="$home_dir" PATH="$test_path" \
-    /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir"
+    /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --skill-dir "$skill_dir"
   assert_contains "$failure_output" "$expected"
 }
 
 expect_powershell_skill_refusal() {
   local pwsh_path="$1" home_dir="$2" skill_dir="$3" expected="$4"
   expect_failure env -i HOME="$home_dir" APPDATA="$home_dir/AppData/Roaming" PATH="$test_path" \
-    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$skill_dir"
+    "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" -SkillOnly -SkillDir "$skill_dir"
   assert_contains "$failure_output" "$expected"
 }
 
@@ -120,7 +120,7 @@ run_shell_full_uninstall_test() {
       XDG_CONFIG_HOME="$home_dir/.config" \
       LOOMLOOM_TOKEN_ACTIVE="environment-secret-must-not-appear" \
       LOOMLOOM_SERVER="server-must-not-be-reported" \
-      /bin/bash "$repo_root/uninstall.sh" \
+      /bin/bash "$repo_root/scripts/uninstall.sh" \
         --install-dir "$install_dir" \
         --skill-dir "$skill_dir"
   )"
@@ -145,7 +145,7 @@ run_shell_full_uninstall_test() {
       HOME="$home_dir" \
       PATH="$test_path" \
       XDG_CONFIG_HOME="$home_dir/.config" \
-      /bin/bash "$repo_root/uninstall.sh" \
+      /bin/bash "$repo_root/scripts/uninstall.sh" \
         --install-dir "$install_dir" \
         --skill-dir "$skill_dir"
   )"
@@ -175,7 +175,7 @@ run_shell_legacy_config_test() {
       PATH="$test_path" \
       XDG_CONFIG_HOME="$home_dir/.config" \
       LOOMLOOM_TOKEN="legacy-environment-secret-must-not-appear" \
-      /bin/bash "$repo_root/uninstall.sh" \
+      /bin/bash "$repo_root/scripts/uninstall.sh" \
         --install-dir "$install_dir" \
         --skill-dir "$skill_dir"
   )"
@@ -200,7 +200,7 @@ run_shell_partial_uninstall_tests() {
 
   output="$(
     env -i HOME="$home_dir" PATH="$test_path" XDG_CONFIG_HOME="$home_dir/.config" \
-      /bin/bash "$repo_root/uninstall.sh" --cli-only --install-dir "$install_dir"
+      /bin/bash "$repo_root/scripts/uninstall.sh" --cli-only --install-dir "$install_dir"
   )"
   [[ ! -e "$install_dir/loomloom" ]] || fail "--cli-only did not remove the CLI"
   [[ -e "$skill_dir/references/setup.md" ]] || fail "--cli-only removed the Skill"
@@ -210,7 +210,7 @@ run_shell_partial_uninstall_tests() {
   write_cli_fixture "$install_dir" loomloom
   output="$(
     env -i HOME="$home_dir" PATH="$test_path" XDG_CONFIG_HOME="$home_dir/.config" \
-      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir"
+      /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --skill-dir "$skill_dir"
   )"
   [[ ! -e "$skill_dir" ]] || fail "--skill-only did not remove the complete Skill"
   [[ -e "$install_dir/loomloom" ]] || fail "--skill-only removed the CLI"
@@ -226,13 +226,13 @@ run_shell_safety_tests() {
   skill_dir="$home_dir/custom-runtime/skills/loomloom"
   write_skill_fixture "$skill_dir"
   expect_failure env -i HOME="$home_dir" PATH="$test_path" \
-    /bin/bash "$repo_root/uninstall.sh" --skill-only
+    /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only
   assert_contains "$failure_output" "--skill-dir is required"
   [[ -e "$skill_dir/SKILL.md" ]] || fail "missing --skill-dir removed the LoomLoom Skill"
 
   output="$(
     env -i HOME="$home_dir" PATH="$test_path" \
-      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir"
+      /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --skill-dir "$skill_dir"
   )"
   [[ ! -e "$skill_dir" ]] || fail "explicit LoomLoom Skill was not removed"
   assert_contains "$output" "removed:"
@@ -263,7 +263,7 @@ run_shell_safety_tests() {
   mkdir -p "$home_dir" "$case_root/root/fake-bin"
   cp /usr/bin/false "$case_root/root/fake-bin/rm"
   expect_failure env -i HOME="$home_dir" PATH="$case_root/root/fake-bin:$test_path" \
-    /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir /
+    /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --skill-dir /
   assert_contains "$failure_output" "dangerous path"
 
   home_dir="$case_root/identity/home"
@@ -284,7 +284,7 @@ run_shell_safety_tests() {
   printf 'nested\n' >"$skill_dir/custom/file.txt"
   output="$(
     env -i HOME="$home_dir" PATH="$test_path" \
-      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
+      /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
   )"
   [[ -e "$skill_dir/unrelated.txt" ]] || fail "top-level user file was not preserved"
   [[ -e "$skill_dir/.user-settings" ]] || fail "hidden user file was not preserved"
@@ -301,7 +301,7 @@ run_shell_safety_tests() {
 
   output="$(
     env -i HOME="$home_dir" PATH="$test_path" \
-      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
+      /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
   )"
   [[ -e "$skill_dir/unrelated.txt" ]] || fail "repeat uninstall removed preserved user file"
   assert_contains "$output" "no LoomLoom Skill content found"
@@ -312,7 +312,7 @@ run_shell_safety_tests() {
   printf '# Extra\n' >"$skill_dir/references/extra.md"
   printf '# Extra\n' >"$skill_dir/generated-template-spec/custom-inside.md"
   env -i HOME="$home_dir" PATH="$test_path" \
-    /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" >/dev/null
+    /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --skill-dir "$skill_dir" >/dev/null
   [[ ! -e "$skill_dir" ]] || fail "official directories with extra files were not removed"
 
   home_dir="$case_root/referenced/home"
@@ -322,7 +322,7 @@ run_shell_safety_tests() {
   printf '# Extra\n' >"$skill_dir/references/extra.md"
   output="$(
     env -i HOME="$home_dir" PATH="$test_path" \
-      /bin/bash "$repo_root/uninstall.sh" --skill-only \
+      /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only \
         --skill-dir "$skill_dir/../loomloom/"
   )"
   [[ ! -e "$skill_dir" ]] || fail "new explicitly referenced reference was not removed"
@@ -339,7 +339,7 @@ run_shell_safety_tests() {
   mkdir -p "$(dirname "$config_file")"
   printf '{}\n' >"$config_file"
   expect_failure env -i HOME="$home_dir" PATH="$test_path" XDG_CONFIG_HOME="$home_dir/.config" \
-    /bin/bash "$repo_root/uninstall.sh" --install-dir "$install_dir" --skill-dir "$skill_dir"
+    /bin/bash "$repo_root/scripts/uninstall.sh" --install-dir "$install_dir" --skill-dir "$skill_dir"
   [[ -e "$install_dir/loomloom" ]] || fail "CLI was removed before Skill validation failed"
   [[ -e "$config_file" ]] || fail "config was removed before Skill validation failed"
 
@@ -356,7 +356,7 @@ run_shell_safety_tests() {
   chmod +x "$fake_find_bin/find"
   printf '{}\n' >"$config_file"
   expect_failure env -i HOME="$home_dir" PATH="$fake_find_bin:$test_path" XDG_CONFIG_HOME="$home_dir/.config" \
-    /bin/bash "$repo_root/uninstall.sh" --install-dir "$install_dir" --skill-dir "$skill_dir"
+    /bin/bash "$repo_root/scripts/uninstall.sh" --install-dir "$install_dir" --skill-dir "$skill_dir"
   assert_contains "$failure_output" "cannot enumerate Skill directory"
   [[ -e "$install_dir/loomloom" ]] || fail "CLI was removed after Skill directory scan failed"
   [[ -e "$config_file" ]] || fail "config was removed after Skill directory scan failed"
@@ -376,7 +376,7 @@ run_shell_safety_tests() {
   printf 'user file\n' >"$skill_dir/generated-template-spec"
   output="$(
     env -i HOME="$home_dir" PATH="$test_path" \
-      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
+      /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
   )"
   [[ -f "$skill_dir/generated-template-spec" ]] || fail "generated-template-spec user file was not preserved"
   [[ ! -e "$skill_dir/SKILL.md" && ! -e "$skill_dir/references" ]] || fail "official Skill content was not removed around name collision"
@@ -391,7 +391,7 @@ run_shell_safety_tests() {
   ln -s "$external_file" "$skill_dir/generated-template-spec"
   output="$(
     env -i HOME="$home_dir" PATH="$test_path" \
-      /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
+      /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --skill-dir "$skill_dir" </dev/null
   )"
   [[ -L "$skill_dir/generated-template-spec" ]] || fail "generated-template-spec user symlink was not preserved"
   [[ -e "$external_file/keep.txt" ]] || fail "generated-template-spec user symlink target was changed"
@@ -405,7 +405,7 @@ run_shell_safety_tests() {
   write_skill_fixture "$skill_dir"
   ln -s "$external_file" "$skill_dir/generated-template-spec/external-link"
   env -i HOME="$home_dir" PATH="$test_path" \
-    /bin/bash "$repo_root/uninstall.sh" --skill-only --skill-dir "$skill_dir" >/dev/null
+    /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --skill-dir "$skill_dir" >/dev/null
   [[ -e "$external_file" ]] || fail "official directory removal followed an internal symbolic link"
 
   home_dir="$case_root/mutual/home"
@@ -414,13 +414,13 @@ run_shell_safety_tests() {
   write_cli_fixture "$install_dir" loomloom
   write_skill_fixture "$skill_dir"
   expect_failure env -i HOME="$home_dir" PATH="$test_path" \
-    /bin/bash "$repo_root/uninstall.sh" --cli-only --skill-only \
+    /bin/bash "$repo_root/scripts/uninstall.sh" --cli-only --skill-only \
       --install-dir "$install_dir" --skill-dir "$skill_dir"
   assert_contains "$failure_output" "cli-only and skill-only cannot be used together"
   [[ -e "$install_dir/loomloom" && -e "$skill_dir" ]] || fail "mutually exclusive Bash flags removed files"
 
   expect_failure env -i HOME="$home_dir" PATH="$test_path" \
-    /bin/bash "$repo_root/uninstall.sh" --skill-only --cli-only \
+    /bin/bash "$repo_root/scripts/uninstall.sh" --skill-only --cli-only \
       --install-dir "$install_dir" --skill-dir "$skill_dir"
   assert_contains "$failure_output" "cli-only and skill-only cannot be used together"
   [[ -e "$install_dir/loomloom" && -e "$skill_dir" ]] || fail "reversed mutually exclusive Bash flags removed files"
@@ -449,7 +449,7 @@ run_shell_interactive_user_file_tests() {
   output="$(
     UNINSTALL_TEST_HOME="$home_dir" \
     UNINSTALL_TEST_PATH="$test_path" \
-    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.sh" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/scripts/uninstall.sh" \
     UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
     UNINSTALL_TEST_ANSWER="n" \
       "$expect_path" -c '
@@ -482,7 +482,7 @@ run_shell_interactive_user_file_tests() {
   output="$(
     UNINSTALL_TEST_HOME="$home_dir" \
     UNINSTALL_TEST_PATH="$test_path" \
-    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.sh" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/scripts/uninstall.sh" \
     UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
     UNINSTALL_TEST_ANSWER="y" \
       "$expect_path" -c '
@@ -515,7 +515,7 @@ run_shell_interactive_user_file_tests() {
   output="$(
     UNINSTALL_TEST_HOME="$home_dir" \
     UNINSTALL_TEST_PATH="$test_path" \
-    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.sh" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/scripts/uninstall.sh" \
     UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
       "$expect_path" -c '
         set timeout 10
@@ -543,7 +543,7 @@ run_shell_interactive_user_file_tests() {
   output="$(
     UNINSTALL_TEST_HOME="$home_dir" \
     UNINSTALL_TEST_PATH="$test_path" \
-    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.sh" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/scripts/uninstall.sh" \
     UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
       "$expect_path" -c '
         set timeout 10
@@ -590,7 +590,7 @@ run_shell_interactive_user_file_tests() {
   UNINSTALL_TEST_HOME="$home_dir" \
   UNINSTALL_TEST_XDG_CONFIG_HOME="$home_dir/.config" \
   UNINSTALL_TEST_PATH="$test_path" \
-  UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.sh" \
+  UNINSTALL_TEST_SCRIPT="$repo_root/scripts/uninstall.sh" \
   UNINSTALL_TEST_INSTALL_DIR="$install_dir" \
   UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
     "$expect_path" -c '
@@ -642,7 +642,7 @@ run_powershell_interactive_user_file_tests() {
     UNINSTALL_TEST_APPDATA="$app_data" \
     UNINSTALL_TEST_PATH="$test_path" \
     UNINSTALL_TEST_PWSH="$pwsh_path" \
-    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.ps1" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/scripts/uninstall.ps1" \
     UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
     UNINSTALL_TEST_ANSWER="n" \
       "$expect_path" -c '
@@ -677,7 +677,7 @@ run_powershell_interactive_user_file_tests() {
     UNINSTALL_TEST_APPDATA="$app_data" \
     UNINSTALL_TEST_PATH="$test_path" \
     UNINSTALL_TEST_PWSH="$pwsh_path" \
-    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.ps1" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/scripts/uninstall.ps1" \
     UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
     UNINSTALL_TEST_ANSWER="y" \
       "$expect_path" -c '
@@ -712,7 +712,7 @@ run_powershell_interactive_user_file_tests() {
     UNINSTALL_TEST_APPDATA="$app_data" \
     UNINSTALL_TEST_PATH="$test_path" \
     UNINSTALL_TEST_PWSH="$pwsh_path" \
-    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.ps1" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/scripts/uninstall.ps1" \
     UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
       "$expect_path" -c '
         set timeout 10
@@ -742,7 +742,7 @@ run_powershell_interactive_user_file_tests() {
     UNINSTALL_TEST_APPDATA="$app_data" \
     UNINSTALL_TEST_PATH="$test_path" \
     UNINSTALL_TEST_PWSH="$pwsh_path" \
-    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.ps1" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/scripts/uninstall.ps1" \
     UNINSTALL_TEST_SKILL_DIR="$skill_dir" \
       "$expect_path" -c '
         set timeout 10
@@ -806,7 +806,7 @@ run_powershell_full_uninstall_test() {
       PATH="$test_path" \
       LOOMLOOM_TOKEN_ACTIVE_PS="ps-environment-secret-must-not-appear" \
       LOOMLOOM_SERVER="server-must-not-be-reported" \
-      "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" \
+      "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" \
         -InstallDir "$install_dir" \
         -SkillDir "$skill_dir"
   )"
@@ -838,13 +838,13 @@ run_powershell_safety_tests() {
   local install_dir="$case_root/bin" skill_dir="$case_root/skill/loomloom"
 
   expect_failure env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
-    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly
+    "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" -SkillOnly
   assert_contains "$failure_output" "-SkillDir is required"
 
   write_cli_fixture "$install_dir" loomloom.exe
   write_skill_fixture "$skill_dir"
   expect_failure env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
-    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" \
+    "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" \
       -CliOnly -SkillOnly -InstallDir "$install_dir" -SkillDir "$skill_dir"
   assert_contains "$failure_output" "cli-only and skill-only cannot be used together"
   [[ -e "$install_dir/loomloom.exe" && -e "$skill_dir" ]] || fail "mutually exclusive PowerShell flags removed files"
@@ -878,7 +878,7 @@ run_powershell_safety_tests() {
     HOME="$root_home" \
     APPDATA="$root_home/AppData/Roaming" \
     PATH="$test_path" \
-    UNINSTALL_TEST_SCRIPT="$repo_root/uninstall.ps1" \
+    UNINSTALL_TEST_SCRIPT="$repo_root/scripts/uninstall.ps1" \
     UNINSTALL_TEST_ROOT="/" \
     "$pwsh_path" -NoProfile -Command \
       'function Remove-Item { throw "Remove-Item must not be called" }; & $env:UNINSTALL_TEST_SCRIPT -SkillOnly -SkillDir $env:UNINSTALL_TEST_ROOT'
@@ -904,7 +904,7 @@ run_powershell_safety_tests() {
   mkdir -p "$(dirname "$preflight_config_file")"
   printf '{}\n' >"$preflight_config_file"
   expect_failure env -i HOME="$preflight_home" APPDATA="$preflight_app_data" PATH="$test_path" \
-    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" \
+    "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" \
       -InstallDir "$preflight_install_dir" -SkillDir "$preflight_skill_dir"
   [[ -e "$preflight_install_dir/loomloom.exe" ]] || fail "PowerShell removed CLI before Skill validation failed"
   [[ -e "$preflight_config_file" ]] || fail "PowerShell removed config before Skill validation failed"
@@ -919,7 +919,7 @@ run_powershell_safety_tests() {
   local output
   output="$(
     env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
-      "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$unrelated_dir" </dev/null
+      "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" -SkillOnly -SkillDir "$unrelated_dir" </dev/null
   )"
   [[ -e "$unrelated_dir/unrelated.txt" ]] || fail "PowerShell did not preserve top-level user file"
   [[ -e "$unrelated_dir/.user-settings" ]] || fail "PowerShell did not preserve hidden user file"
@@ -936,7 +936,7 @@ run_powershell_safety_tests() {
 
   output="$(
     env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
-      "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$unrelated_dir" </dev/null
+      "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" -SkillOnly -SkillDir "$unrelated_dir" </dev/null
   )"
   [[ -e "$unrelated_dir/unrelated.txt" ]] || fail "PowerShell repeat uninstall removed user file"
   assert_contains "$output" "no LoomLoom Skill content found"
@@ -946,7 +946,7 @@ run_powershell_safety_tests() {
   printf '# Extra\n' >"$unreferenced_dir/references/extra.md"
   printf '# Extra\n' >"$unreferenced_dir/generated-template-spec/custom-inside.md"
   env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
-    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$unreferenced_dir" >/dev/null
+    "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" -SkillOnly -SkillDir "$unreferenced_dir" >/dev/null
   [[ ! -e "$unreferenced_dir" ]] || fail "PowerShell did not remove official directories with extra files"
 
   local referenced_dir="$case_root/referenced skill/loomloom"
@@ -954,7 +954,7 @@ run_powershell_safety_tests() {
   printf '\n- [Extra](references/extra.md#details)\n' >>"$referenced_dir/SKILL.md"
   printf '# Extra\n' >"$referenced_dir/references/extra.md"
   env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
-    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$referenced_dir" >/dev/null
+    "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" -SkillOnly -SkillDir "$referenced_dir" >/dev/null
   [[ ! -e "$referenced_dir" ]] || fail "PowerShell did not remove explicitly referenced reference"
 
   local incomplete_dir="$case_root/incomplete skill/loomloom"
@@ -969,7 +969,7 @@ run_powershell_safety_tests() {
   printf 'user file\n' >"$generated_collision_dir/generated-template-spec"
   output="$(
     env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
-      "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$generated_collision_dir" </dev/null
+      "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" -SkillOnly -SkillDir "$generated_collision_dir" </dev/null
   )"
   [[ -f "$generated_collision_dir/generated-template-spec" ]] || fail "PowerShell did not preserve generated-template-spec user file"
   [[ ! -e "$generated_collision_dir/SKILL.md" && ! -e "$generated_collision_dir/references" ]] || fail "PowerShell did not remove official content around name collision"
@@ -983,7 +983,7 @@ run_powershell_safety_tests() {
   ln -s "$generated_symlink_target" "$generated_symlink_dir/generated-template-spec"
   output="$(
     env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
-      "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$generated_symlink_dir" </dev/null
+      "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" -SkillOnly -SkillDir "$generated_symlink_dir" </dev/null
   )"
   [[ -L "$generated_symlink_dir/generated-template-spec" ]] || fail "PowerShell did not preserve generated-template-spec user symlink"
   [[ -e "$generated_symlink_target/keep.txt" ]] || fail "PowerShell changed generated-template-spec user symlink target"
@@ -995,7 +995,7 @@ run_powershell_safety_tests() {
   write_skill_fixture "$internal_link_dir"
   ln -s "$external_file" "$internal_link_dir/generated-template-spec/external-link"
   env -i HOME="$home_dir" APPDATA="$app_data" PATH="$test_path" \
-    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -SkillOnly -SkillDir "$internal_link_dir" >/dev/null
+    "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" -SkillOnly -SkillDir "$internal_link_dir" >/dev/null
   [[ -e "$external_file" ]] || fail "PowerShell followed an internal symbolic link while removing official content"
 
   local brew_bin="$case_root/brew-bin"
@@ -1008,7 +1008,7 @@ run_powershell_safety_tests() {
     'exit 1' >"$brew_bin/brew"
   chmod +x "$brew_bin/brew"
   expect_failure env -i HOME="$home_dir" APPDATA="$app_data" PATH="$brew_bin:$test_path" \
-    "$pwsh_path" -NoProfile -File "$repo_root/uninstall.ps1" -CliOnly -InstallDir "$case_root/missing-bin"
+    "$pwsh_path" -NoProfile -File "$repo_root/scripts/uninstall.ps1" -CliOnly -InstallDir "$case_root/missing-bin"
   assert_contains "$failure_output" "failed to uninstall Homebrew formula: loomloom"
   assert_not_contains "$failure_output" "removed Homebrew formula: loomloom"
 }

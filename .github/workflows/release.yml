@@ -112,13 +112,13 @@ jobs:
       - uses: actions/setup-go@v5
         if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
         with:
-          go-version-file: cli/go.mod
-          cache-dependency-path: cli/go.sum
+          go-version-file: src/cli/go.mod
+          cache-dependency-path: src/cli/go.sum
 
       - name: Test CLI
         if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
         run: go test ./...
-        working-directory: cli
+        working-directory: src/cli
 
       - name: Test release scripts
         if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'

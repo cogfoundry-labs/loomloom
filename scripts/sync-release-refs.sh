@@ -96,7 +96,7 @@ if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(internal|beta|rc)\.[0-9]+)?$ ]]; th
 fi
 if [[ -n "$BRANCH" ]]; then
   case "$BRANCH" in
-    main|release/cogfoundry-v0.2.0) ;;
+    main|refactor/phase-i-repo-structure) ;;
     *)
       echo "unsupported release branch: $BRANCH" >&2
       exit 1

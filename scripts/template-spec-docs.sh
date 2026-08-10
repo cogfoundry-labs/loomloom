@@ -3,13 +3,13 @@ set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 CORE_DIR=${LOOMLOOM_CORE_DIR:-}
-DOCS_DIR="$ROOT_DIR/docs/template-spec"
+DOCS_DIR="$ROOT_DIR/docs/ir-spec"
 EN_DIR="$DOCS_DIR/en"
 ZH_DIR="$DOCS_DIR/zh-CN"
 TRANSLATION_MAP="$DOCS_DIR/translation-map.json"
-EMBED_DIR="$ROOT_DIR/cli/internal/template_spec_docs/generated"
+EMBED_DIR="$ROOT_DIR/src/cli/internal/template_spec_docs/generated"
 SKILL_GENERATED_DIRS=(
-  "$ROOT_DIR/skills/loomloom/generated-template-spec"
+  "$ROOT_DIR/agent-guidance/loomloom/generated-template-spec"
 )
 
 usage() {
@@ -36,7 +36,7 @@ rewrite_generated_language_links() {
   local language_dir=$1 file tmp
   if [[ -f "$language_dir/README.md" ]]; then
     tmp=$(mktemp)
-    sed 's#](machine/#](../machine/#g; s#`machine/#`../machine/#g' "$language_dir/README.md" >"$tmp"
+    sed 's#](machine/#](../machine/#g; s#`machine/#`../machine/#g; s#](manifest.json)#](../manifest.json)#g' "$language_dir/README.md" >"$tmp"
     mv "$tmp" "$language_dir/README.md"
   fi
   while IFS= read -r -d '' file; do
@@ -49,7 +49,7 @@ rewrite_generated_language_links() {
 normalize_chinese_generated_source() {
   local source=$1 relative=${1#"$CORE_DIR/loomloom-docs/template-spec/"}
   case "$relative" in
-    README.md) sed 's#](machine/#](../machine/#g; s#`machine/#`../machine/#g' "$source" ;;
+    README.md) sed 's#](machine/#](../machine/#g; s#`machine/#`../machine/#g; s#](manifest.json)#](../manifest.json)#g' "$source" ;;
     reference/*.md) sed 's#](../machine/#](../../machine/#g; s#`../machine/#`../../machine/#g' "$source" ;;
     *) cat "$source" ;;
   esac
@@ -58,7 +58,7 @@ normalize_chinese_generated_source() {
 normalize_chinese_snapshot_source() {
   local source=$1 relative=${1#"$ZH_DIR/"}
   case "$relative" in
-    README.md) sed 's#](../machine/#](machine/#g; s#`../machine/#`machine/#g' "$source" ;;
+    README.md) sed 's#](../machine/#](machine/#g; s#`../machine/#`machine/#g; s#](../manifest.json)#](manifest.json)#g' "$source" ;;
     reference/*.md) sed 's#](../../machine/#](../machine/#g; s#`../../machine/#`../machine/#g' "$source" ;;
     *) cat "$source" ;;
   esac
@@ -335,8 +335,8 @@ build_docs() {
   binary=$(mktemp)
   trap "clean_docs; rm -f '$binary'" EXIT
   prepare_checked_docs
-  (cd "$ROOT_DIR/cli" && go test ./internal/template_spec_docs ./internal/cmd -run 'TestTemplateSpecDocs|TestGeneratedTemplateSpecExamplesAreEnglish|TestGeneratedValidTemplateSpecExamplesPassCLIValidation')
-  (cd "$ROOT_DIR/cli" && go build -buildvcs=false -o "$binary" ./cmd/loomloom)
+  (cd "$ROOT_DIR/src/cli" && go test ./internal/template_spec_docs ./internal/cmd -run 'TestTemplateSpecDocs|TestGeneratedTemplateSpecExamplesAreEnglish|TestGeneratedValidTemplateSpecExamplesPassCLIValidation')
+  (cd "$ROOT_DIR/src/cli" && go build -buildvcs=false -o "$binary" ./cmd/loomloom)
   "$binary" template-spec docs spec >/dev/null
   "$binary" template-spec docs spec --lang zh-CN >/dev/null
 }

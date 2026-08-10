@@ -4,7 +4,7 @@ In loomloom, templates are reusable AI work IR that define how AI work is execut
 
 A private template is a user-created template defined with `TemplateSpec`. It supports multiple immutable versions and can be executed either through a workbook or directly from row data as inputs.
 
-See the [TemplateSpec Manual](../template-spec/en/README.md) (or [TemplateSpec 手册](../template-spec/zh-CN/README.md) for Chinese) to learn more.
+See the [TemplateSpec Manual](../ir-spec/en/README.md) (or [TemplateSpec 手册](../ir-spec/zh-CN/README.md) for Chinese) to learn more.
 
 
 ## Input assets vs. orchestration inputs

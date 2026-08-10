@@ -21,7 +21,7 @@ test_cli:
   stage: test
   image: golang:1.24.6-bookworm
   script:
-    - cd cli
+    - cd src/cli
     - go test ./...
 
 test_release_scripts:

@@ -4,7 +4,7 @@ set -euo pipefail
 TAG=""
 ALLOW_HISTORY="false"
 PRIMARY_REMOTE="${GIT_PRIMARY_REMOTE:-origin}"
-RELEASE_BRANCH="${LOOMLOOM_RELEASE_BRANCH:-release/cogfoundry-v0.2.0}"
+RELEASE_BRANCH="${LOOMLOOM_RELEASE_BRANCH:-refactor/phase-i-repo-structure}"
 
 usage() {
   cat <<'EOF'

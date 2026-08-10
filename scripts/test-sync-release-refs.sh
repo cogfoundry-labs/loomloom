@@ -156,15 +156,15 @@ if git --git-dir="$test_root/concurrent.git" show-ref --verify --quiet refs/tags
 fi
 
 # Prerelease tags can be synchronized from the configured release branch.
-git -C "$test_root/work" switch -c release/cogfoundry-v0.2.0 >/dev/null
+git -C "$test_root/work" switch -c refactor/phase-i-repo-structure >/dev/null
 printf '%s\n' release > "$test_root/work/state"
 git -C "$test_root/work" commit -am release >/dev/null
 release_branch_sha="$(git -C "$test_root/work" rev-parse HEAD)"
 git -C "$test_root/work" tag v1.1.0-beta.1
-git -C "$test_root/work" push origin release/cogfoundry-v0.2.0 v1.1.0-beta.1 >/dev/null
+git -C "$test_root/work" push origin refactor/phase-i-repo-structure v1.1.0-beta.1 >/dev/null
 git init --bare "$test_root/prerelease.git" >/dev/null
-run_sync gitee "$test_root/prerelease.git" v1.1.0-beta.1 release/cogfoundry-v0.2.0 >/dev/null
-assert_ref "$test_root/prerelease.git" refs/heads/release/cogfoundry-v0.2.0 "$release_branch_sha"
+run_sync gitee "$test_root/prerelease.git" v1.1.0-beta.1 refactor/phase-i-repo-structure >/dev/null
+assert_ref "$test_root/prerelease.git" refs/heads/refactor/phase-i-repo-structure "$release_branch_sha"
 assert_ref "$test_root/prerelease.git" refs/tags/v1.1.0-beta.1 "$release_branch_sha"
 
 # Annotated tags retain their tag object while the branch points at the commit.
@@ -173,10 +173,10 @@ git -C "$test_root/work" commit -am annotated >/dev/null
 annotated_commit="$(git -C "$test_root/work" rev-parse HEAD)"
 git -C "$test_root/work" tag -a v1.1.0-rc.1 -m annotated
 annotated_object="$(git -C "$test_root/work" rev-parse refs/tags/v1.1.0-rc.1)"
-git -C "$test_root/work" push origin release/cogfoundry-v0.2.0 v1.1.0-rc.1 >/dev/null
+git -C "$test_root/work" push origin refactor/phase-i-repo-structure v1.1.0-rc.1 >/dev/null
 git init --bare "$test_root/annotated.git" >/dev/null
-run_sync gitlab "$test_root/annotated.git" v1.1.0-rc.1 release/cogfoundry-v0.2.0 >/dev/null
-assert_ref "$test_root/annotated.git" refs/heads/release/cogfoundry-v0.2.0 "$annotated_commit"
+run_sync gitlab "$test_root/annotated.git" v1.1.0-rc.1 refactor/phase-i-repo-structure >/dev/null
+assert_ref "$test_root/annotated.git" refs/heads/refactor/phase-i-repo-structure "$annotated_commit"
 assert_ref "$test_root/annotated.git" refs/tags/v1.1.0-rc.1 "$annotated_object"
 
 # An annotated mirror tag that resolves to a different commit is still a
@@ -195,13 +195,13 @@ conflicting_annotated_object="$(
 git init --bare "$test_root/annotated-conflict.git" >/dev/null
 git -C "$test_root/annotated-conflict-work" push \
   "$test_root/annotated-conflict.git" \
-  "$release_branch_sha:refs/heads/release/cogfoundry-v0.2.0" \
+  "$release_branch_sha:refs/heads/refactor/phase-i-repo-structure" \
   refs/tags/v1.1.0-rc.1:refs/tags/v1.1.0-rc.1 >/dev/null
 if run_sync \
   gitlab \
   "$test_root/annotated-conflict.git" \
   v1.1.0-rc.1 \
-  release/cogfoundry-v0.2.0 >/dev/null 2>&1; then
+  refactor/phase-i-repo-structure >/dev/null 2>&1; then
   fail_test "an annotated remote tag at a different commit was accepted"
 fi
 assert_ref \
@@ -210,7 +210,7 @@ assert_ref \
   "$conflicting_annotated_object"
 assert_ref \
   "$test_root/annotated-conflict.git" \
-  refs/heads/release/cogfoundry-v0.2.0 \
+  refs/heads/refactor/phase-i-repo-structure \
   "$release_branch_sha"
 
 # A mirror may normalize an annotated source tag into a lightweight tag. The
@@ -218,13 +218,13 @@ assert_ref \
 git init --bare "$test_root/normalized-lightweight.git" >/dev/null
 git -C "$test_root/work" push \
   "$test_root/normalized-lightweight.git" \
-  "$annotated_commit:refs/heads/release/cogfoundry-v0.2.0" \
+  "$annotated_commit:refs/heads/refactor/phase-i-repo-structure" \
   "$annotated_commit:refs/tags/v1.1.0-rc.1" >/dev/null
 run_sync \
   gitlab \
   "$test_root/normalized-lightweight.git" \
   v1.1.0-rc.1 \
-  release/cogfoundry-v0.2.0 >/dev/null
+  refactor/phase-i-repo-structure >/dev/null
 assert_ref \
   "$test_root/normalized-lightweight.git" \
   refs/tags/v1.1.0-rc.1 \
@@ -240,13 +240,13 @@ git -C "$test_root/work" push origin v1.1.0-rc.2 >/dev/null
 git init --bare "$test_root/normalized-annotated.git" >/dev/null
 git -C "$test_root/work" push \
   "$test_root/normalized-annotated.git" \
-  "$annotated_commit:refs/heads/release/cogfoundry-v0.2.0" \
+  "$annotated_commit:refs/heads/refactor/phase-i-repo-structure" \
   "$reverse_annotated_object:refs/tags/v1.1.0-rc.2" >/dev/null
 run_sync \
   gitee \
   "$test_root/normalized-annotated.git" \
   v1.1.0-rc.2 \
-  release/cogfoundry-v0.2.0 >/dev/null
+  refactor/phase-i-repo-structure >/dev/null
 assert_ref \
   "$test_root/normalized-annotated.git" \
   refs/tags/v1.1.0-rc.2 \

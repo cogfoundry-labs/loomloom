@@ -127,8 +127,8 @@ require_cmd install
 
 install_dir="$(resolve_install_dir)"
 skill_dir="$SKILL_DIR"
-if [[ ! -f "$repo_root/skills/loomloom/SKILL.md" ]]; then
-  echo "local checkout does not contain skills/loomloom/SKILL.md" >&2
+if [[ ! -f "$repo_root/agent-guidance/loomloom/SKILL.md" ]]; then
+  echo "local checkout does not contain agent-guidance/loomloom/SKILL.md" >&2
   exit 1
 fi
 tmp_dir="$(mktemp -d)"
@@ -137,14 +137,13 @@ references_script="$repo_root/scripts/skill-references.sh"
 
 cleanup() {
   rm -rf "$tmp_dir"
-  "$references_script" clean
   "$docs_script" clean
 }
 
 trap cleanup EXIT
 
 "$docs_script" prepare-checked
-"$references_script" prepare-checked
+"$references_script" check
 
 echo "LoomLoom local installer"
 echo "repo: $repo_root"
@@ -156,15 +155,15 @@ echo
 mkdir -p "$install_dir" "$skill_dir"
 
 (
-  cd "$repo_root/cli"
+  cd "$repo_root/src/cli"
   GOWORK=off go build \
-    -ldflags "-X github.com/cogfoundry-labs/loomloom/cli/internal/version.Version=${VERSION}" \
+    -ldflags "-X github.com/cogfoundry-labs/loomloom/src/cli/internal/version.Version=${VERSION}" \
     -o "$tmp_dir/loomloom" \
     ./cmd/loomloom
 )
 
 install -m 0755 "$tmp_dir/loomloom" "$install_dir/loomloom"
-cp -R "$repo_root/skills/loomloom/." "$skill_dir/"
+cp -R "$repo_root/agent-guidance/loomloom/." "$skill_dir/"
 
 if [[ ! -f "$skill_dir/SKILL.md" ]]; then
   echo "Skill installation verification failed" >&2
