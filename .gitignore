@@ -8,5 +8,5 @@ cli/loomloom
 intro/
 cli/internal/template_spec_docs/generated/*
 !cli/internal/template_spec_docs/generated/placeholder.txt
-skills/*/loomloom/generated-template-spec/
-skills/*/loomloom/references/
+skills/loomloom/generated-template-spec/
+skills/loomloom/references/

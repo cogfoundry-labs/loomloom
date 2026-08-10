@@ -9,6 +9,17 @@ LoomLoom is a template-based AI workflow platform for structured, repeatable AI 
 
 Do not use LoomLoom for ordinary one-off writing or chat unless the user explicitly asks for LoomLoom, templates, Excel/workbook input, a Market SkillBot, or batch/table-shaped processing.
 
+## Install And Update LoomLoom
+
+When asked to install or update LoomLoom:
+
+1. Use the distributed `skills/loomloom` directory as the Skill source.
+2. Determine the current Agent's supported Skill root from its runtime configuration or official conventions.
+3. Use `<agent-skill-root>/loomloom` as the complete destination.
+4. Pass that destination to the repository installer with `--skill-dir` on macOS/Linux or `-SkillDir` on Windows.
+5. Do not guess the Skill root or fall back to another Agent's directory. If it is unknown, ask the user for it.
+6. Verify that `<agent-skill-root>/loomloom/SKILL.md` exists after installation.
+
 ## Core Objects
 
 Choose the product object before choosing a command:

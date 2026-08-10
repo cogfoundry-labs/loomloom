@@ -1,8 +1,10 @@
-# Install loomloom CLI
+# Install loomloom CLI and Agent Skill
 
-The main product of this project is the loomloom CLI. It is the developer interface for defining, compiling, executing, and managing AI work as software. Its command-line interface is documented in [CLI reference](../reference/cli.md).
+The main product of this project is the loomloom CLI. It is the developer interface for defining, compiling, executing, and managing AI work as software. Its command-line interface is documented in [CLI reference](../reference/cli.md). The installation scripts install both the CLI and the bundled LoomLoom Agent Skill.
 
-The following sections describe how to install, configure, and uninstall loomloom CLI on your local development machine using different options.
+The LoomLoom Agent Skill has one distribution path, `skills/loomloom`. The installer does not detect or select an Agent. For manual installation, determine your Agent's supported Skill root and pass the complete LoomLoom Skill destination, ending in `loomloom`, through `--skill-dir` or `-SkillDir`. If you do not know that location, use [Agent-assisted setup](#agent-assisted-setup).
+
+The following sections describe how to install, configure, and uninstall loomloom on your local development machine using different options.
 
 **Install:**
 [macOS / Linux](#macos--linux) · [Windows (PowerShell)](#windows-powershell) · [Agent-assisted setup](#agent-assisted-setup)
@@ -17,83 +19,71 @@ The following sections describe how to install, configure, and uninstall loomloo
 
 ### macOS / Linux
 
-Install the latest loomloom CLI release using `curl`:
+Set the complete LoomLoom Skill destination for your Agent, then install the latest release using `curl`. Replace the example path before running the command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash
+LOOMLOOM_SKILL_DIR="/absolute/path/to/your/agent/skills/loomloom"
+curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
 ```
 
 Notes:
 
-- To install loomloom CLI for a specific AI agent, add the `--agent` option:
-  ```bash
-  # Claude Code
-  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --agent claude
-
-  # OpenClaw
-  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --agent openclaw
-  ```
+- `--skill-dir` must be the complete destination for the LoomLoom Skill, not the parent Skills directory.
 
 - To install a specific version or release channel, use the `--version` or `--channel` option:
   ```bash
   # Install a specific release tag
-  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --version <release-tag>
+  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR" --version vX.Y.Z
 
   # Install the latest beta release
-  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --channel beta
+  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR" --channel beta
   ```
 
 - To install from a GitLab or Gitee mirror:
 
   ```bash
   # GitLab
-  curl -fsSL https://gitlab.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash
+  curl -fsSL https://gitlab.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
 
   # Gitee
-  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash
+  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
   ```
 
 ### Windows (PowerShell)
 
-Install the latest loomloom CLI release using `irm`:
+Set the complete LoomLoom Skill destination for your Agent, then install the latest release using `irm`. Replace the example path before running the command:
 
 ```powershell
-irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1 | iex
+$LoomLoomSkillDir = "C:\path\to\your\agent\skills\loomloom"
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -SkillDir $LoomLoomSkillDir
 ```
 
 Notes:
 
-- To install loomloom CLI for a specific AI agent, add the `-Agent` option:
-  ```powershell
-  # Claude Code
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -Agent claude
-
-  # OpenClaw
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -Agent openclaw
-  ```
+- `-SkillDir` must be the complete destination for the LoomLoom Skill, not the parent Skills directory.
 
 - To install a specific version or release channel, use the `-Version` or `-Channel` option:
   ```powershell
   # Install a specific release tag
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -Version <release-tag>
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -SkillDir $LoomLoomSkillDir -Version vX.Y.Z
 
   # Install the latest beta release
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -Channel beta
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -SkillDir $LoomLoomSkillDir -Channel beta
   ```
 
 - To install from a GitLab or Gitee mirror:
 
   ```powershell
   # GitLab
-  & ([scriptblock]::Create((irm https://gitlab.com/cogfoundry/loomloom/raw/main/install.ps1))) -Source gitee
+  & ([scriptblock]::Create((irm https://gitlab.com/cogfoundry/loomloom/raw/main/install.ps1))) -SkillDir $LoomLoomSkillDir -Source gitee
 
   # Gitee
-  & ([scriptblock]::Create((irm https://gitee.com/cogfoundry/loomloom/raw/main/install.ps1))) -Source gitee
+  & ([scriptblock]::Create((irm https://gitee.com/cogfoundry/loomloom/raw/main/install.ps1))) -SkillDir $LoomLoomSkillDir -Source gitee
   ```
 
 ### Agent-assisted setup
 
-If you already use Codex, Claude Code, or OpenClaw, you can ask your AI agent to install and configure loomloom for you.
+If you use an AI agent that supports Skills, you can ask it to install and configure loomloom for you. The Agent determines its supported Skill root and passes the complete destination to the installer.
 
 Copy the following prompt and send it to your AI agent:
 
@@ -161,21 +151,23 @@ loomloom server remove <name-or-server>
 
 ## Uninstall
 
-The following commands uninstall the loomloom CLI and/or installed SkillBots from your local machine.
+The following commands uninstall the loomloom CLI and/or the bundled LoomLoom Agent Skill from your local machine. Complete and Skill-only uninstallations require the same complete Skill destination used during installation.
 
 ### macOS / Linux uninstallation
 
 Uninstall using `curl`:
 
 ```bash
-# Uninstall loomloom CLI and SkillBots
-curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.sh | bash
+LOOMLOOM_SKILL_DIR="/absolute/path/to/your/agent/skills/loomloom"
+
+# Uninstall loomloom CLI and the LoomLoom Agent Skill
+curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
 
 # Uninstall loomloom CLI only
 curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.sh | bash -s -- --cli-only
 
-# Uninstall SkillBots only
-curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.sh | bash -s -- --skill-only
+# Uninstall the LoomLoom Agent Skill only
+curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.sh | bash -s -- --skill-only --skill-dir "$LOOMLOOM_SKILL_DIR"
 ```
 
 ### Windows (PowerShell) uninstallation
@@ -183,14 +175,16 @@ curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/unins
 Uninstall using `irm`:
 
 ```powershell
-# Uninstall loomloom CLI and SkillBots
-irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.ps1 | iex
+$LoomLoomSkillDir = "C:\path\to\your\agent\skills\loomloom"
+
+# Uninstall loomloom CLI and the LoomLoom Agent Skill
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.ps1))) -SkillDir $LoomLoomSkillDir
 
 # Uninstall loomloom CLI only
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.ps1))) -CliOnly
 
-# Uninstall SkillBots only
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.ps1))) -SkillOnly
+# Uninstall the LoomLoom Agent Skill only
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.ps1))) -SkillOnly -SkillDir $LoomLoomSkillDir
 ```
 
 Notes:
