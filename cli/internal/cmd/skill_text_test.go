@@ -42,6 +42,29 @@ func TestBundledSkillsMatchUserLanguage(t *testing.T) {
 	}
 }
 
+func TestBundledSkillDocumentsUnifiedInstallation(t *testing.T) {
+	root := findRepoRoot(t)
+	for _, rel := range bundledSkillDirs {
+		text, err := os.ReadFile(filepath.Join(root, rel, "SKILL.md"))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		for _, want := range []string{
+			"Use the distributed `skills/loomloom` directory as the Skill source",
+			"Determine the current Agent's supported Skill root from its runtime configuration or official conventions",
+			"Use `<agent-skill-root>/loomloom` as the complete destination",
+			"`--skill-dir` on macOS/Linux or `-SkillDir` on Windows",
+			"Do not guess the Skill root or fall back to another Agent's directory",
+			"If it is unknown, ask the user for it",
+			"Verify that `<agent-skill-root>/loomloom/SKILL.md` exists after installation",
+		} {
+			if !strings.Contains(string(text), want) {
+				t.Errorf("%s missing unified installation rule %q", rel, want)
+			}
+		}
+	}
+}
+
 func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
 	root := findRepoRoot(t)
 	caseData, err := os.ReadFile(filepath.Join(root, "cli/internal/cmd/testdata/template-spec-authoring/uploaded-text.json"))

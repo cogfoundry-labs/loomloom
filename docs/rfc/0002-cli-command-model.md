@@ -43,7 +43,7 @@ Every non-obvious choice below carries a **Design consideration** box explaining
 
 This RFC uses loomloom's established vocabulary from the
 [README](../../README.md) and the
-[agent skill](../../skills/claude/loomloom/SKILL.md). It deliberately **avoids the
+[agent skill](../../skills/loomloom/SKILL.md). It deliberately **avoids the
 word "workflow"**, which is off-vocabulary.
 
 | Term | Meaning | Not called |
@@ -1054,7 +1054,7 @@ mint, no `*T` units to convert. (Names provisional per the open questions.)
 
 - [RFC-0001: Intent-first CLI](0001-intent-first-cli.md)
 - [Current CLI reference](../reference/cli.md)
-- [loomloom agent skill (SKILL.md)](../../skills/claude/loomloom/SKILL.md) — canonical vocabulary
+- [loomloom agent skill (SKILL.md)](../../skills/loomloom/SKILL.md) — canonical vocabulary
 - Zbigniew Sobiecki, *Building agent-friendly CLIs* — https://zbigniew.me/writing/building-agent-friendly-clis/
 - *A Survey on Intent-Based Networking* — https://www.cse.wustl.edu/~jain/cse5700-25/ftp/ibn/index.html
 - IETF NMRG, *Use Cases and Practices for Intent-Based Networking* — https://www.ietf.org/archive/id/draft-irtf-nmrg-ibn-usecases-00.html
