@@ -79,7 +79,7 @@ loomloom provides a complete compilation toolchain for `AI work` — including:
 - a reference implementation of the AI work compiler (SkillCompiler)
 - a production execution platform (loomloom execution platform)
 
-All built around the [IR spec](docs/template-spec/en/README.md), enabling AI work to be transformed into deployable, modular AI systems through the compilation pipeline shown below:
+All built around the [IR spec](docs/ir-spec/en/README.md), enabling AI work to be transformed into deployable, modular AI systems through the compilation pipeline shown below:
 
 <div align="center">
 <br />
@@ -123,7 +123,7 @@ Discover safe parallel execution opportunities and execute them safely.
 
 </div>
 
-Reusable `AI work IR` represents the following information according to the [IR spec](docs/template-spec/en/README.md):
+Reusable `AI work IR` represents the following information according to the [IR spec](docs/ir-spec/en/README.md):
 
 - typed inputs and outputs
 - workflow steps, dependencies, and execution flow
@@ -151,7 +151,7 @@ Beyond the compiled AI system itself, SkillBot also includes the information req
 
 SkillCompiler is the default AI work compiler integrated into the loomloom `CLI`. It transforms the instructions, capabilities, workflows, and AI-generated artifacts that define AI work into reusable AI work IR, then compiles the IR into an optimized execution DAG and compiled AI system that can be packaged as a SkillBot.
 
-SkillCompiler compiles AI work according to the [IR spec](docs/template-spec/en/README.md). This enables the community to build alternative AI work compilers, specialized optimization engines, and alternative execution platforms that are compatible with each other, helping accelerate innovation across the AI ecosystem.
+SkillCompiler compiles AI work according to the [IR spec](docs/ir-spec/en/README.md). This enables the community to build alternative AI work compilers, specialized optimization engines, and alternative execution platforms that are compatible with each other, helping accelerate innovation across the AI ecosystem.
 
 #### Execution platform — Production runtime
 
@@ -169,7 +169,7 @@ Built-in runtime capabilities include:
 - execution metering and settlement
 - SkillBot licensing and revenue settlement
 
-Execution platform runs compiled AI systems based on the [IR spec](docs/template-spec/en/README.md). This allows anyone to build compatible platforms with their own runtime technologies, infrastructure, and optimization strategies while remaining interoperable with the same open standard.
+Execution platform runs compiled AI systems based on the [IR spec](docs/ir-spec/en/README.md). This allows anyone to build compatible platforms with their own runtime technologies, infrastructure, and optimization strategies while remaining interoperable with the same open standard.
 
 Organizations that prefer a production-ready implementation can also license the loomloom execution platform from CogFoundry.
 

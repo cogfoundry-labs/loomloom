@@ -3,10 +3,9 @@ bin/
 release/
 .release-tag
 .DS_Store
-cli/batchjob-cli
-cli/loomloom
+src/cli/batchjob-cli
+src/cli/loomloom
 intro/
-cli/internal/template_spec_docs/generated/*
-!cli/internal/template_spec_docs/generated/placeholder.txt
-skills/loomloom/generated-template-spec/
-skills/loomloom/references/
+src/cli/internal/template_spec_docs/generated/*
+!src/cli/internal/template_spec_docs/generated/placeholder.txt
+agent-guidance/loomloom/generated-template-spec/

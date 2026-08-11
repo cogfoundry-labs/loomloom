@@ -23,7 +23,7 @@ Set the complete LoomLoom Skill destination for your Agent, then install the lat
 
 ```bash
 LOOMLOOM_SKILL_DIR="/absolute/path/to/your/agent/skills/loomloom"
-curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
+curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
 ```
 
 Notes:
@@ -33,20 +33,20 @@ Notes:
 - To install a specific version or release channel, use the `--version` or `--channel` option:
   ```bash
   # Install a specific release tag
-  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR" --version vX.Y.Z
+  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR" --version vX.Y.Z
 
   # Install the latest beta release
-  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR" --channel beta
+  curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/install.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR" --channel beta
   ```
 
 - To install from a GitLab or Gitee mirror:
 
   ```bash
   # GitLab
-  curl -fsSL https://gitlab.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
+  curl -fsSL https://gitlab.com/cogfoundry/loomloom/raw/main/scripts/install-gitee.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
 
   # Gitee
-  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/install-gitee.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
+  curl -fsSL https://gitee.com/cogfoundry/loomloom/raw/main/scripts/install-gitee.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
   ```
 
 ### Windows (PowerShell)
@@ -55,7 +55,7 @@ Set the complete LoomLoom Skill destination for your Agent, then install the lat
 
 ```powershell
 $LoomLoomSkillDir = "C:\path\to\your\agent\skills\loomloom"
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -SkillDir $LoomLoomSkillDir
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/install.ps1))) -SkillDir $LoomLoomSkillDir
 ```
 
 Notes:
@@ -65,20 +65,20 @@ Notes:
 - To install a specific version or release channel, use the `-Version` or `-Channel` option:
   ```powershell
   # Install a specific release tag
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -SkillDir $LoomLoomSkillDir -Version vX.Y.Z
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/install.ps1))) -SkillDir $LoomLoomSkillDir -Version vX.Y.Z
 
   # Install the latest beta release
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/install.ps1))) -SkillDir $LoomLoomSkillDir -Channel beta
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/install.ps1))) -SkillDir $LoomLoomSkillDir -Channel beta
   ```
 
 - To install from a GitLab or Gitee mirror:
 
   ```powershell
   # GitLab
-  & ([scriptblock]::Create((irm https://gitlab.com/cogfoundry/loomloom/raw/main/install.ps1))) -SkillDir $LoomLoomSkillDir -Source gitee
+  & ([scriptblock]::Create((irm https://gitlab.com/cogfoundry/loomloom/raw/main/scripts/install.ps1))) -SkillDir $LoomLoomSkillDir -Source gitee
 
   # Gitee
-  & ([scriptblock]::Create((irm https://gitee.com/cogfoundry/loomloom/raw/main/install.ps1))) -SkillDir $LoomLoomSkillDir -Source gitee
+  & ([scriptblock]::Create((irm https://gitee.com/cogfoundry/loomloom/raw/main/scripts/install.ps1))) -SkillDir $LoomLoomSkillDir -Source gitee
   ```
 
 ### Agent-assisted setup
@@ -161,13 +161,13 @@ Uninstall using `curl`:
 LOOMLOOM_SKILL_DIR="/absolute/path/to/your/agent/skills/loomloom"
 
 # Uninstall loomloom CLI and the LoomLoom Agent Skill
-curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
+curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/uninstall.sh | bash -s -- --skill-dir "$LOOMLOOM_SKILL_DIR"
 
 # Uninstall loomloom CLI only
-curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.sh | bash -s -- --cli-only
+curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/uninstall.sh | bash -s -- --cli-only
 
 # Uninstall the LoomLoom Agent Skill only
-curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.sh | bash -s -- --skill-only --skill-dir "$LOOMLOOM_SKILL_DIR"
+curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/uninstall.sh | bash -s -- --skill-only --skill-dir "$LOOMLOOM_SKILL_DIR"
 ```
 
 ### Windows (PowerShell) uninstallation
@@ -178,13 +178,13 @@ Uninstall using `irm`:
 $LoomLoomSkillDir = "C:\path\to\your\agent\skills\loomloom"
 
 # Uninstall loomloom CLI and the LoomLoom Agent Skill
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.ps1))) -SkillDir $LoomLoomSkillDir
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/uninstall.ps1))) -SkillDir $LoomLoomSkillDir
 
 # Uninstall loomloom CLI only
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.ps1))) -CliOnly
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/uninstall.ps1))) -CliOnly
 
 # Uninstall the LoomLoom Agent Skill only
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/uninstall.ps1))) -SkillOnly -SkillDir $LoomLoomSkillDir
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scripts/uninstall.ps1))) -SkillOnly -SkillDir $LoomLoomSkillDir
 ```
 
 Notes:

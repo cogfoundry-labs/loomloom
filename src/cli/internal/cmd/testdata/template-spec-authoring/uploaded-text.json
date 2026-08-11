@@ -1,0 +1,11 @@
+{
+  "request": "Create a template that lets operators upload a UTF-8 text file and instructs the model to extract facts only from the uploaded content.",
+  "fixture": "docs/ir-spec/en/examples/valid/uploaded-text-reference.json",
+  "expected": {
+    "fieldKey": "source_text",
+    "valueType": "text_reference",
+    "acceptedMimeType": "text/plain",
+    "inputPort": "reference",
+    "sourceType": "initial_input"
+  }
+}

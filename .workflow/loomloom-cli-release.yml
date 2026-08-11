@@ -51,6 +51,9 @@ stages:
               exit 1
             fi
 
+            source_branch="$(scripts/resolve-release-source-branch.sh "$tag_name")"
+            echo "validated release source branch: $source_branch"
+
             if [ -z "${LOOMLOOM_GITEE_TOKEN:-}" ]; then
               echo "LOOMLOOM_GITEE_TOKEN is required" >&2
               exit 1
@@ -68,9 +71,10 @@ stages:
 
             scripts/test-release-repository-identity.sh
 
-            cd cli
-            go test ./...
-            cd ..
+            (
+              cd src/cli
+              go test ./...
+            )
 
             scripts/package-release-assets.sh --version "$tag_name"
             scripts/validate-release-assets.sh release

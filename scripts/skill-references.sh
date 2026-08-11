@@ -2,10 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-SOURCE_DIR="$ROOT_DIR/skill-sources/references"
-TARGET_DIRS=(
-  "$ROOT_DIR/skills/loomloom/references"
-)
+SKILL_DIR="$ROOT_DIR/agent-guidance/loomloom"
+REFERENCES_DIR="$SKILL_DIR/references"
 REFERENCE_FILES=(
   billing.md
   cli.md
@@ -17,7 +15,7 @@ REFERENCE_FILES=(
 )
 
 usage() {
-  echo "usage: scripts/skill-references.sh <check|prepare|prepare-checked|clean>" >&2
+  echo "usage: scripts/skill-references.sh check" >&2
   exit 2
 }
 
@@ -53,39 +51,37 @@ check_exact_files() {
 }
 
 check_source() {
-  local failed=0 file line_count skill_dir
-  check_exact_files "$SOURCE_DIR" "canonical Skill reference" || failed=1
+  local failed=0 file line_count
+  check_exact_files "$REFERENCES_DIR" "canonical Skill reference" || failed=1
 
   for file in "${REFERENCE_FILES[@]}"; do
-    if [[ ! -s "$SOURCE_DIR/$file" ]]; then
-      echo "canonical Skill reference is empty or missing: skill-sources/references/$file" >&2
+    if [[ ! -s "$REFERENCES_DIR/$file" ]]; then
+      echo "canonical Skill reference is empty or missing: agent-guidance/loomloom/references/$file" >&2
       failed=1
       continue
     fi
-    if ! head -n 1 "$SOURCE_DIR/$file" | grep -q '^# '; then
-      echo "canonical Skill reference must start with an H1 heading: skill-sources/references/$file" >&2
+    if ! head -n 1 "$REFERENCES_DIR/$file" | grep -q '^# '; then
+      echo "canonical Skill reference must start with an H1 heading: agent-guidance/loomloom/references/$file" >&2
       failed=1
     fi
-    line_count=$(wc -l <"$SOURCE_DIR/$file" | tr -d ' ')
-    if (( line_count > 100 )) && ! grep -q '^## Contents$' "$SOURCE_DIR/$file"; then
-      echo "canonical Skill reference over 100 lines must include a Contents section: skill-sources/references/$file" >&2
+    line_count=$(wc -l <"$REFERENCES_DIR/$file" | tr -d ' ')
+    if (( line_count > 100 )) && ! grep -q '^## Contents$' "$REFERENCES_DIR/$file"; then
+      echo "canonical Skill reference over 100 lines must include a Contents section: agent-guidance/loomloom/references/$file" >&2
       failed=1
     fi
   done
 
-  for skill_dir in "${TARGET_DIRS[@]}"; do
-    if [[ ! -f "${skill_dir%/references}/SKILL.md" ]]; then
-      echo "missing LoomLoom SKILL.md: ${skill_dir%/references}/SKILL.md" >&2
-      failed=1
-      continue
-    fi
+  if [[ ! -f "$SKILL_DIR/SKILL.md" ]]; then
+    echo "missing LoomLoom SKILL.md: agent-guidance/loomloom/SKILL.md" >&2
+    failed=1
+  else
     for file in "${REFERENCE_FILES[@]}"; do
-      if ! grep -Fq "references/$file" "${skill_dir%/references}/SKILL.md"; then
-        echo "LoomLoom SKILL.md does not route to references/$file: ${skill_dir%/references}/SKILL.md" >&2
+      if ! grep -Fq "references/$file" "$SKILL_DIR/SKILL.md"; then
+        echo "LoomLoom SKILL.md does not route to references/$file: agent-guidance/loomloom/SKILL.md" >&2
         failed=1
       fi
     done
-  done
+  fi
 
   if [[ $failed -ne 0 ]]; then
     return 1
@@ -93,49 +89,7 @@ check_source() {
   echo "LoomLoom Skill references OK"
 }
 
-clean_references() {
-  local target
-  for target in "${TARGET_DIRS[@]}"; do
-    rm -rf "$target"
-  done
-}
-
-prepare_references() {
-  local target file
-  clean_references
-  for target in "${TARGET_DIRS[@]}"; do
-    mkdir -p "$target"
-    for file in "${REFERENCE_FILES[@]}"; do
-      cp "$SOURCE_DIR/$file" "$target/$file"
-    done
-  done
-}
-
-verify_generated_references() {
-  local failed=0 target file
-  for target in "${TARGET_DIRS[@]}"; do
-    check_exact_files "$target" "generated Skill reference" || failed=1
-    for file in "${REFERENCE_FILES[@]}"; do
-      if ! cmp -s "$SOURCE_DIR/$file" "$target/$file"; then
-        echo "generated Skill reference differs from canonical source: ${target#"$ROOT_DIR/"}/$file" >&2
-        failed=1
-      fi
-    done
-  done
-  [[ $failed -eq 0 ]]
-}
-
-prepare_checked_references() {
-  check_source
-  prepare_references
-  verify_generated_references
-  echo "LoomLoom Skill references prepared"
-}
-
 case "${1:-}" in
   check) check_source ;;
-  prepare) prepare_references ;;
-  prepare-checked) prepare_checked_references ;;
-  clean) clean_references ;;
   *) usage ;;
 esac
