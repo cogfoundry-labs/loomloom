@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: src/cli/go.mod
+          cache-dependency-path: src/cli/go.sum
+
+      - name: Test CLI
+        working-directory: src/cli
+        run: go test ./...
+
+      - name: Check shell syntax
+        run: |
+          for script in scripts/*.sh; do
+            bash -n "$script"
+          done
+
+      - name: Test installation and release scripts
+        run: |
+          scripts/test-download-github-release-assets.sh
+          scripts/test-install.sh
+          scripts/test-publish-gitlab-release.sh
+          scripts/test-release-repository-identity.sh
+          scripts/test-release-source-branch.sh
+          scripts/test-sync-release-refs.sh
+          scripts/test-uninstall.sh
