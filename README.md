@@ -202,6 +202,7 @@ We are developing a collection of open-source SkillBot examples to demonstrate h
 #### Design proposals (RFCs)
 
 - [RFC-0001: Intent-first CLI](docs/rfc/0001-intent-first-cli.md)
+- [RFC-0003: Model catalog strategy](docs/rfc/0003-model-catalog-strategy.md)
 
 ## Contributing
 
