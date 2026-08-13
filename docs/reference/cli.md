@@ -37,6 +37,20 @@ Useful inspection commands:
 - `loomloom template-spec docs spec|examples|conversation` shows TemplateSpec authoring docs.
 - Use `--output json` when one command feeds another, and preserve returned IDs exactly.
 
+## Global flags
+
+These flags are available to LoomLoom subcommands:
+
+| Flag | Description |
+|---|---|
+| `--server <url>` / `-s` | Use the specified LoomLoom Server for this command. |
+| `--token <token>` / `-t` | Use the specified Bearer Token for authentication. Treat tokens as sensitive credentials. |
+| `--timeout <duration>` | Set the per-request HTTP timeout. The default is `30s`. |
+| `--output text|json` / `-o` | Select text or JSON output. The default is `text`. |
+| `--verbose` / `-v` | Write diagnostic logs to stderr. |
+
+`loomloom --version` prints the CLI version and exits.
+
 ## Monetary values
 
 > [!IMPORTANT]
@@ -76,14 +90,27 @@ Authenticate, manage verified server profiles, and check whether the CLI is corr
 
 | Command | Description |
 |---|---|
-| `loomloom login [--server <url>]` | Log in through a preset platform's website, verify the credential, and save it to the active server profile. |
+| `loomloom login [--server <url>] [--no-browser] [--login-timeout <duration>]` | Log in through a preset platform's website, verify the credential, and save it to the active server profile. |
 | `loomloom logout` | Remove the saved browser credential for the selected profile; the profile and any environment token remain. |
-| `loomloom doctor` | Validate CLI configuration, server connectivity, token wiring, and version info. |
+| `loomloom doctor [--server <url>] [--name <profile>]` | Validate CLI configuration, server connectivity, token wiring, and version info. When verifying a Server, `--name` sets the saved local profile name. |
 | `loomloom server list` | List verified server profiles. |
 | `loomloom server use <name-or-server>` | Select a verified server profile. |
 | `loomloom server remove <name-or-server>` | Remove a profile and its saved browser credential; any environment token remains. |
 
 Browser login supports the CogFoundry and ShengSuanYun presets. Custom servers use API token authentication. Bare `loomloom login` offers the preset selector only in an interactive terminal when no profile is selected; non-interactive use must pass the selected server explicitly.
+
+Use `--no-browser` to print the authorization URL without opening it automatically. Browser authorization waits up to five minutes by default; use `--login-timeout` to change that window. The global `--timeout` flag controls individual HTTP requests and is separate from `--login-timeout`.
+
+### Shell completion
+
+| Command | Description |
+|---|---|
+| `loomloom completion bash` | Generate the Bash completion script. |
+| `loomloom completion fish` | Generate the Fish completion script. |
+| `loomloom completion powershell` | Generate the PowerShell completion script. |
+| `loomloom completion zsh` | Generate the Zsh completion script. |
+
+Use `--no-descriptions` to generate completion candidates without description text. Run the selected command with `--help` for shell-specific installation instructions.
 
 ## 2. Inputs (optional advanced)
 
@@ -113,7 +140,7 @@ This is the **recommended starting point for most users**.
 
 ## 4. Runs
 
-Use these commands for programmatic official-template JSON or JSONL input and for monitoring hosted runs. Validate and precheck the input, show the estimate, obtain confirmation, and then execute. `run submit` is a hidden legacy combined flow and should not be used for new workflows.
+Use these commands for programmatic official-template JSON or JSONL input and for monitoring hosted runs. Validate and precheck the input, show the estimate, obtain confirmation, and then execute.
 
 | Command | Description |
 |---|---|

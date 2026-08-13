@@ -20,6 +20,16 @@ Use this reference whenever an exact CLI command, flag, returned ID, JSON output
 - Workbook input shape: download the workbook and inspect its headers/instructions
 - Machine-readable chaining: use `--output json`
 
+Common persistent flags:
+
+- `--server <url>` / `-s`: use the specified LoomLoom Server for this command
+- `--token <token>` / `-t`: use the specified Bearer Token for authentication; treat it as a sensitive credential
+- `--timeout <duration>`: set the per-request HTTP timeout; the default is `30s`
+- `--output text|json` / `-o`: select text or JSON output
+- `--verbose` / `-v`: write diagnostic logs to stderr
+
+`loomloom --version` prints the CLI version and exits.
+
 Treat CLI help and returned service data as authoritative for syntax, IDs, state, and available fields. Do not invent a flag or field from memory.
 
 ## Command Chaining
