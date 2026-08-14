@@ -21,8 +21,8 @@ test_cli:
   stage: test
   image: golang:1.24.6-bookworm
   script:
-    - cd src/cli
-    - go test ./...
+    - scripts/template-spec-docs.sh prepare-checked
+    - cd src/cli && go test ./...
 
 test_release_scripts:
   stage: test

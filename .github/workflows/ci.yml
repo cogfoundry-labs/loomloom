@@ -29,8 +29,9 @@ jobs:
           cache-dependency-path: src/cli/go.sum
 
       - name: Test CLI
-        working-directory: src/cli
-        run: go test ./...
+        run: |
+          scripts/template-spec-docs.sh prepare-checked
+          (cd src/cli && go test ./...)
 
       - name: Check shell syntax
         run: |

@@ -117,8 +117,9 @@ jobs:
 
       - name: Test CLI
         if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
-        run: go test ./...
-        working-directory: src/cli
+        run: |
+          scripts/template-spec-docs.sh prepare-checked
+          (cd src/cli && go test ./...)
 
       - name: Test release scripts
         if: github.event_name == 'push' && steps.github_release.outputs.state != 'published'
