@@ -20,6 +20,9 @@ validate_release_source:
 test_cli:
   stage: test
   image: golang:1.24.6-bookworm
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends jq libdigest-sha-perl
   script:
     - scripts/template-spec-docs.sh prepare-checked
     - cd src/cli && go test ./...
