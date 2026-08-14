@@ -1,13 +1,32 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://loomloom.dev/schemas/template-spec-v1.json",
+  "$id": "https://loomloom.dev/schemas/template-spec-v2.json",
+  "title": "LoomLoom TemplateSpec v2",
   "type": "object",
-  "required": ["meta", "steps", "inputSchema"],
+  "required": ["meta", "steps", "workbook"],
   "additionalProperties": false,
   "properties": {
+    "meta": {"$ref": "#/$defs/meta"},
+    "templateInputs": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[a-z][A-Za-z0-9_]{0,63}$"},
+      "additionalProperties": {"$ref": "#/$defs/templateInput"}
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/step"}
+    },
+    "workbook": {"$ref": "#/$defs/workbook"}
+  },
+  "$defs": {
+    "identity": {"type": "string", "pattern": "^[a-z][A-Za-z0-9_]{0,63}$"},
+    "stepId": {"type": "string", "pattern": "^stp_[a-z0-9]{6,10}$"},
+    "jsonValue": {},
     "meta": {
       "type": "object",
       "required": ["name"],
+      "additionalProperties": false,
       "properties": {
         "name": {"type": "string", "minLength": 1},
         "description": {"type": "string"},
@@ -16,69 +35,297 @@
         "displayOutputType": {"type": "string"},
         "primaryOutputType": {"type": "string"},
         "tags": {"type": "array", "items": {"type": "string"}}
-      },
-      "additionalProperties": false
-    },
-    "steps": {
-      "type": "array",
-      "minItems": 1,
-      "items": {"$ref": "#/$defs/step"}
-    },
-    "inputSchema": {"$ref": "#/$defs/inputSchema"},
-    "fieldBindings": {"type": "array", "items": {"$ref": "#/$defs/fieldBinding"}},
-    "paramBindings": {"type": "array", "items": {"$ref": "#/$defs/paramBinding"}}
-  },
-  "$defs": {
-    "step": {
-      "type": "object",
-      "required": ["stepId", "displayName", "executionUnit"],
-      "additionalProperties": false,
-      "properties": {
-        "stepId": {"type": "string", "pattern": "^stp_[a-z0-9]{6,10}$"},
-        "displayName": {"type": "string", "minLength": 1},
-        "executionUnit": {"type": "string", "minLength": 1},
-        "instruction": {"type": "string"},
-        "dependsOn": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "upstreamBindings": {"type": "array", "items": {"$ref": "#/$defs/upstreamBinding"}},
-        "triggerPolicy": {"enum": ["require_all", "allow_partial", "fail_fast"]},
-        "defaultModelRef": {
-          "type": "object",
-          "required": ["modelKey"],
-          "additionalProperties": false,
-          "properties": {"modelKey": {"type": "string", "minLength": 1}}
-        },
-        "allowModelOverride": {"type": "boolean"},
-        "staticParams": {"type": "object", "additionalProperties": {"type": "string"}}
       }
     },
-    "upstreamBinding": {
+    "presentation": {
       "type": "object",
-      "required": ["inputPort"],
+      "required": ["label", "order"],
       "additionalProperties": false,
       "properties": {
-        "inputPort": {"type": "string", "minLength": 1},
-        "sourceType": {"enum": ["step_output", "initial_input"]},
-        "sourceStepId": {"type": "string"},
-        "sourcePort": {"type": "string"},
-        "sourceInputKey": {"type": "string"}
+        "label": {"type": "string", "minLength": 1},
+        "description": {"type": "string"},
+        "widget": {"type": "string"},
+        "placeholder": {"type": "string"},
+        "hint": {"type": "string"},
+        "examples": {"type": "array", "items": {"type": "string"}},
+        "order": {"type": "integer"}
+      }
+    },
+    "templateInput": {
+      "oneOf": [
+        {"$ref": "#/$defs/valueInput"},
+        {"$ref": "#/$defs/artifactInput"}
+      ]
+    },
+    "valueInput": {
+      "type": "object",
+      "required": ["kind", "valueType", "blankPolicy", "presentation"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"const": "value"},
+        "valueType": {"enum": ["string", "number", "integer", "boolean", "array", "object"]},
+        "required": {"type": "boolean"},
+        "blankPolicy": {"enum": ["error", "omit"]},
+        "constraints": {"type": "object"},
+        "defaultValue": {"$ref": "#/$defs/jsonValue"},
+        "presentation": {"$ref": "#/$defs/presentation"}
       },
       "allOf": [
         {
-          "if": {"properties": {"sourceType": {"const": "initial_input"}}, "required": ["sourceType"]},
-          "then": {"required": ["sourceInputKey"]}
-        },
-        {
-          "if": {"anyOf": [{"properties": {"sourceType": {"const": "step_output"}}, "required": ["sourceType"]}, {"not": {"required": ["sourceType"]}}]},
-          "then": {"required": ["sourceStepId", "sourcePort"]}
+          "if": {"properties": {"required": {"const": true}}, "required": ["required"]},
+          "then": {"properties": {"blankPolicy": {"const": "error"}}},
+          "else": {"properties": {"blankPolicy": {"const": "omit"}}}
         }
       ]
     },
-    "inputSchema": {
+    "artifactInput": {
       "type": "object",
-      "required": ["fields"],
+      "required": ["kind", "blankPolicy", "acceptedMimeTypes", "maxItems", "presentation"],
       "additionalProperties": false,
       "properties": {
-        "fields": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/inputField"}},
+        "kind": {"const": "artifact"},
+        "required": {"type": "boolean"},
+        "blankPolicy": {"enum": ["error", "omit"]},
+        "acceptedMimeTypes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^[^/]+/[^/]+$"}
+        },
+        "minItems": {"type": "integer", "minimum": 0},
+        "maxItems": {"type": "integer", "minimum": 1},
+        "presentation": {"$ref": "#/$defs/presentation"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"required": {"const": true}}, "required": ["required"]},
+          "then": {"properties": {"blankPolicy": {"const": "error"}}},
+          "else": {"properties": {"blankPolicy": {"const": "omit"}}}
+        }
+      ]
+    },
+    "step": {
+      "type": "object",
+      "required": ["stepId", "displayName", "executionBinding"],
+      "additionalProperties": false,
+      "properties": {
+        "stepId": {"$ref": "#/$defs/stepId"},
+        "displayName": {"type": "string", "minLength": 1},
+        "dependsOn": {"type": "array", "items": {"$ref": "#/$defs/stepId"}, "uniqueItems": true},
+        "triggerPolicy": {"enum": ["require_all", "allow_partial", "fail_fast"]},
+        "executionBinding": {"$ref": "#/$defs/executionBinding"},
+        "modelSelection": {"$ref": "#/$defs/modelSelection"},
+        "inputBindings": {
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/identity"},
+          "additionalProperties": {"$ref": "#/$defs/inputBinding"}
+        }
+      }
+    },
+    "executionBinding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "subjectRevisionId"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {"const": "fixedModelContract"},
+            "subjectRevisionId": {"type": "string", "minLength": 1}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "profileId", "profileRevision"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {"const": "capabilityProfile"},
+            "profileId": {"type": "string", "minLength": 1},
+            "profileRevision": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    },
+    "modelSelection": {
+      "type": "object",
+      "required": ["source", "inputKey", "defaultModelId"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {"const": "templateInput"},
+        "inputKey": {"$ref": "#/$defs/identity"},
+        "defaultModelId": {"type": "string", "minLength": 1}
+      }
+    },
+    "inputBinding": {
+      "oneOf": [
+        {"$ref": "#/$defs/templateInputBinding"},
+        {"$ref": "#/$defs/stepOutputBinding"},
+        {"$ref": "#/$defs/literalBinding"},
+        {"$ref": "#/$defs/platformContextBinding"},
+        {"$ref": "#/$defs/composeBinding"},
+        {"$ref": "#/$defs/sequenceBinding"},
+        {"$ref": "#/$defs/mergeBinding"}
+      ]
+    },
+    "templateInputBinding": {
+      "type": "object",
+      "required": ["source", "inputKey"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {"const": "templateInput"},
+        "inputKey": {"$ref": "#/$defs/identity"},
+        "fallbackValue": {"$ref": "#/$defs/jsonValue"}
+      }
+    },
+    "stepOutputBinding": {
+      "type": "object",
+      "required": ["source", "stepId", "portId"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {"const": "stepOutput"},
+        "stepId": {"$ref": "#/$defs/stepId"},
+        "portId": {"$ref": "#/$defs/identity"}
+      }
+    },
+    "literalBinding": {
+      "type": "object",
+      "required": ["source", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {"const": "literal"},
+        "value": {"$ref": "#/$defs/jsonValue"}
+      }
+    },
+    "platformContextBinding": {
+      "type": "object",
+      "required": ["source", "contextKey"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {"const": "platformContext"},
+        "contextKey": {"type": "string", "minLength": 1}
+      }
+    },
+    "composeBinding": {
+      "type": "object",
+      "required": ["source", "compose"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {"const": "composeValue"},
+        "compose": {"$ref": "#/$defs/composition"},
+        "fallbackValue": {"$ref": "#/$defs/jsonValue"}
+      }
+    },
+    "composition": {
+      "type": "object",
+      "required": ["kind", "parts"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"const": "concat"},
+        "separator": {"type": "string"},
+        "parts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/compositionPart"}}
+      }
+    },
+    "compositionPart": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["source", "inputKey"],
+          "additionalProperties": false,
+          "properties": {"source": {"const": "templateInput"}, "inputKey": {"$ref": "#/$defs/identity"}}
+        },
+        {
+          "type": "object",
+          "required": ["source", "literal"],
+          "additionalProperties": false,
+          "properties": {"source": {"const": "literal"}, "literal": {"type": "string", "minLength": 1}}
+        }
+      ]
+    },
+    "sequenceBinding": {
+      "type": "object",
+      "required": ["source", "sequence"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {"const": "sequence"},
+        "sequence": {
+          "type": "object",
+          "required": ["items"],
+          "additionalProperties": false,
+          "properties": {
+            "items": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/sequenceItem"}}
+          }
+        }
+      }
+    },
+    "sequenceItem": {
+      "type": "object",
+      "required": ["position", "kind", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "position": {"type": "integer", "minimum": 0},
+        "kind": {"enum": ["text", "image", "video", "audio"]},
+        "role": {"type": "string", "minLength": 1},
+        "source": {"$ref": "#/$defs/sequenceItemSource"}
+      }
+    },
+    "sequenceItemSource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["source", "inputKey"],
+          "additionalProperties": false,
+          "properties": {"source": {"const": "templateInput"}, "inputKey": {"$ref": "#/$defs/identity"}}
+        },
+        {
+          "type": "object",
+          "required": ["source", "stepId", "portId"],
+          "additionalProperties": false,
+          "properties": {"source": {"const": "stepOutput"}, "stepId": {"$ref": "#/$defs/stepId"}, "portId": {"$ref": "#/$defs/identity"}}
+        },
+        {
+          "type": "object",
+          "required": ["source", "value"],
+          "additionalProperties": false,
+          "properties": {"source": {"const": "literal"}, "value": {"$ref": "#/$defs/jsonValue"}}
+        }
+      ]
+    },
+    "mergeBinding": {
+      "type": "object",
+      "required": ["source", "merge"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {"const": "merge"},
+        "merge": {
+          "type": "object",
+          "required": ["policy", "missingSourcePolicy", "sources"],
+          "additionalProperties": false,
+          "properties": {
+            "policy": {"const": "ordered_artifacts"},
+            "missingSourcePolicy": {"enum": ["error", "omit"]},
+            "sources": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/mergeSource"}}
+          }
+        }
+      }
+    },
+    "mergeSource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["source", "inputKey"],
+          "additionalProperties": false,
+          "properties": {"source": {"const": "templateInput"}, "inputKey": {"$ref": "#/$defs/identity"}}
+        },
+        {
+          "type": "object",
+          "required": ["source", "stepId", "portId"],
+          "additionalProperties": false,
+          "properties": {"source": {"const": "stepOutput"}, "stepId": {"$ref": "#/$defs/stepId"}, "portId": {"$ref": "#/$defs/identity"}}
+        }
+      ]
+    },
+    "workbook": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
         "instructions": {"type": "array", "items": {"type": "string"}},
         "sampleRows": {
           "type": "array",
@@ -86,79 +333,7 @@
             "type": "object",
             "required": ["values"],
             "additionalProperties": false,
-            "properties": {"values": {"type": "object", "additionalProperties": {"type": "string"}}}
-          }
-        }
-      }
-    },
-    "fieldPresentation": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "widget": {"enum": ["input", "textarea", "select"]},
-        "placeholder": {"type": "string"},
-        "hint": {"type": "string"},
-        "examples": {"type": "array", "items": {"type": "string"}}
-      }
-    },
-    "inputField": {
-      "type": "object",
-      "required": ["key", "label", "valueType"],
-      "additionalProperties": false,
-      "properties": {
-        "key": {"type": "string", "minLength": 1},
-        "label": {"type": "string", "minLength": 1},
-        "description": {"type": "string"},
-        "required": {"type": "boolean"},
-        "valueType": {"enum": ["string", "enum", "image_url", "asset_ref", "text_reference"]},
-        "enumValues": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-        "acceptedMimeTypes": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-        "multiValue": {"type": "boolean"},
-        "maxValues": {"type": "integer", "minimum": 1},
-        "order": {"type": "integer"},
-        "defaultValue": {"type": "string"},
-        "hidden": {"type": "boolean"},
-        "sourceKind": {"enum": ["user_input", "default_value", "hidden"]},
-        "presentation": {"$ref": "#/$defs/fieldPresentation"}
-      },
-      "allOf": [
-        {"if": {"properties": {"valueType": {"const": "enum"}}}, "then": {"required": ["enumValues"]}},
-        {"if": {"properties": {"valueType": {"enum": ["asset_ref", "text_reference"]}}}, "then": {"required": ["acceptedMimeTypes"]}},
-        {"if": {"properties": {"multiValue": {"const": true}}, "required": ["multiValue"]}, "then": {"required": ["maxValues"]}}
-      ]
-    },
-    "fieldBinding": {
-      "type": "object",
-      "required": ["fieldKey", "stepId", "paramKey", "bindMode"],
-      "additionalProperties": false,
-      "properties": {
-        "fieldKey": {"type": "string"},
-        "stepId": {"type": "string"},
-        "paramKey": {"type": "string"},
-        "bindMode": {"enum": ["shared", "expanded"]}
-      }
-    },
-    "paramBinding": {
-      "type": "object",
-      "required": ["stepId", "paramKey", "bindMode", "sources"],
-      "additionalProperties": false,
-      "properties": {
-        "stepId": {"type": "string"},
-        "paramKey": {"type": "string"},
-        "bindMode": {"enum": ["shared", "expanded"]},
-        "separator": {"type": "string"},
-        "sources": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "object",
-            "required": ["kind"],
-            "additionalProperties": false,
-            "properties": {
-              "kind": {"enum": ["field_ref", "literal"]},
-              "fieldKey": {"type": "string"},
-              "literal": {"type": "string"}
-            }
+            "properties": {"values": {"type": "object"}}
           }
         }
       }

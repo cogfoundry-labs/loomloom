@@ -1,6 +1,6 @@
 # Metadata reference
 
-`meta.name` is required. Optional fields are description, scenario, inputSummary, displayOutputType, primaryOutputType, and tags. If primaryOutputType is supplied, it must match the capability derived from terminal steps; different terminal capabilities derive `mixed`.
+`meta.name` is required. Optional fields are description, scenario, inputSummary, displayOutputType, primaryOutputType, and tags.
 
 | Field | Meaning |
 | --- | --- |
@@ -12,4 +12,6 @@
 | `primaryOutputType` | optional assertion of derived terminal capability |
 | `tags` | string tags |
 
-Metadata does not change artifact MIME or replace the input schema. Market profile and pricing belong to a Listing, not TemplateSpec metadata.
+Core derives the primary output from frozen terminal contract outputs. If `primaryOutputType` is supplied, save-time validation requires it to match that result.
+
+Metadata does not replace `templateInputs` or contract ports and does not change Artifact MIME. Market profile and pricing belong to a Listing, not TemplateSpec metadata.

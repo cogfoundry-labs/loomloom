@@ -1,0 +1,1 @@
+{"meta":{"name":"Profile without model selection"},"steps":[{"stepId":"stp_prof02","displayName":"Generate text","executionBinding":{"kind":"capabilityProfile","profileId":"text.basic.openai-chat.v1","profileRevision":"1"}}],"workbook":{}}

@@ -1,0 +1,14 @@
+{
+  "meta": {"name": "Merge reference images in order", "primaryOutputType": "image"},
+  "templateInputs": {
+    "promptA": {"kind": "value", "valueType": "string", "required": true, "blankPolicy": "error", "presentation": {"label": "Reference A prompt", "order": 10}},
+    "promptB": {"kind": "value", "valueType": "string", "required": true, "blankPolicy": "error", "presentation": {"label": "Reference B prompt", "order": 20}},
+    "mergePrompt": {"kind": "value", "valueType": "string", "required": true, "blankPolicy": "error", "presentation": {"label": "Merge instructions", "order": 30}}
+  },
+  "steps": [
+    {"stepId": "stp_mrga01", "displayName": "Generate reference A", "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-image-generation-v2"}, "inputBindings": {"prompt": {"source": "templateInput", "inputKey": "promptA"}}},
+    {"stepId": "stp_mrgb01", "displayName": "Generate reference B", "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-image-generation-v2"}, "inputBindings": {"prompt": {"source": "templateInput", "inputKey": "promptB"}}},
+    {"stepId": "stp_mrgt01", "displayName": "Merge references", "dependsOn": ["stp_mrga01", "stp_mrgb01"], "triggerPolicy": "require_all", "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-multi-image-edit-v2"}, "inputBindings": {"images": {"source": "merge", "merge": {"policy": "ordered_artifacts", "missingSourcePolicy": "error", "sources": [{"source": "stepOutput", "stepId": "stp_mrga01", "portId": "output"}, {"source": "stepOutput", "stepId": "stp_mrgb01", "portId": "output"}]}}, "prompt": {"source": "templateInput", "inputKey": "mergePrompt"}}}
+  ],
+  "workbook": {"sampleRows": [{"values": {"promptA": "Paper boat", "promptB": "Moonlight", "mergePrompt": "Combine them as a watercolor"}}]}
+}

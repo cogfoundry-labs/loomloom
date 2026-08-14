@@ -65,7 +65,7 @@ func TestBundledSkillDocumentsUnifiedInstallation(t *testing.T) {
 	}
 }
 
-func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
+func TestTemplateSpecArtifactSequenceFixtureContract(t *testing.T) {
 	root := findRepoRoot(t)
 	caseData, err := os.ReadFile(filepath.Join(root, "src/cli/internal/cmd/testdata/template-spec-authoring/uploaded-text.json"))
 	if err != nil {
@@ -75,10 +75,10 @@ func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
 		Request  string `json:"request"`
 		Fixture  string `json:"fixture"`
 		Expected struct {
-			FieldKey         string `json:"fieldKey"`
-			ValueType        string `json:"valueType"`
+			InputKey         string `json:"inputKey"`
+			InputKind        string `json:"inputKind"`
 			AcceptedMimeType string `json:"acceptedMimeType"`
-			InputPort        string `json:"inputPort"`
+			TargetPort       string `json:"targetPort"`
 			SourceType       string `json:"sourceType"`
 		} `json:"expected"`
 	}
@@ -95,47 +95,45 @@ func TestTemplateSpecUploadedTextFixtureContract(t *testing.T) {
 	}
 	var spec struct {
 		Steps []struct {
-			UpstreamBindings []struct {
-				InputPort      string `json:"inputPort"`
-				SourceType     string `json:"sourceType"`
-				SourceInputKey string `json:"sourceInputKey"`
-			} `json:"upstreamBindings"`
+			InputBindings map[string]struct {
+				Sequence struct {
+					Items []struct {
+						Source struct {
+							Source   string `json:"source"`
+							InputKey string `json:"inputKey"`
+						} `json:"source"`
+					} `json:"items"`
+				} `json:"sequence"`
+			} `json:"inputBindings"`
 		} `json:"steps"`
-		InputSchema struct {
-			Fields []struct {
-				Key               string   `json:"key"`
-				ValueType         string   `json:"valueType"`
-				AcceptedMimeTypes []string `json:"acceptedMimeTypes"`
-			} `json:"fields"`
-		} `json:"inputSchema"`
-		FieldBindings []struct {
-			FieldKey string `json:"fieldKey"`
-		} `json:"fieldBindings"`
+		TemplateInputs map[string]struct {
+			Kind              string   `json:"kind"`
+			AcceptedMimeTypes []string `json:"acceptedMimeTypes"`
+		} `json:"templateInputs"`
 	}
 	if err := json.Unmarshal(specData, &spec); err != nil {
 		t.Fatalf("decode fixture spec: %v", err)
 	}
-	if len(spec.InputSchema.Fields) != 1 {
-		t.Fatalf("fixture fields = %d, want 1", len(spec.InputSchema.Fields))
+	input, ok := spec.TemplateInputs[authoringCase.Expected.InputKey]
+	if !ok {
+		t.Fatalf("fixture missing template input %q", authoringCase.Expected.InputKey)
 	}
-	field := spec.InputSchema.Fields[0]
-	if field.Key != authoringCase.Expected.FieldKey || field.ValueType != authoringCase.Expected.ValueType {
-		t.Fatalf("fixture field = (%q, %q), want (%q, %q)", field.Key, field.ValueType, authoringCase.Expected.FieldKey, authoringCase.Expected.ValueType)
+	if input.Kind != authoringCase.Expected.InputKind {
+		t.Fatalf("input kind = %q, want %q", input.Kind, authoringCase.Expected.InputKind)
 	}
-	if len(field.AcceptedMimeTypes) != 1 || field.AcceptedMimeTypes[0] != authoringCase.Expected.AcceptedMimeType {
-		t.Fatalf("acceptedMimeTypes = %v, want [%q]", field.AcceptedMimeTypes, authoringCase.Expected.AcceptedMimeType)
+	if len(input.AcceptedMimeTypes) != 1 || input.AcceptedMimeTypes[0] != authoringCase.Expected.AcceptedMimeType {
+		t.Fatalf("acceptedMimeTypes = %v, want [%q]", input.AcceptedMimeTypes, authoringCase.Expected.AcceptedMimeType)
 	}
-	if len(spec.Steps) != 1 || len(spec.Steps[0].UpstreamBindings) != 1 {
-		t.Fatalf("fixture upstream bindings = %#v, want exactly one", spec.Steps)
+	if len(spec.Steps) != 1 {
+		t.Fatalf("fixture steps = %d, want 1", len(spec.Steps))
 	}
-	binding := spec.Steps[0].UpstreamBindings[0]
-	if binding.InputPort != authoringCase.Expected.InputPort || binding.SourceType != authoringCase.Expected.SourceType || binding.SourceInputKey != field.Key {
-		t.Fatalf("fixture upstream binding = %#v, want inputPort=%q sourceType=%q sourceInputKey=%q", binding, authoringCase.Expected.InputPort, authoringCase.Expected.SourceType, field.Key)
+	binding, ok := spec.Steps[0].InputBindings[authoringCase.Expected.TargetPort]
+	if !ok || len(binding.Sequence.Items) < 2 {
+		t.Fatalf("fixture missing sequence binding for target port %q", authoringCase.Expected.TargetPort)
 	}
-	for _, fieldBinding := range spec.FieldBindings {
-		if fieldBinding.FieldKey == field.Key {
-			t.Fatalf("text_reference field %q must not be composed into a prompt field binding", field.Key)
-		}
+	source := binding.Sequence.Items[1].Source
+	if source.Source != authoringCase.Expected.SourceType || source.InputKey != authoringCase.Expected.InputKey {
+		t.Fatalf("sequence source = %#v, want source=%q inputKey=%q", source, authoringCase.Expected.SourceType, authoringCase.Expected.InputKey)
 	}
 }
 
@@ -240,25 +238,29 @@ func TestBundledSkillsUseCanonicalUploadedTextRules(t *testing.T) {
 	}
 }
 
-func TestBundledSkillsRejectExpandedAuthoringConsistently(t *testing.T) {
+func TestBundledSkillsUseTemplateSpecV2Bindings(t *testing.T) {
 	root := findRepoRoot(t)
 	text := readCanonicalSkillReference(t, root, "template-spec.md")
 	for _, want := range []string{
-		"Do not author `bindMode=expanded`",
-		"TS-TOPOLOGY-001",
-		"`multiValue=true` may still represent an ordered content collection",
-		"TemplateSpec v1 does not support dynamic-cardinality Step fan-out",
+		"Author only `template-spec/v2`; v1 is historical and read-only",
+		"top-level `templateInputs` map",
+		"`executionBinding.kind=fixedModelContract`",
+		"both `dependsOn` and a `stepOutput` source",
+		"Use `sequence` for one ordered heterogeneous multimodal value",
+		"Use `merge` for homogeneous Artifact collections",
+		"TemplateSpec v2 does not provide dynamic-cardinality Step fan-out",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
 		}
 	}
 	for _, forbidden := range []string{
-		"`expanded` is only for dynamic multi-value input",
-		"`expanded` is for dynamic multi-value input",
+		"Connect steps with `dependsOn` and `upstreamBindings`",
+		"`allowModelOverride=true`",
+		"`inputSchema.sampleRows",
 	} {
 		if strings.Contains(text, forbidden) {
-			t.Fatalf("%s still recommends expanded authoring with %q", canonicalSkillReferencesDir, forbidden)
+			t.Fatalf("%s still recommends retired v1 authoring with %q", canonicalSkillReferencesDir, forbidden)
 		}
 	}
 }

@@ -1,0 +1,10 @@
+{
+  "meta": {"name": "Profile 缺少模型选择"},
+  "steps": [
+    {
+      "stepId": "stp_prof02", "displayName": "文本生成",
+      "executionBinding": {"kind": "capabilityProfile", "profileId": "text.basic.openai-chat.v1", "profileRevision": "1"}
+    }
+  ],
+  "workbook": {}
+}

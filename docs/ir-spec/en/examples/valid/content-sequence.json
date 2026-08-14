@@ -1,0 +1,9 @@
+{
+  "meta": {"name": "Ordered text and first frame", "primaryOutputType": "video"},
+  "templateInputs": {
+    "openingText": {"kind": "value", "valueType": "string", "required": true, "blankPolicy": "error", "presentation": {"label": "Prompt", "order": 10}},
+    "firstFrame": {"kind": "artifact", "required": true, "blankPolicy": "error", "acceptedMimeTypes": ["image/*"], "minItems": 1, "maxItems": 1, "presentation": {"label": "First frame", "order": 20}}
+  },
+  "steps": [{"stepId": "stp_seq001", "displayName": "Generate video", "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-content-sequence-v2"}, "inputBindings": {"content": {"source": "sequence", "sequence": {"items": [{"position": 0, "kind": "text", "source": {"source": "templateInput", "inputKey": "openingText"}}, {"position": 1, "kind": "image", "role": "first_frame", "source": {"source": "templateInput", "inputKey": "firstFrame"}}]}}}}],
+  "workbook": {"instructions": ["Build text and image as one ordered content sequence."]}
+}
