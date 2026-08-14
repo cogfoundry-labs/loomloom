@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,8 +8,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/cogfoundry-labs/loomloom/src/cli/internal/client"
@@ -79,51 +76,38 @@ type modelSummary struct {
 	IsDefault          bool     `json:"isDefault"`
 }
 
-type templateSpecMeta struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+type templateAuthoringContractsResponse struct {
+	Contracts []templateAuthoringContract `json:"contracts"`
 }
 
-type templateSpecEnvelope struct {
-	Meta          templateSpecMeta         `json:"meta"`
-	Steps         []templateSpecStep       `json:"steps"`
-	InputSchema   *templateSpecInputSchema `json:"inputSchema"`
-	FieldBindings []templateSpecBinding    `json:"fieldBindings"`
-	ParamBindings []templateSpecBinding    `json:"paramBindings"`
+type templateAuthoringContract struct {
+	SubjectRevisionID string                        `json:"subjectRevisionId"`
+	SubjectHash       string                        `json:"subjectHash"`
+	ModelID           string                        `json:"modelId"`
+	Operation         string                        `json:"operation"`
+	Variant           string                        `json:"variant"`
+	ExecutionUnitRef  string                        `json:"executionUnitRef"`
+	InputPorts        []templateAuthoringInputPort  `json:"inputPorts"`
+	OutputPorts       []templateAuthoringOutputPort `json:"outputPorts"`
 }
 
-type templateSpecStep struct {
-	StepID           string                        `json:"stepId"`
-	ExecutionUnit    string                        `json:"executionUnit"`
-	UpstreamBindings []templateSpecUpstreamBinding `json:"upstreamBindings"`
+type templateAuthoringInputPort struct {
+	PortID            string          `json:"portId"`
+	Kind              string          `json:"kind"`
+	ValueType         string          `json:"valueType,omitempty"`
+	Required          bool            `json:"required"`
+	Constraints       json.RawMessage `json:"constraints,omitempty"`
+	MinItems          int32           `json:"minItems,omitempty"`
+	MaxItems          int32           `json:"maxItems,omitempty"`
+	AcceptedMIMETypes []string        `json:"acceptedMimeTypes,omitempty"`
+	Sequence          json.RawMessage `json:"sequence,omitempty"`
+	Label             string          `json:"label,omitempty"`
+	Description       string          `json:"description,omitempty"`
 }
 
-type templateSpecInputSchema struct {
-	Fields     []templateSpecInputField `json:"fields"`
-	SampleRows []templateSpecSampleRow  `json:"sampleRows"`
-}
-
-type templateSpecSampleRow struct {
-	Values map[string]any `json:"values"`
-}
-
-type templateSpecInputField struct {
-	Key        string `json:"key"`
-	Label      string `json:"label"`
-	ValueType  string `json:"valueType"`
-	MultiValue bool   `json:"multiValue"`
-}
-
-type templateSpecBinding struct {
-	FieldKey string `json:"fieldKey"`
-	StepID   string `json:"stepId"`
-	ParamKey string `json:"paramKey"`
-	BindMode string `json:"bindMode"`
-}
-
-type templateSpecUpstreamBinding struct {
-	SourceType     string `json:"sourceType"`
-	SourceInputKey string `json:"sourceInputKey"`
+type templateAuthoringOutputPort struct {
+	PortID string `json:"portId"`
+	Type   string `json:"type"`
 }
 
 func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
@@ -135,6 +119,7 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecCheckCmd(opts),
 		newTemplateSpecDocsCmd(opts),
 		newTemplateSpecModelsCmd(opts),
+		newTemplateSpecContractsCmd(opts),
 		newTemplateSpecListCmd(opts),
 		newTemplateSpecGetCmd(opts),
 		newTemplateSpecVersionsCmd(opts),
@@ -148,6 +133,51 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecRunCmd(opts),
 	)
 	return cmd
+}
+
+func newTemplateSpecContractsCmd(opts *rootOptions) *cobra.Command {
+	return &cobra.Command{
+		Use:   "contracts <model-id>",
+		Short: "List enabled model contracts that can be referenced by TemplateSpec v2",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			modelID := strings.TrimSpace(args[0])
+			if modelID == "" {
+				return errors.New("model-id is required")
+			}
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			query := url.Values{}
+			query.Set("modelId", modelID)
+			var resp templateAuthoringContractsResponse
+			if err := httpClient.GetJSONWithQuery(ctx, "/modelContracts", query, &resp); err != nil {
+				return err
+			}
+			if opts.output == "json" {
+				enc := json.NewEncoder(cmd.OutOrStdout())
+				enc.SetIndent("", "  ")
+				return enc.Encode(resp)
+			}
+			if len(resp.Contracts) == 0 {
+				_, err = fmt.Fprintln(cmd.OutOrStdout(), "no enabled authoring contracts")
+				return err
+			}
+			tw := newTabWriter(cmd.OutOrStdout())
+			_, _ = fmt.Fprintln(tw, "operation\tvariant\tsubject_revision_id\texecution_unit\tinput_ports")
+			for _, contract := range resp.Contracts {
+				ports := make([]string, 0, len(contract.InputPorts))
+				for _, port := range contract.InputPorts {
+					ports = append(ports, port.PortID)
+				}
+				_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", contract.Operation, contract.Variant, contract.SubjectRevisionID, contract.ExecutionUnitRef, strings.Join(ports, ","))
+			}
+			return tw.Flush()
+		},
+	}
 }
 
 func newTemplateSpecDocsCmd(opts *rootOptions) *cobra.Command {
@@ -313,7 +343,8 @@ func newTemplateSpecCheckCmd(opts *rootOptions) *cobra.Command {
 				"name":        spec.Meta.Name,
 				"description": spec.Meta.Description,
 				"steps":       len(spec.Steps),
-				"bindings":    len(spec.FieldBindings) + len(spec.ParamBindings),
+				"inputs":      len(spec.TemplateInputs),
+				"bindings":    countTemplateSpecBindings(spec),
 				"bytes":       len(raw),
 			}
 			if opts.output == "json" {
@@ -326,7 +357,7 @@ func newTemplateSpecCheckCmd(opts *rootOptions) *cobra.Command {
 				"valid\nname\t%s\nsteps\t%d\nbindings\t%d\nbytes\t%d\n",
 				spec.Meta.Name,
 				len(spec.Steps),
-				len(spec.FieldBindings)+len(spec.ParamBindings),
+				countTemplateSpecBindings(spec),
 				len(raw),
 			)
 			return err
@@ -508,8 +539,9 @@ func newTemplateSpecCreateVersionCmd(opts *rootOptions) *cobra.Command {
 func saveTemplateSpecVersion(ctx context.Context, httpClient *client.Client, templateID string, rawSpec []byte, versionNote string) (saveTemplateVersionResponse, error) {
 	var versionResp saveTemplateVersionResponse
 	err := httpClient.PostJSON(ctx, "/users/me/templates/"+templateID+"/versions", map[string]any{
-		"versionNote":   strings.TrimSpace(versionNote),
-		"canonicalSpec": json.RawMessage(rawSpec),
+		"versionNote":     strings.TrimSpace(versionNote),
+		"specVersion":     "template-spec/v2",
+		"canonicalSpecV2": json.RawMessage(rawSpec),
 	}, &versionResp)
 	return versionResp, err
 }
@@ -702,224 +734,6 @@ func newTemplateSpecSubmitWorkbookCmd(opts *rootOptions) *cobra.Command {
 	cmd.Flags().StringVar(&clientRequestID, "idempotency-key", "", "Deprecated alias for --client-request-id")
 	_ = cmd.Flags().MarkDeprecated("idempotency-key", "use --client-request-id")
 	return cmd
-}
-
-func loadTemplateSpecFile(path string) (templateSpecEnvelope, []byte, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return templateSpecEnvelope{}, nil, fmt.Errorf("read %s: %w", path, err)
-	}
-	trimmed := bytes.TrimSpace(data)
-	if len(trimmed) == 0 {
-		return templateSpecEnvelope{}, nil, errors.New("template spec file is empty")
-	}
-	normalized, err := normalizeTemplateSpecJSON(trimmed)
-	if err != nil {
-		return templateSpecEnvelope{}, nil, err
-	}
-	var spec templateSpecEnvelope
-	if err := json.Unmarshal(normalized, &spec); err != nil {
-		return templateSpecEnvelope{}, nil, fmt.Errorf("parse TemplateSpec JSON: %w", err)
-	}
-	if strings.TrimSpace(spec.Meta.Name) == "" {
-		return templateSpecEnvelope{}, nil, errors.New("TemplateSpec meta.name is required")
-	}
-	if len(spec.Steps) == 0 {
-		return templateSpecEnvelope{}, nil, errors.New("TemplateSpec steps must not be empty")
-	}
-	if spec.InputSchema == nil {
-		return templateSpecEnvelope{}, nil, errors.New("TemplateSpec inputSchema is required")
-	}
-	if err := validateTemplateSpecStructure(spec); err != nil {
-		return templateSpecEnvelope{}, nil, err
-	}
-	if err := validateTemplateSpecAssetBindingContract(spec); err != nil {
-		return templateSpecEnvelope{}, nil, err
-	}
-	if err := validateTemplateSpecAuthoringPolicy(spec); err != nil {
-		return templateSpecEnvelope{}, nil, err
-	}
-	var compact bytes.Buffer
-	if err := json.Compact(&compact, normalized); err != nil {
-		return templateSpecEnvelope{}, nil, fmt.Errorf("compact TemplateSpec JSON: %w", err)
-	}
-	return spec, compact.Bytes(), nil
-}
-
-const templateSpecExpandedAuthoringPolicyCode = "TS-TOPOLOGY-001"
-
-func validateTemplateSpecAuthoringPolicy(spec templateSpecEnvelope) error {
-	for i, binding := range spec.FieldBindings {
-		if strings.EqualFold(strings.TrimSpace(binding.BindMode), "expanded") {
-			return templateSpecExpandedAuthoringPolicyError(fmt.Sprintf("fieldBindings[%d]", i))
-		}
-	}
-	for i, binding := range spec.ParamBindings {
-		if strings.EqualFold(strings.TrimSpace(binding.BindMode), "expanded") {
-			return templateSpecExpandedAuthoringPolicyError(fmt.Sprintf("paramBindings[%d]", i))
-		}
-	}
-	return nil
-}
-
-func templateSpecExpandedAuthoringPolicyError(path string) error {
-	return fmt.Errorf(
-		"%s: %s uses bindMode=expanded, which is compatibility-only for historical template versions and cannot be used for new authoring; use one workbook row per independently processed item, or define fixed parallel steps with shared bindings and connect them with dependsOn/upstreamBindings; TemplateSpec v1 does not support dynamic-cardinality step fan-out",
-		templateSpecExpandedAuthoringPolicyCode,
-		path,
-	)
-}
-
-var templateSpecStepIDPattern = regexp.MustCompile(`^stp_[0-9a-z]{6,10}$`)
-
-func validateTemplateSpecStructure(spec templateSpecEnvelope) error {
-	stepIDs := make(map[string]struct{}, len(spec.Steps))
-	for i, step := range spec.Steps {
-		stepID := strings.TrimSpace(step.StepID)
-		if !templateSpecStepIDPattern.MatchString(stepID) {
-			return fmt.Errorf("steps[%d].stepId %q must match stp_<6-10 base36 chars>", i, step.StepID)
-		}
-		if _, exists := stepIDs[stepID]; exists {
-			return fmt.Errorf("steps[%d].stepId %q is duplicated", i, stepID)
-		}
-		stepIDs[stepID] = struct{}{}
-	}
-	for i, row := range spec.InputSchema.SampleRows {
-		if row.Values == nil {
-			return fmt.Errorf("inputSchema.sampleRows[%d] must wrap field values in a values object", i)
-		}
-	}
-	return nil
-}
-
-func validateTemplateSpecAssetBindingContract(spec templateSpecEnvelope) error {
-	if spec.InputSchema == nil || len(spec.FieldBindings) == 0 {
-		return nil
-	}
-	fieldTypes := make(map[string]string, len(spec.InputSchema.Fields))
-	for _, field := range spec.InputSchema.Fields {
-		fieldTypes[strings.TrimSpace(field.Key)] = strings.TrimSpace(field.ValueType)
-	}
-	for i, binding := range spec.FieldBindings {
-		if fieldTypes[strings.TrimSpace(binding.FieldKey)] != "text_reference" {
-			continue
-		}
-		if !strings.EqualFold(strings.TrimSpace(binding.ParamKey), "prompt") {
-			continue
-		}
-		return fmt.Errorf(
-			"fieldBindings[%d].fieldKey %q is text_reference and cannot be bound directly to prompt; bind it with upstreamBindings sourceType=initial_input instead",
-			i,
-			binding.FieldKey,
-		)
-	}
-	return nil
-}
-
-func normalizeTemplateSpecJSON(data []byte) ([]byte, error) {
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.UseNumber()
-	var value any
-	if err := decoder.Decode(&value); err != nil {
-		return nil, fmt.Errorf("parse TemplateSpec JSON: %w", err)
-	}
-	normalized := normalizeTemplateSpecJSONValue(value)
-	out, err := json.Marshal(normalized)
-	if err != nil {
-		return nil, fmt.Errorf("normalize TemplateSpec JSON: %w", err)
-	}
-	return out, nil
-}
-
-func normalizeTemplateSpecJSONValue(value any) any {
-	switch typed := value.(type) {
-	case map[string]any:
-		keys := make([]string, 0, len(typed))
-		for key := range typed {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-		out := make(map[string]any, len(typed))
-		for _, key := range keys {
-			normalizedKey := normalizeTemplateSpecJSONKey(key)
-			if _, exists := out[normalizedKey]; exists {
-				continue
-			}
-			out[normalizedKey] = normalizeTemplateSpecJSONValue(typed[key])
-		}
-		return out
-	case []any:
-		out := make([]any, 0, len(typed))
-		for _, item := range typed {
-			out = append(out, normalizeTemplateSpecJSONValue(item))
-		}
-		return out
-	default:
-		return value
-	}
-}
-
-func normalizeTemplateSpecJSONKey(key string) string {
-	if normalized, ok := templateSpecJSONKeyAliases[key]; ok {
-		return normalized
-	}
-	return key
-}
-
-var templateSpecJSONKeyAliases = map[string]string{
-	"AcceptedMIMETypes":  "acceptedMimeTypes",
-	"AllowModelOverride": "allowModelOverride",
-	"BindMode":           "bindMode",
-	"DefaultModelRef":    "defaultModelRef",
-	"DefaultValue":       "defaultValue",
-	"DependsOn":          "dependsOn",
-	"Description":        "description",
-	"DisplayName":        "displayName",
-	"DisplayOutputType":  "displayOutputType",
-	"EnumValues":         "enumValues",
-	"Examples":           "examples",
-	"ExecutionUnit":      "executionUnit",
-	"FieldBindings":      "fieldBindings",
-	"FieldKey":           "fieldKey",
-	"Fields":             "fields",
-	"Hidden":             "hidden",
-	"Hint":               "hint",
-	"InputPort":          "inputPort",
-	"InputSchema":        "inputSchema",
-	"InputSummary":       "inputSummary",
-	"Instruction":        "instruction",
-	"Instructions":       "instructions",
-	"Key":                "key",
-	"Kind":               "kind",
-	"Label":              "label",
-	"Literal":            "literal",
-	"MaxValues":          "maxValues",
-	"Meta":               "meta",
-	"ModelKey":           "modelKey",
-	"MultiValue":         "multiValue",
-	"Name":               "name",
-	"Order":              "order",
-	"ParamBindings":      "paramBindings",
-	"ParamKey":           "paramKey",
-	"Placeholder":        "placeholder",
-	"Presentation":       "presentation",
-	"PrimaryOutputType":  "primaryOutputType",
-	"Required":           "required",
-	"SampleRows":         "sampleRows",
-	"Scenario":           "scenario",
-	"Separator":          "separator",
-	"SourceInputKey":     "sourceInputKey",
-	"SourceKind":         "sourceKind",
-	"SourcePort":         "sourcePort",
-	"SourceStepID":       "sourceStepId",
-	"SourceType":         "sourceType",
-	"StaticParams":       "staticParams",
-	"StepID":             "stepId",
-	"Steps":              "steps",
-	"Tags":               "tags",
-	"UpstreamBindings":   "upstreamBindings",
-	"ValueType":          "valueType",
-	"Widget":             "widget",
 }
 
 func postUserTemplateWorkbook[T any](ctx context.Context, opts *rootOptions, workbookPath, endpoint string, extra map[string]string) (T, error) {
