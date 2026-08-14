@@ -145,6 +145,7 @@ Before showing TemplateSpec, verify that Template Input descriptions, Workbook s
 - Use lowerCamel fields such as `meta.name`, `templateInputs`, `steps[].stepId`, and `steps[].inputBindings`.
 - Put user-facing inputs in the top-level `templateInputs` map. Put instructions and sample rows under `workbook`.
 - Bind an exact model with `executionBinding.kind=fixedModelContract` and a real `subjectRevisionId` from the target environment.
+- Resolve that ID and the contract's exact input ports with `loomloom template-spec contracts <model-id> --output json`; do not infer them from the model catalog.
 - Bind a replaceable model set with `executionBinding.kind=capabilityProfile`; also declare the separate Step-level `modelSelection` rule.
 - Treat every `inputBindings` map key as the target contract `portId`. Never guess a port ID or use a role, file name, native JSON pointer, or shared field name as its identity.
 - A target port has exactly one binding. Use `templateInput`, `stepOutput`, `literal`, `platformContext`, `composeValue`, `sequence`, or `merge` according to the current bundled documentation.
