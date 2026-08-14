@@ -249,9 +249,6 @@ func TestBundledSkillsUseTemplateSpecV2Bindings(t *testing.T) {
 		"Use `sequence` for one ordered heterogeneous multimodal value",
 		"Use `merge` for homogeneous Artifact collections",
 		"TemplateSpec v2 does not provide dynamic-cardinality Step fan-out",
-		"An empty result from `template-spec contracts <text-model-id>`",
-		"`executionBinding.kind=capabilityProfile`",
-		"must never be reported as blocking such a workflow",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)

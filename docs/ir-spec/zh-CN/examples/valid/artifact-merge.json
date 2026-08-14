@@ -1,0 +1,48 @@
+{
+  "meta": {"name": "按序合并参考图", "primaryOutputType": "image"},
+  "templateInputs": {
+    "promptA": {
+      "kind": "value", "valueType": "string", "required": true, "blankPolicy": "error",
+      "presentation": {"label": "参考图 A 提示词", "order": 10}
+    },
+    "promptB": {
+      "kind": "value", "valueType": "string", "required": true, "blankPolicy": "error",
+      "presentation": {"label": "参考图 B 提示词", "order": 20}
+    },
+    "mergePrompt": {
+      "kind": "value", "valueType": "string", "required": true, "blankPolicy": "error",
+      "presentation": {"label": "合成要求", "order": 30}
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_mrga01", "displayName": "生成参考图 A",
+      "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-image-generation-v2"},
+      "inputBindings": {"prompt": {"source": "templateInput", "inputKey": "promptA"}}
+    },
+    {
+      "stepId": "stp_mrgb01", "displayName": "生成参考图 B",
+      "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-image-generation-v2"},
+      "inputBindings": {"prompt": {"source": "templateInput", "inputKey": "promptB"}}
+    },
+    {
+      "stepId": "stp_mrgt01", "displayName": "合成参考图",
+      "dependsOn": ["stp_mrga01", "stp_mrgb01"], "triggerPolicy": "require_all",
+      "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-multi-image-edit-v2"},
+      "inputBindings": {
+        "images": {
+          "source": "merge",
+          "merge": {
+            "policy": "ordered_artifacts", "missingSourcePolicy": "error",
+            "sources": [
+              {"source": "stepOutput", "stepId": "stp_mrga01", "portId": "output"},
+              {"source": "stepOutput", "stepId": "stp_mrgb01", "portId": "output"}
+            ]
+          }
+        },
+        "prompt": {"source": "templateInput", "inputKey": "mergePrompt"}
+      }
+    }
+  ],
+  "workbook": {"sampleRows": [{"values": {"promptA": "纸船", "promptB": "月光", "mergePrompt": "合成水彩插画"}}]}
+}

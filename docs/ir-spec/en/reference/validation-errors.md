@@ -1,19 +1,9 @@
 # Validation errors
 
-Fix the earliest failing layer. TS-IN-001 covers pasted string input; TS-IN-002 rejects text references bound as prompt instead of initial input; TS-IN-003 rejects string fields described as asset IDs; TS-TOPOLOGY-001 rejects expanded execution in new authoring and publication. Other common failures are missing/duplicate IDs, reserved keys, source defaults, invalid binding modes, duplicate targets, unsupported parameters, incompatible ports, cycles, and unavailable models.
+| Rule | Rejected condition | Fix |
+| --- | --- | --- |
+| TS-VERSION-002 | Creating a new v1 version | Migrate offline and create a v2 version |
+| TS-BINDING-002 | stepOutput without matching dependsOn | Declare scheduling dependency and data binding |
+| TS-PROFILE-002 | Profile Step without valid modelSelection | Reference an optional string input and set a default model |
 
-Machine metadata is in `../../machine/rules.json`. Validator messages without stable rule IDs may evolve; do not automate against full prose.
-
-| Failure | Repair |
-| --- | --- |
-| TS-TOPOLOGY-001 expanded execution | use workbook rows for independent items, explicit Steps for fixed branches, or initial_input for a multi-content collection |
-| missing/duplicate field or step | provide unique declared identifiers |
-| reserved input key | rename model/provider/mode field |
-| missing default | set defaultValue for hidden/default source |
-| duplicate target | retain one parameter binding source |
-| parameter not allowed | consult execution-unit parameters |
-| incompatible port | match output MIME to target accepts |
-| dependency cycle | make the graph acyclic |
-| unavailable model | query the target environment catalog |
-
-Stable IDs currently cover the input-transport rules. Other error prose may evolve even when the underlying rule remains.
+JSON Schema validates shape. Core validates cross-field, DAG, and source semantics. Save-time authority validation proves current environment executability.

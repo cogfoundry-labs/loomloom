@@ -1,42 +1,38 @@
-# Input Schema Reference
+# Template Input 与 Workbook
 
-## inputSchema
+`templateInputs` 是以稳定 input key 为键的 map。输入分两类。
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `fields` | array | 至少一个输入字段 |
-| `instructions` | string[] | 工作簿或输入界面的整体填写说明 |
-| `sampleRows` | array | 示例行；字段值放在 `values` 对象中并使用 field key |
-
-## Input Field
-
-| 字段 | 必需 | 规则 |
-| --- | --- | --- |
-| `key` | 是 | 非空、唯一；不能为 model/provider/mode |
-| `label` | 是 | 非空、唯一 |
-| `description` | 否 | 业务含义，不得与 valueType 矛盾 |
-| `required` | 否 | 是否要求 user input 提供值 |
-| `valueType` | 是 | string/enum/image_url/asset_ref/text_reference |
-| `enumValues` | enum 时 | 非空选项数组 |
-| `acceptedMimeTypes` | asset_ref/text_reference 时 | 非空 MIME pattern 数组 |
-| `multiValue` | 否 | 是否允许多个值 |
-| `maxValues` | multiValue=true 时 | 大于 0 |
-| `order` | 否 | 工作簿展示顺序 |
-| `defaultValue` | 条件必需 | sourceKind 非 user_input 时必须非空 |
-| `hidden` | 否 | true 时不向使用者展示 |
-| `sourceKind` | 否 | user_input/default_value/hidden |
-| `presentation` | 否 | widget/placeholder/hint/examples |
-
-## Presentation
-
-widget 允许 `input`、`textarea`、`select`。placeholder、hint 为字符串，examples 为字符串数组。Presentation 只影响界面提示，不改变校验或执行。
-
-## Sample rows
-
-公开 JSON 形状：
+## value
 
 ```json
-{"values": {"content": "示例正文", "tone": "专业"}}
+"prompt": {
+  "kind": "value",
+  "valueType": "string",
+  "required": true,
+  "blankPolicy": "error",
+  "constraints": {"minLength": 1, "maxLength": 1000},
+  "presentation": {"label": "提示词", "widget": "textarea", "order": 10}
+}
 ```
 
-values 中的 key 必须存在于 fields。不要使用 label，也不要把 field key 直接放在 sample row 顶层。
+`valueType` 支持 `string`、`number`、`integer`、`boolean`、`array`、`object`。`required=true` 必须配 `blankPolicy=error`；可选输入使用 `blankPolicy=omit`。
+
+## artifact
+
+```json
+"referenceImages": {
+  "kind": "artifact",
+  "required": false,
+  "blankPolicy": "omit",
+  "acceptedMimeTypes": ["image/*"],
+  "minItems": 0,
+  "maxItems": 4,
+  "presentation": {"label": "参考图", "order": 20}
+}
+```
+
+Artifact 必须声明 MIME 和最大数量。运行值是平台稳定 Artifact 引用，不是任意 URL、文件名或 Base64。
+
+## Workbook
+
+Workbook 列由 `templateInputs` 生成。`workbook.instructions` 提供填写说明；`sampleRows[].values` 的 key 必须引用现有 Template Input。展示信息属于模板，模型合同中的展示信息只作为 authoring hint，不会反向覆盖作者选择。

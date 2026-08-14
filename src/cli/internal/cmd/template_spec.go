@@ -76,62 +76,6 @@ type modelSummary struct {
 	IsDefault          bool     `json:"isDefault"`
 }
 
-type templateAuthoringContractsResponse struct {
-	Contracts []templateAuthoringContract `json:"contracts"`
-}
-
-type templateAuthoringContextResponse struct {
-	Profiles []templateAuthoringProfile `json:"profiles"`
-}
-
-type templateAuthoringProfile struct {
-	ProfileID      string                         `json:"profileId"`
-	Revision       string                         `json:"revision"`
-	CanonicalHash  string                         `json:"canonicalHash"`
-	Capability     string                         `json:"capability"`
-	Endpoint       string                         `json:"endpoint"`
-	Compiler       string                         `json:"compiler"`
-	Stream         bool                           `json:"stream"`
-	InputPorts     []templateAuthoringProfilePort `json:"inputPorts"`
-	EligibleModels []modelSummary                 `json:"eligibleModels"`
-}
-
-type templateAuthoringProfilePort struct {
-	PortID    string `json:"portId"`
-	ValueType string `json:"valueType"`
-	Required  bool   `json:"required"`
-}
-
-type templateAuthoringContract struct {
-	SubjectRevisionID string                        `json:"subjectRevisionId"`
-	SubjectHash       string                        `json:"subjectHash"`
-	ModelID           string                        `json:"modelId"`
-	Operation         string                        `json:"operation"`
-	Variant           string                        `json:"variant"`
-	ExecutionUnitRef  string                        `json:"executionUnitRef"`
-	InputPorts        []templateAuthoringInputPort  `json:"inputPorts"`
-	OutputPorts       []templateAuthoringOutputPort `json:"outputPorts"`
-}
-
-type templateAuthoringInputPort struct {
-	PortID            string          `json:"portId"`
-	Kind              string          `json:"kind"`
-	ValueType         string          `json:"valueType,omitempty"`
-	Required          bool            `json:"required"`
-	Constraints       json.RawMessage `json:"constraints,omitempty"`
-	MinItems          int32           `json:"minItems,omitempty"`
-	MaxItems          int32           `json:"maxItems,omitempty"`
-	AcceptedMIMETypes []string        `json:"acceptedMimeTypes,omitempty"`
-	Sequence          json.RawMessage `json:"sequence,omitempty"`
-	Label             string          `json:"label,omitempty"`
-	Description       string          `json:"description,omitempty"`
-}
-
-type templateAuthoringOutputPort struct {
-	PortID string `json:"portId"`
-	Type   string `json:"type"`
-}
-
 func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "template-spec",
@@ -141,8 +85,6 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecCheckCmd(opts),
 		newTemplateSpecDocsCmd(opts),
 		newTemplateSpecModelsCmd(opts),
-		newTemplateSpecAuthoringContextCmd(opts),
-		newTemplateSpecContractsCmd(opts),
 		newTemplateSpecListCmd(opts),
 		newTemplateSpecGetCmd(opts),
 		newTemplateSpecVersionsCmd(opts),
@@ -156,94 +98,6 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecRunCmd(opts),
 	)
 	return cmd
-}
-
-func newTemplateSpecAuthoringContextCmd(opts *rootOptions) *cobra.Command {
-	return &cobra.Command{
-		Use:   "authoring-context",
-		Short: "Show the current server-side Profile contracts and eligible models for TemplateSpec v2",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			httpClient, err := newHTTPClient(opts)
-			if err != nil {
-				return err
-			}
-			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
-			defer cancel()
-			var resp templateAuthoringContextResponse
-			if err := httpClient.GetJSON(ctx, "/templateAuthoringContext", &resp); err != nil {
-				return err
-			}
-			if opts.output == "json" {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				return enc.Encode(resp)
-			}
-			if len(resp.Profiles) == 0 {
-				_, err = fmt.Fprintln(cmd.OutOrStdout(), "no authoring profiles")
-				return err
-			}
-			tw := newTabWriter(cmd.OutOrStdout())
-			if _, err := fmt.Fprintln(tw, "profile_id\trevision\tcapability\tendpoint\teligible_models"); err != nil {
-				return err
-			}
-			for _, profile := range resp.Profiles {
-				modelIDs := make([]string, 0, len(profile.EligibleModels))
-				for _, candidate := range profile.EligibleModels {
-					modelIDs = append(modelIDs, candidate.ModelID)
-				}
-				if _, err := fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", profile.ProfileID, profile.Revision, profile.Capability, profile.Endpoint, strings.Join(modelIDs, ",")); err != nil {
-					return err
-				}
-			}
-			return tw.Flush()
-		},
-	}
-}
-
-func newTemplateSpecContractsCmd(opts *rootOptions) *cobra.Command {
-	return &cobra.Command{
-		Use:   "contracts <model-id>",
-		Short: "List enabled model contracts that can be referenced by TemplateSpec v2",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			modelID := strings.TrimSpace(args[0])
-			if modelID == "" {
-				return errors.New("model-id is required")
-			}
-			httpClient, err := newHTTPClient(opts)
-			if err != nil {
-				return err
-			}
-			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
-			defer cancel()
-			query := url.Values{}
-			query.Set("modelId", modelID)
-			var resp templateAuthoringContractsResponse
-			if err := httpClient.GetJSONWithQuery(ctx, "/modelContracts", query, &resp); err != nil {
-				return err
-			}
-			if opts.output == "json" {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				return enc.Encode(resp)
-			}
-			if len(resp.Contracts) == 0 {
-				_, err = fmt.Fprintln(cmd.OutOrStdout(), "no enabled authoring contracts")
-				return err
-			}
-			tw := newTabWriter(cmd.OutOrStdout())
-			_, _ = fmt.Fprintln(tw, "operation\tvariant\tsubject_revision_id\texecution_unit\tinput_ports")
-			for _, contract := range resp.Contracts {
-				ports := make([]string, 0, len(contract.InputPorts))
-				for _, port := range contract.InputPorts {
-					ports = append(ports, port.PortID)
-				}
-				_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", contract.Operation, contract.Variant, contract.SubjectRevisionID, contract.ExecutionUnitRef, strings.Join(ports, ","))
-			}
-			return tw.Flush()
-		},
-	}
 }
 
 func newTemplateSpecDocsCmd(opts *rootOptions) *cobra.Command {

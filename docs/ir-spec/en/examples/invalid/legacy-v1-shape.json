@@ -1,0 +1,1 @@
+{"meta":{"name":"Legacy writes are rejected"},"steps":[{"stepId":"stp_legacy1","displayName":"Legacy Step","executionUnit":"text-generate"}],"inputSchema":{"fields":[{"key":"prompt","label":"Prompt","valueType":"string"}]}}

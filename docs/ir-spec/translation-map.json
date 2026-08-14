@@ -49,8 +49,8 @@
     },
     {
       "path": "examples/README.md",
-      "source_sha256": "8b7410042e8b9c7ad70b06f86079a99c651008b4a0a5e990e43738d5aec0ee79",
-      "generated_sha256": "d75eea3b2f44437f28086e5af68303e88197d1fdbad0cda04dc483c3b7c03b1e"
+      "source_sha256": "cf6695c0626cb05371d8633291472718cf55ae74bbaa7bc67e8ddfeea9aafd45",
+      "generated_sha256": "5b891a07c08620ffbbba78911fc22d08c8c26456a81545dbc8636042e5c395d9"
     },
     {
       "path": "examples/invalid/legacy-v1-shape.json",
@@ -74,18 +74,13 @@
     },
     {
       "path": "examples/valid/capability-profile.json",
-      "source_sha256": "d0225734777ca17a48bfbae2065610a28a48c36d963462e9894c4172c1a31100",
-      "generated_sha256": "89f40faf9ceabeb90ca5a628f09f81e4f2d7b38610918f2f08c6c69b13d6df85"
+      "source_sha256": "1762b6ef5dc6681ac4a7d7894cca2524b84a7c34ee864ed45585e83b70607331",
+      "generated_sha256": "4a8535f163c09d49bad4226e0a8be51de8a2ada56c2472b7218fe4ebc018b5e2"
     },
     {
       "path": "examples/valid/compose-value.json",
       "source_sha256": "7206cfb90ad490c9ab5bcd0d5d6278a560d33c4e43aeed2ee7b6ad038c4fc5bb",
       "generated_sha256": "97f0bca6ebd3f57964e87a6cccef4850a7f9b5df3720e5dac6565a28687dc868"
-    },
-    {
-      "path": "examples/valid/content-sequence-step-output.json",
-      "source_sha256": "6feede80f6cd2a27164e901bd05a8c89c4b110f6e44bb0810067200836b94d9c",
-      "generated_sha256": "37a90f65365d96f7c85f7b024e7cef13c1d5bd9c2afa9428a0056b63afbe196a"
     },
     {
       "path": "examples/valid/content-sequence.json",
@@ -129,8 +124,8 @@
     },
     {
       "path": "how-to/configure-models.md",
-      "source_sha256": "4dda8cfdbb144c19666ddc08952703fe0751bce85c1b0a405852a06d46aea2a2",
-      "generated_sha256": "1d95df6d4eb586745e55614ada93837111b04d8eb843e0dda9fb10b9081be1ad"
+      "source_sha256": "62e93a48ab3e6d118fd59d3d0c3f01decb49f0b02095dabe3fcba99da972629e",
+      "generated_sha256": "8a2ef9b264d869ed7f39b8d65ad444d593320ef1460835e20151696fb3e0bcc9"
     },
     {
       "path": "how-to/design-workbook-inputs.md",
@@ -159,8 +154,8 @@
     },
     {
       "path": "reference/bindings.md",
-      "source_sha256": "e53ecefe9ef01bbb0244db38a24319eb2a692fd5ff42f644a48a2e245473ee41",
-      "generated_sha256": "e340841fa004466189d49c48137eb03c3cb353218428888136b1bcaa000e5cb3"
+      "source_sha256": "a95a0aeee2b3845542a46bd17ecd7d24ed4b6e68b208ef5804e2b81387151490",
+      "generated_sha256": "d8c5637af74782c0f6059b3ce616a64a86bc0b58921f2d0c3c3661558c763471"
     },
     {
       "path": "reference/compatibility.md",
@@ -194,8 +189,8 @@
     },
     {
       "path": "reference/template-syntax.md",
-      "source_sha256": "3b6f258c048242f85c371acd7b4494ca50888b06512589e7a70c23ab80bfb69d",
-      "generated_sha256": "837610e33e899e4031f657cc9a21065578625a0627982536ab60408bb5387f09"
+      "source_sha256": "f7c41ec4652599cacffd877fb73d1083d105821e150205160f98112b330b820e",
+      "generated_sha256": "36b2dc01e0221b2f2aa68cf7f7e3096921c644469195be85344db0dbcffe3d3f"
     },
     {
       "path": "reference/validation-errors.md",

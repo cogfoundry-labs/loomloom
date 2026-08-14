@@ -1,0 +1,5 @@
+{
+  "meta": {"name": "旧协议不允许新建"},
+  "steps": [{"stepId": "stp_legacy1", "displayName": "旧步骤", "executionUnit": "text-generate"}],
+  "inputSchema": {"fields": [{"key": "prompt", "label": "提示词", "valueType": "string"}]}
+}

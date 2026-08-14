@@ -1,30 +1,10 @@
-# 允许使用者覆盖模型
+# 允许用户选择模型
 
-默认情况下，Step 始终使用 `defaultModelRef`。只有业务确实要求每行或每次运行选择模型时，才开放覆盖。
+v2 使用 Capability Profile 替代旧的任意模型覆盖。
 
-## 1. 在 Step 开启覆盖
+1. executionBinding 引用固定 Profile 契约版本。
+2. 创建一个可空 string Template Input 作为模型列。
+3. `modelSelection` 引用该 input key，并给出默认模型。
+4. Run 时按 Profile 当前合格成员校验选择，并冻结实际模型和合同证据。
 
-```json
-"allowModelOverride": true
-```
-
-## 2. 创建选择字段
-
-字段 key 不能直接使用保留字 `model`，可使用 `text_model`。通常用 enum 或 string，并通过当前模型目录维护合法值。
-
-## 3. 绑定 model 参数
-
-```json
-{
-  "fieldKey": "text_model",
-  "stepId": "stp_write01",
-  "paramKey": "model",
-  "bindMode": "shared"
-}
-```
-
-`model` 只支持 shared FieldBinding。ParamBinding、expanded、provider 和 mode 都不支持模板路由覆盖。
-
-## 验证
-
-本地 check 后还需服务端确认每个候选 model ID 支持目标 execution unit。若不需要用户选择，删除字段和 Binding，保留固定默认模型可减少错误。
+模型列不进入 Provider 原生 JSON。固定模型合同不能声明 modelSelection。

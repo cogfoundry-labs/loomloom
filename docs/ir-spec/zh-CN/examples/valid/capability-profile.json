@@ -13,7 +13,7 @@
   "steps": [
     {
       "stepId": "stp_prof01", "displayName": "文本生成",
-      "executionBinding": {"kind": "capabilityProfile", "profileId": "text.basic.openai-chat.v1"},
+      "executionBinding": {"kind": "capabilityProfile", "profileId": "text.basic.openai-chat.v1", "profileRevision": "2026-08-11.1"},
       "modelSelection": {"source": "templateInput", "inputKey": "modelChoice", "defaultModelId": "deepseek/deepseek-v3.2"},
       "inputBindings": {"prompt": {"source": "templateInput", "inputKey": "prompt"}}
     }

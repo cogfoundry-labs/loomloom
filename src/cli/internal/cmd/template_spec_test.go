@@ -309,36 +309,9 @@ func TestTemplateSpecDocsCmdPrintsSpec(t *testing.T) {
 		t.Fatalf("docs spec command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"# TemplateSpec v2 syntax", "lowerCamel", "templateInputs", "fixedModelContract", "inputBindings", "stepOutput", "authoring-context"} {
+	for _, want := range []string{"# TemplateSpec v2 syntax", "lowerCamel", "templateInputs", "fixedModelContract", "Input binding sources", "stepOutput"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
-		}
-	}
-}
-
-func TestTemplateSpecAuthoringContextCmdUsesCurrentServerContext(t *testing.T) {
-	var requestedPath string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestedPath = r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"profiles":[{"profileId":"text.basic.openai-chat.v1","revision":"2026-08-15.1","canonicalHash":"sha256:profile","capability":"text","endpoint":"/v1/chat/completions","compiler":"gateway-openai-chat-v1","stream":false,"inputPorts":[{"portId":"prompt","valueType":"string","required":true}],"output":{"text":true,"usage":true},"eligibleModels":[{"modelId":"anthropic/claude-sonnet-5","available":true}]}]}`))
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
-	cmd := newTemplateSpecAuthoringContextCmd(opts)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("authoring-context command error = %v", err)
-	}
-	if requestedPath != "/loom/v1/templateAuthoringContext" {
-		t.Fatalf("path=%q want /loom/v1/templateAuthoringContext", requestedPath)
-	}
-	for _, want := range []string{"text.basic.openai-chat.v1", "2026-08-15.1", "anthropic/claude-sonnet-5"} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output missing %q: %s", want, out.String())
 		}
 	}
 }
@@ -510,39 +483,6 @@ func TestTemplateSpecModelsCmdCanFilterProvider(t *testing.T) {
 	}
 	if !strings.Contains(requestedQuery, "provider=vertex") {
 		t.Fatalf("query %q missing provider=vertex", requestedQuery)
-	}
-}
-
-func TestTemplateSpecContractsCmdListsAuthoringContract(t *testing.T) {
-	var requestedPath string
-	var requestedModelID string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestedPath = r.URL.Path
-		requestedModelID = r.URL.Query().Get("modelId")
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"contracts":[{"subjectRevisionId":"subject-image-v2","subjectHash":"sha256:abc","modelId":"ali/qwen-image-plus","operation":"text-to-image","variant":"base","executionUnitRef":"image-generate","inputPorts":[{"portId":"prompt","kind":"value","valueType":"string","required":true}]}]}`))
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "text"}
-	cmd := newTemplateSpecContractsCmd(opts)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"ali/qwen-image-plus"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("contracts command error = %v", err)
-	}
-	if requestedPath != "/loom/v1/modelContracts" {
-		t.Fatalf("path=%q want /loom/v1/modelContracts", requestedPath)
-	}
-	if requestedModelID != "ali/qwen-image-plus" {
-		t.Fatalf("modelId=%q", requestedModelID)
-	}
-	for _, want := range []string{"text-to-image", "subject-image-v2", "image-generate", "prompt"} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output missing %q: %s", want, out.String())
-		}
 	}
 }
 

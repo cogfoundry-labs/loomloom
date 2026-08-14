@@ -1,32 +1,7 @@
-# 设计工作簿输入
+# 设计 Workbook 输入
 
-工作簿列直接来自 inputSchema。设计字段时同时考虑机器契约和填写体验。
-
-## 推荐顺序
-
-1. 明确一行代表的业务对象。
-2. 只暴露每行真正变化的内容。
-3. 固定处理要求放到 Step instruction。
-4. 使用 order 排列字段，required 标明必填。
-5. enum 使用 select；长文本使用 textarea。
-6. 为复杂字段提供 hint 和 examples。
-7. 隐藏默认字段使用 sourceKind=hidden/default_value，并提供 defaultValue。
-
-## 示例
-
-```json
-{
-  "key": "tone",
-  "label": "语气",
-  "valueType": "enum",
-  "enumValues": ["专业", "轻松", "简洁"],
-  "required": true,
-  "order": 2,
-  "presentation": {
-    "widget": "select",
-    "hint": "选择输出语气"
-  }
-}
-```
-
-创建版本后下载工作簿，实际检查表头、提示、下拉和示例。版本变化后重新下载。
+- 用业务含义命名 input key，不用裸模型参数名充当全局身份。
+- 每个 Input 声明清楚 kind、类型、必填/空白策略和展示顺序。
+- 同一个 Input 可以显式绑定到多个 Step 端口；不同语义或不同约束的输入使用不同 key。
+- Artifact 明确 MIME 和数量；不要把临时 URL 当输入身份。
+- 模型路由列必须可空，留空使用 Profile 默认模型。
