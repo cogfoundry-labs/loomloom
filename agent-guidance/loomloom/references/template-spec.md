@@ -154,6 +154,37 @@ Before showing TemplateSpec, verify that Template Input descriptions, Workbook s
 - Do not bind `provider`, routing mode, complete contracts, or provider-native request objects.
 - Never guess Step IDs, authority IDs, or port IDs.
 
+### Text-generation Steps
+
+`text-generate` uses the shared OpenAI-compatible capability Profile. It does
+not require one `fixedModelContract` or Certification Subject per text model.
+An empty result from `template-spec contracts <text-model-id>` is therefore
+expected and does **not** mean that the model cannot be used in a private
+TemplateSpec.
+
+For a text-generation Step:
+
+1. Run `loomloom template-spec models text-generate --output json` and choose an
+   available model as `modelSelection.defaultModelId`.
+2. Read `loomloom template-spec docs examples` and
+   `loomloom template-spec docs spec`. Use the current bundled
+   `capability-profile.json` example and spec reference as the source of truth
+   for the Profile ID, Profile revision, `modelSelection`, and stable input and
+   output port names. Do not invent or copy these values from an older installed
+   Skill.
+3. Set `executionBinding.kind=capabilityProfile`; do not require or fabricate a
+   `subjectRevisionId`.
+4. Bind the user's text to the Profile `prompt` port. Keep the optional model
+   selector as a Template Input when users may choose another eligible model;
+   leaving it blank uses the frozen default model.
+5. A downstream image, video, or other fixed-model Step may consume the text
+   Step's stable output through `stepOutput`. The absence of a per-model text
+   authoring contract must never be reported as blocking such a workflow.
+
+Use `template-spec contracts <model-id>` only when authoring a
+`fixedModelContract` Step for one exact model, such as a model with its own
+multimedia or provider-native input structure.
+
 ## Creation And Versioning
 
 Before creation:

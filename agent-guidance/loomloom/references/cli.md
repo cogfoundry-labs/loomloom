@@ -110,6 +110,13 @@ On successful `login --output json`, the `token` field is masked and is not a re
 - `loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>`
 - `loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <id>`
 
+`template-spec contracts` lists enabled per-model `fixedModelContract`
+authoring contracts. It is not a general model-usability check. In particular,
+`text-generate` models normally return no per-model contracts because private
+text Steps use the shared `capabilityProfile` shown by
+`loomloom template-spec docs examples`. Do not report text authoring as
+unavailable solely because `template-spec contracts <text-model-id>` is empty.
+
 ### Runs and artifacts
 
 - `loomloom run validate <template-id> -f <rows.json-or-jsonl>`
