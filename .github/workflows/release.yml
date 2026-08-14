@@ -201,6 +201,7 @@ jobs:
             --output-dir release
 
   sync_gitee:
+    if: needs.github_release.outputs.stable == 'true'
     needs: github_release
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -231,6 +232,7 @@ jobs:
           scripts/sync-release-refs.sh "${args[@]}"
 
   sync_gitlab:
+    if: needs.github_release.outputs.stable == 'true'
     needs: github_release
     runs-on: ubuntu-latest
     permissions:
