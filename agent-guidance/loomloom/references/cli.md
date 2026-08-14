@@ -97,6 +97,7 @@ On successful `login --output json`, the `token` field is masked and is not a re
 - `loomloom template-spec docs [spec|authoring|examples|conversation|all]`
 - `loomloom template-spec check <spec.json>`
 - `loomloom template-spec models <text-generate|image-generate|video-generate>`
+- `loomloom template-spec contracts <model-id>`
 - `loomloom template-spec create <spec.json>`
 - `loomloom template-spec create-version <template-id> <spec.json>`
 - `loomloom template-spec list`

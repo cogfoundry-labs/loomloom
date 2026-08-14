@@ -36,16 +36,19 @@ A typical agent-assisted authoring flow:
 # 1. Check available models for an execution unit
 loomloom template-spec models text-generate
 
-# 2. Validate the spec locally
+# 2. Resolve an enabled contract and its exact input ports
+loomloom template-spec contracts <model-id> --output json
+
+# 3. Validate the spec locally
 loomloom template-spec check ./my-template.spec.json
 
-# 3. Confirm, then create a private template
+# 4. Confirm, then create a private template
 loomloom template-spec create ./my-template.spec.json --version-note "initial version"
 
-# 4. Confirm, then add a new version when the template changes
+# 5. Confirm, then add a new version when the template changes
 loomloom template-spec create-version <template-id> ./my-template.spec.json
 
-# 5. Download, fill, validate, precheck, confirm, and submit the workbook
+# 6. Download, fill, validate, precheck, confirm, and submit the workbook
 loomloom template-spec download-workbook <template-id> <version-id> --output-file ./input.xlsx
 loomloom template-spec validate-workbook <template-id> <version-id> ./input.xlsx
 loomloom template-spec precheck-workbook <template-id> <version-id> ./input.xlsx

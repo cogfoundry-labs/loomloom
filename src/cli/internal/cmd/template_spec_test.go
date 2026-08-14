@@ -486,6 +486,39 @@ func TestTemplateSpecModelsCmdCanFilterProvider(t *testing.T) {
 	}
 }
 
+func TestTemplateSpecContractsCmdListsAuthoringContract(t *testing.T) {
+	var requestedPath string
+	var requestedModelID string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPath = r.URL.Path
+		requestedModelID = r.URL.Query().Get("modelId")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"contracts":[{"subjectRevisionId":"subject-image-v2","subjectHash":"sha256:abc","modelId":"ali/qwen-image-plus","operation":"text-to-image","variant":"base","executionUnitRef":"image-generate","inputPorts":[{"portId":"prompt","kind":"value","valueType":"string","required":true}]}]}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "text"}
+	cmd := newTemplateSpecContractsCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"ali/qwen-image-plus"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("contracts command error = %v", err)
+	}
+	if requestedPath != "/loom/v1/modelContracts" {
+		t.Fatalf("path=%q want /loom/v1/modelContracts", requestedPath)
+	}
+	if requestedModelID != "ali/qwen-image-plus" {
+		t.Fatalf("modelId=%q", requestedModelID)
+	}
+	for _, want := range []string{"text-to-image", "subject-image-v2", "image-generate", "prompt"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output missing %q: %s", want, out.String())
+		}
+	}
+}
+
 func TestTemplateSpecCreateVersionPostsCanonicalSpecV2(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
 	content := `{
