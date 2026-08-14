@@ -1,7 +1,7 @@
 {
   "meta": {
-    "name": "Generate video from generated image",
-    "description": "The image produced by the first Step enters the downstream video model content sequence at a fixed position.",
+    "name": "Generate video from a generated image",
+    "description": "The image from the first Step enters the downstream video model content sequence at a fixed position",
     "primaryOutputType": "video"
   },
   "templateInputs": {
@@ -16,7 +16,7 @@
   "steps": [
     {
       "stepId": "stp_image001",
-      "displayName": "Generate opening image",
+      "displayName": "Generate first-frame image",
       "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-image-generation-v2"},
       "inputBindings": {
         "prompt": {"source": "templateInput", "inputKey": "imagePrompt"}
@@ -33,7 +33,7 @@
           "source": "sequence",
           "sequence": {
             "items": [
-              {"position": 0, "kind": "text", "source": {"source": "literal", "value": "Make the scene move naturally while keeping the subject and composition stable."}},
+              {"position": 0, "kind": "text", "source": {"source": "literal", "value": "Add natural motion while keeping the subject and composition stable."}},
               {"position": 1, "kind": "image", "role": "reference_image", "source": {"source": "stepOutput", "stepId": "stp_image001", "portId": "output"}}
             ]
           }
@@ -42,7 +42,7 @@
     }
   ],
   "workbook": {
-    "instructions": ["Enter one image description per row. The system generates an image first, then uses it as ordered input to the video model."],
-    "sampleRows": [{"values": {"imagePrompt": "An orange paper boat floats on a calm sea in dusk light."}}]
+    "instructions": ["Enter one image description per row. The system generates an image first, then uses it as an ordered input to the video model."],
+    "sampleRows": [{"values": {"imagePrompt": "An orange paper boat floating on a calm sea at sunset"}}]
   }
 }

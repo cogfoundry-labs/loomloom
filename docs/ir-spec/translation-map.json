@@ -49,8 +49,8 @@
     },
     {
       "path": "examples/README.md",
-      "source_sha256": "cf6695c0626cb05371d8633291472718cf55ae74bbaa7bc67e8ddfeea9aafd45",
-      "generated_sha256": "5b891a07c08620ffbbba78911fc22d08c8c26456a81545dbc8636042e5c395d9"
+      "source_sha256": "751d0728af1f04dbf9bb54c01434975e53515c6403134bec617bc539f7c84ba1",
+      "generated_sha256": "640bc41be45e5da07a1e29cec27c1a345dcfdf512b202834410f614c96b94eaf"
     },
     {
       "path": "examples/invalid/legacy-v1-shape.json",
@@ -81,6 +81,11 @@
       "path": "examples/valid/compose-value.json",
       "source_sha256": "7206cfb90ad490c9ab5bcd0d5d6278a560d33c4e43aeed2ee7b6ad038c4fc5bb",
       "generated_sha256": "97f0bca6ebd3f57964e87a6cccef4850a7f9b5df3720e5dac6565a28687dc868"
+    },
+    {
+      "path": "examples/valid/content-sequence-step-output.json",
+      "source_sha256": "6feede80f6cd2a27164e901bd05a8c89c4b110f6e44bb0810067200836b94d9c",
+      "generated_sha256": "bbfda0ce82b0ccb85631f5c0fb13bb6b36e35729a4c2d92e8a367898ed99d37c"
     },
     {
       "path": "examples/valid/content-sequence.json",
