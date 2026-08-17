@@ -99,7 +99,7 @@ func insufficientBalanceMessage(opts *rootOptions) string {
 }
 
 func maybeInsufficientBalanceError(opts *rootOptions, balance *templateBalanceCheck) error {
-	if balance == nil || balance.IsSufficient {
+	if balance == nil || balance.LocalEstimateCovered {
 		return nil
 	}
 	if message := insufficientBalanceMessage(opts); message != "" {

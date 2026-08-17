@@ -73,10 +73,20 @@ type validateTemplateRowsResponse struct {
 }
 
 type templateBalanceCheck struct {
-	Currency              string         `json:"currency"`
-	AvailableBalance      *flexInt64     `json:"availableBalance,omitempty"`
-	AvailableBalanceMoney *moneyResponse `json:"availableBalanceMoney,omitempty"`
-	IsSufficient          bool           `json:"isSufficient"`
+	Currency             string         `json:"currency"`
+	SettledBalance       *flexInt64     `json:"settledBalanceT,omitempty"`
+	SettledBalanceMoney  *moneyResponse `json:"settledBalance,omitempty"`
+	Availability         string         `json:"availability"`
+	FinalAdmission       string         `json:"finalAdmission"`
+	LocalEstimateCovered bool           `json:"localEstimateCovered"`
+}
+
+type userBalanceSnapshotResponse struct {
+	Currency       string         `json:"currency"`
+	SettledBalance *flexInt64     `json:"settledBalanceT,omitempty"`
+	SettledMoney   *moneyResponse `json:"settledBalance,omitempty"`
+	Availability   string         `json:"availability"`
+	FinalAdmission string         `json:"finalAdmission"`
 }
 
 type precheckTemplateRowsResponse struct {
@@ -524,18 +534,21 @@ func printPrecheck(w io.Writer, resp precheckTemplateRowsResponse) error {
 	if resp.BalanceCheck == nil {
 		return tw.Flush()
 	}
-	availableBalance, err := formatResponseMoney(
-		resp.BalanceCheck.AvailableBalanceMoney,
-		resp.BalanceCheck.AvailableBalance,
+	settledBalance, err := formatResponseMoney(
+		resp.BalanceCheck.SettledBalanceMoney,
+		resp.BalanceCheck.SettledBalance,
 		currency,
 	)
 	if err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintf(tw, "available_balance\t%s\n", availableBalance); err != nil {
+	if _, err := fmt.Fprintf(tw, "settled_balance\t%s\n", settledBalance); err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintf(tw, "sufficient\t%t\n", resp.BalanceCheck.IsSufficient); err != nil {
+	if _, err := fmt.Fprintf(tw, "local_estimate_covered\t%t\n", resp.BalanceCheck.LocalEstimateCovered); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(tw, "final_admission\t%s\n", resp.BalanceCheck.FinalAdmission); err != nil {
 		return err
 	}
 	return tw.Flush()
