@@ -35,3 +35,10 @@ func TestBalanceCmdUsesSettledSnapshotEndpoint(t *testing.T) {
 		t.Fatalf("output must not claim complete available balance: %q", out.String())
 	}
 }
+
+func TestFormatSignedBalanceMoneyAllowsNegativeValue(t *testing.T) {
+	amount := flexInt64(-12_345_678)
+	if got := formatSignedBalanceMoney(&amount, "CNY"); got != "CNY -1.2345678" {
+		t.Fatalf("formatSignedBalanceMoney() = %q", got)
+	}
+}

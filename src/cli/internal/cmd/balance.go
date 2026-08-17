@@ -39,10 +39,7 @@ func newBalanceCmd(opts *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			observedAvailable, err := formatResponseMoney(resp.AvailableMoney, resp.AvailableBalance, currency)
-			if err != nil {
-				return err
-			}
+			observedAvailable := formatSignedBalanceMoney(resp.AvailableBalance, currency)
 			tw := newTabWriter(cmd.OutOrStdout())
 			if _, err := fmt.Fprintf(tw, "settled_balance\t%s\npending_model_charges\t%s\navailable_after_model_pending\t%s\navailability\t%s\nincomplete_pending_categories\t%s\nfinal_admission\t%s\n", settled, pendingModel, observedAvailable, resp.Availability, strings.Join(resp.IncompletePendingCategories, ","), resp.FinalAdmission); err != nil {
 				return err
@@ -50,4 +47,11 @@ func newBalanceCmd(opts *rootOptions) *cobra.Command {
 			return tw.Flush()
 		},
 	}
+}
+
+func formatSignedBalanceMoney(amountT *flexInt64, currency string) string {
+	if amountT == nil {
+		return formatMoneyT(0, currency)
+	}
+	return formatMoneyT(int64(*amountT), currency)
 }
