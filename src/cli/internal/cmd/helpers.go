@@ -82,11 +82,16 @@ type templateBalanceCheck struct {
 }
 
 type userBalanceSnapshotResponse struct {
-	Currency       string         `json:"currency"`
-	SettledBalance *flexInt64     `json:"settledBalanceT,omitempty"`
-	SettledMoney   *moneyResponse `json:"settledBalance,omitempty"`
-	Availability   string         `json:"availability"`
-	FinalAdmission string         `json:"finalAdmission"`
+	Currency                    string         `json:"currency"`
+	SettledBalance              *flexInt64     `json:"settledBalanceT,omitempty"`
+	SettledMoney                *moneyResponse `json:"settledBalance,omitempty"`
+	PendingModelCharges         *flexInt64     `json:"pendingModelChargesT,omitempty"`
+	PendingModelMoney           *moneyResponse `json:"pendingModelCharges,omitempty"`
+	AvailableBalance            *flexInt64     `json:"availableBalanceT,omitempty"`
+	AvailableMoney              *moneyResponse `json:"availableBalance,omitempty"`
+	Availability                string         `json:"availability"`
+	FinalAdmission              string         `json:"finalAdmission"`
+	IncompletePendingCategories []string       `json:"incompletePendingCategories"`
 }
 
 type precheckTemplateRowsResponse struct {
