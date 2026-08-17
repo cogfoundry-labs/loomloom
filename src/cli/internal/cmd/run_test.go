@@ -189,11 +189,11 @@ func TestRunPrecheckOnlyEstimatesRows(t *testing.T) {
 				"estimatedTotalCost":{"amount":"0.0119350","currency":"CNY"},
 				"balanceCheck":{
 					"currency":"CNY",
-					"settledBalanceT":200000,
-					"settledBalance":{"amount":"0.0200000","currency":"CNY"},
+					"availableBalance":200000,
+					"availableBalanceMoney":{"amount":"0.0200000","currency":"CNY"},
 					"availability":"settled_only",
 					"finalAdmission":"gateway",
-					"localEstimateCovered":true
+					"isSufficient":true
 				}
 			}`))
 		default:
@@ -229,7 +229,7 @@ func TestRunPrecheckOnlyEstimatesRows(t *testing.T) {
 		`"estimatedTotalCostT": 119350`,
 		`"estimatedTotalCost": {`,
 		`"amount": "0.0119350"`,
-		`"settledBalance": {`,
+		`"availableBalanceMoney": {`,
 		`"currency": "CNY"`,
 	)
 	assertContainsNone(t, out.String(), `"runId"`)
@@ -249,10 +249,10 @@ func TestRunPrecheckSettledSnapshotDoesNotBlockGatewayAdmission(t *testing.T) {
 				"estimatedTotalCostT":119350,
 				"balanceCheck":{
 					"currency":"CNY",
-					"settledBalanceT":1000,
+					"availableBalance":1000,
 					"availability":"settled_only",
 					"finalAdmission":"gateway",
-					"localEstimateCovered":false
+					"isSufficient":false
 				}
 			}`))
 		default:
@@ -511,10 +511,10 @@ func TestRunSubmitSettledSnapshotDoesNotBlockGatewayAdmission(t *testing.T) {
 				"estimatedTotalCostT":119350,
 				"balanceCheck":{
 					"currency":"CNY",
-					"settledBalanceT":1000,
+					"availableBalance":1000,
 					"availability":"settled_only",
 					"finalAdmission":"gateway",
-					"localEstimateCovered":false
+					"isSufficient":false
 				}
 			}`))
 		case "/loom/v1/officialTemplates/text-v1:runRows":
@@ -556,10 +556,10 @@ func TestRunSubmitSettledSnapshotDoesNotUsePlatformBalanceMessage(t *testing.T) 
 				"estimatedTotalCostT":119350,
 				"balanceCheck":{
 					"currency":"CNY",
-					"settledBalanceT":1000,
+					"availableBalance":1000,
 					"availability":"settled_only",
 					"finalAdmission":"gateway",
-					"localEstimateCovered":false
+					"isSufficient":false
 				}
 			}`))
 		case "/loom/v1/officialTemplates/text-v1:runRows":
