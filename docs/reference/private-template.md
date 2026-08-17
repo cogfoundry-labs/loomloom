@@ -36,8 +36,8 @@ A typical agent-assisted authoring flow:
 # 1. Check available models for an execution unit
 loomloom template-spec models text-generate
 
-# 2a. For text-generate, use the bundled capability-profile example
-loomloom template-spec docs examples
+# 2a. For text-generate, retrieve the current Profile and eligible models
+loomloom template-spec authoring-context --output json
 
 # 2b. For an exact fixed-model Step, resolve its contract and input ports
 loomloom template-spec contracts <model-id> --output json
@@ -63,7 +63,7 @@ Notes:
 
 - TemplateSpec JSON is the source of truth; workbooks are generated artifacts.
 - `template-spec contracts` is only for an exact-model `fixedModelContract`. Text-generation models intentionally use the shared `capabilityProfile`, so an empty contract list for a `text-generate` model is expected and does not prevent private template authoring.
-- For a text Step, choose the default model from the current `text-generate` catalog and take the Profile identity and ports from the current bundled example. Do not fabricate a `subjectRevisionId`.
+- For a text Step, choose the default model, Profile identity, and ports from `template-spec authoring-context`; normal templates omit `profileRevision`. Do not fabricate a `subjectRevisionId`.
 - Review the bundled spec with `loomloom template-spec docs spec` before writing custom specs.
 - Use `loomloom template-spec docs examples` for patterns.
 - Use `loomloom template-spec docs conversation` for agent-assisted conversational authoring.

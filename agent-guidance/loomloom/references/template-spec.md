@@ -19,6 +19,7 @@ Before writing TemplateSpec, read the current CLI-bundled documentation:
 loomloom template-spec docs spec
 loomloom template-spec docs examples
 loomloom template-spec docs conversation
+loomloom template-spec authoring-context --output json
 ```
 
 - `spec` is the current JSON contract.
@@ -33,7 +34,7 @@ loomloom template-spec docs spec --lang zh-CN
 
 Select the documentation language as appropriate for the conversation and task.
 
-The installed Skill may contain a `generated-template-spec/` backup. Prefer the CLI docs command because it matches the currently installed CLI.
+The installed Skill may contain a `generated-template-spec/` backup. Prefer the CLI docs command because it matches the currently installed CLI. The authoring-context response is the authority for environment-dependent data such as current Profile revision, available model members, and Profile ports; bundled docs are never authority for those changing values.
 
 ## Conversation Flow
 
@@ -164,16 +165,15 @@ TemplateSpec.
 
 For a text-generation Step:
 
-1. Run `loomloom template-spec models text-generate --output json` and choose an
-   available model as `modelSelection.defaultModelId`.
-2. Read `loomloom template-spec docs examples` and
-   `loomloom template-spec docs spec`. Use the current bundled
-   `capability-profile.json` example and spec reference as the source of truth
-   for the Profile ID, Profile revision, `modelSelection`, and stable input and
-   output port names. Do not invent or copy these values from an older installed
-   Skill.
-3. Set `executionBinding.kind=capabilityProfile`; do not require or fabricate a
+1. Run `loomloom template-spec authoring-context --output json`. Choose one
+   Profile and an eligible model returned by that exact target environment.
+2. Set `executionBinding.kind=capabilityProfile` and use the response's stable
+   `profileId`. Omit `profileRevision` for normal authoring; Core resolves and
+   freezes the current revision. Do not require or fabricate a
    `subjectRevisionId`.
+3. Use the response's Profile ports and write `modelSelection.defaultModelId`
+   from its eligible model list. Do not copy a revision, port, or model list
+   from bundled docs or an older installed Skill.
 4. Bind the user's text to the Profile `prompt` port. Keep the optional model
    selector as a Template Input when users may choose another eligible model;
    leaving it blank uses the frozen default model.

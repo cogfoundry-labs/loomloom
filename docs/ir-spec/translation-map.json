@@ -74,8 +74,8 @@
     },
     {
       "path": "examples/valid/capability-profile.json",
-      "source_sha256": "1762b6ef5dc6681ac4a7d7894cca2524b84a7c34ee864ed45585e83b70607331",
-      "generated_sha256": "4a8535f163c09d49bad4226e0a8be51de8a2ada56c2472b7218fe4ebc018b5e2"
+      "source_sha256": "d0225734777ca17a48bfbae2065610a28a48c36d963462e9894c4172c1a31100",
+      "generated_sha256": "89f40faf9ceabeb90ca5a628f09f81e4f2d7b38610918f2f08c6c69b13d6df85"
     },
     {
       "path": "examples/valid/compose-value.json",
@@ -129,8 +129,8 @@
     },
     {
       "path": "how-to/configure-models.md",
-      "source_sha256": "62e93a48ab3e6d118fd59d3d0c3f01decb49f0b02095dabe3fcba99da972629e",
-      "generated_sha256": "8a2ef9b264d869ed7f39b8d65ad444d593320ef1460835e20151696fb3e0bcc9"
+      "source_sha256": "4dda8cfdbb144c19666ddc08952703fe0751bce85c1b0a405852a06d46aea2a2",
+      "generated_sha256": "1d95df6d4eb586745e55614ada93837111b04d8eb843e0dda9fb10b9081be1ad"
     },
     {
       "path": "how-to/design-workbook-inputs.md",
@@ -159,8 +159,8 @@
     },
     {
       "path": "reference/bindings.md",
-      "source_sha256": "a95a0aeee2b3845542a46bd17ecd7d24ed4b6e68b208ef5804e2b81387151490",
-      "generated_sha256": "d8c5637af74782c0f6059b3ce616a64a86bc0b58921f2d0c3c3661558c763471"
+      "source_sha256": "e53ecefe9ef01bbb0244db38a24319eb2a692fd5ff42f644a48a2e245473ee41",
+      "generated_sha256": "e340841fa004466189d49c48137eb03c3cb353218428888136b1bcaa000e5cb3"
     },
     {
       "path": "reference/compatibility.md",
@@ -194,8 +194,8 @@
     },
     {
       "path": "reference/template-syntax.md",
-      "source_sha256": "f7c41ec4652599cacffd877fb73d1083d105821e150205160f98112b330b820e",
-      "generated_sha256": "36b2dc01e0221b2f2aa68cf7f7e3096921c644469195be85344db0dbcffe3d3f"
+      "source_sha256": "3b6f258c048242f85c371acd7b4494ca50888b06512589e7a70c23ab80bfb69d",
+      "generated_sha256": "837610e33e899e4031f657cc9a21065578625a0627982536ab60408bb5387f09"
     },
     {
       "path": "reference/validation-errors.md",

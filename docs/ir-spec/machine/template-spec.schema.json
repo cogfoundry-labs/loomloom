@@ -134,7 +134,7 @@
         },
         {
           "type": "object",
-          "required": ["kind", "profileId", "profileRevision"],
+          "required": ["kind", "profileId"],
           "additionalProperties": false,
           "properties": {
             "kind": {"const": "capabilityProfile"},
@@ -299,7 +299,7 @@
           "required": ["policy", "missingSourcePolicy", "sources"],
           "additionalProperties": false,
           "properties": {
-            "policy": {"const": "ordered_artifacts"},
+            "policy": {"enum": ["ordered_artifacts", "concat_text"]},
             "missingSourcePolicy": {"enum": ["error", "omit"]},
             "sources": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/mergeSource"}}
           }
