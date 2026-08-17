@@ -49,8 +49,8 @@
     },
     {
       "path": "examples/README.md",
-      "source_sha256": "751d0728af1f04dbf9bb54c01434975e53515c6403134bec617bc539f7c84ba1",
-      "generated_sha256": "640bc41be45e5da07a1e29cec27c1a345dcfdf512b202834410f614c96b94eaf"
+      "source_sha256": "8b7410042e8b9c7ad70b06f86079a99c651008b4a0a5e990e43738d5aec0ee79",
+      "generated_sha256": "da330fa283e93cd7308120d43338455ca8bdc023c2a7fce527dc211df59fcee2"
     },
     {
       "path": "examples/invalid/legacy-v1-shape.json",
