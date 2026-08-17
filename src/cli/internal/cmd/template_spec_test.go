@@ -772,10 +772,10 @@ func TestTemplateSpecPrecheckUsesProductAPI(t *testing.T) {
 			"estimatedTotalCostT":119350,
 			"balanceCheck":{
 				"currency":"CNY",
-				"settledBalanceT":999262000,
+				"availableBalance":999262000,
 				"availability":"settled_only",
 				"finalAdmission":"gateway",
-				"localEstimateCovered":true
+				"isSufficient":true
 			}
 		}`))
 	}))
@@ -803,9 +803,9 @@ func TestTemplateSpecPrecheckUsesProductAPI(t *testing.T) {
 	for _, want := range []string{
 		"estimated_cost",
 		"CNY 0.0119",
-		"settled_balance",
+		"available_balance",
 		"CNY 99.9262",
-		"local_estimate_covered",
+		"sufficient",
 		"true",
 	} {
 		if !strings.Contains(out.String(), want) {
@@ -820,7 +820,7 @@ func TestTemplateSpecPrecheckJSONKeepsEstimatedTotalCostT(t *testing.T) {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"estimatedTotalCostT":119350,"balanceCheck":{"currency":"CNY","settledBalanceT":999262000,"availability":"settled_only","finalAdmission":"gateway","localEstimateCovered":true}}`))
+		_, _ = w.Write([]byte(`{"estimatedTotalCostT":119350,"balanceCheck":{"currency":"CNY","availableBalance":999262000,"availability":"settled_only","finalAdmission":"gateway","isSufficient":true}}`))
 	}))
 	defer server.Close()
 

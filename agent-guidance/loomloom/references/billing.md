@@ -34,7 +34,7 @@ Create a new client request ID for each newly confirmed execution. Reuse the ori
 
 ## Fee And Currency Rules
 
-`loomloom balance` reports settled LoomLoom funding plus the currently observable Gateway model pending charges. It shows `available_after_model_pending`, but this remains incomplete while creator-surcharge pending is unavailable; do not describe it as final available balance or use it to promise that a model request will be admitted. Gateway makes that decision.
+`loomloom balance` displays one LoomLoom available balance. Wallet assets, applicable vouchers and pending charges are internal calculation inputs, not user-facing CLI fields. Gateway still makes the final request-admission decision.
 
 - For official and private precheck, use `estimatedTotalCostT` and the currency returned by the service.
 - For Market quote, use `estimatedBuyerPayableT` as the estimated pre-authorization.

@@ -30,18 +30,12 @@ func newBalanceCmd(opts *rootOptions) *cobra.Command {
 				enc.SetIndent("", "  ")
 				return enc.Encode(resp)
 			}
-			currency := strings.TrimSpace(resp.Currency)
-			settled, err := formatResponseMoney(resp.SettledMoney, resp.SettledBalance, currency)
+			available, err := formatSignedBalanceMoney(resp.AvailableMoney, resp.AvailableBalance, strings.TrimSpace(resp.Currency))
 			if err != nil {
 				return err
 			}
-			pendingModel, err := formatResponseMoney(resp.PendingModelMoney, resp.PendingModelCharges, currency)
-			if err != nil {
-				return err
-			}
-			observedAvailable := formatSignedBalanceMoney(resp.AvailableBalance, currency)
 			tw := newTabWriter(cmd.OutOrStdout())
-			if _, err := fmt.Fprintf(tw, "settled_balance\t%s\npending_model_charges\t%s\navailable_after_model_pending\t%s\navailability\t%s\nincomplete_pending_categories\t%s\nfinal_admission\t%s\n", settled, pendingModel, observedAvailable, resp.Availability, strings.Join(resp.IncompletePendingCategories, ","), resp.FinalAdmission); err != nil {
+			if _, err := fmt.Fprintf(tw, "available_balance\t%s\n", available); err != nil {
 				return err
 			}
 			return tw.Flush()
@@ -49,9 +43,16 @@ func newBalanceCmd(opts *rootOptions) *cobra.Command {
 	}
 }
 
-func formatSignedBalanceMoney(amountT *flexInt64, currency string) string {
-	if amountT == nil {
-		return formatMoneyT(0, currency)
+func formatSignedBalanceMoney(money *moneyResponse, amountT *flexInt64, currency string) (string, error) {
+	if money != nil {
+		currency := strings.ToUpper(strings.TrimSpace(money.Currency))
+		if !isCurrencyCode(currency) {
+			return "", fmt.Errorf("invalid money currency %q", money.Currency)
+		}
+		return currency + " " + strings.TrimSpace(money.Amount), nil
 	}
-	return formatMoneyT(int64(*amountT), currency)
+	if amountT == nil {
+		return formatMoneyT(0, currency), nil
+	}
+	return formatMoneyT(int64(*amountT), currency), nil
 }

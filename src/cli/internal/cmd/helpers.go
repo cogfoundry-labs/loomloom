@@ -73,25 +73,16 @@ type validateTemplateRowsResponse struct {
 }
 
 type templateBalanceCheck struct {
-	Currency             string         `json:"currency"`
-	SettledBalance       *flexInt64     `json:"settledBalanceT,omitempty"`
-	SettledBalanceMoney  *moneyResponse `json:"settledBalance,omitempty"`
-	Availability         string         `json:"availability"`
-	FinalAdmission       string         `json:"finalAdmission"`
-	LocalEstimateCovered bool           `json:"localEstimateCovered"`
+	Currency              string         `json:"currency"`
+	AvailableBalance      *flexInt64     `json:"availableBalance,omitempty"`
+	AvailableBalanceMoney *moneyResponse `json:"availableBalanceMoney,omitempty"`
+	IsSufficient          bool           `json:"isSufficient"`
 }
 
 type userBalanceSnapshotResponse struct {
-	Currency                    string         `json:"currency"`
-	SettledBalance              *flexInt64     `json:"settledBalanceT,omitempty"`
-	SettledMoney                *moneyResponse `json:"settledBalance,omitempty"`
-	PendingModelCharges         *flexInt64     `json:"pendingModelChargesT,omitempty"`
-	PendingModelMoney           *moneyResponse `json:"pendingModelCharges,omitempty"`
-	AvailableBalance            *flexInt64     `json:"availableBalanceT,omitempty"`
-	AvailableMoney              *moneyResponse `json:"availableBalance,omitempty"`
-	Availability                string         `json:"availability"`
-	FinalAdmission              string         `json:"finalAdmission"`
-	IncompletePendingCategories []string       `json:"incompletePendingCategories"`
+	Currency         string         `json:"currency"`
+	AvailableBalance *flexInt64     `json:"availableBalanceT,omitempty"`
+	AvailableMoney   *moneyResponse `json:"availableBalance,omitempty"`
 }
 
 type precheckTemplateRowsResponse struct {
@@ -539,21 +530,18 @@ func printPrecheck(w io.Writer, resp precheckTemplateRowsResponse) error {
 	if resp.BalanceCheck == nil {
 		return tw.Flush()
 	}
-	settledBalance, err := formatResponseMoney(
-		resp.BalanceCheck.SettledBalanceMoney,
-		resp.BalanceCheck.SettledBalance,
+	availableBalance, err := formatSignedBalanceMoney(
+		resp.BalanceCheck.AvailableBalanceMoney,
+		resp.BalanceCheck.AvailableBalance,
 		currency,
 	)
 	if err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintf(tw, "settled_balance\t%s\n", settledBalance); err != nil {
+	if _, err := fmt.Fprintf(tw, "available_balance\t%s\n", availableBalance); err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintf(tw, "local_estimate_covered\t%t\n", resp.BalanceCheck.LocalEstimateCovered); err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintf(tw, "final_admission\t%s\n", resp.BalanceCheck.FinalAdmission); err != nil {
+	if _, err := fmt.Fprintf(tw, "sufficient\t%t\n", resp.BalanceCheck.IsSufficient); err != nil {
 		return err
 	}
 	return tw.Flush()
