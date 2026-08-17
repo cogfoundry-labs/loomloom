@@ -32,4 +32,9 @@
 
 ## merge
 
-`merge` 把多个同构 Artifact collection 按 sources 声明顺序合并。每个来源内部再按 Artifact ordinal 排序。首版 policy 为 `ordered_artifacts`；缺失策略为 `error` 或 `omit`，最终结果仍按目标合同的 minItems/maxItems 校验。
+`merge` 在一个目标端口内显式声明多个有序来源，首版支持两个互斥 policy：
+
+- `ordered_artifacts`：合并同构 Artifact collection。来源按 `sources[]` 排序，每个来源内部再按 Artifact ordinal 排序，最终结果按目标合同的 minItems/maxItems 校验；
+- `concat_text`：仅接受两个及以上 `stepOutput` 文本来源，按 `sources[]` 顺序用 `\n\n` 拼接；目标端口必须允许文本多值输入和 `concat_text`。
+
+缺失策略均为 `error` 或 `omit`。`composeValue` 只组合作者 literal 与 Workbook 字段，不用于运行期 Step 输出汇聚。

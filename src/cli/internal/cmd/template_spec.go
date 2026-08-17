@@ -80,6 +80,28 @@ type templateAuthoringContractsResponse struct {
 	Contracts []templateAuthoringContract `json:"contracts"`
 }
 
+type templateAuthoringContextResponse struct {
+	Profiles []templateAuthoringProfile `json:"profiles"`
+}
+
+type templateAuthoringProfile struct {
+	ProfileID      string                         `json:"profileId"`
+	Revision       string                         `json:"revision"`
+	CanonicalHash  string                         `json:"canonicalHash"`
+	Capability     string                         `json:"capability"`
+	Endpoint       string                         `json:"endpoint"`
+	Compiler       string                         `json:"compiler"`
+	Stream         bool                           `json:"stream"`
+	InputPorts     []templateAuthoringProfilePort `json:"inputPorts"`
+	EligibleModels []modelSummary                 `json:"eligibleModels"`
+}
+
+type templateAuthoringProfilePort struct {
+	PortID    string `json:"portId"`
+	ValueType string `json:"valueType"`
+	Required  bool   `json:"required"`
+}
+
 type templateAuthoringContract struct {
 	SubjectRevisionID string                        `json:"subjectRevisionId"`
 	SubjectHash       string                        `json:"subjectHash"`
@@ -119,6 +141,7 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecCheckCmd(opts),
 		newTemplateSpecDocsCmd(opts),
 		newTemplateSpecModelsCmd(opts),
+		newTemplateSpecAuthoringContextCmd(opts),
 		newTemplateSpecContractsCmd(opts),
 		newTemplateSpecListCmd(opts),
 		newTemplateSpecGetCmd(opts),
@@ -133,6 +156,49 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecRunCmd(opts),
 	)
 	return cmd
+}
+
+func newTemplateSpecAuthoringContextCmd(opts *rootOptions) *cobra.Command {
+	return &cobra.Command{
+		Use:   "authoring-context",
+		Short: "Show the current server-side Profile contracts and eligible models for TemplateSpec v2",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			var resp templateAuthoringContextResponse
+			if err := httpClient.GetJSON(ctx, "/templateAuthoringContext", &resp); err != nil {
+				return err
+			}
+			if opts.output == "json" {
+				enc := json.NewEncoder(cmd.OutOrStdout())
+				enc.SetIndent("", "  ")
+				return enc.Encode(resp)
+			}
+			if len(resp.Profiles) == 0 {
+				_, err = fmt.Fprintln(cmd.OutOrStdout(), "no authoring profiles")
+				return err
+			}
+			tw := newTabWriter(cmd.OutOrStdout())
+			if _, err := fmt.Fprintln(tw, "profile_id\trevision\tcapability\tendpoint\teligible_models"); err != nil {
+				return err
+			}
+			for _, profile := range resp.Profiles {
+				modelIDs := make([]string, 0, len(profile.EligibleModels))
+				for _, candidate := range profile.EligibleModels {
+					modelIDs = append(modelIDs, candidate.ModelID)
+				}
+				if _, err := fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", profile.ProfileID, profile.Revision, profile.Capability, profile.Endpoint, strings.Join(modelIDs, ",")); err != nil {
+					return err
+				}
+			}
+			return tw.Flush()
+		},
+	}
 }
 
 func newTemplateSpecContractsCmd(opts *rootOptions) *cobra.Command {

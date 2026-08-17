@@ -39,7 +39,7 @@
 `executionBinding.kind`：
 
 - `fixedModelContract`：必须给 `subjectRevisionId`。
-- `capabilityProfile`：必须给 `profileId`、`profileRevision`，并声明 `modelSelection`。
+- `capabilityProfile`：必须给稳定的 `profileId`，并声明 `modelSelection`。`profileRevision` 只用于明确请求某个历史合同；普通创作必须省略，由 Core 在保存时解析并冻结当前 revision。创建前先调用目标环境的 `GET /loom/v1/templateAuthoringContext`（CLI：`loomloom template-spec authoring-context --output json`），再选择 Profile 和模型。
 
 ## inputBindings
 

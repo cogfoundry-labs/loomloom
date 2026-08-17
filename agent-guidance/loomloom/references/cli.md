@@ -97,6 +97,7 @@ On successful `login --output json`, the `token` field is masked and is not a re
 - `loomloom template-spec docs [spec|authoring|examples|conversation|all]`
 - `loomloom template-spec check <spec.json>`
 - `loomloom template-spec models <text-generate|image-generate|video-generate>`
+- `loomloom template-spec authoring-context --output json`
 - `loomloom template-spec contracts <model-id>`
 - `loomloom template-spec create <spec.json>`
 - `loomloom template-spec create-version <template-id> <spec.json>`
@@ -109,6 +110,11 @@ On successful `login --output json`, the `token` field is masked and is not a re
 - `loomloom template-spec submit-workbook <template-id> <version-id> <xlsx-path> --client-request-id <id>`
 - `loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>`
 - `loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <id>`
+
+`template-spec authoring-context` is the current target-environment discovery
+entry for Capability Profiles. It returns Profile IDs, current revisions and
+ports, plus eligible models. Agents must call it before authoring a
+`capabilityProfile` Step and normally submit only `profileId`.
 
 `template-spec contracts` lists enabled per-model `fixedModelContract`
 authoring contracts. It is not a general model-usability check. In particular,
