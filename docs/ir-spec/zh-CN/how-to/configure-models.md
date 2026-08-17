@@ -1,27 +1,15 @@
-# 配置默认模型
+# 配置模型
 
-模型目录是环境动态事实。编写 spec 前先查询目标环境支持对应 execution unit 的模型。
-
-```bash
-loomloom template-spec models text-generate
-loomloom template-spec models image-generate
-loomloom template-spec models video-generate
-```
-
-从返回结果选择真实 model ID，写入：
+固定模型使用：
 
 ```json
-"defaultModelRef": {
-  "modelKey": "<returned-model-id>"
-}
+"executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "..."}
 ```
 
-字段名为 `modelKey` 是兼容性命名，值存放可执行目录中的模型标识。不要把展示名称、provider 名或旧环境的 model ID 当成当前可执行 ID。
+可替换模型使用 Capability Profile，并单独声明 `modelSelection`。不要把完整合同、provider 参数或模型路由值塞进 `executionBinding`。先查询目标环境的创作上下文：
 
-## 校验边界
+```bash
+loomloom template-spec authoring-context --output json
+```
 
-JSON Schema 只能确认 modelKey 是非空字符串；服务端创建会确认模型存在并支持该 Step 的 execution unit。模型下线或能力变化属于动态环境错误，应重新查询目录。
-
-## staticParams
-
-只写 execution unit `AllowedRunParameters` 允许的 key。text-generate 只公开 prompt；image/video 的可选参数见 [Execution Units Reference](../reference/execution-units.md)。
+它返回当前 Profile、实时 revision、端口和可选模型。普通模板只写返回的 `profileId`，不写 `profileRevision`；Core 会在保存版本时冻结当时的 revision 与 hash。

@@ -1,30 +1,40 @@
-# Bindings reference
+# Input bindings
 
-<a id="ref-ports-and-bindings-input-transport"></a>
-TS-IN-001 uses string for pasted text. TS-IN-003 forbids describing a string as an asset ID input.
+Each `steps[].inputBindings` key is a target contract `portId`. One target port has one binding.
 
-<a id="ref-ports-and-bindings-uploaded-text"></a>
-TS-IN-002 requires text_reference to enter a compatible port through initial_input, not prompt FieldBinding.
+<a id="ref-ports-and-bindings-step-output"></a>
 
-<a id="ref-ports-and-bindings-field-binding"></a>
-FieldBinding maps one field to one allowed parameter. New authoring uses shared bindings. A multi-value content collection uses `sourceType=initial_input` and a port that accepts multiple contents instead of FieldBinding.
+## Step output
 
-It contains fieldKey, stepId, paramKey, and bindMode. Model routing only supports shared FieldBinding and requires allowModelOverride. Provider and mode are rejected.
+```json
+"image": {"source": "stepOutput", "stepId": "stp_source1", "portId": "output"}
+```
 
-<a id="ref-ports-and-bindings-param-binding"></a>
-ParamBinding combines single-value field_ref and literal sources in shared mode for new authoring.
+The source Step must exist, cannot be the same Step, and must appear in `dependsOn`. `portId` is frozen output-contract identity; do not use role, file name, or native JSON pointer as a long-term identity.
 
-Sources are ordered and joined by separator. Literals must be non-empty; field references must exist. Routing parameters do not support composition.
+## Template Input, literal, and platform context
 
-<a id="ref-ports-and-bindings-expanded-compatibility"></a>
+```json
+"prompt": {"source": "templateInput", "inputKey": "creativePrompt"}
+"duration": {"source": "literal", "value": 5}
+"user_id": {"source": "platformContext", "contextKey": "user.id"}
+```
 
-## TS-TOPOLOGY-001: expanded compatibility boundary
+`templateInput` and `composeValue` can declare `fallbackValue`; it applies only when a dynamic source has no value.
 
-New templates, new versions, and switching another historical version into the published position must not use `bindMode=expanded` in FieldBinding or ParamBinding. An already-published historical expanded version remains readable, precheckable, and runnable, and idempotently publishing that same current version remains allowed.
+## composeValue
 
-Migration: use workbook rows for independent items; declare multiple Steps for a fixed number of parallel branches; aggregate upstream results with `dependsOn` / `upstreamBindings`. TemplateSpec v1 does not support dynamically creating Step branches from an input array.
+Only deterministic string `concat` is supported. Parts are string Template Inputs or non-empty literals. It supports fixed author instruction plus user value; it is not an expression language.
 
-<a id="ref-ports-and-bindings-upstream-binding"></a>
-UpstreamBinding uses step_output or initial_input. Source IDs, ports, dependency, MIME, multiplicity, and merge policy must be compatible.
+## sequence
 
-For step_output, provide sourceStepId and sourcePort and include the step in dependsOn. For initial_input, provide sourceInputKey. Duplicate target-port bindings are accepted only when that port allows multiple.
+`sequence` constructs one position-sensitive heterogeneous native value. Each item declares `position`, `kind`, and source; kinds are text/image/video/audio. It is not Artifact merge.
+
+## merge
+
+`merge` explicitly declares ordered sources for one target port. The first implementation supports two mutually exclusive policies:
+
+- `ordered_artifacts`: merge homogeneous Artifact collections. Sources follow `sources[]`, then Artifact ordinal within each source; the result must satisfy target minItems/maxItems.
+- `concat_text`: accepts two or more `stepOutput` text sources, joins them with `\n\n` in `sources[]` order, and requires a target port that allows text multi-value and `concat_text`.
+
+Missing-source policy is `error` or `omit`. `composeValue` combines author literals and Workbook fields only; it is not for runtime Step-output aggregation.

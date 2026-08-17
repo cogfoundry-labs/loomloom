@@ -309,9 +309,36 @@ func TestTemplateSpecDocsCmdPrintsSpec(t *testing.T) {
 		t.Fatalf("docs spec command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"# TemplateSpec v2 syntax", "lowerCamel", "templateInputs", "fixedModelContract", "Input binding sources", "stepOutput"} {
+	for _, want := range []string{"# TemplateSpec v2 syntax", "lowerCamel", "templateInputs", "fixedModelContract", "inputBindings", "stepOutput", "authoring-context"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
+		}
+	}
+}
+
+func TestTemplateSpecAuthoringContextCmdUsesCurrentServerContext(t *testing.T) {
+	var requestedPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"profiles":[{"profileId":"text.basic.openai-chat.v1","revision":"2026-08-15.1","canonicalHash":"sha256:profile","capability":"text","endpoint":"/v1/chat/completions","compiler":"gateway-openai-chat-v1","stream":false,"inputPorts":[{"portId":"prompt","valueType":"string","required":true}],"output":{"text":true,"usage":true},"eligibleModels":[{"modelId":"anthropic/claude-sonnet-5","available":true}]}]}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
+	cmd := newTemplateSpecAuthoringContextCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("authoring-context command error = %v", err)
+	}
+	if requestedPath != "/loom/v1/templateAuthoringContext" {
+		t.Fatalf("path=%q want /loom/v1/templateAuthoringContext", requestedPath)
+	}
+	for _, want := range []string{"text.basic.openai-chat.v1", "2026-08-15.1", "anthropic/claude-sonnet-5"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output missing %q: %s", want, out.String())
 		}
 	}
 }

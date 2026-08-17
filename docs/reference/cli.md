@@ -180,6 +180,7 @@ For building your own private workflows.
 | `loomloom template-spec check <spec.json>` | Validate a TemplateSpec used to create a private template. |
 | `loomloom template-spec docs [topic]` | Show bundled TemplateSpec documentation. |
 | `loomloom template-spec models <step-type>` | List models for a step type. |
+| `loomloom template-spec authoring-context` | Show the current server-side Capability Profiles, their ports, and eligible models for TemplateSpec v2. |
 | `loomloom template-spec contracts <model-id>` | List enabled TemplateSpec v2 contracts and their input ports for one model. |
 | `loomloom template-spec create <spec.json>` | Create a private template. |
 | `loomloom template-spec create-version <template-id> <spec.json>` | Add a new version to an existing private template. |

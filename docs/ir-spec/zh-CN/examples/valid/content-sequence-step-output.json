@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "name": "文生图后生成视频",
+    "description": "前一步生成的图片按固定位置进入下游视频模型的 content 序列",
+    "primaryOutputType": "video"
+  },
+  "templateInputs": {
+    "imagePrompt": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "presentation": {"label": "图片描述", "widget": "textarea", "order": 10}
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_image001",
+      "displayName": "生成首帧图片",
+      "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-image-generation-v2"},
+      "inputBindings": {
+        "prompt": {"source": "templateInput", "inputKey": "imagePrompt"}
+      }
+    },
+    {
+      "stepId": "stp_video001",
+      "displayName": "根据图片生成视频",
+      "dependsOn": ["stp_image001"],
+      "triggerPolicy": "require_all",
+      "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-content-sequence-v2"},
+      "inputBindings": {
+        "content": {
+          "source": "sequence",
+          "sequence": {
+            "items": [
+              {"position": 0, "kind": "text", "source": {"source": "literal", "value": "让画面自然运动，保持主体和构图稳定。"}},
+              {"position": 1, "kind": "image", "role": "reference_image", "source": {"source": "stepOutput", "stepId": "stp_image001", "portId": "output"}}
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "workbook": {
+    "instructions": ["每行填写一段图片描述；系统先生成图片，再把该图片作为视频模型的有序输入。"],
+    "sampleRows": [{"values": {"imagePrompt": "一只橙色纸船漂浮在平静海面，黄昏光线"}}]
+  }
+}
