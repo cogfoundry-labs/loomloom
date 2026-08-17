@@ -9,14 +9,24 @@
 <b>AI work compiler and runtime.</b>
 
 [![Status: Beta](https://img.shields.io/badge/status-Beta-orange.svg)](#status)
+[![CI](https://github.com/cogfoundry-labs/loomloom/actions/workflows/ci.yml/badge.svg)](https://github.com/cogfoundry-labs/loomloom/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/cogfoundry-labs/loomloom)](https://github.com/cogfoundry-labs/loomloom/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Last commit](https://img.shields.io/github/last-commit/cogfoundry-labs/loomloom)](https://github.com/cogfoundry-labs/loomloom/commits/main)
+[![Open issues](https://img.shields.io/github/issues/cogfoundry-labs/loomloom)](https://github.com/cogfoundry-labs/loomloom/issues)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/cogfoundry-labs/loomloom)
 
 </div>
 
-## What's new
+## 🆕 What's new
 
-- 🚀 0.2.1 — First public beta release → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.2.1)
+- 🚀 0.2.1 — First public beta → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.2.1)
+
+
+## 🔥 Hot topics
+
+* How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
+
 
 ## AI work as software
 
