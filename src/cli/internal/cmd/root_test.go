@@ -323,7 +323,7 @@ func TestInsufficientBalanceMessagesArePlatformSpecific(t *testing.T) {
 	for _, tt := range tests {
 		err := maybeInsufficientBalanceError(
 			&rootOptions{server: tt.server},
-			&templateBalanceCheck{IsSufficient: false},
+			&templateBalanceCheck{LocalEstimateCovered: false},
 		)
 		if err == nil || err.Error() != tt.want {
 			t.Fatalf("server=%s error=%v want %q", tt.server, err, tt.want)

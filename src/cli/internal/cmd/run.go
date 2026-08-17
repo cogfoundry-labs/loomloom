@@ -121,29 +121,6 @@ func newRunPrecheckCmd(opts *rootOptions) *cobra.Command {
 			); err != nil {
 				return err
 			}
-			if balance := resp.BalanceCheck; balance != nil && !balance.IsSufficient {
-				if err := maybeInsufficientBalanceError(opts, balance); err != nil {
-					return err
-				}
-				estimatedCost, err := formatResponseMoney(resp.EstimatedTotalCost, resp.EstimatedTotalCostT, balance.Currency)
-				if err != nil {
-					return err
-				}
-				availableBalance, err := formatResponseMoney(
-					balance.AvailableBalanceMoney,
-					balance.AvailableBalance,
-					balance.Currency,
-				)
-				if err != nil {
-					return err
-				}
-				return fmt.Errorf(
-					"insufficient balance: estimated_cost=%s available=%s",
-					estimatedCost,
-					availableBalance,
-				)
-			}
-
 			if opts.output == "json" {
 				result := precheckJSONPayload(resp)
 				result["templateId"] = templateID
@@ -430,33 +407,6 @@ func newRunSubmitCmd(opts *rootOptions) *cobra.Command {
 			if err := httpClient.PostJSON(ctx, "/officialTemplates/"+args[0]+":precheckRows", payload, &precheckResp); err != nil {
 				return err
 			}
-			if balance := precheckResp.BalanceCheck; balance != nil && !balance.IsSufficient {
-				if err := maybeInsufficientBalanceError(opts, balance); err != nil {
-					return err
-				}
-				estimatedCost, err := formatResponseMoney(
-					precheckResp.EstimatedTotalCost,
-					precheckResp.EstimatedTotalCostT,
-					balance.Currency,
-				)
-				if err != nil {
-					return err
-				}
-				availableBalance, err := formatResponseMoney(
-					balance.AvailableBalanceMoney,
-					balance.AvailableBalance,
-					balance.Currency,
-				)
-				if err != nil {
-					return err
-				}
-				return fmt.Errorf(
-					"insufficient balance: estimated_cost=%s available=%s",
-					estimatedCost,
-					availableBalance,
-				)
-			}
-
 			printGeneratedClientRequestID(cmd, requestID, generatedRequestID)
 			var submitResp submitTemplateRowsResponse
 			if err := httpClient.PostJSON(ctx, "/officialTemplates/"+args[0]+":runRows", payload, &submitResp); err != nil {
