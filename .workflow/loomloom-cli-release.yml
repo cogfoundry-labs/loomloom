@@ -70,6 +70,7 @@ stages:
             go env GOVERSION GOROOT GOPROXY GOSUMDB
 
             scripts/test-release-repository-identity.sh
+            scripts/template-spec-docs.sh prepare-checked
 
             (
               cd src/cli
