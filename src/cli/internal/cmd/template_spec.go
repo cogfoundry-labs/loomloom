@@ -65,15 +65,29 @@ type listModelsResponse struct {
 }
 
 type modelSummary struct {
-	ModelID            string   `json:"modelId"`
-	DisplayName        string   `json:"displayName"`
-	Provider           string   `json:"provider"`
-	ExecutionAdapter   string   `json:"executionAdapter"`
-	SupportedStepTypes []string `json:"supportedStepTypes"`
-	SupportedAPIs      []string `json:"supportedApis"`
-	Available          bool     `json:"available"`
-	AvailabilityReason string   `json:"availabilityReason"`
-	IsDefault          bool     `json:"isDefault"`
+	ModelID            string                 `json:"modelId"`
+	DisplayName        string                 `json:"displayName"`
+	Provider           string                 `json:"provider"`
+	ExecutionAdapter   string                 `json:"executionAdapter"`
+	SupportedStepTypes []string               `json:"supportedStepTypes"`
+	SupportedAPIs      []string               `json:"supportedApis"`
+	Available          bool                   `json:"available"`
+	AvailabilityReason string                 `json:"availabilityReason"`
+	IsDefault          bool                   `json:"isDefault"`
+	AuthoringOptions   []modelAuthoringOption `json:"authoringOptions"`
+}
+
+type modelAuthoringOption struct {
+	Kind               string                        `json:"kind"`
+	FixedModelContract map[string]any                `json:"fixedModelContract,omitempty"`
+	CapabilityProfile  *modelCapabilityProfileOption `json:"capabilityProfile,omitempty"`
+}
+
+type modelCapabilityProfileOption struct {
+	ProfileID       string `json:"profileId"`
+	ProfileRevision string `json:"profileRevision"`
+	ProfileHash     string `json:"profileHash"`
+	IsDefault       bool   `json:"isDefault"`
 }
 
 type templateAuthoringContractsResponse struct {
@@ -437,7 +451,7 @@ func newTemplateSpecModelsCmd(opts *rootOptions) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "models <step-type>",
-		Short: "List executable models available for a TemplateSpec step type",
+		Short: "List authority-backed models usable for a TemplateSpec step type",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			stepType := strings.TrimSpace(args[0])
@@ -453,15 +467,15 @@ func newTemplateSpecModelsCmd(opts *rootOptions) *cobra.Command {
 
 			query := url.Values{}
 			query.Set("stepType", stepType)
-			query.Set("onlyAvailable", fmt.Sprintf("%t", !includeUnavailable))
-			if strings.TrimSpace(provider) != "" {
-				query.Set("provider", strings.TrimSpace(provider))
+			if includeUnavailable {
+				return errors.New("--include-unavailable is no longer supported: LoomLoom lists only models with an authoring contract")
 			}
 
 			var resp listModelsResponse
 			if err := httpClient.GetJSONWithQuery(ctx, "/models", query, &resp); err != nil {
 				return err
 			}
+			resp.Models = filterModelsByProvider(resp.Models, provider)
 			if opts.output == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
@@ -470,8 +484,8 @@ func newTemplateSpecModelsCmd(opts *rootOptions) *cobra.Command {
 			return printTemplateSpecModels(cmd.OutOrStdout(), resp.Models)
 		},
 	}
-	cmd.Flags().StringVar(&provider, "provider", "", "Optional model provider filter")
-	cmd.Flags().BoolVar(&includeUnavailable, "include-unavailable", false, "Include known but currently unavailable models")
+	cmd.Flags().StringVar(&provider, "provider", "", "Optional client-side model provider filter")
+	cmd.Flags().BoolVar(&includeUnavailable, "include-unavailable", false, "Deprecated: LoomLoom no longer exposes unavailable catalog models")
 	return cmd
 }
 
@@ -838,28 +852,48 @@ func printTemplateSpecModels(w interface {
 		return err
 	}
 	tw := newTabWriter(w)
-	if _, err := fmt.Fprintln(tw, "model_id\tdisplay_name\tprovider\tdefault\tavailable\treason"); err != nil {
+	if _, err := fmt.Fprintln(tw, "model_id\tdisplay_name\tprovider\tauthoring_options"); err != nil {
 		return err
 	}
 	for _, model := range models {
-		reason := model.AvailabilityReason
-		if reason == "" {
-			reason = "-"
+		kinds := make([]string, 0, len(model.AuthoringOptions))
+		for _, option := range model.AuthoringOptions {
+			kinds = append(kinds, option.Kind)
 		}
 		if _, err := fmt.Fprintf(
 			tw,
-			"%s\t%s\t%s\t%t\t%t\t%s\n",
+			"%s\t%s\t%s\t%s\n",
 			model.ModelID,
 			model.DisplayName,
-			model.Provider,
-			model.IsDefault,
-			model.Available,
-			reason,
+			modelProvider(model),
+			strings.Join(kinds, ","),
 		); err != nil {
 			return err
 		}
 	}
 	return tw.Flush()
+}
+
+func modelProvider(value modelSummary) string {
+	if strings.TrimSpace(value.Provider) != "" {
+		return strings.TrimSpace(value.Provider)
+	}
+	provider, _, _ := strings.Cut(value.ModelID, "/")
+	return provider
+}
+
+func filterModelsByProvider(models []modelSummary, provider string) []modelSummary {
+	provider = strings.TrimSpace(provider)
+	if provider == "" {
+		return models
+	}
+	filtered := make([]modelSummary, 0, len(models))
+	for _, item := range models {
+		if modelProvider(item) == provider {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
 }
 
 func newTemplateSpecListCmd(opts *rootOptions) *cobra.Command {
