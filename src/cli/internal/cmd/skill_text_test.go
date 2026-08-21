@@ -268,6 +268,28 @@ func TestBundledSkillsUseTemplateSpecV2Bindings(t *testing.T) {
 	}
 }
 
+func TestBundledSkillGuidesLegacyTemplateSpecV1Upgrade(t *testing.T) {
+	root := findRepoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "agent-guidance", "loomloom", "SKILL.md"))
+	if err != nil {
+		t.Fatalf("read SKILL.md: %v", err)
+	}
+	text := string(data)
+	for _, want := range []string{
+		"Historical v1 TemplateVersions remain readable and runnable",
+		"used to create a new template or save a new version",
+		"never overwrite or claim to repair the historical v1 version",
+		"loomloom template-spec docs spec --lang zh-CN",
+		"loomloom template-spec authoring-context --output json",
+		"loomloom template-spec contracts <model-id> --output json",
+		"promise a lossless or automatic v1-to-v2 conversion",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("agent-guidance/loomloom/SKILL.md missing %q", want)
+		}
+	}
+}
+
 func TestBundledSkillsExposeTemplateSpecDocsLanguageOption(t *testing.T) {
 	root := findRepoRoot(t)
 	text := readCanonicalSkillReference(t, root, "template-spec.md")
