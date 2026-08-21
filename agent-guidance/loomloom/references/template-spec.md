@@ -19,6 +19,7 @@ Before writing TemplateSpec, read the current CLI-bundled documentation:
 loomloom template-spec docs spec
 loomloom template-spec docs examples
 loomloom template-spec docs conversation
+loomloom template-spec authoring-context --output json
 ```
 
 - `spec` is the current JSON contract.
@@ -33,7 +34,7 @@ loomloom template-spec docs spec --lang zh-CN
 
 Select the documentation language as appropriate for the conversation and task.
 
-The installed Skill may contain a `generated-template-spec/` backup. Prefer the CLI docs command because it matches the currently installed CLI.
+The installed Skill may contain a `generated-template-spec/` backup. Prefer the CLI docs command because it matches the currently installed CLI. The authoring-context response is the authority for environment-dependent data such as current Profile revision, available model members, and Profile ports; bundled docs are never authority for those changing values.
 
 ## Conversation Flow
 
@@ -145,6 +146,7 @@ Before showing TemplateSpec, verify that Template Input descriptions, Workbook s
 - Use lowerCamel fields such as `meta.name`, `templateInputs`, `steps[].stepId`, and `steps[].inputBindings`.
 - Put user-facing inputs in the top-level `templateInputs` map. Put instructions and sample rows under `workbook`.
 - Bind an exact model with `executionBinding.kind=fixedModelContract` and a real `subjectRevisionId` from the target environment.
+- Resolve that ID and the contract's exact input ports with `loomloom template-spec contracts <model-id> --output json`; do not infer them from the model catalog.
 - Bind a replaceable model set with `executionBinding.kind=capabilityProfile`; also declare the separate Step-level `modelSelection` rule.
 - Treat every `inputBindings` map key as the target contract `portId`. Never guess a port ID or use a role, file name, native JSON pointer, or shared field name as its identity.
 - A target port has exactly one binding. Use `templateInput`, `stepOutput`, `literal`, `platformContext`, `composeValue`, `sequence`, or `merge` according to the current bundled documentation.
@@ -152,6 +154,36 @@ Before showing TemplateSpec, verify that Template Input descriptions, Workbook s
 - Use `sequence` for one ordered heterogeneous multimodal value. Use `merge` for homogeneous Artifact collections; do not treat these as interchangeable.
 - Do not bind `provider`, routing mode, complete contracts, or provider-native request objects.
 - Never guess Step IDs, authority IDs, or port IDs.
+
+### Text-generation Steps
+
+`text-generate` uses the shared OpenAI-compatible capability Profile. It does
+not require one `fixedModelContract` or Certification Subject per text model.
+An empty result from `template-spec contracts <text-model-id>` is therefore
+expected and does **not** mean that the model cannot be used in a private
+TemplateSpec.
+
+For a text-generation Step:
+
+1. Run `loomloom template-spec authoring-context --output json`. Choose one
+   Profile and an eligible model returned by that exact target environment.
+2. Set `executionBinding.kind=capabilityProfile` and use the response's stable
+   `profileId`. Omit `profileRevision` for normal authoring; Core resolves and
+   freezes the current revision. Do not require or fabricate a
+   `subjectRevisionId`.
+3. Use the response's Profile ports and write `modelSelection.defaultModelId`
+   from its eligible model list. Do not copy a revision, port, or model list
+   from bundled docs or an older installed Skill.
+4. Bind the user's text to the Profile `prompt` port. Keep the optional model
+   selector as a Template Input when users may choose another eligible model;
+   leaving it blank uses the frozen default model.
+5. A downstream image, video, or other fixed-model Step may consume the text
+   Step's stable output through `stepOutput`. The absence of a per-model text
+   authoring contract must never be reported as blocking such a workflow.
+
+Use `template-spec contracts <model-id>` only when authoring a
+`fixedModelContract` Step for one exact model, such as a model with its own
+multimedia or provider-native input structure.
 
 ## Creation And Versioning
 

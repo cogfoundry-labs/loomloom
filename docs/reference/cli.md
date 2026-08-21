@@ -167,6 +167,7 @@ Generated files from workflows (images, videos, documents, etc.)
 | Command | Description |
 |---|---|
 | `loomloom model list --step-type <type>` | List executable models for a step type. |
+| `loomloom balance` | Show the currently observable settled LoomLoom balance. Gateway remains the final model-request admission authority. |
 | `loomloom asset list` | Aggregated list of my private templates and available Market SkillBots; does not include official templates. |
 
 ## 7. Private templates (created via TemplateSpec)
