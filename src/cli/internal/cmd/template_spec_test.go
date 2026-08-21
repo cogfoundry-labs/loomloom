@@ -449,6 +449,7 @@ func TestTemplateSpecModelsCmdListsAvailableModels(t *testing.T) {
 					"provider": "vertex",
 					"executionAdapter": "vertex",
 					"supportedStepTypes": ["text-generate"],
+					"authoringOptions": [{"kind":"capabilityProfile","capabilityProfile":{"profileId":"text.basic.openai-chat.v1","profileRevision":"2026-08-15.1"}}],
 					"available": true,
 					"isDefault": true
 				}
@@ -473,7 +474,7 @@ func TestTemplateSpecModelsCmdListsAvailableModels(t *testing.T) {
 	if requestedPath != "/loom/v1/models" {
 		t.Fatalf("path=%q want /loom/v1/models", requestedPath)
 	}
-	for _, want := range []string{"stepType=text-generate", "onlyAvailable=true"} {
+	for _, want := range []string{"stepType=text-generate"} {
 		if !strings.Contains(requestedQuery, want) {
 			t.Fatalf("query %q missing %q", requestedQuery, want)
 		}
@@ -491,7 +492,7 @@ func TestTemplateSpecModelsCmdCanFilterProvider(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestedQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"models":[]}`))
+		_, _ = w.Write([]byte(`{"models":[{"modelId":"vertex/gemini","authoringOptions":[{"kind":"capabilityProfile"}]},{"modelId":"other/model","authoringOptions":[{"kind":"fixedModelContract"}]}]}`))
 	}))
 	defer server.Close()
 
@@ -508,8 +509,11 @@ func TestTemplateSpecModelsCmdCanFilterProvider(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("models command error = %v", err)
 	}
-	if !strings.Contains(requestedQuery, "provider=vertex") {
-		t.Fatalf("query %q missing provider=vertex", requestedQuery)
+	if strings.Contains(requestedQuery, "provider=") {
+		t.Fatalf("query %q must not send the unsupported provider parameter", requestedQuery)
+	}
+	if !strings.Contains(out.String(), "vertex/gemini") || strings.Contains(out.String(), "other/model") {
+		t.Fatalf("provider filter output is incorrect: %s", out.String())
 	}
 }
 
@@ -648,13 +652,9 @@ func TestTemplateSpecCreateCommandsRejectV1BeforeRemoteMutation(t *testing.T) {
 	}
 }
 
-func TestTemplateSpecModelsCmdCanIncludeUnavailableModels(t *testing.T) {
-	var requestedQuery string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestedQuery = r.URL.RawQuery
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"models":[]}`))
-	}))
+func TestTemplateSpecModelsCmdRejectsIncludeUnavailableModels(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requestCount++ }))
 	defer server.Close()
 
 	opts := &rootOptions{
@@ -667,14 +667,11 @@ func TestTemplateSpecModelsCmdCanIncludeUnavailableModels(t *testing.T) {
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"image-generate", "--include-unavailable"})
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("models command error = %v", err)
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "no longer supported") {
+		t.Fatalf("models command error = %v, want unsupported semantic", err)
 	}
-	if !strings.Contains(requestedQuery, "onlyAvailable=false") {
-		t.Fatalf("query %q missing onlyAvailable=false", requestedQuery)
-	}
-	if !strings.Contains(out.String(), `"models": []`) {
-		t.Fatalf("json output missing models array: %s", out.String())
+	if requestCount != 0 {
+		t.Fatalf("request count=%d, want 0", requestCount)
 	}
 }
 
