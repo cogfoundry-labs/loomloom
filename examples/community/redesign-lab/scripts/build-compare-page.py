@@ -50,15 +50,17 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <style>
-  /* Tool-chrome palette: deliberately a color no real redesign is likely to
-     use for its own background -- saturated amber, high-contrast black
-     text -- so this bar reads as "comparison tool," never as part of the
-     design being judged, regardless of whether the option shown is a dark
-     or a light page. Confirmed necessary: a neutral dark chrome (#141416)
-     was visually indistinguishable from a redesign that also used a
-     near-black background, and a human reviewing it couldn't tell where
-     the tool's own UI ended and the real page began. */
-  :root{{--chrome:#F5B400;--chrome-ink:#1A1200;--chrome-line:#B98400;--dim:#6B5200;}}
+  /* Tool-chrome palette: the loomloom brand green (#00fdbc), paired with a
+     near-black ink -- confirmed by contrast math, not eyeballed: white text
+     on the raw green is ~1.3:1 (fails badly), while this dark ink on it is
+     ~14:1. Deliberately a color no real redesign is likely to use for its
+     own background, so this bar reads as "comparison tool," never as part
+     of the design being judged, regardless of whether the option shown is
+     a dark or a light page -- an earlier neutral dark chrome (#141416) was
+     visually indistinguishable from a redesign that also used a near-black
+     background, and a human reviewing it couldn't tell where the tool's
+     own UI ended and the real page began. */
+  :root{{--chrome:#00FDBC;--chrome-ink:#062017;--chrome-line:#00A67E;}}
   *{{box-sizing:border-box;}}
   html,body{{height:100%;}}
   body{{margin:0;background:#0A0A0A;color:var(--chrome-ink);display:flex;flex-direction:column;
