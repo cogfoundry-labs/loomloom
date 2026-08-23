@@ -172,6 +172,53 @@ guesses:**
   screenshot request against a backgrounded/hidden pane fails outright;
   this isn't fixable from the agent side — ask the human to bring the pane
   back into view.
+- **Every tab shown to the human MUST have an explicit viewport set via
+  `resize_window` with real `width`/`height`, or it renders wrong in the
+  human's pane.** This is the single highest-value entry in this section:
+  it cost most of a real run to find, and it was misdiagnosed twice before
+  being measured. A tab left at "native" (no explicit emulation) lays its
+  page out at a width that does not match the pane widget, leaving a stale
+  framebuffer strip beside the real content. To the human that reads as
+  *"two tabs rendered on top of each other"* — a completely misleading
+  symptom that invites the wrong fix. Confirmed, in one session:
+  - Three gate tabs held three different viewports (1239x1257, 1280x720,
+    800x455) because `resize_window` **applies per-tab and persists**, so
+    earlier measurement/responsive calls stranded whichever tab was active
+    at the time. The 800x455 tab laid out a 785px-wide body inside a
+    ~1239px pane; that 785px column plus dead space to its right was the
+    "overlapping tabs" the human actually saw.
+  - Setting a tab to **the exact numbers it already reported** still fixed
+    its rendering. That is the proof it's *emulation being active* that
+    matters, not the dimensions — so "it already reports the right size"
+    is never a reason to skip this.
+  - **`resize_window` with `preset: "desktop"` is a silent no-op**: it
+    replies `"Viewport reset to native size (desktop)"` and changes
+    nothing (verified by reading `innerWidth` back immediately after).
+    Never use a preset to restore a viewing tab; only explicit
+    `width`/`height` takes effect.
+
+  So, concretely, before every gate's `AskUserQuestion`: read one tab's
+  `window.innerWidth`/`innerHeight` via `javascript_tool` (don't hardcode
+  — the pane size is per-machine and per-session), then `resize_window`
+  **every** tab being presented to exactly those numbers, then read
+  `innerWidth` back per tab to confirm it took. Do all measurement and
+  responsive-width checking on a **separate throwaway tab** the human is
+  never shown, so gate tabs never drift in the first place.
+- **The agent's own screenshot succeeding is NOT evidence the human's pane
+  is correct — the two render paths genuinely diverge.** In the same run,
+  `computer{action:"screenshot"}` returned correct, fully-rendered images
+  of tabs that were simultaneously displaying broken layout in the human's
+  actual pane. Every agent-side check (console clean, network 200s,
+  repeated screenshots, explicit `tabId`) passed while the human was
+  looking at a visibly broken page. **The only reliable way to know what
+  the human sees is to ask them to screenshot their own pane and send
+  it** — do that early when a rendering complaint comes in, rather than
+  burning turns on agent-side checks that cannot observe the problem.
+  Corollary: always send `SendUserFile` screenshots alongside opening
+  tabs, every time, not as a fallback after the pane visibly fails — they
+  come from `render-and-screenshot.py` at fixed widths and are immune to
+  all pane viewport state, which is what makes them the one reliably
+  verifiable channel in this environment.
 
 ## Gate 1: direction choice
 
