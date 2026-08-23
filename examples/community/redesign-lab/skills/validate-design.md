@@ -17,6 +17,16 @@ second is not done.
    load, internal/external links resolve, no console errors, responsive
    behavior holds at mobile/tablet/desktop widths (actually resize and
    re-render: don't assume from the desktop screenshot alone).
+
+   **Do this resizing on a dedicated throwaway tab, never on a tab the
+   human is looking at (or will be shown at a later gate).**
+   `resize_window` applies per-tab and persists, so resizing a gate tab to
+   375px for a mobile check strands it there — and a tab whose viewport
+   doesn't match the pane renders visibly broken for the human while still
+   looking perfect to every agent-side check. See
+   `../references/approval-policy.md`'s "Every tab shown to the human MUST
+   have an explicit viewport set" for the full confirmed detail; this is
+   the stage where that drift actually gets introduced.
 2. **`a11y-audit`**: run its deterministic axe-core-based scan against the
    rebuilt routes. This is real, industry-standard accessibility tooling,
    not an LLM eyeballing a screenshot for contrast. Compare its findings
