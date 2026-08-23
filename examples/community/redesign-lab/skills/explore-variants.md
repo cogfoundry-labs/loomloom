@@ -70,14 +70,17 @@ composition rather than a new direction:
 
 ## Handoff
 
-**Progressive, one-tab-per-variant, same mechanism as Direction Slices** —
-see `generate-directions.md`'s "Handoff" for the full reasoning (the same
-base64-payload limit and inert-cross-page-link findings apply here
-unchanged). Build variant 2, open its tab, tell the human it's ready with
-its mechanical score and aesthetic note, then build variant 3 while they
-look. Variant 1 (the reused Gate-1 slice) can be pointed to immediately —
-its tab may already be open from Gate 1, or open a fresh one if it was
-closed.
+**Progressive build, single comparison page — same mechanism as Direction
+Slices** — see `generate-directions.md`'s "Handoff" for the full reasoning
+(the only-one-tab-composites finding and the phantom-`file://`-tab sweep
+both apply here unchanged; see `../references/approval-policy.md`'s "How
+gates are actually shown," Rev 8). Build variant 2, regenerate the
+comparison page with `../scripts/build-compare-page.py` adding it as a new
+`--option`, force-reload the one comparison-page tab, tell the human it's
+ready with its mechanical score and aesthetic note, then build variant 3
+while they look. Variant 1 (the reused Gate-1 slice) is just another
+`--option` in the same page from the start — no separate tab to reuse or
+reopen.
 
 **Mechanical score and the aesthetic note are reference information for the
 human's decision, not a pre-filter the agent uses to decide what gets

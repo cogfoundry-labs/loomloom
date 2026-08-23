@@ -53,102 +53,111 @@ rev 1's fix had settled into.** That mechanism (one scrollable HTML page per
 gate, every option embedded as an `<iframe srcdoc>`, a sticky "Jump to" bar)
 worked, but had two real, confirmed problems: the combined page routinely
 exceeded this environment's base64-payload rendering limit once more than a
-couple of real, image-heavy options were embedded together (see "Building
-the comparison page" below for the confirmed numbers), and the "jump to
+couple of real, image-heavy options were embedded together, and the "jump to
 another option" links built to route around a failed combined page turned
 out to be completely inert regardless of how they were built — a
 `data:`-rendered local file is blocked from top-level-navigating to another
-local file via an in-page click, full stop. Both problems shared one root
-cause: cramming every option into a single document. Rev 7 also brought the
-default option count for Gates 1 and 2 down to 3-4 (see
-`../skills/generate-directions.md` and `../skills/explore-variants.md`),
-which made a different mechanism practical.
+local file via an in-page click, full stop. Both problems traced to one
+thing: the page was opened as a `file://`/`data:` document with every
+option's real bytes inlined into it. Rev 7 replaced it with real, separate
+browser tabs, one per option — which avoided both problems, for a while.
+
+**Rev 8: replaced tab-per-option with a single comparison page again — not
+a reversion, a fix for a bug rev 7's own mechanism turned out to have.**
+Confirmed directly, twice, in one session: **this environment's Browser
+pane only ever composites one tab live.** Switching tabs in the pane's own
+tab bar does not reliably hand compositing to the newly-selected tab, so
+every tab but whichever was most recently active silently displays a stale
+frame. This is indistinguishable from a genuine rendering bug from the
+human's side — it read as "these tabs render wrong" and "these tabs all
+look the same," and cost real time chasing viewport and asset causes before
+`computer{action:"screenshot"}` against a *fronted, just-selected* tab
+returned the exact error that named it: *"the Browser pane is not
+displayed, so the page is not compositing frames."* That error on a tab
+the human was actively looking at is the tell — multiple tabs cannot both
+be true, live render surfaces at once in this environment, no matter how
+correctly each is built.
+
+A single page sidesteps this by construction: there is only ever one tab,
+so there is nothing for the pane to get wrong. This is not the same
+mechanism rev 7 removed — the reason rev 7 removed it doesn't apply here.
+Rev 7's combined page inlined every option's actual bytes into one
+`file://`/`data:` document (the base64-payload and dead-link problems both
+came from that). This one is served over a **real local HTTP server**, and
+each option is a real `<iframe src="http://...">` pointing at its own real
+file — the parent page's payload is a handful of URL strings, not the
+options' own bytes, so rev 7's blocker genuinely doesn't apply.
 
 **The mechanism now:**
 
-1. **Real, separate browser tabs, one per option, opened progressively as
-   each is built** — not a combined page. Build option 1, open its tab, tell
-   the human it's ready with a short real-facts summary, then build option
-   2 while they look at what's already open. This sidesteps both rev-7
-   problems at the root: no combined payload to exceed a limit, and no
-   in-page navigation needed, since the human just switches tabs in the
-   browser's own tab bar. It also means the human sees the first real result
-   as soon as it exists, not after every option in the batch is done.
+1. **Build each option's real HTML file exactly as before** (per
+   `generate-directions.md`/`explore-variants.md`) — this part is
+   unchanged. Run `mechanical-check.py` against it, same as always.
+2. **Serve the run's output directory over a real local HTTP server**
+   (`python -m http.server <port>` from the run's working directory, or
+   equivalent) before showing anything. This must happen before the first
+   option is presented — file:// breaks the iframe `src` resolution below
+   and reintroduces the exact problem this mechanism exists to avoid.
+3. **Generate the comparison page with `../scripts/build-compare-page.py`**
+   — pass `--option "label=src=score"` once per option built so far (real
+   `/`-relative URLs served by the HTTP server, never `file://`, never
+   inlined `srcdoc`), and `--out` a path inside the served directory.
+   Re-run it (adding one more `--option`) each time a new option finishes
+   building — this is what makes the reveal progressive, replacing "open a
+   new tab" from the rev-7 mechanism.
+4. **Open (or force-reload) the one comparison-page tab.** First option:
+   open it. Every option after that: the same tab, force-reloaded against
+   the regenerated page, so the human always has exactly one tab to look at
+   and it always has every option built so far. Tell the human it's ready
+   in the *chat* message — "`current-fixed` is up: [1-3 real notable
+   facts] — mechanical-check: 11/11" — same as the old per-tab
+   announcement, just pointing at a button instead of a new tab.
+5. **The decision itself is an `AskUserQuestion` call, made once every
+   option in the current pass is built.** Options: each built option by
+   name (mechanical score + real notable facts as the description), plus
+   explicit flexibility options in the same call — "ask for N more" and
+   "let me pick/describe one not yet shown" — and always a "stop here"
+   option. `AskUserQuestion` is used only for the decision, after the
+   comparison page is already open with every real option in it, with
+   clear option labels matching the page's own button labels. Never let it
+   substitute for actually opening the comparison page first.
+6. **The "stop here" option is always present** in the same `AskUserQuestion`
+   call as the domain choices — see "Every gate: three outcomes" above.
+7. **Go straight from building/regenerating the page to telling the human
+   it's ready — no placeholder tool call in between.**
 
-   **Open the real deliverable file directly — no wrapper, no meta-header
-   added to the page.** The tab shows exactly the real slice/variant,
-   unwrapped, with a real distinguishing `<title>` so the browser's own tab
-   bar tells options apart. The substantive information (which
-   family/direction/variant it is, 1-3 concrete facts about what's actually
-   different about this option, a one-line mechanical-check summary like
-   "11/11" or "10/11 — nav height is intentional, see below") goes in the
-   *chat message* announcing that tab, not printed into the page itself —
-   with exactly one option per tab there's no multi-option page to lose
-   track of while scrolling, which is the only reason the old
-   combined-page mechanism needed an in-page header at all.
-2. **The decision itself is an `AskUserQuestion` call, made once every
-   option in the current pass is open.** Options: each built option by name
-   (mechanical score + real notable facts as the option's description),
-   plus explicit flexibility options in the same call — "ask for N more"
-   and "let me pick/describe one not yet shown" — and always a "stop here"
-   option. This replaced a plain numbered-list-in-chat mechanism: that was
-   the right call in rev 1 specifically *because* the widget being replaced
-   conflated "look at the real work" and "make the decision" into one
-   bespoke UI. `AskUserQuestion` doesn't repeat that mistake — it's used
-   only for the decision, after the real pages are already open in their
-   own tabs, with clear option labels rather than a hand-built card grid.
-   Never let it substitute for actually opening the real tabs first.
-3. **The "stop here" option is always present** in the same `AskUserQuestion`
-   call as the domain choices — see "Every gate: three outcomes" above. If
-   a gate's choice mechanism doesn't include it as a real, selectable
-   option, that's a defect in how the gate was built, not an acceptable
-   shortcut.
-4. **Go straight from building/opening a tab to telling the human it's
-   ready — no placeholder tool call in between.** A no-op bash command, an
-   empty checkpoint marker, or any other tool call whose only purpose is to
-   mark "I'm about to say something" is visible noise to the human watching
-   tool calls scroll by, and adds nothing a plain chat message doesn't
-   already say.
+**The comparison page's own chrome must be visually unmistakable from the
+options it's showing, in both directions.** Confirmed directly: a first
+version used a neutral dark header (`#141416`) that was close enough to a
+dark redesign's own near-black background (`#0A0A0A`) that a human couldn't
+tell, from a screenshot, where the tool's own UI ended and the real page
+began. `build-compare-page.py`'s header uses a saturated amber
+(`#F5B400`) with an explicit "COMPARISON TOOL — NOT PART OF THE DESIGN"
+badge — a color and a label no real redesign is likely to produce for its
+own background, so the chrome reads as chrome regardless of whether the
+option currently shown is light or dark, loud or restrained. Don't soften
+this into the redesign's own palette to "match the vibe"; the entire point
+is that it doesn't match.
 
-**Opening each option's tab — constraints confirmed the hard way, not
-guesses:**
+**Constraints confirmed the hard way, not guesses:**
 
-- **Always verify the tab actually loaded — never trust the tool's own
-  "opened" message alone.** A direct DOM check (`document.title`, or an
-  element count specific to that slice/variant) is the only reliable
-  signal; a tool that reports success can still leave stale content on
-  screen, or spawn a fresh tab id instead of loading into the one requested
-  — check `tabs_context`/the DOM after every open, not just the tool's own
-  message.
-- **Prefer opening the real deliverable file directly, full quality, no
-  wrapper.** With one option per tab (not eight embedded in one page), the
-  base64-payload math that broke the old combined page is far less likely
-  to bite — a single slice's own file is a small fraction of what a
-  combined page used to carry. If a real deliverable file ever does fail to
-  open (same DOM-check rule above catches this), the confirmed fallback is
-  a disposable, deliberately low-resolution copy of its embedded images
-  built *only* for viewing (e.g. capped at ~300-500px width, JPEG quality
-  ~40-45) — never degrade the actual deliverable file itself, only a
-  throwaway preview copy of it.
-  **Why this matters at all, confirmed rev 6 (a real 6-live-site run,
-  northsydbo-h):** a 4.15MB combined comparison page (8 iframes,
-  full-quality embedded photos) failed to open, while a same-size plain-text
-  file (0.47MB, no images) opened fine well inside that failing range. This
-  preview tool renders a local file as a `data:` URL, and base64's own
-  `+`/`/`/`=` characters balloon under the percent-encoding that requires —
-  a base64-heavy file is effectively much "larger" to this tool than its raw
-  byte count suggests. That's the failure mode per-tab opening avoids by
-  construction, not something this rule is guessing will also apply here.
-- **Cross-tab/cross-page links inside a rendered page are inert — don't
-  build them, and don't rely on them.** A same-tab `<a href="...">` to
-  another local file does not work from inside a `data:`-rendered page, in
-  either relative or absolute `file://` form — confirmed by clicking it and
-  observing the DOM was unchanged (`document.title` still the old page). A
-  `data:` document is blocked from top-level-navigating to a `file://` URL
-  via an in-page click, full stop, regardless of the href's form. This is
-  exactly why the tab-per-option mechanism above has the agent open each
-  tab itself, one at a time, rather than building any kind of "switch to
-  the next option" control into the rendered pages.
+- **Always verify the comparison page actually loaded — never trust the
+  tool's own "opened"/"navigated" message alone.** A direct DOM check
+  (`document.title`, or `document.querySelector('iframe.is-active')`'s
+  `contentDocument.title` from inside the active frame) is the only
+  reliable signal that the right option is actually showing, not just that
+  *a* page loaded.
+- **Sweep and close any stray `file://` tab before presenting anything.**
+  The `Write` tool's own preview hook auto-opens a `file://` tab for every
+  HTML file the instant it's written — before any templating/asset
+  substitution happens, so that tab can show broken placeholders
+  (`__LOGO_B64__` literally in the `src`, zero viewport) that were never
+  real to begin with. Confirmed directly: these phantom tabs interleaved
+  with real tabs, shared the option's own `<title>`, and were
+  indistinguishable by name — one was even the *active* tab after a
+  rebuild. Call `tabs_context` and close every `file://`-origin tab before
+  navigating or screenshotting anything; only `http://`-origin tabs are
+  ever real.
 - **Source images must match their actual rendered width, not a guess** —
   applies to the fallback low-res preview above, not the real deliverable
   file (which keeps its real assets at whatever size the real design
@@ -227,8 +236,10 @@ slices — 3 by default (a `current-fixed` baseline plus 2 exploratory
 directions, one carefully-chosen colorway each), 4 if the human opted into
 a 3rd exploratory direction beforehand (see `../skills/generate-directions.md`).
 Each slice is hero plus at least 2 more real content sections, always
-screenshotted full-page. Built and shown one tab at a time, progressively,
-per "How gates are actually shown" above — never a combined comparison page.
+screenshotted full-page. Built progressively, shown via the single
+comparison page (`../scripts/build-compare-page.py`), per "How gates are
+actually shown" above — regenerate and reload the same page each time a new
+slice finishes, never a fresh tab per slice.
 
 **Narrate which 2 (or 3) exploratory directions were picked and why**, in
 plain language, before building anything — the genome-distance reasoning and
@@ -246,16 +257,17 @@ means in plain language the first time it comes up in a session (e.g.
 "candidate design" or "one full-page rendered mockup of a design
 direction") — don't assume the term is self-explanatory.
 
-Build and open each slice's tab as it's ready (current-fixed first, then
-each exploratory direction), telling the human plainly each time — don't
-wait until all are done. Once every slice in this pass is open, present the
-decision as an `AskUserQuestion` call:
+Build each slice, regenerate the comparison page with one more `--option`
+as soon as it's ready (current-fixed first, then each exploratory
+direction), telling the human plainly each time — don't wait until all are
+done. Once every slice in this pass is in the page, present the decision as
+an `AskUserQuestion` call:
 
 - One option per built slice, its 1-3 real notable facts (including any
   defects fixed, for `current-fixed`) and mechanical-check score as the
   option's description.
 - **"Show me more directions"** — agent picks 1-2 more per the same
-  genome-distance method, built and opened the same progressive way.
+  genome-distance method, built and added to the same comparison page.
 - **"Let me pick a direction myself"** — human names a `direction_variants`
   skill not yet shown.
 - **"Stop here"** — nothing already built is lost.
@@ -263,7 +275,7 @@ decision as an `AskUserQuestion` call:
 If the human likes a shown direction but wants to see it in a different
 colorway before deciding, that's also always available — build the
 requested colorway (`generate-directions.md`'s "Colorways on request"),
-open it in its own tab the same way, and re-present the same
+regenerate the comparison page with it added, and re-present the same
 `AskUserQuestion` shape with the new option added.
 
 ## Gate 2: variant choice
@@ -271,9 +283,9 @@ open it in its own tab the same way, and re-present the same
 Shown after Explore Variants produces its real structural variants of the
 Gate-1-chosen direction+colorway — 3 by default (the Gate-1 slice itself,
 reused for free, plus 2 new structural compositions), 4 if the human opted
-into a 4th (see `../skills/explore-variants.md`). Same progressive,
-one-tab-per-variant mechanism as Gate 1 — build variant 2, open it, tell the
-human, build variant 3 while they look.
+into a 4th (see `../skills/explore-variants.md`). Same progressive-build,
+single-comparison-page mechanism as Gate 1 — build variant 2, regenerate
+the page, tell the human, build variant 3 while they look.
 
 **Mechanical score and the aesthetic note are reference information for the
 human's decision, not a filter the agent uses to decide what gets shown.**
@@ -288,13 +300,13 @@ vs-aesthetic distinction this relies on: mechanical findings can eliminate
 before a variant is even shown; aesthetic notes never do, they're advisory
 information for the human, same as here.
 
-Once every variant in this pass is open, present the decision as an
-`AskUserQuestion` call:
+Once every variant in this pass is in the comparison page, present the
+decision as an `AskUserQuestion` call:
 
 - One option per built variant (mechanical score + real composition notes
   as the description).
 - **"Show me more variants"** — agent picks 1-2 more structural
-  compositions, built and opened the same progressive way.
+  compositions, built and added to the same comparison page.
 - **"Let me describe a structural idea myself"** — human names the
   composition axis they want tried (e.g. "put the events section first").
 - **"Stop here"** — nothing already built is lost.
