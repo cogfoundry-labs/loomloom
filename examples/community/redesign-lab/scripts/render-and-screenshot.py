@@ -34,10 +34,20 @@ def prepare_for_full_page_capture(page):
     a screenshot that was ~80% blank white despite real content being there.
     Same root cause as trigger_lazy_load() in capture-assets.py, applied here
     too since this script builds the before/after case-study screenshots."""
-    page.add_style_tag(
-        content="*, *::before, *::after { "
-        "transition-duration: 0s !important; transition-delay: 0s !important; "
-        "animation-duration: 0s !important; animation-delay: 0s !important; }"
+    # page.add_style_tag() injects a real <style> element, which a strict
+    # Content-Security-Policy (style-src without 'unsafe-inline') blocks
+    # outright -- confirmed on pypi.org, whose CSP rejected it and crashed
+    # this function entirely before a single scroll happened. Setting the
+    # same properties via the CSSOM (element.style.setProperty) instead is
+    # script execution through Playwright's CDP evaluate, not a stylesheet
+    # resource, so it isn't subject to style-src at all -- same effect,
+    # doesn't require the target site's CSP to cooperate.
+    page.evaluate(
+        """() => {
+            const css = 'transition-duration:0s!important;transition-delay:0s!important;'
+                + 'animation-duration:0s!important;animation-delay:0s!important;';
+            document.querySelectorAll('*').forEach(el => el.style.cssText += css);
+        }"""
     )
     height = page.evaluate("() => document.body.scrollHeight")
     step = 800

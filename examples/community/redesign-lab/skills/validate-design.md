@@ -22,6 +22,21 @@ second is not done.
    not an LLM eyeballing a screenshot for contrast. Compare its findings
    against the pre-redesign baseline from Analyze: a *new* violation that
    wasn't there before is a Fail, not just "any violation is a Fail."
+
+   **`a11y-audit`'s own `scripts/scan.js` auto-installs its axe-core/Puppeteer
+   dependencies on first use, and that auto-installer can fail silently**
+   (confirmed on Windows: `Failed to install axe-core: npm install exited
+   with null`, no further detail, no crash — the command just doesn't
+   produce a report). If this happens, don't treat it as a hard blocker or
+   a reason to skip this piece: `cd` into that skill's own `deps/` directory
+   (e.g. `~/.claude/skills/a11y-audit/deps`) and run `npm install axe-core
+   puppeteer` directly, then re-run `scan.js` — this installs the exact same
+   packages the skill's own installer was trying and failing to fetch, just
+   via a plain `npm install` instead of whatever spawn options its installer
+   uses internally. This is a gap in `a11y-audit` itself, not something
+   redesign-lab's own files can fix (it's a separate installed skill), so
+   this note exists here instead: don't let a silent dependency-install
+   failure in someone else's tooling read as "Validate can't run."
 3. **The active authority's `preflight_check`** (`design-authority.md`):
    for the default authority, `design-taste-frontend` §14's mechanical
    Pre-Flight Check: zero em-dashes anywhere visible, no CTA text wrap, one

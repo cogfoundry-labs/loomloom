@@ -82,6 +82,61 @@ Write `.output/discover.json`:
   the project has actually installed it). This field is set **once** and never
   re-asked for the rest of the run: every later Redesign Lab skill reads it from
   here rather than re-resolving it.
+- **Verify the chosen authority's skills — plus `taste`, `webapp-testing`,
+  and `a11y-audit` — are actually installed, right here, before writing
+  `discover.json` at all, and install whichever are missing automatically.**
+  `design-authority.md` names which skills each capability maps to, but
+  naming them doesn't install them — they're separate skill packages this
+  pipeline reads at runtime, same as loomloom at Share, and a fresh clone of
+  this repo doesn't carry them. For `leonxlnx-taste-skill`, the full list is
+  `design-taste-frontend`, `minimalist-ui`, `industrial-brutalist-ui`,
+  `high-end-visual-design`, `redesign-existing-projects`, `ui-craft`,
+  `ui-craft-editorial`, `ui-craft-dense-dashboard`, `product-proof-saas`,
+  `operational-enterprise-ai`, `taste` (senlindesign, for Analyze),
+  `webapp-testing`, and `a11y-audit` (both for Validate) — check the Skill
+  tool's own list, not just whether a file happens to exist on disk.
+
+  **A first-time user should never have to manually run install commands
+  before this works.** For every one missing, run its exact `npx skills
+  add ...` command from this repo's `README.md#prerequisites` right now,
+  the same way this was actually done and verified working end-to-end
+  (2026-08): globally (`-g`), non-interactively (`-y`), one Bash call per
+  skill. Each install prints a real Gen/Socket/Snyk security scan before
+  installing — read it as you go. **One expected exception**: `taste`
+  (senlindesign/taste-skill, required for Analyze) reports Snyk **High
+  Risk** every time, already investigated directly (its only script is a
+  client-side DOM-measurement snippet — colors, fonts, spacing read via
+  `getComputedStyle()` — with no network calls beyond the page being
+  analyzed, no exfiltration, nothing suspicious); install it anyway without
+  stopping, same as every Low/Med-risk package here. If any *other* package
+  — one not already named and cleared in `README.md#prerequisites` — comes
+  back High Risk, that's genuinely unexpected: stop and tell the user
+  plainly what was flagged and why, rather than installing it anyway.
+  Everything else proceeds without asking, since that's the entire point of
+  "just works" for someone who's never touched this pipeline before. After
+  installing, verify each one is now a real, invokable skill (not just a
+  file on disk) before continuing — an install can print success and still
+  not be picked up by the current session in rare cases, and that's worth
+  catching here rather than failing confusingly three stages later. Only if
+  an install genuinely fails (network error, registry down) should this
+  stage stop and tell the user what failed and why, since that's a real
+  blocker no amount of automation can route around.
+
+  Confirmed the hard way, twice: first, an agent read `design-authority.md`'s
+  old "already installed" line, took it at face value, and only discovered
+  the gap deep inside `extract-design-signal.md` instead of here, where it
+  could have been caught for free. Second, even after that got fixed to
+  "stop and tell the user to install these by hand," a first-time user still
+  had to leave the conversation, run a dozen shell commands themselves, and
+  come back — real friction for exactly the person this pipeline is
+  supposed to be a low-friction on-ramp for. Auto-installing (with the one
+  High-Risk exception above) is the actual fix, not just documenting the
+  problem more clearly.
+
+  Same treatment for `baoyu-design` if selected: its own documented gaps
+  (`direction_variants`, `redesign_audit`, `preflight_check` all null) still
+  apply even once installed, and discover-site.md is where that gets said,
+  not discovered later.
 
 ## What NOT to do here
 

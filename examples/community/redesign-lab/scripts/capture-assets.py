@@ -107,7 +107,12 @@ MIN_CONTENT_SIZE = 80  # excludes icons/thumbnails; real content photos are bigg
 
 
 def find_logo(page):
-    origin_home_hrefs = ("/", "")
+    # Plain multi-page HTML sites (the bundled test-fixtures/hello-world-site
+    # included) commonly link the logo to "index.html"/"index.htm" rather than
+    # "/" -- confirmed missed entirely without these, which then also fails
+    # the header-or-nav fallback pass for any logo short enough to clear
+    # MAX_ICON_HEIGHT's UI-icon cutoff (real on the fixture site: 24px tall).
+    origin_home_hrefs = ("/", "", "/index.html", "/index.htm")
     candidates = page.evaluate(
         """(homeHrefs) => {
             function describe(el, reason) {

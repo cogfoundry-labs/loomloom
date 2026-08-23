@@ -15,6 +15,27 @@ capture, `redesign-existing-projects` does the actual judgment.
    `dev_command`, on `localhost`). This produces `{domain}.md` + `{domain}.json`
   : a Design Map (colors, typography, spacing, radii, shadows, grid) plus
    Taste DNA (Trigger → Decision → Reason → Evidence → Trade-off principles).
+
+   **If Playwright MCP isn't installed/connected, don't treat that as a hard
+   blocker** — `taste`'s own `SKILL.md` hard-codes `mcp__playwright__browser_*`
+   tool names with no fallback, but its actual methodology (Phase 1: resize
+   viewport, navigate, screenshot, run `references/extract.js` via
+   `browser_evaluate`; Phase 2: the four-step measure → pattern → taste →
+   observer analysis in `references/step1-measure.md` through
+   `step4-observer.md`) works the same with any browser-automation tool
+   already available in this session — a generic Browser-pane tool included.
+   Confirmed directly: `extract.js`'s function body runs unmodified via a
+   plain JS-eval tool, wrapped as `(() => { ... })()` instead of passed as
+   Playwright's `function` parameter, and produces the same structured
+   `domData` the four analysis steps expect. If no browser-automation tool
+   at all is available and screenshot capture also fails, run the four
+   steps DOM-data-only (the accessibility tree from a `read_page`-style tool
+   substitutes for structural context) and say so plainly in `analysis.md` —
+   a degraded-but-honest measurement, not a blocked stage. Only actually
+   stop and ask the user to install Playwright MCP
+   (`claude mcp add playwright -s user -- npx -y @playwright/mcp@latest
+   --isolated`, then restart) if literally no way to evaluate JS in a real
+   browser context exists in this session.
 2. Feed that output into the active authority's `redesign_audit` (from
    `design-authority.md`). For the default authority, that's two passes over
    the same measurement, not one:

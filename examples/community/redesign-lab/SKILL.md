@@ -88,7 +88,7 @@ standing rules apply, no exceptions:
    publishable asset the pipeline can't write for free: narrative prose
    turning verified facts into readable chapters. (Rev: the Share cover
    used to be a generated visual identity too; that's removed — a
-   typographic hero built from real color tokens replaced it, $0, no model
+   typographic hero built from real color tokens replaced it, free, no model
    call, after the generated version proved both the pipeline's single
    biggest cost/reliability risk and, on its own terms, still only
    decorative.) Show the real cost estimate before anything is spent, reuse
@@ -113,7 +113,7 @@ real failing tasks across 4 models and 2 execution units — see
 Gate 1 anymore, and no execution-mode choice to make there either —
 mechanical checks (`scripts/mechanical-check.py`) plus agent-written
 aesthetic notes are the only path through Direction Slices and Explore
-Variants, always $0. Loomloom's only role anywhere in this pipeline is
+Variants, always free. Loomloom's only role anywhere in this pipeline is
 Gate 4 / Share, and that's deliberately paid — see `skills/build-case-study.md`.
 
 **This means loomloom's own installation and API-key configuration should

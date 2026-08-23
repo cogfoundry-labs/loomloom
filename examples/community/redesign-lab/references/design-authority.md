@@ -27,11 +27,23 @@ capabilities:
   preflight_check: design-taste-frontend     # §14 mechanical Pre-Flight Check
 ```
 
-The first four map to skills already installed in this project's
-`.agents/skills/` (verified: `design-taste-frontend`, `minimalist-ui`,
-`industrial-brutalist-ui`, `high-end-visual-design`,
-`redesign-existing-projects`). That's what makes this the default: not a
-policy choice, just the only complete option today.
+The first four map to real, installable skills (`design-taste-frontend`,
+`minimalist-ui`, `industrial-brutalist-ui`, `high-end-visual-design`,
+`redesign-existing-projects`, all from `Leonxlnx/taste-skill`) — that's what
+makes this the default: not a policy choice, just the only complete option
+today. **"Real and installable" is not the same as "installed in this
+project."** They aren't bundled with this repo and a fresh clone doesn't
+carry them: `discover-site.md` checks they're actually present, right at
+Discover, and installs whichever are missing automatically before relying
+on any of this — see this repo's `README.md#prerequisites` for the exact
+install commands `discover-site.md` runs. A first-time user doesn't need to
+run these by hand first; they're just documented there for reference (and
+for anyone who prefers installing ahead of time). An earlier
+revision of this file said these were "already installed... verified,"
+which was true only of the specific local project this pipeline was
+originally built in, not of a clone of this public example; that phrasing
+is exactly what let the gap go unnoticed until three stages later, so
+don't reintroduce it.
 
 `ui-craft-editorial` and `ui-craft-dense-dashboard` are from a different
 repo (`educlopez/ui-craft`, requires its base `ui-craft` skill installed
