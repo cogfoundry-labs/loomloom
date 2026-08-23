@@ -260,8 +260,11 @@ built on its first pass — commonly the home page, but whichever page the
 request was actually about (see `../skills/implement-design.md`, "Scope").
 This gate approves both the result and how far it should reach. Not a
 design choice between options (the design was already chosen at Gate 2), so
-there's no per-option tab mechanism here — just a plain-text question, same
-"say stop" line as every other gate:
+there's no per-option tab mechanism here — but it's still presented via
+`AskUserQuestion`, same as every other gate (SKILL.md's standing rule 1:
+"'Stop here' is always one of the options in the same `AskUserQuestion`
+call" applies to Gate 3 as much as Gate 1/2 — a plain-text question typed
+into chat is not an acceptable substitute, even for a non-design decision):
 
 ```
 Validate passed on <the built page>. Build this into the real project, or explore more?
@@ -344,6 +347,19 @@ Two phases, not one prompt:
    own idempotency is a safety net too. The real charged cost (not just the
    precheck estimate) is captured from `run watch`'s result and printed and
    recorded once the run completes.
+
+This confirmation is presented via `AskUserQuestion` — same standing rule
+as every other gate (SKILL.md rule 1), not the plain bracketed text
+`plan`'s own stderr output prints. That printed text is a log line for
+whoever's reading the terminal, not the gate itself; the actual approval
+step is always the structured widget, with "Skip" as an explicit option
+alongside "Generate," never a side channel implied by the printed text
+alone. Confirmed as a real gap: an earlier run treated the script's own
+`[ Generate Share Artifact ] / [ Skip ]` stdout as if printing it were the
+gate, without a following `AskUserQuestion` call — inconsistent with every
+other gate in the same run, and exactly what this line exists to prevent
+now. The content of the question should still surface everything `plan`
+computed:
 
 ```
 Share

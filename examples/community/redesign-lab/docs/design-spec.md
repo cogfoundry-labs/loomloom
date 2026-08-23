@@ -493,8 +493,7 @@ redesign-lab/
 │   ├── evaluation-rubric.md
 │   ├── model-policy.md
 │   ├── approval-policy.md                # the 4 gates: outcomes + presentation contract
-│   ├── price-report-zh.md
-│   └── bug-report-asset-ref-zh.md
+│   └── price-report-zh.md
 ├── test-fixtures/
 │   └── hello-world-site/                 # a real, owned local project for exercising
 │                                          # Implement onward without a live external target

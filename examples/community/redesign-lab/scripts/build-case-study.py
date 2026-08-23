@@ -398,7 +398,19 @@ def main():
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_plan = sub.add_parser("plan")
-    p_plan.add_argument("--output-dir", required=True)
+    p_plan.add_argument(
+        "--output-dir", required=True,
+        help="the pipeline RUN directory for this redesign (e.g. the same "
+        "dir holding discover.json, analysis.md, directions/, variants/, "
+        "validate-report.md) -- NOT a fresh/empty folder for the case "
+        "study's own output. Read from directly for evidence-gated tool "
+        "credits (package_share.gather_evidence()) and written to as the "
+        "base for a new case-study/ subfolder. Pointing this at an empty "
+        "directory silently produces a case study crediting only "
+        "redesign-lab and loomloom, with every other real dependency "
+        "missing -- confirmed the hard way, see build-case-study.md's "
+        "'--output-dir must be the real run directory' note.",
+    )
     p_plan.add_argument("--before", required=True)
     p_plan.add_argument("--after", required=True)
     p_plan.add_argument("--winning-direction", required=True)

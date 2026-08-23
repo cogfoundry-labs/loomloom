@@ -76,6 +76,28 @@ Grid" → "Enterprise Operations Console" — that becomes the typographic
 hero's headline. Ground it in the real direction chosen at Gate 1, not a
 generic "before/after" label.
 
+**`--output-dir` must be the real run directory, not a fresh folder for the
+case study's own output.** It's the same directory holding `discover.json`,
+`analysis.md`, `directions/`, `variants/`, `validate-report.md` — `plan`
+both reads it (`package_share.gather_evidence()` scans exactly these paths
+to decide which real tool/skill credits belong in the finished case study)
+and writes to it (`case-study/` is created as a subfolder of it, not
+somewhere separate). Confirmed the hard way: pointing this at a fresh,
+otherwise-empty folder doesn't error — `gather_evidence()` just finds none
+of the files it's looking for, and the finished case study silently credits
+only `redesign-lab` and `cogfoundry-labs/loomloom`, missing every other real
+dependency the run actually used (the design authority, `taste`,
+`webapp-testing`, `a11y-audit`, any sibling aesthetic skill a Gate 1
+exploration built with). Nothing fails loudly; the case study just under-
+credits real open-source work by default. If this happens after `generate`
+already ran (the narrative already paid for), don't re-run `plan` from
+scratch — that mints a new `case-study-data.json` and re-triggers the paid
+call. Instead, call `package_share.gather_evidence()` directly against the
+correct directory, patch the result into the existing `case-study-data.json`'s
+`evidence` key (preserving the `cogfoundry-labs/loomloom` entry `generate`
+already appended), and re-run `generate` alone — it detects the narrative is
+already done and only re-renders, for free.
+
 ## No image-generation anymore
 
 The cover used to be a real `image-generate` call grounded in the actual
