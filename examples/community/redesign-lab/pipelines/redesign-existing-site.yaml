@@ -1,0 +1,205 @@
+# Pipeline: redesign-existing-site
+#
+# Not executable by loomloom: this is read by the agent session, the same
+# way OpenMontage's own pipeline manifests work: read the manifest, read the
+# stage's skill, use tools, self-review, checkpoint, move on. Loomloom is
+# invoked as a CLI subprocess only where a specific stage below says so.
+#
+# Every `type: human` stage below carries on_approve, on_reject, AND
+# on_stop — three outcomes, not two. on_stop always means the same thing
+# everywhere it appears: halt here, discard nothing (everything already
+# produced under .output/ or in the real project is real, saved output, not
+# provisional), don't loop back to retry anything. See
+# ../references/approval-policy.md's "Every gate: three outcomes, not two"
+# for the human-facing side of this (the gate must actually render a "Stop
+# here" option, not just support it structurally in this file).
+
+name: redesign-existing-site
+version: 1
+
+stages:
+  - id: discover
+    skill: skills/discover-site.md
+    engine: local
+    steps:
+      - inspect-project: { engine: local, note: "local codebase, or filled in by hand for a live URL target" }
+      - capture-assets:   { engine: local, script: scripts/capture-assets.py, cost: "$0, always", note: "real logo, so later stages stop falling back to text by default" }
+    produces: [.output/discover.json, .output/assets/manifest.json]
+    gate: none
+
+  - id: analyze
+    skill: skills/extract-design-signal.md
+    mode: self
+    engine: agent + taste (local, agent-native)
+    reads: [.output/discover.json]
+    produces: [.output/analysis.md]
+    gate: none
+
+  - id: direction-slices
+    skill: skills/generate-directions.md
+    engine: agent (real code) + webapp-testing (local render/screenshot)
+    reads: [.output/discover.json, .output/analysis.md]
+    produces: .output/directions/<variant>/{direction.json, colorway-1/screenshot.png}   # rev 7: 1 current-fixed baseline (1 colorway) + 2 exploratory directions (1 colorway each) by default; a 3rd direction and further colorways are on-request, not built upfront
+    gate: none
+
+  - id: gate-1
+    type: human
+    title: "Direction choice"
+    # Rev 7 mechanism (../references/approval-policy.md's "How gates are
+    # actually shown"): build and open each slice's own real browser tab
+    # progressively as it's ready (current-fixed first, then each
+    # exploratory direction) -- tell the human as soon as each one is up,
+    # don't wait for all of them. No combined comparison page (a real,
+    # confirmed base64-payload limit broke that for >2-3 image-heavy
+    # options) and no cross-tab links (confirmed inert regardless of href
+    # form -- a data:-rendered page can't navigate to a file:// URL via a
+    # click). Once every slice in this pass is open, the decision itself is
+    # an AskUserQuestion call, not a numbered list in chat.
+    #
+    # Before building anything: narrate which 2 exploratory directions were
+    # picked and why (genome distance, the ivory-serif exclusion), frame the
+    # total explicitly as "3: current-fixed + the 2 I picked", and ask in
+    # the same message whether the human wants a 3rd exploratory direction
+    # now (real, honest time-cost reminder) -- see generate-directions.md's
+    # rule 6 and approval-policy.md's Gate 1 section for the full text.
+    #
+    # AskUserQuestion options:
+    #   - one per built slice (name + 1-3 real notable facts + mechanical
+    #     score as the option description)
+    #   - "Show me more directions" (agent picks 1-2 more, same method)
+    #   - "Let me pick a direction myself" (name a direction_variants skill
+    #     not yet shown)
+    #   - "Stop here" (nothing already built is lost)
+    on_approve: continue
+    on_reject: return_to(direction-slices)
+    on_stop: halt
+
+  - id: explore-variants
+    skill: skills/explore-variants.md
+    engine: hybrid
+    steps:
+      # Same hero-plus-2-sections, always-full-page-screenshot rule as
+      # generate-directions.md: a variant chosen from a hero-only render is a
+      # blind choice on everything below the fold. See that skill file for
+      # why this isn't optional.
+      - reuse-gate-1-slice: { engine: local, note: "variant 1 is the Gate-1-chosen slice itself, free, not rebuilt" }
+      - write-variant:      { engine: agent, count: "3 by default (variant 1 reused + 2 new structural compositions), not fixed 6-10; a 4th is offered before building, more on request after Gate 2" }
+      - render-screenshot:  { engine: local, tool: webapp-testing, note: "full_page screenshot, never viewport-cropped" }
+      - mechanical-score:   { engine: local, script: scripts/mechanical-check.py, cost: "$0, always" }
+      - aesthetic-score:
+          engine: "agent sequential (100% free, no loomloom -- see rev 6 note at model-policy.md)"
+    reads: [.output/discover.json, gate-1.chosen_direction]
+    produces: .output/variants/<id>/{screenshot.png, scores.json}
+    gate: none
+
+  - id: gate-2
+    type: human
+    title: "Variant choice"
+    # Same progressive, one-tab-per-variant mechanism as gate-1. Mechanical
+    # score and the aesthetic note are shown as reference information for
+    # the human's own decision, not used to curate/rank which variants get
+    # shown -- with only 3-4 variants built by default there's no curation
+    # step at all; every one built gets its own tab and its own
+    # AskUserQuestion option, in build order.
+    #
+    # AskUserQuestion options:
+    #   - one per built variant (name + mechanical score + real composition
+    #     notes as the option description)
+    #   - "Show me more variants" (agent picks 1-2 more structural
+    #     compositions, same progressive build-and-open)
+    #   - "Let me describe a structural idea myself" (human names the axis,
+    #     e.g. "put the events section first")
+    #   - "Stop here" (nothing already built is lost)
+    on_approve: continue
+    on_reject: return_to(explore-variants)
+    on_stop: halt
+
+  - id: implement
+    skill: skills/implement-design.md
+    engine: agent
+    scope: "the specific page the request was about, on first entry; gate-3.chosen_scope's routes on re-entry"
+    reads: [gate-2.chosen_variant, .output/analysis.md, "gate-3.chosen_scope?"]
+    produces: "real project files (not .output/: the actual site)"
+    gate: none
+
+  - id: validate
+    skill: skills/validate-design.md
+    engine: local (webapp-testing + a11y-audit + mechanical-check.py) + agent (preservation re-check)
+    scope: "whatever routes the preceding implement pass just built"
+    produces: .output/validate-report.md
+    on_fail: return_to(implement)
+    gate: none
+
+  - id: gate-3
+    type: human
+    title: "Final implementation & scope"
+    # Not a design choice (the design was already chosen at gate-2), so
+    # there's no comparison page to build here — just the plain-text
+    # question below, same "say stop" line as every other gate.
+    prompt: |
+      Validate passed on <the page Implement just built>. Build this into the real project, or explore more?
+
+      If building, how much of the site should get this treatment?
+        "this page only"   ship what's already validated, nothing else
+        "other key pages"  a curated subset beyond this page (suggested
+                            from discover.json's nav-linked routes, human
+                            confirms the exact list)
+        "all pages"         every route discover.json listed
+      Or say "stop" to halt the workflow — nothing already built is lost.
+    # on_stop still applies here exactly the same as gate-1/gate-2, even
+    # though this gate has no per-option tab mechanism to build (not a
+    # design choice -- the design was already chosen at gate-2).
+    # this_page_only: nothing further to build, go straight to share.
+    # other_key_pages / all_pages: re-enter implement -> validate for the
+    # newly-chosen routes only (the first page is already done), then go
+    # straight to share from there. Do NOT re-enter gate-3 on that second
+    # pass: the scope choice made here already covers it, same reasoning as
+    # "What never gets a gate" in approval-policy.md.
+    on_approve:
+      this_page_only: continue(share)
+      other_key_pages: continue(implement, then_skip_to=share)
+      all_pages: continue(implement, then_skip_to=share)
+    on_reject: return_to(explore-variants)
+    on_stop: halt
+
+  - id: share
+    type: human
+    title: "Share confirmation"
+    engine: local (build-case-study.py plan) + loomloom (only after approve)
+    # Gate 4 — see approval-policy.md's "Gate 4: Share confirmation" for the
+    # full mechanism. Two phases: `plan` (free — real diff via
+    # diff-transformations.py, real evidence via package-share.gather_evidence,
+    # real loomloom precheck cost) produces the prompt below; only `generate`
+    # (after approve) spends anything. Reuses every already-produced artifact
+    # (screenshots, mechanical-check scores, analysis.md) — the only new
+    # spend is the cover and the narrative-chapter pass.
+    prompt: |
+      Share
+      Generates:
+        - case-study visual identity (cover)
+        - <N> narrative chapter(s), <N> real transformations selected from
+          <M> found (3-6, ranked by significance — never padded or truncated
+          to hit a target count)
+        - interactive before/after presentation (reused, free)
+        - reproducibility information (reused, free)
+
+      Estimated cost: ~$X.XX (cover ~$X.XX + narrative ~$X.XX, from real
+      `template-spec precheck` — note image-generate precheck has undershot
+      actual cost by ~7x in prior runs, so the real charge likely runs higher)
+
+      [ Generate Share Artifact ]  or  say "skip" to halt — nothing already
+      built is lost, and nothing above has been spent yet.
+    on_approve: continue(build-case-study.py generate)
+    # `generate` renders case-study.html itself, in-process, at the end of
+    # its own run — it doesn't hand off to render-case-study-web.py as a
+    # separate manual step. `plan` captures the before/after screenshot
+    # paths, logo path, and title into case-study-data.json specifically so
+    # nothing about producing the final artifact depends on the calling
+    # agent remembering them after generate finishes.
+    on_stop: halt
+    reads: [.output/**]
+    produces: .output/case-study-data.json, .output/case-study/case-study.html
+    # After rendering: open the real, finished case study (and, if this run's
+    # scope produced a real implemented site, that site too) in the Browser
+    # pane. Don't just report the URL and leave opening it as a manual step
+    # — see approval-policy.md's Gate 3 section for why.

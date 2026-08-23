@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hello World Widgets — Small Tools, Built Right</title>
+<style>
+:root{ --paper:#F4F4F0; --ink:#0B0B0B; --muted:#4A4A46; --red:#E61919; --rule:#0B0B0B; }
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,"Helvetica Neue",sans-serif;}
+.wrap{max-width:1140px;margin:0 auto;}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:2px solid var(--rule);}
+header nav{display:flex;font-family:"Courier New",monospace;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;}
+header nav a{padding:6px 14px;border-left:1px solid var(--rule);color:var(--ink);text-decoration:none;}
+.ascii-tag{font-family:"Courier New",monospace;font-size:11px;font-weight:700;letter-spacing:0.05em;color:var(--red);}
+.btn{display:inline-block;background:var(--ink);color:#fff;font-weight:900;padding:14px 26px;text-decoration:none;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;border:2px solid var(--ink);}
+section{padding:44px 40px;border-bottom:2px solid var(--rule);}
+section .label{font-family:"Courier New",monospace;font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--red);margin-bottom:6px;display:block;}
+section h2{font-family:Arial,sans-serif;font-size:26px;font-weight:900;text-transform:uppercase;margin:0 0 26px;letter-spacing:-0.01em;}
+footer{padding:18px 40px;color:var(--muted);font-family:"Courier New",monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;}
+
+    .hero{border-bottom:2px solid var(--rule);}
+    .hero-grid{display:grid;grid-template-columns:1.15fr 1fr;}
+    .hero-text{padding:56px 40px;}
+    .hero h1{font-family:Arial,sans-serif;font-weight:900;font-size:clamp(2.6rem,6vw,4.6rem);letter-spacing:-0.03em;line-height:0.92;text-transform:uppercase;margin:14px 0 20px;}
+    .hero p{font-family:"Courier New",monospace;font-size:13px;font-weight:700;color:var(--muted);max-width:34ch;margin:0 0 28px;line-height:1.5;}
+    .hero-image{border-left:2px solid var(--rule);}
+    .hero-image img{width:100%;display:block;filter:grayscale(70%) contrast(1.15);}
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    caption{text-align:left;font-family:"Courier New",monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+    th, td{text-align:left;padding:12px 16px;border:1px solid var(--rule);vertical-align:top;}
+    th{font-family:"Courier New",monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;background:var(--ink);color:#fff;}
+    td:first-child{font-family:"Courier New",monospace;font-weight:700;white-space:nowrap;}
+    td p{margin:0;color:var(--muted);}
+    .feature-grid{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--rule);}
+    .feature-grid > div{padding:32px;}
+    .feature-grid img{width:100%;display:block;border-left:2px solid var(--rule);filter:grayscale(70%) contrast(1.15);}
+    .feature-grid p{color:var(--muted);font-size:14px;line-height:1.55;}
+    @media (max-width:860px){
+      header{padding:12px 20px;flex-wrap:wrap;gap:8px;}
+      .hero-grid{grid-template-columns:1fr;}
+      .hero-text{padding:32px 20px;}
+      .hero-image{border-left:none;border-top:2px solid var(--rule);}
+      section{padding:32px 20px;}
+      table{font-size:12px;}
+      th, td{padding:8px 10px;}
+      .feature-grid{grid-template-columns:1fr;}
+      .feature-grid img{border-left:none;border-top:2px solid var(--rule);}
+    }
+    </style>
+</head>
+<body>
+
+<header>
+  <a href="index.html"><img src="assets/logo.svg" alt="Hello World Widgets logo" style="height:24px;filter:grayscale(100%) contrast(1.4);"></a>
+  <nav><a href="index.html">Home</a><a href="about.html">About</a><a href="about.html#contact">Contact</a></nav>
+</header>
+<main>
+    <div class="hero">
+      <div class="hero-grid">
+        <div class="hero-text">
+          <span class="ascii-tag">[ UNIT / HW-01 ]</span>
+          <h1>Small Tools,<br>Built Right</h1>
+          <p>&gt;&gt;&gt; SMALL PARTS, MADE WELL. WE DESIGN AND SHIP THE LITTLE TOOLS THAT HOLD BIGGER PROJECTS TOGETHER.</p>
+          <a class="btn" href="about.html#contact">Get Started</a>
+        </div>
+        <div class="hero-image"><img src="assets/hero.jpg" alt="Sunrise over rolling hills near our workshop."></div>
+      </div>
+    </div>
+    <section>
+      <span class="label">/// 01</span>
+      <h2>What We Make</h2>
+      <table>
+        <caption>Product line, current catalog</caption>
+        <thead><tr><th>Item</th><th>Spec</th></tr></thead>
+        <tbody><tr><td>Widgets</td><td><p>Small connective parts sized for everyday repairs, sold in sets so you never run out mid-project.</p></td></tr><tr><td>Gadgets</td><td><p>Compact hand tools built for one job each, so they fit in a pocket and never feel like overkill.</p></td></tr><tr><td>Gizmos</td><td><p>Small mechanical assemblies for hobby builds, tested for a thousand cycles before they ship.</p></td></tr></tbody>
+      </table>
+    </section>
+    <section style="border-bottom:none;">
+      <span class="label">/// 02</span>
+      <h2>Why Choose Us</h2>
+      <div class="feature-grid">
+        <div><p>Every part is designed in-house and tested by hand, we ship only what we would use ourselves. Our small team works close to the bench, so a problem in the field gets fixed at the source, not just patched in the manual.</p></div>
+        <img src="assets/feature.jpg" alt="Two interlocking gears representing our tools working together.">
+      </div>
+    </section>
+    </main><footer>&copy; 2026 HELLO WORLD WIDGETS &middot; TEST FIXTURE, NOT A REAL COMPANY</footer>
+</body>
+</html>

@@ -1,0 +1,40 @@
+:root{ --ink:#1A2233; --muted:#5B6472; --blue:#2E5AAC; --bg:#FFFFFF; --panel:#F3F5F8; --border:#E1E5EB; }
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif;}
+main{max-width:1100px;margin:0 auto;}
+a{color:var(--blue);}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);}
+header nav{display:flex;gap:24px;font-size:14px;font-weight:600;}
+header .cta{background:var(--blue);color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:700;}
+
+.hero{background:var(--panel);padding:56px 32px;}
+.hero-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:40px;align-items:center;}
+.hero h1{font-size:38px;font-weight:800;margin:0 0 14px;line-height:1.2;}
+.hero p{font-size:17px;color:var(--muted);margin:0 0 24px;max-width:44ch;}
+.hero img{width:100%;border-radius:10px;display:block;}
+.btn-primary{display:inline-block;background:var(--blue);color:#fff;padding:13px 26px;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;}
+.btn-secondary{display:inline-block;background:#FAFBFC;color:#C9CDD3;padding:13px 26px;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;margin-left:12px;border:1px solid #EDEFF2;}
+
+section{padding:48px 32px;}
+section h2{font-size:26px;font-weight:800;margin:0 0 28px;}
+
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:24px;}
+.card h3{margin:0 0 10px;font-size:16px;}
+.card p{margin:0;font-size:14px;color:var(--muted);line-height:1.55;}
+
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;}
+.feature-grid img{width:100%;border-radius:8px;display:block;}
+.feature-grid p{color:var(--muted);font-size:15px;line-height:1.6;}
+
+footer{padding:28px 32px;color:var(--muted);font-size:13px;text-align:center;border-top:1px solid var(--border);}
+
+@media (max-width:860px){
+  header{padding:14px 20px;flex-wrap:wrap;gap:10px;}
+  .hero{padding:36px 20px;}
+  .hero-grid{grid-template-columns:1fr;gap:24px;}
+  section{padding:32px 20px;}
+  .card-grid{grid-template-columns:1fr;}
+  .feature-grid{grid-template-columns:1fr;}
+}
