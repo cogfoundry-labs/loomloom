@@ -1,6 +1,6 @@
 ---
 name: validate-design
-description: Confirm the rebuilt site is both good design and hasn't broken anything. Composes three reused pieces (webapp-testing, a11y-audit, the active authority's preflight_check) plus the preservation contract. Any Fail blocks completion: this is the last stage before Gate 3.
+description: Confirm the rebuilt site is both good design and hasn't broken anything. Composes three reused pieces (webapp-testing, a11y-audit, the active authority's preflight_check) plus the preservation contract, plus a real content-coverage check (confirms Implement didn't silently drop real sections). Any Fail blocks completion: this is the last stage before Gate 3.
 ---
 
 # validate-design
@@ -10,7 +10,7 @@ questions on purpose: **"is this design good"** and **"did we redesign the
 site without breaking it."** A design that passes the first and fails the
 second is not done.
 
-## The four pieces (three reused, one new)
+## The five pieces (three reused, two new)
 
 1. **`webapp-testing`**: render the rebuilt site against the real dev
    command, click through every route from `discover.json`, confirm: pages
@@ -85,19 +85,76 @@ second is not done.
    quietly stayed a static image is the same class of regression as a logo
    that quietly stayed text.
 
+5. **`content-coverage-check.py`**: confirms Implement didn't silently drop
+   real content sections, and that every same-page nav anchor still
+   resolves to something real. **Added after a real run (aider.chat,
+   industrial-brutalist-ui) passed every check above — 11/11 mechanical,
+   0 a11y violations, a clean preservation-contract table — while the
+   rebuilt page was quietly missing 3 of 9 real feature cards, an entire
+   "Getting Started" section, and an entire "More Information" section (12
+   real links), and its own `#getting-started` nav anchor had been left
+   pointing at the testimonials section instead of a real Getting Started
+   section.** A human caught it by noticing the page read suspiciously
+   short; none of pieces 1-4 above check content *completeness* at all —
+   they check design rules, accessibility, and specific named preservation
+   items, not "is everything still here." Two sub-checks, both real and
+   computed, no heuristic scoring:
+   - `nav-anchor-resolves`: every same-page nav anchor on the rebuilt page
+     must resolve to an existing element id whose real text content clears
+     a minimal non-trivial length — this is what would have caught the
+     `#getting-started` mislabeling directly.
+   - `heading-and-link-coverage`: real `<h2>`/`<h3>` heading count and real
+     internal `<a href>` link count (nav excluded), before vs. after,
+     reported as a ratio. Below 0.6 for headings or 0.5 for links is a
+     Fail — a likely real content drop that needs explicit accounting
+     (restore the content, or write down why less is genuinely correct for
+     this redesign), not a silent pass. Thresholds are deliberately
+     generous, not exact-parity: a redesign consolidating a dynamic
+     random-rotation testimonial carousel into a smaller curated set is a
+     legitimate, real density choice, not a bug.
+
+   **A real catch this surfaced beyond the missing sections**: the fix for
+   the sections above still failed `heading-and-link-coverage` on its own
+   first pass (0.40 heading ratio) — not a false positive, but a second,
+   real, distinct bug: the original's 9 feature cards are each a real link
+   to their own docs page with a real `<h3>` title; the rebuilt rows had
+   neither, just plain non-clickable `<div>`s with no heading semantics.
+   Fixed by making each row a real `<a href>` to the same real doc URL,
+   wrapping a real `<h3>` — which also caught a real ordering drift
+   ("Voice-to-code"/"Images & web pages" had been swapped relative to the
+   live site's actual order). Don't tune this check's thresholds to make a
+   real finding disappear; fix what it found instead, the same way this
+   one was.
+
+   **A real limit of this check, found the same run**: `heading-and-link-
+   coverage` is one ratio across the *whole* page. The same run passed it
+   (0.76) while one specific section (testimonials) had lost 100% of its
+   own real attribution links (the original links every testimonial
+   author to their real source post; the rebuilt section kept 3 of the
+   original 6 testimonials, none linked at all) — the 9 restored feature
+   links and 12 More Information links were enough to carry the page-wide
+   ratio well past the floor on their own. A passing aggregate ratio is
+   not proof every individual section is intact; a human caught this one
+   by checking the testimonials section directly. Treat a pass here as "no
+   page-wide red flag," not as "every section verified" — a section-level
+   spot check is still worth doing on a page with several distinct content
+   blocks, this script doesn't replace that.
+
 ## Running it
 
 `../scripts/mechanical-check.py` runs pieces 1, 3, and the checkable half of
 4 locally: no model call, no loomloom spend, genuinely free. Piece 2
 (`a11y-audit`) is also local and free; it's listed separately because it's a
 distinct installed skill, not part of the mechanical-check script itself.
-Nothing in Validate spends anything: Gates 1-3 are entirely free (rev 6
+Piece 5 (`content-coverage-check.py`) is also local and free, run against
+the same before/after targets Share's `diff-transformations.py` will later
+use. Nothing in Validate spends anything: Gates 1-3 are entirely free (rev 6
 removed loomloom from Explore Variants' aesthetic-advisory scoring
 entirely, see `../SKILL.md`'s "Gates 1-3 are entirely free").
 
 ## Pass/fail
 
-Combine all four into `.output/validate-report.md`. **Any single Fail from
-any of the four blocks completion**: don't average them into one score and
+Combine all five into `.output/validate-report.md`. **Any single Fail from
+any of the five blocks completion**: don't average them into one score and
 call it "mostly passing." Fix, re-run this stage, repeat until every piece
 passes, then hand off to Gate 3.

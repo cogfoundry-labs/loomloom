@@ -326,7 +326,11 @@ def main():
         results = {}
         for label, target in [("before", args.before), ("after", args.after)]:
             page = browser.new_page(viewport={"width": 1280, "height": 800})
-            page.goto(to_target(target), wait_until="networkidle")
+            # "networkidle" never settles against a real autoplaying/looping
+            # hero <video> (implement-design.md's own hero-video upgrade) --
+            # same fix as build-case-study.py's own inline copy of this loop.
+            page.goto(to_target(target), wait_until="load")
+            page.wait_for_timeout(1500)
             results[label] = extract_facts(page)
             page.close()
         browser.close()

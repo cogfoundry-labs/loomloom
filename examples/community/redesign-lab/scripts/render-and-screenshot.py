@@ -88,12 +88,17 @@ def main():
                 w, h = VIEWPORTS[name]
                 page = browser.new_page(viewport={"width": w, "height": h})
                 try:
-                    page.goto(target, wait_until="networkidle", timeout=30_000)
+                    # "networkidle" never settles against a slow/unfamiliar
+                    # live site's chat widget or analytics polling -- and,
+                    # confirmed directly, also never settles against a real
+                    # autoplaying/looping hero <video>
+                    # (`implement-design.md`'s own hero-video upgrade): a
+                    # looping video is perpetual network activity by design,
+                    # not an occasional live-site quirk. "load" plus a fixed
+                    # settle wait tolerates both without giving up the wait.
+                    page.goto(target, wait_until="load", timeout=30_000)
+                    page.wait_for_timeout(1500)
                 except Exception as e:
-                    # A slow/unfamiliar live site can keep the network busy
-                    # (chat widgets, analytics polling) so "networkidle" never
-                    # settles. Report which viewport failed and keep going
-                    # rather than losing every other width to one bad load.
                     print(f"{name}: skipped, could not load within 30s ({type(e).__name__}: {e})")
                     page.close()
                     continue

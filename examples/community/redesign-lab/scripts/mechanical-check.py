@@ -733,7 +733,11 @@ def check_responsive_collapse(browser, target, primary_w, primary_h):
     for label, w in (("wide", wide_w), ("narrow", narrow_w)):
         page = browser.new_page(viewport={"width": w, "height": primary_h})
         try:
-            page.goto(target, wait_until="networkidle", timeout=30_000)
+            # See main()'s goto for why this is "load" + a fixed wait, not
+            # "networkidle" -- same perpetual-network-activity problem, a
+            # real autoplaying/looping hero video never lets it settle.
+            page.goto(target, wait_until="load", timeout=30_000)
+            page.wait_for_timeout(1500)
             counts[label] = count_multicolumn_grids(page)
         finally:
             page.close()
@@ -778,12 +782,20 @@ def main():
         try:
             page = browser.new_page(viewport={"width": w, "height": h})
             try:
-                page.goto(target, wait_until="networkidle", timeout=30_000)
+                # "networkidle" (not "load") used to be here, but it never
+                # settles against a real, unfamiliar site's chat widget or
+                # analytics beacon that polls forever -- and, confirmed
+                # directly on a real implement-stage page, it *also* never
+                # settles against a real autoplaying/looping <video> this
+                # pipeline's own implement-design.md explicitly instructs
+                # building (the hero-video upgrade): a looping video is
+                # perpetual network activity by design, so "networkidle"
+                # times out 100% of the time, not just occasionally, on any
+                # page built to that spec. "load" plus a fixed settle wait
+                # tolerates both cases without giving up the wait entirely.
+                page.goto(target, wait_until="load", timeout=30_000)
+                page.wait_for_timeout(1500)
             except Exception as e:
-                # A real, unfamiliar site can carry a chat widget or analytics
-                # beacon that keeps polling forever, so "networkidle" never
-                # settles — that's a live-site condition to report clearly,
-                # not a crash to hand Claude as a raw traceback.
                 sys.exit(f"could not load {target} within 30s ({type(e).__name__}: {e})")
             findings = run_checks(page)
             findings.append(check_responsive_collapse(browser, target, w, h))
