@@ -117,7 +117,22 @@ CSS = '''
 *{box-sizing:border-box;}
 html{-webkit-text-size-adjust:100%;}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Source Serif 4",Georgia,serif;font-size:18px;line-height:1.6;overflow-x:hidden;}
-.wrap{max-width:900px;margin:0 auto;padding:0 24px;}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px;}
+/* 1280px (revised down from an earlier 1920px try): 1920 across the whole
+   page read as too extreme once actually seen rendered -- narrow ~800px
+   prose blocks sitting inside a 1920px page left huge, unbalanced empty
+   margins next to them. 1280 keeps the same "whole page scales together,
+   not just the compare widget" idea (a human specifically wanted the
+   Before/After section to keep its aspect-ratio:16/9 box at a size usable
+   for real screen recordings, and the rest of the page to match rather
+   than sit narrow beside one wide section), while landing at a page/prose
+   ratio (1280 vs the ~800px reading-width blocks below) that actually
+   reads as a deliberate, balanced layout instead of a wide page with an
+   accidentally-narrow column floating in it. Flowing prose
+   (.chapter-narrative, .loomloom-note, .request-block, and everything
+   under the shared 800px cap below) still gets its own narrower max-width
+   for real readability; non-text elements (headings, the compare widget,
+   stat/fact grids, swatches) use the full column. */
 a{color:var(--accent);}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:2px solid var(--rule-strong);gap:16px;}
 .topbar .left{display:flex;align-items:center;gap:12px;min-width:0;}
@@ -146,8 +161,20 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .compare{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
 .compare-inner{position:relative;width:100%;}
 .compare img{width:100%;height:auto;display:block;}
-.compare .after-layer{position:absolute;top:0;left:0;height:100%;overflow:hidden;width:50%;border-right:2px solid var(--accent-fill);}
-.compare .after-layer img{max-width:none;}
+/* Reveal is done with clip-path, not width. width is a layout-triggering
+   CSS property -- animating it forces the browser to recompute layout for
+   this box on every single drag frame, not just repaint it, and this box
+   contains a whole live iframe (one of them with an actively-decoding
+   <video> inside). Confirmed the real cause of visible drag stutter on a
+   real deployed page: clip-path is compositor-only (GPU, no layout/
+   reflow), the standard technique for exactly this before/after slider
+   pattern. The layer itself is now always the full widget width/height --
+   both images and both iframes can just be plain width:100% (matching
+   each other automatically), no more JS-computed pixel width needed for
+   either mode; see layout() below, much shorter now. */
+.compare .after-layer{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;clip-path:inset(0 50% 0 0);will-change:clip-path;}
+.compare .after-layer img{width:100%;height:auto;display:block;}
+.compare .divider{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--accent-fill);pointer-events:none;}
 /* Live-embed mode (real <iframe> in place of a static screenshot): neither
    side's real content height is readable here -- the "before" iframe is a
    different origin (the live external site), which browsers block reading
@@ -173,7 +200,28 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
    what made it so easy to mistake for something else while debugging.
    Listing both selectors together closes the gap. */
 .compare-frame.is-live .compare-inner > iframe,
-.compare-frame.is-live .after-layer iframe{position:absolute;inset:0;top:0;left:0;width:100%;height:100%;border:0;background:#fff;}
+.compare-frame.is-live .after-layer iframe{position:absolute;inset:0;top:0;left:0;width:100%;height:100%;border:0;background:#fff;pointer-events:none;}
+/* pointer-events:none, not an incidental extra: these two iframes are
+   real, live pages for comparison, never meant to be clicked/scrolled by
+   a mouse -- and leaving them hit-testable had two real, confirmed costs.
+   First, a genuine navigation bug: a stray click during testing landed on
+   one of the after page's own real links and navigated the entire tab
+   away to that link's target, losing the comparison entirely. Second, and
+   likely the bigger one for drag feel specifically: Chromium's site-
+   isolation architecture runs a cross-origin iframe (the "before" side,
+   the real external site) in its own separate process, so every time the
+   cursor moves over it the browser has to route hit-testing across that
+   process boundary -- real, measurable overhead on top of the layout/
+   compositing cost already fixed elsewhere in this file, and one that
+   setPointerCapture on the handle doesn't eliminate (capture controls
+   which element *receives* events, not the hit-testing work the browser
+   still does to track what's visually under the cursor for compositing
+   and cursor-style purposes). Blocking pointer-events on both iframes
+   removes both problems at once: neither is hit-testable at all now, so
+   there's nothing for a stray click to land on and nothing for the
+   cursor-move path to cross a process boundary for. Keyboard scrolling
+   into either iframe (Tab, then arrow keys) still works -- this only
+   removes mouse/pointer interaction, not keyboard access. */
 /* width:100% is required here, not optional -- confirmed the hard way on
    the real deployed site: an <iframe> is a *replaced element* (same CSS
    category as <img>/<video>/<object>), and for an absolutely positioned
@@ -189,32 +237,28 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
    width:100% for that element specifically, since an inline style always
    beats a stylesheet rule regardless of specificity -- this line is safe
    for both, not just the one it happens to fix. */
-.compare-frame.is-live .after-layer{height:100%;}
-/* The after iframe's width:100% above (from the shared rule) is a safe
-   default, not its real effective width: JS sets a real inline
-   afterImg.style.width to the *full widget width* on every layout() call
-   (same trick as the after IMAGE case below -- afterImg.style.width =
-   w + 'px'), and an inline style always wins over any stylesheet rule
-   regardless of specificity, so that inline value is what actually applies
-   here. NOT .after-layer's own narrower reveal width -- an <iframe> is a
-   real, live document that lays itself out responsively against its own
-   actual rendered width (unlike a bitmap <img>, which just gets visually
-   windowed by a narrower crop without changing its own content). Sizing it
-   to the narrower wrapper's width instead of the full widget width was a
-   real, confirmed bug: it made the live "after" page render as if the
-   browser were only as wide as the currently-revealed sliver, triggering
-   mobile/narrow-breakpoint CSS at any reveal position other than ~100%. */
+/* No .after-layer width/height override needed for live mode anymore --
+   .after-layer is unconditionally position:absolute;inset:0;width:100%;
+   height:100% now (the base rule above), same in both screenshot and
+   live-embed mode, with clip-path doing the reveal instead of a narrower
+   box. That also means the after iframe's width:100% (the shared rule
+   above) is now its real effective width, not just a fallback needing a
+   JS override to matter -- previously JS had to force it to the full
+   widget width specifically because .after-layer itself was narrower than
+   that (whatever % was revealed); now .after-layer is always full width,
+   so the iframe's own plain width:100% already matches the before
+   iframe's, with nothing left for JS to override. */
 .compare-frame .handle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;background:var(--accent-fill);display:flex;align-items:center;justify-content:center;cursor:ew-resize;box-shadow:var(--shadow);z-index:2;touch-action:none;}
 .compare-frame .handle::before{content:"\\2194";color:var(--on-accent-fill);font-size:18px;font-weight:900;}
 .compare-frame .handle:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
 .compare:focus-visible{outline:3px solid var(--ink);outline-offset:-3px;}
 .compare-caption{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--faint);margin-top:10px;}
-.quick-hits{display:grid;gap:14px;}
+.quick-hits{display:grid;gap:14px;max-width:800px;}
 .quick-hit{display:flex;align-items:baseline;gap:14px;padding:14px 0;border-top:1px solid var(--rule);}
 .quick-hit:first-child{border-top:none;padding-top:0;}
 .quick-hit .num{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);font-weight:700;flex-shrink:0;}
 .quick-hit p{margin:0;font-size:17px;}
-.chapter{padding:36px 0;border-top:1px solid var(--rule);}
+.chapter{padding:36px 0;border-top:1px solid var(--rule);max-width:800px;}
 .chapter:first-of-type{border-top:none;padding-top:0;}
 .chapter-head{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;}
 .chapter-num{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);font-weight:700;}
@@ -229,22 +273,24 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .share-btn{font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;background:none;border:1px solid var(--rule-strong);color:var(--ink);padding:6px 12px;cursor:pointer;}
 .share-btn:hover{background:var(--ink);color:var(--bg);}
 @media (max-width:640px){ .chapter-facts{grid-template-columns:1fr;} }
-.pipeline{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:28px;}
+.request-block{background:var(--surface);border:1px solid var(--rule);padding:16px 20px;margin-bottom:20px;max-width:800px;}
+.request-block p{margin:6px 0 0;font-size:15px;font-style:italic;color:var(--ink);line-height:1.5;}
+.pipeline{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:28px;max-width:800px;}
 .pipeline-stage{background:var(--surface);padding:18px 22px;display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:baseline;}
 .pipeline-stage .name{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:0.03em;}
 .pipeline-stage .desc{font-size:14px;color:var(--muted);margin:0;}
 @media (max-width:640px){ .pipeline-stage{grid-template-columns:1fr;gap:4px;} }
-.loomloom-note{background:var(--surface);border:1px solid var(--rule);padding:18px 20px;font-size:14px;color:var(--muted);}
+.loomloom-note{background:var(--surface);border:1px solid var(--rule);padding:18px 20px;font-size:14px;color:var(--muted);max-width:720px;}
 .validate-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);}
 .validate-cell{background:var(--surface);padding:20px 22px;}
 .validate-cell .check{color:#2f6e4e;font-weight:700;margin-right:8px;}
 .validate-cell .metric{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.4rem;}
 .validate-cell .label{display:block;font-size:13px;color:var(--muted);margin-top:4px;}
 @media (max-width:640px){ .validate-grid{grid-template-columns:1fr;} }
-.repro-block{background:var(--surface);border:2px solid var(--rule-strong);padding:22px 24px;}
+.repro-block{background:var(--surface);border:2px solid var(--rule-strong);padding:22px 24px;max-width:800px;}
 .repro-block code{display:block;font-family:"IBM Plex Mono",monospace;font-size:13px;background:var(--bg);border:1px solid var(--rule);padding:12px 14px;margin:10px 0 18px;overflow-x:auto;}
 .repro-links{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 18px;font-family:"IBM Plex Mono",monospace;font-size:13px;text-transform:uppercase;letter-spacing:0.04em;}
-.tool-list{list-style:none;margin:0;padding:0;}
+.tool-list{list-style:none;margin:0;padding:0;max-width:800px;}
 .tool-list li{padding:12px 0;border-bottom:1px solid var(--rule);}
 .tool-list li:last-child{border-bottom:none;}
 .tool-list .name{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:700;}
@@ -265,45 +311,33 @@ JS = '''
   if (!widget) return; // script.js is shared by pages with no compare widget (embed/ch-*.html)
   var inner = document.getElementById('compareInner');
   var layer = document.getElementById('afterLayer');
+  var divider = document.getElementById('compareDivider');
   var handle = document.getElementById('compareHandle');
   var beforeImg = document.getElementById('beforeImg');
   var afterImg = document.getElementById('afterImg');
-
-  // The widget's own frame is a fixed 16:9 box (CSS aspect-ratio) so it reads
-  // like a video player regardless of content length -- real vertical
-  // scrolling happens *inside* it. Both images render at their real natural
-  // aspect ratio (no cropping), and `inner`'s height is set to the taller of
-  // the two: a redesign that changed real page length (this one compressed
-  // 8340px down to 2932px) means one side runs out of real content before
-  // the other, which is shown honestly, not padded or stretched to match.
-  // Live-embed mode (real <iframe>s, see the CSS comment above this same
-  // widget's rules): neither side's real HEIGHT is readable from here, so
-  // there's nothing to measure or set there -- the fixed 16:9 .compare-frame
-  // box plus this CSS mode's height:100% rules already size both sides
-  // correctly on their own. WIDTH is a different story: an iframe is a real,
-  // live document that lays itself out against its own actual rendered
-  // width, unlike a bitmap <img> that just gets visually windowed by a
-  // narrower crop without its own content reflowing. So the after side
-  // still needs the exact same "size it to the full widget width, let
-  // .after-layer's own narrower width visually clip it" trick as the image
-  // case below -- confirmed the hard way: without this, the live "after"
-  // page rendered as if the browser were only as wide as whatever sliver
-  // was currently revealed, triggering mobile/narrow-breakpoint CSS at any
-  // reveal position other than ~100%.
   var isLive = beforeImg.tagName === 'IFRAME';
+
+  // Screenshot mode only: the widget's own frame is a fixed 16:9 box (CSS
+  // aspect-ratio) so it reads like a video player regardless of content
+  // length -- real vertical scrolling happens *inside* it. Both images
+  // render at their real natural aspect ratio (no cropping), and `inner`'s
+  // height is set to the taller of the two: a redesign that changed real
+  // page length (this one compressed 8340px down to 2932px) means one side
+  // runs out of real content before the other, shown honestly, not padded
+  // or stretched to match. Live-embed mode needs none of this: neither
+  // side's real height is readable (the before iframe is cross-origin),
+  // and with .after-layer now always the full widget width (see the CSS
+  // comment on that rule), each iframe's own plain width:100%;height:100%
+  // already sizes both sides correctly with no JS involvement at all.
   function layout(){
+    if (isLive) return;
     var w = widget.clientWidth;
-    if (isLive) {
-      afterImg.style.width = w + 'px';
-      return;
-    }
     var beforeH = beforeImg.naturalWidth ? w * (beforeImg.naturalHeight / beforeImg.naturalWidth) : 0;
     var afterH = afterImg.naturalWidth ? w * (afterImg.naturalHeight / afterImg.naturalWidth) : 0;
     inner.style.height = Math.max(beforeH, afterH) + 'px';
-    afterImg.style.width = w + 'px'; // full-widget width, then clipped narrower by .after-layer's own width -- same reveal-window trick as before
   }
   function whenReady(img, cb){
-    if (isLive) { cb(); return; }
+    if (isLive) return;
     if (img.complete && img.naturalWidth) cb();
     else img.addEventListener('load', cb);
   }
@@ -313,24 +347,75 @@ JS = '''
 
   function applyPct(pct){
     pct = Math.min(Math.max(pct, 0), 100);
-    layer.style.width = pct + '%';
+    // clip-path, not width -- see the .after-layer CSS comment. inset(top
+    // right bottom left): 0 from top/bottom/left, (100-pct)% off the right
+    // edge, so pct=100 clips nothing (fully revealed) and pct=0 clips
+    // everything (fully hidden), matching the old width-based behavior
+    // exactly, just computed on the GPU instead of forcing layout.
+    layer.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+    divider.style.left = pct + '%';
     handle.style.left = pct + '%';
     handle.setAttribute('aria-valuenow', Math.round(pct));
   }
+  // Drag smoothness, confirmed the hard way on a real deployed live-embed
+  // page (two composited iframes, one with an actively-decoding <video> --
+  // real per-frame compositing cost neither the old static-screenshot
+  // widget nor a simple drag demo has to pay):
+  // 1. widget.getBoundingClientRect() forces a synchronous layout
+  //    recalculation -- calling it on every single raw pointermove event
+  //    (which can fire well over 60 times/sec on a fast mouse) was real,
+  //    avoidable work on top of the compositing cost above. The widget's
+  //    own box doesn't move mid-drag, so it's captured once at
+  //    pointerdown instead.
+  // 2. Every pointermove wrote directly to style.width/style.left
+  //    synchronously, with no batching -- on a page already busy
+  //    compositing a live video, this can produce more style writes than
+  //    the browser can actually paint, which reads as stutter, not
+  //    smooth motion. Coalesced into one applyPct() per animation frame.
+  var dragging = false;
+  var dragRect = null;
+  var pendingPct = null;
+  var rafScheduled = false;
+  function scheduleApply(){
+    if (rafScheduled) return;
+    rafScheduled = true;
+    requestAnimationFrame(function(){
+      rafScheduled = false;
+      if (pendingPct !== null){ applyPct(pendingPct); pendingPct = null; }
+    });
+  }
   function setPos(clientX){
-    var rect = widget.getBoundingClientRect();
-    var x = Math.min(Math.max(clientX - rect.left, 0), rect.width);
-    applyPct((x / rect.width) * 100);
+    var x = Math.min(Math.max(clientX - dragRect.left, 0), dragRect.width);
+    pendingPct = (x / dragRect.width) * 100;
+    scheduleApply();
   }
   // Dragging starts only from the handle itself, not anywhere in the widget
   // -- the widget's background now has a real, independent job (native
   // vertical scroll), so a pointerdown anywhere used to fight that gesture
   // by also jumping the horizontal reveal. The handle is a precise, visible
   // grab target; scrolling the rest of the widget no longer touches it.
-  var dragging = false;
-  handle.addEventListener('pointerdown', function(e){ dragging = true; e.preventDefault(); });
-  window.addEventListener('pointermove', function(e){ if (dragging) setPos(e.clientX); });
-  window.addEventListener('pointerup', function(){ dragging = false; });
+  //
+  // Listeners live on the handle itself, not window, paired with
+  // setPointerCapture: without capture, a fast drag that crosses over
+  // either live iframe mid-gesture can hand pointer events to that
+  // iframe's own document instead of continuing to reach this page's
+  // listeners -- a real gap the old static-screenshot version never had
+  // anything underneath it to hit. Capture pins every event for this
+  // gesture to the handle regardless of what's visually under the
+  // cursor, iframe or not.
+  handle.addEventListener('pointerdown', function(e){
+    dragging = true;
+    dragRect = widget.getBoundingClientRect();
+    handle.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  handle.addEventListener('pointermove', function(e){ if (dragging) setPos(e.clientX); });
+  handle.addEventListener('pointerup', function(e){
+    dragging = false;
+    dragRect = null;
+    handle.releasePointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointercancel', function(){ dragging = false; dragRect = null; });
   handle.addEventListener('keydown', function(e){
     var current = parseFloat(handle.getAttribute('aria-valuenow')) || 50;
     if (e.key === 'ArrowLeft'){ applyPct(current - 5); e.preventDefault(); }
@@ -425,7 +510,7 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
     if is_live:
         before_el = f'<iframe id="beforeImg" src="{html.escape(before_embed_url)}" title="Before: {subject_esc}\'s original design, live, {before_label_esc}" loading="lazy"></iframe>'
         after_el = f'<iframe id="afterImg" src="{html.escape(rel_prefix + after_embed_url)}" title="After: {subject_esc} redesigned as {after_label_esc}, live" loading="lazy"></iframe>'
-        caption_note = ' <span class="live-note">(real, live pages: each side scrolls independently)</span>'
+        caption_note = ' <span class="live-note">(real, live pages)</span>'
     else:
         before_el = f'<img id="beforeImg" src="{rel_prefix}{before_rel}" alt="Before: {subject_esc}\'s original design, {before_label_esc}">'
         after_el = f'<img id="afterImg" src="{rel_prefix}{after_rel}" alt="After: {subject_esc} redesigned as {after_label_esc}">'
@@ -448,6 +533,7 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
           <div class="after-layer" id="afterLayer">
             {after_el}
           </div>
+          <div class="divider" id="compareDivider" aria-hidden="true"></div>
         </div>
       </div>
       <div class="handle" id="compareHandle" role="slider" tabindex="0" aria-label="Before and after comparison position"
@@ -544,6 +630,15 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
 
     tools_html = "".join(tool_li(t) for t in data["evidence"]["tools_used"]) or "<li>(no evidence files found in this run)</li>"
     badge_html = f'<span class="badge">{html.escape(copy["badge"])}</span><br>' if copy["badge"] else ""
+    # Real, optional: the actual request that started this run, human-facing
+    # part only. Shown before the pipeline grid in "The Workflow" so a
+    # reader sees what was actually asked for, not just what came out --
+    # omitted entirely (not a placeholder) for a run that didn't capture one.
+    request_block_html = (
+        f'<div class="request-block"><span class="fact-label">The Request</span>'
+        f'<p>&ldquo;{html.escape(data["request_prompt"])}&rdquo;</p></div>'
+        if data.get("request_prompt") else ""
+    )
 
     og_image_tag = f'<meta property="og:image" content="{html.escape(og_image_rel)}">' if og_image_rel else ""
     canonical_tag = f'<link rel="canonical" href="{html.escape(canonical_url)}">' if canonical_url else ""
@@ -582,7 +677,7 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
   <section id="compare">
     <span class="section-label">The Redesign</span>
     <h2>Before &rarr; After</h2>
-    <p style="color:var(--muted);margin-bottom:20px;">Drag the handle to compare. Scroll inside the frame to see the rest of each page.</p>
+    <p style="color:var(--muted);margin-bottom:20px;">{"Drag the handle to compare." if before_embed_url and after_embed_url else "Drag the handle to compare. Scroll inside the frame to see the rest of each page."}</p>
     {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url)}
     <div class="compare-embed">
       <span class="share-label">Share this chapter</span>
@@ -605,6 +700,7 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
   <section id="how">
     <span class="section-label">How loomloom Did It</span>
     <h2>The Workflow</h2>
+    {request_block_html}
     <div class="pipeline">{pipeline_html}
     </div>
     <div class="loomloom-note">loomloom's role in this case study: writing the {len(data["chapters"])} narrative paragraphs above from real, verified facts, the only real model call in this run's Share stage. No image was generated: the hero above uses the real color tokens from the actual redesign directly, not an AI illustration of them.</div>
