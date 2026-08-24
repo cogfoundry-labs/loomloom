@@ -38,6 +38,15 @@ The installed Skill may contain a `generated-template-spec/` backup. Prefer the 
 
 ## Conversation Flow
 
+When the request modifies, copies, or appends to an existing private template,
+first run `loomloom template-spec get <template-id> --output json` and
+`loomloom template-spec versions <template-id> --output json`. Resolve the exact
+target version and inspect its server-returned `specVersion` before drafting.
+For `template-spec/v1`, switch to the legacy upgrade gate in `SKILL.md`: keep
+the historical version unchanged, export it only as source material, and draft
+a new v2 version against current authoring facts. Do not apply this authoring
+gate when the user only wants to execute the existing historical version.
+
 When a user describes a reusable workflow:
 
 1. Ask business questions, not TemplateSpec-field questions.

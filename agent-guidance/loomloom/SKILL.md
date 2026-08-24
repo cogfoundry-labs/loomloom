@@ -102,6 +102,22 @@ used to create a new template or save a new version. When a user needs to
 change, copy, or newly author a v1 template, create a new `template-spec/v2`
 version; never overwrite or claim to repair the historical v1 version.
 
+Before changing, copying, or appending a version to an existing private
+template, inspect the exact target version reported by the current Server:
+
+```text
+loomloom template-spec get <template-id> --output json
+loomloom template-spec versions <template-id> --output json
+```
+
+Resolve whether the user means the published, latest, or another explicit
+version, then inspect that version's returned `specVersion`. Do not infer the
+version from JSON shape, a 404, or an error message. If it is
+`template-spec/v1`, do not submit its historical JSON to `create-version`.
+Explain that the historical version remains readable/runnable but is read-only,
+and guide the user through creating a new v2 version. Do not force this upgrade
+when the user only wants to run an existing v1 version.
+
 Do not infer a v2 contract from v1 `modelKey`, `staticParams`, field bindings,
 or provider-native fields. Read the current v2 protocol and the target
 environment's authoring facts first:
