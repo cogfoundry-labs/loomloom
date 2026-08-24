@@ -87,7 +87,7 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
    both images and both iframes can just be plain width:100% (matching
    each other automatically), no more JS-computed pixel width needed for
    either mode; see layout() below, much shorter now. */
-.compare .after-layer{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;clip-path:inset(0 50% 0 0);will-change:clip-path;}
+.compare .after-layer{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;clip-path:inset(0 0 0 50%);will-change:clip-path;}
 .compare .after-layer img{width:100%;height:auto;display:block;}
 .compare .divider{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--accent-fill);pointer-events:none;}
 /* Live-embed mode (real <iframe> in place of a static screenshot): neither
@@ -113,30 +113,26 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
    and -- being a fixed default height, unrelated to the drag handle or the
    video's own playback -- it stayed put at every reveal position, which is
    what made it so easy to mistake for something else while debugging.
-   Listing both selectors together closes the gap. */
+   Listing both selectors together closes the gap.
+   pointer-events:none is permanent here now, not toggled -- this widget's
+   two live iframes are frozen to the top of each real page on purpose (no
+   scrolling, no clicking into either real site): every attempt at making
+   them genuinely scrollable ran into the same real, confirmed wall --
+   wheel-scroll over the cross-origin "before" iframe gets silently
+   swallowed by the parent page's own scroll instead of scrolling the
+   iframe, reproducible any time a cross-origin iframe sits inside a
+   position:absolute ancestor on a scrollable page (isolated and confirmed
+   with controlled tests, independent of clip-path/siblings/nesting depth
+   -- a genuine Chromium cross-origin-iframe limitation, not a CSS mistake
+   here). A custom-built scrollbar for the same-origin "after" side alone
+   fixed only half the problem and added its own real interaction bugs.
+   Freezing both to a static top-of-page comparison sidesteps all of it --
+   the full, real, scrollable comparison lives in the second (screenshot-
+   based, no video, no cross-origin routing problem) widget below, behind
+   the "see the full page" toggle; see render_compare_widget_html and the
+   .compare-full rule further down. */
 .compare-frame.is-live .compare-inner > iframe,
-.compare-frame.is-live .after-layer iframe{position:absolute;inset:0;top:0;left:0;width:100%;height:100%;border:0;background:#fff;pointer-events:none;}
-/* pointer-events:none, not an incidental extra: these two iframes are
-   real, live pages for comparison, never meant to be clicked/scrolled by
-   a mouse -- and leaving them hit-testable had two real, confirmed costs.
-   First, a genuine navigation bug: a stray click during testing landed on
-   one of the after page's own real links and navigated the entire tab
-   away to that link's target, losing the comparison entirely. Second, and
-   likely the bigger one for drag feel specifically: Chromium's site-
-   isolation architecture runs a cross-origin iframe (the "before" side,
-   the real external site) in its own separate process, so every time the
-   cursor moves over it the browser has to route hit-testing across that
-   process boundary -- real, measurable overhead on top of the layout/
-   compositing cost already fixed elsewhere in this file, and one that
-   setPointerCapture on the handle doesn't eliminate (capture controls
-   which element *receives* events, not the hit-testing work the browser
-   still does to track what's visually under the cursor for compositing
-   and cursor-style purposes). Blocking pointer-events on both iframes
-   removes both problems at once: neither is hit-testable at all now, so
-   there's nothing for a stray click to land on and nothing for the
-   cursor-move path to cross a process boundary for. Keyboard scrolling
-   into either iframe (Tab, then arrow keys) still works -- this only
-   removes mouse/pointer interaction, not keyboard access. */
+.compare-frame.is-live .after-layer iframe{position:absolute;inset:0;top:0;left:0;width:100%;height:100%;border:0;background:#fff;pointer-events:none;overflow:hidden;}
 /* width:100% is required here, not optional -- confirmed the hard way on
    the real deployed site: an <iframe> is a *replaced element* (same CSS
    category as <img>/<video>/<object>), and for an absolutely positioned
@@ -168,12 +164,22 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .compare-frame .handle:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
 .compare:focus-visible{outline:3px solid var(--ink);outline-offset:-3px;}
 .compare-caption{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--faint);margin-top:10px;}
-.quick-hits{display:grid;gap:14px;max-width:800px;}
+.compare-full-toggle{text-align:center;margin:20px 0 0;}
+/* The full-page comparison: real, static screenshots (no video, no
+   cross-origin iframe), sized to the same 800px column as the rest of the
+   article's prose instead of the 1280px full-bleed width the frozen live
+   widget above uses -- it's a secondary, opt-in view, not the page's main
+   visual anchor. Hidden by default ([hidden], a real attribute not just a
+   class, so it's inert to layout/AT until toggled) and revealed by the
+   button's click handler in script.js. */
+.compare-full{max-width:800px;margin:20px auto 0;}
+.compare-full[hidden]{display:none;}
+.quick-hits{display:grid;gap:14px;max-width:800px;margin-left:auto;margin-right:auto;}
 .quick-hit{display:flex;align-items:baseline;gap:14px;padding:14px 0;border-top:1px solid var(--rule);}
 .quick-hit:first-child{border-top:none;padding-top:0;}
 .quick-hit .num{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);font-weight:700;flex-shrink:0;}
 .quick-hit p{margin:0;font-size:17px;}
-.chapter{padding:36px 0;border-top:1px solid var(--rule);max-width:800px;}
+.chapter{padding:36px 0;border-top:1px solid var(--rule);max-width:800px;margin-left:auto;margin-right:auto;}
 .chapter:first-of-type{border-top:none;padding-top:0;}
 .chapter-head{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;}
 .chapter-num{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);font-weight:700;}
@@ -188,23 +194,21 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .share-btn{font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;background:none;border:1px solid var(--rule-strong);color:var(--ink);padding:6px 12px;cursor:pointer;}
 .share-btn:hover{background:var(--ink);color:var(--bg);}
 @media (max-width:640px){ .chapter-facts{grid-template-columns:1fr;} }
-.request-block{background:var(--surface);border:1px solid var(--rule);padding:16px 20px;margin-bottom:20px;max-width:800px;}
+.request-block{background:var(--surface);border:1px solid var(--rule);padding:16px 20px;margin:0 auto 20px;max-width:800px;}
 .request-block p{margin:6px 0 0;font-size:15px;font-style:italic;color:var(--ink);line-height:1.5;}
-.pipeline{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:28px;max-width:800px;}
+.pipeline{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);margin:0 auto 28px;max-width:800px;}
 .pipeline-stage{background:var(--surface);padding:18px 22px;display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:baseline;}
 .pipeline-stage .name{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:0.03em;}
 .pipeline-stage .desc{font-size:14px;color:var(--muted);margin:0;}
 @media (max-width:640px){ .pipeline-stage{grid-template-columns:1fr;gap:4px;} }
-.loomloom-note{background:var(--surface);border:1px solid var(--rule);padding:18px 20px;font-size:14px;color:var(--muted);max-width:720px;}
+.loomloom-note{background:var(--surface);border:1px solid var(--rule);padding:18px 20px;font-size:14px;color:var(--muted);max-width:720px;margin-left:auto;margin-right:auto;}
 .validate-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);}
 .validate-cell{background:var(--surface);padding:20px 22px;}
 .validate-cell .check{color:#2f6e4e;font-weight:700;margin-right:8px;}
 .validate-cell .metric{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.4rem;}
 .validate-cell .label{display:block;font-size:13px;color:var(--muted);margin-top:4px;}
 @media (max-width:640px){ .validate-grid{grid-template-columns:1fr;} }
-.repro-block{background:var(--surface);border:2px solid var(--rule-strong);padding:22px 24px;max-width:800px;}
-.repro-block code{display:block;font-family:"IBM Plex Mono",monospace;font-size:13px;background:var(--bg);border:1px solid var(--rule);padding:12px 14px;margin:10px 0 18px;overflow-x:auto;}
-.repro-links{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 18px;font-family:"IBM Plex Mono",monospace;font-size:13px;text-transform:uppercase;letter-spacing:0.04em;}
+.repro-block{background:var(--surface);border:2px solid var(--rule-strong);padding:22px 24px;max-width:800px;margin-left:auto;margin-right:auto;}
 .tool-list{list-style:none;margin:0;padding:0;max-width:800px;}
 .tool-list li{padding:12px 0;border-bottom:1px solid var(--rule);}
 .tool-list li:last-child{border-bottom:none;}

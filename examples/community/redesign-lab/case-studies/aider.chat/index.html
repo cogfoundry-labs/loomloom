@@ -51,24 +51,44 @@
   <section id="compare">
     <span class="section-label">The Redesign</span>
     <h2>Before &rarr; After</h2>
-    <p style="color:var(--muted);margin-bottom:20px;">Drag the handle to compare.</p>
+    <p style="color:var(--muted);margin-bottom:20px;">Drag the handle to compare the top of each real page.</p>
     <div class="compare-frame is-live">
-      <div class="compare" id="compareWidget">
-        <div class="compare-inner" id="compareInner">
-          <iframe id="beforeImg" src="https://aider.chat/" title="Before: aider.chat's original design, live, Soft-Gradient SaaS Template" loading="lazy"></iframe>
-          <div class="after-layer" id="afterLayer">
-            <iframe id="afterImg" src="redesign/index.html" title="After: aider.chat redesigned as Terminal-Native Industrial Brutalism, live" loading="lazy"></iframe>
+      <div class="compare">
+        <div class="compare-inner">
+          <iframe class="before-media" src="https://aider.chat/" title="Before: aider.chat's original design, live, Soft-Gradient SaaS Template" loading="lazy" tabindex="-1" scrolling="no"></iframe>
+          <div class="after-layer">
+            <iframe class="after-media" src="redesign/index.html" title="After: aider.chat redesigned as Terminal-Native Industrial Brutalism, live" loading="lazy" tabindex="-1" scrolling="no"></iframe>
           </div>
-          <div class="divider" id="compareDivider" aria-hidden="true"></div>
+          <div class="divider" aria-hidden="true"></div>
         </div>
       </div>
-      <div class="handle" id="compareHandle" role="slider" tabindex="0" aria-label="Before and after comparison position"
+      <div class="handle" role="slider" tabindex="0" aria-label="Before and after comparison position"
            aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
     </div>
-    <div class="compare-caption"><span>Before</span><span>After: validated redesign preview <span class="live-note">(real, live pages)</span></span></div>
+    <div class="compare-caption"><span>Before</span><span>After: validated redesign preview <span class="live-note">(live pages, top of page only -- see the full page below for the rest)</span></span></div>
     <div class="compare-embed">
       <span class="share-label">Share this chapter</span>
       <button class="share-btn" onclick="copyCompareEmbed(&quot;Before and after: aider.chat&quot;)" aria-label="Copy embeddable code for this before/after comparison">Copy the code</button>
+    </div>
+    <div class="compare-full-toggle">
+      <button class="share-btn" id="compareFullToggleBtn" type="button" aria-expanded="false" aria-controls="compareFull" data-show-label="See the full page, top to bottom" data-hide-label="Hide the full page">See the full page, top to bottom</button>
+    </div>
+    <div class="compare-full" id="compareFull" hidden>
+      <p style="color:var(--muted);margin-bottom:20px;">A full-page comparison (static screenshots, not the live sites above) -- drag the handle, then scroll down inside it to see the rest of both pages together.</p>
+      <div class="compare-frame">
+      <div class="compare" tabindex="0" aria-label="Scrollable page preview">
+        <div class="compare-inner">
+          <img class="before-media" src="assets/before.png" alt="Before: aider.chat's original design, Soft-Gradient SaaS Template">
+          <div class="after-layer">
+            <img class="after-media" src="assets/after.png" alt="After: aider.chat redesigned as Terminal-Native Industrial Brutalism">
+          </div>
+          <div class="divider" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="handle" role="slider" tabindex="0" aria-label="Before and after comparison position"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
+    </div>
+    <div class="compare-caption"><span>Before</span><span>After: validated redesign preview</span></div>
     </div>
   </section>
 
@@ -183,7 +203,7 @@
   <section id="how">
     <span class="section-label">How loomloom Did It</span>
     <h2>The Workflow</h2>
-    <div class="request-block"><span class="fact-label">The Request</span><p>&ldquo;Redesign my website. Target: https://aider.chat/. Give me a fixed-baseline option plus a couple of substantially different design directions before implementing anything.&rdquo;</p></div>
+    <div class="request-block"><span class="fact-label">The Request</span><p>&ldquo;Redesign https://aider.chat/&rdquo;</p></div>
     <div class="pipeline">
       <div class="pipeline-stage"><span class="name">Discover</span><p class="desc">Understand the existing site: real structure, real assets, real constraints, no model call.</p></div>
       <div class="pipeline-stage"><span class="name">Analyze</span><p class="desc">Measure the real design system and audit it against a declared design authority&#x27;s own rules.</p></div>
@@ -206,12 +226,7 @@
     <h2>How This Was Actually Built</h2>
     <div class="repro-block">
       <p style="margin-top:0;color:var(--muted);font-size:14px;">This redesign is built on real open-source work. Thanks to every project below: each is listed because real evidence of its use exists in this run.</p>
-      <div class="repro-links">
-        <a href="https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/redesign-lab">GitHub repository</a>
-        <a href="#" id="viewSourceLink" onclick="viewSource(event)">View source</a>
-      </div>
       <ul class="tool-list"><li><a href="https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/redesign-lab" class="name">redesign-lab</a><span class="role">The end-to-end pipeline (Discover, Analyze, Explore, Select, Implement, Validate, Share) that produced this entire redesign and case study.</span></li><li><a href="https://github.com/senlindesign/taste-skill" class="name">senlindesign/taste-skill</a><span class="role">Measured the original page&#x27;s real design system (colors, type, spacing, layout) via screenshot and DOM extraction -- the raw input to Analyze.</span></li><li><a href="https://github.com/Leonxlnx/taste-skill" class="name">leonxlnx-taste-skill</a><span class="role">Supplied the build rules, direction-variant families, and the mechanical Pre-Flight Check this redesign was built and validated against.</span></li><li><a href="https://github.com/anthropics/skills/tree/main/skills/webapp-testing" class="name">anthropics/skills (webapp-testing)</a><span class="role">Rendered and screenshotted every real direction, variant, and the final implementation for functional and responsive checking.</span></li><li><a href="https://github.com/snapsynapse/skill-a11y-audit" class="name">snapsynapse/skill-a11y-audit</a><span class="role">Ran the real axe-core accessibility scan that found (and confirmed the fixes for) this run&#x27;s Validate-stage violations.</span></li><li><a href="https://github.com/cogfoundry-labs/loomloom" class="name">cogfoundry-labs/loomloom</a><span class="role">Generated the 6 narrative paragraphs in the Design Transformations section above from this run&#x27;s real, verified facts. Total cost: $0.0089.</span></li></ul>
-      <code>git clone https://github.com/cogfoundry-labs/loomloom && cd loomloom/examples/community/redesign-lab</code>
       <p class="note">The before target(s) were fetched live at 2026-08-24T01:55:47.862749+00:00 (Share time), not re-read from a saved snapshot of what Gate 2 actually showed. If a live external site changed since that approval, these facts may not exactly match what the human saw and chose.</p>
     </div>
   </section>
