@@ -256,6 +256,7 @@ def cmd_plan(args):
         "status": args.status,
         "winning_direction": args.winning_direction,
         "subject": args.subject,
+        "request_prompt": args.request_prompt,
         "before_target": args.before,
         "after_target": args.after,
         "diff_capture_note": diff_capture_note,
@@ -367,10 +368,12 @@ def cmd_generate(args):
         # the same evidence-gating rule every other tool credit follows
         # (package_share.gather_evidence() runs at `plan` time, before this
         # call exists, so it can't gate on it itself).
+        actual_amount = actual_cost2.get("amount")
+        cost_sentence = f" Total cost: ${actual_amount:.4f}." if isinstance(actual_amount, (int, float)) else ""
         data["evidence"]["tools_used"].append({
             "name": "cogfoundry-labs/loomloom",
             "repo": "https://github.com/cogfoundry-labs/loomloom",
-            "role": f"Generated the {len(data['chapters'])} narrative paragraphs in the Design Transformations section above from this run's real, verified facts.",
+            "role": f"Generated the {len(data['chapters'])} narrative paragraphs in the Design Transformations section above from this run's real, verified facts.{cost_sentence}",
         })
         save()
         print(f"narrative: precheck estimated ${ll['narrative_precheck_usd']:.4f}, "
@@ -424,6 +427,7 @@ def main():
     p_plan.add_argument("--after", required=True)
     p_plan.add_argument("--winning-direction", required=True)
     p_plan.add_argument("--subject", required=True)
+    p_plan.add_argument("--request-prompt", default=None, help="the real request that started this run (human-facing part only -- trim local paths/internal-mode boilerplate), shown in the case study's Workflow section so a reader sees what was actually asked for, not just what came out")
     p_plan.add_argument("--status", choices=["implemented", "preview"], required=True)
     p_plan.add_argument("--before-image", required=True, help="real screenshot path for the interactive before/after comparison")
     p_plan.add_argument("--after-image", required=True, help="real screenshot path for the interactive before/after comparison")
