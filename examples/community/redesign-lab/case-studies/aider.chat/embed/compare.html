@@ -12,19 +12,19 @@
 <main>
 <div class="wrap" style="padding:20px 16px;">
   <h1 class="embed-h1">Before and after: aider.chat</h1>
-  <div class="compare-frame">
-    <div class="compare" id="compareWidget" tabindex="0" aria-label="Scrollable page preview">
-      <div class="compare-inner" id="compareInner">
-        <img id="beforeImg" src="../assets/before.png" alt="Before: aider.chat, Soft-Gradient SaaS Template">
-        <div class="after-layer" id="afterLayer">
-          <img id="afterImg" src="../assets/after.png" alt="After: aider.chat redesigned as Terminal-Native Industrial Brutalism">
+  <div class="compare-frame is-live">
+      <div class="compare" id="compareWidget">
+        <div class="compare-inner" id="compareInner">
+          <iframe id="beforeImg" src="https://aider.chat/" title="Before: aider.chat's original design, live, Soft-Gradient SaaS Template" loading="lazy"></iframe>
+          <div class="after-layer" id="afterLayer">
+            <iframe id="afterImg" src="../redesign/index.html" title="After: aider.chat redesigned as Terminal-Native Industrial Brutalism, live" loading="lazy"></iframe>
+          </div>
         </div>
       </div>
+      <div class="handle" id="compareHandle" role="slider" tabindex="0" aria-label="Before and after comparison position"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
     </div>
-    <div class="handle" id="compareHandle" role="slider" tabindex="0" aria-label="Before and after comparison position"
-         aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
-  </div>
-  <div class="compare-caption"><span>Before</span><span>After: validated redesign preview</span></div>
+    <div class="compare-caption"><span>Before</span><span>After: validated redesign preview <span class="live-note">(real, live pages: each side scrolls independently)</span></span></div>
   <p style="font-family:&quot;IBM Plex Mono&quot;,monospace;font-size:11px;color:var(--faint);margin-top:14px;">From a <a href="../index.html" target="_top">Redesign Lab case study</a></p>
 </div>
 </main>

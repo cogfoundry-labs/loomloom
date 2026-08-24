@@ -15,7 +15,14 @@
   // the two: a redesign that changed real page length (this one compressed
   // 8340px down to 2932px) means one side runs out of real content before
   // the other, which is shown honestly, not padded or stretched to match.
+  // Live-embed mode (real <iframe>s, see the CSS comment above this same
+  // widget's rules): neither side's real height is readable from here, so
+  // there's nothing for this function to measure or set -- the fixed 16:9
+  // .compare-frame box plus this CSS mode's height:100% rules already size
+  // both sides correctly on their own.
+  var isLive = beforeImg.tagName === 'IFRAME';
   function layout(){
+    if (isLive) return;
     var w = widget.clientWidth;
     var beforeH = beforeImg.naturalWidth ? w * (beforeImg.naturalHeight / beforeImg.naturalWidth) : 0;
     var afterH = afterImg.naturalWidth ? w * (afterImg.naturalHeight / afterImg.naturalWidth) : 0;
@@ -23,6 +30,7 @@
     afterImg.style.width = w + 'px'; // full-widget width, then clipped narrower by .after-layer's own width -- same reveal-window trick as before
   }
   function whenReady(img, cb){
+    if (isLive) return;
     if (img.complete && img.naturalWidth) cb();
     else img.addEventListener('load', cb);
   }
