@@ -172,7 +172,7 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
    both images and both iframes can just be plain width:100% (matching
    each other automatically), no more JS-computed pixel width needed for
    either mode; see layout() below, much shorter now. */
-.compare .after-layer{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;clip-path:inset(0 50% 0 0);will-change:clip-path;}
+.compare .after-layer{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;clip-path:inset(0 0 0 50%);will-change:clip-path;}
 .compare .after-layer img{width:100%;height:auto;display:block;}
 .compare .divider{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--accent-fill);pointer-events:none;}
 /* Live-embed mode (real <iframe> in place of a static screenshot): neither
@@ -198,30 +198,26 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
    and -- being a fixed default height, unrelated to the drag handle or the
    video's own playback -- it stayed put at every reveal position, which is
    what made it so easy to mistake for something else while debugging.
-   Listing both selectors together closes the gap. */
+   Listing both selectors together closes the gap.
+   pointer-events:none is permanent here now, not toggled -- this widget's
+   two live iframes are frozen to the top of each real page on purpose (no
+   scrolling, no clicking into either real site): every attempt at making
+   them genuinely scrollable ran into the same real, confirmed wall --
+   wheel-scroll over the cross-origin "before" iframe gets silently
+   swallowed by the parent page's own scroll instead of scrolling the
+   iframe, reproducible any time a cross-origin iframe sits inside a
+   position:absolute ancestor on a scrollable page (isolated and confirmed
+   with controlled tests, independent of clip-path/siblings/nesting depth
+   -- a genuine Chromium cross-origin-iframe limitation, not a CSS mistake
+   here). A custom-built scrollbar for the same-origin "after" side alone
+   fixed only half the problem and added its own real interaction bugs.
+   Freezing both to a static top-of-page comparison sidesteps all of it --
+   the full, real, scrollable comparison lives in the second (screenshot-
+   based, no video, no cross-origin routing problem) widget below, behind
+   the "see the full page" toggle; see render_compare_widget_html and the
+   .compare-full rule further down. */
 .compare-frame.is-live .compare-inner > iframe,
-.compare-frame.is-live .after-layer iframe{position:absolute;inset:0;top:0;left:0;width:100%;height:100%;border:0;background:#fff;pointer-events:none;}
-/* pointer-events:none, not an incidental extra: these two iframes are
-   real, live pages for comparison, never meant to be clicked/scrolled by
-   a mouse -- and leaving them hit-testable had two real, confirmed costs.
-   First, a genuine navigation bug: a stray click during testing landed on
-   one of the after page's own real links and navigated the entire tab
-   away to that link's target, losing the comparison entirely. Second, and
-   likely the bigger one for drag feel specifically: Chromium's site-
-   isolation architecture runs a cross-origin iframe (the "before" side,
-   the real external site) in its own separate process, so every time the
-   cursor moves over it the browser has to route hit-testing across that
-   process boundary -- real, measurable overhead on top of the layout/
-   compositing cost already fixed elsewhere in this file, and one that
-   setPointerCapture on the handle doesn't eliminate (capture controls
-   which element *receives* events, not the hit-testing work the browser
-   still does to track what's visually under the cursor for compositing
-   and cursor-style purposes). Blocking pointer-events on both iframes
-   removes both problems at once: neither is hit-testable at all now, so
-   there's nothing for a stray click to land on and nothing for the
-   cursor-move path to cross a process boundary for. Keyboard scrolling
-   into either iframe (Tab, then arrow keys) still works -- this only
-   removes mouse/pointer interaction, not keyboard access. */
+.compare-frame.is-live .after-layer iframe{position:absolute;inset:0;top:0;left:0;width:100%;height:100%;border:0;background:#fff;pointer-events:none;overflow:hidden;}
 /* width:100% is required here, not optional -- confirmed the hard way on
    the real deployed site: an <iframe> is a *replaced element* (same CSS
    category as <img>/<video>/<object>), and for an absolutely positioned
@@ -253,12 +249,22 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .compare-frame .handle:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
 .compare:focus-visible{outline:3px solid var(--ink);outline-offset:-3px;}
 .compare-caption{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--faint);margin-top:10px;}
-.quick-hits{display:grid;gap:14px;max-width:800px;}
+.compare-full-toggle{text-align:center;margin:20px 0 0;}
+/* The full-page comparison: real, static screenshots (no video, no
+   cross-origin iframe), sized to the same 800px column as the rest of the
+   article's prose instead of the 1280px full-bleed width the frozen live
+   widget above uses -- it's a secondary, opt-in view, not the page's main
+   visual anchor. Hidden by default ([hidden], a real attribute not just a
+   class, so it's inert to layout/AT until toggled) and revealed by the
+   button's click handler in script.js. */
+.compare-full{max-width:800px;margin:20px auto 0;}
+.compare-full[hidden]{display:none;}
+.quick-hits{display:grid;gap:14px;max-width:800px;margin-left:auto;margin-right:auto;}
 .quick-hit{display:flex;align-items:baseline;gap:14px;padding:14px 0;border-top:1px solid var(--rule);}
 .quick-hit:first-child{border-top:none;padding-top:0;}
 .quick-hit .num{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);font-weight:700;flex-shrink:0;}
 .quick-hit p{margin:0;font-size:17px;}
-.chapter{padding:36px 0;border-top:1px solid var(--rule);max-width:800px;}
+.chapter{padding:36px 0;border-top:1px solid var(--rule);max-width:800px;margin-left:auto;margin-right:auto;}
 .chapter:first-of-type{border-top:none;padding-top:0;}
 .chapter-head{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;}
 .chapter-num{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);font-weight:700;}
@@ -273,23 +279,21 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .share-btn{font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;background:none;border:1px solid var(--rule-strong);color:var(--ink);padding:6px 12px;cursor:pointer;}
 .share-btn:hover{background:var(--ink);color:var(--bg);}
 @media (max-width:640px){ .chapter-facts{grid-template-columns:1fr;} }
-.request-block{background:var(--surface);border:1px solid var(--rule);padding:16px 20px;margin-bottom:20px;max-width:800px;}
+.request-block{background:var(--surface);border:1px solid var(--rule);padding:16px 20px;margin:0 auto 20px;max-width:800px;}
 .request-block p{margin:6px 0 0;font-size:15px;font-style:italic;color:var(--ink);line-height:1.5;}
-.pipeline{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:28px;max-width:800px;}
+.pipeline{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);margin:0 auto 28px;max-width:800px;}
 .pipeline-stage{background:var(--surface);padding:18px 22px;display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:baseline;}
 .pipeline-stage .name{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:0.03em;}
 .pipeline-stage .desc{font-size:14px;color:var(--muted);margin:0;}
 @media (max-width:640px){ .pipeline-stage{grid-template-columns:1fr;gap:4px;} }
-.loomloom-note{background:var(--surface);border:1px solid var(--rule);padding:18px 20px;font-size:14px;color:var(--muted);max-width:720px;}
+.loomloom-note{background:var(--surface);border:1px solid var(--rule);padding:18px 20px;font-size:14px;color:var(--muted);max-width:720px;margin-left:auto;margin-right:auto;}
 .validate-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);}
 .validate-cell{background:var(--surface);padding:20px 22px;}
 .validate-cell .check{color:#2f6e4e;font-weight:700;margin-right:8px;}
 .validate-cell .metric{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.4rem;}
 .validate-cell .label{display:block;font-size:13px;color:var(--muted);margin-top:4px;}
 @media (max-width:640px){ .validate-grid{grid-template-columns:1fr;} }
-.repro-block{background:var(--surface);border:2px solid var(--rule-strong);padding:22px 24px;max-width:800px;}
-.repro-block code{display:block;font-family:"IBM Plex Mono",monospace;font-size:13px;background:var(--bg);border:1px solid var(--rule);padding:12px 14px;margin:10px 0 18px;overflow-x:auto;}
-.repro-links{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 18px;font-family:"IBM Plex Mono",monospace;font-size:13px;text-transform:uppercase;letter-spacing:0.04em;}
+.repro-block{background:var(--surface);border:2px solid var(--rule-strong);padding:22px 24px;max-width:800px;margin-left:auto;margin-right:auto;}
 .tool-list{list-style:none;margin:0;padding:0;max-width:800px;}
 .tool-list li{padding:12px 0;border-bottom:1px solid var(--rule);}
 .tool-list li:last-child{border-bottom:none;}
@@ -306,15 +310,21 @@ footer{padding:32px 0 48px;font-family:"IBM Plex Mono",monospace;font-size:11px;
 '''
 
 JS = '''
-(function(){
-  var widget = document.getElementById('compareWidget');
+// Initializes every .compare-frame on the page independently (the case
+// study now renders this widget twice -- the frozen live top-of-page one,
+// and the full-page screenshot one behind the "see the full page" toggle
+// -- see the render_compare_widget_html comment on why none of its inner
+// pieces carry ids any more). Each instance's pieces are found relative to
+// its own .compare-frame, not via a single fixed set of page-wide ids.
+Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), function(frameEl){
+  var widget = frameEl.querySelector('.compare');
   if (!widget) return; // script.js is shared by pages with no compare widget (embed/ch-*.html)
-  var inner = document.getElementById('compareInner');
-  var layer = document.getElementById('afterLayer');
-  var divider = document.getElementById('compareDivider');
-  var handle = document.getElementById('compareHandle');
-  var beforeImg = document.getElementById('beforeImg');
-  var afterImg = document.getElementById('afterImg');
+  var inner = frameEl.querySelector('.compare-inner');
+  var layer = frameEl.querySelector('.after-layer');
+  var divider = frameEl.querySelector('.divider');
+  var handle = frameEl.querySelector('.handle');
+  var beforeImg = inner.querySelector(':scope > iframe, :scope > img');
+  var afterImg = layer.querySelector('iframe, img');
   var isLive = beforeImg.tagName === 'IFRAME';
 
   // Screenshot mode only: the widget's own frame is a fixed 16:9 box (CSS
@@ -324,11 +334,10 @@ JS = '''
   // height is set to the taller of the two: a redesign that changed real
   // page length (this one compressed 8340px down to 2932px) means one side
   // runs out of real content before the other, shown honestly, not padded
-  // or stretched to match. Live-embed mode needs none of this: neither
-  // side's real height is readable (the before iframe is cross-origin),
-  // and with .after-layer now always the full widget width (see the CSS
-  // comment on that rule), each iframe's own plain width:100%;height:100%
-  // already sizes both sides correctly with no JS involvement at all.
+  // or stretched to match. Live-embed mode needs none of this: both
+  // iframes are permanently non-interactive and frozen to the top of each
+  // real page (see the CSS comment on that rule) -- there's no scroll
+  // height to measure or match here at all.
   function layout(){
     if (isLive) return;
     var w = widget.clientWidth;
@@ -348,11 +357,11 @@ JS = '''
   function applyPct(pct){
     pct = Math.min(Math.max(pct, 0), 100);
     // clip-path, not width -- see the .after-layer CSS comment. inset(top
-    // right bottom left): 0 from top/bottom/left, (100-pct)% off the right
-    // edge, so pct=100 clips nothing (fully revealed) and pct=0 clips
-    // everything (fully hidden), matching the old width-based behavior
-    // exactly, just computed on the GPU instead of forcing layout.
-    layer.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+    // right bottom left): 0 from top/right/bottom, pct% off the LEFT edge,
+    // so the after-layer (the redesign) is only ever revealed to the right
+    // of the handle, matching the page's own "BEFORE -> AFTER" labels
+    // (before on the left, after on the right).
+    layer.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
     divider.style.left = pct + '%';
     handle.style.left = pct + '%';
     handle.setAttribute('aria-valuenow', Math.round(pct));
@@ -389,20 +398,10 @@ JS = '''
     pendingPct = (x / dragRect.width) * 100;
     scheduleApply();
   }
-  // Dragging starts only from the handle itself, not anywhere in the widget
-  // -- the widget's background now has a real, independent job (native
-  // vertical scroll), so a pointerdown anywhere used to fight that gesture
-  // by also jumping the horizontal reveal. The handle is a precise, visible
-  // grab target; scrolling the rest of the widget no longer touches it.
-  //
-  // Listeners live on the handle itself, not window, paired with
-  // setPointerCapture: without capture, a fast drag that crosses over
-  // either live iframe mid-gesture can hand pointer events to that
-  // iframe's own document instead of continuing to reach this page's
-  // listeners -- a real gap the old static-screenshot version never had
-  // anything underneath it to hit. Capture pins every event for this
-  // gesture to the handle regardless of what's visually under the
-  // cursor, iframe or not.
+  // Dragging starts only from the handle itself, not anywhere in the
+  // widget -- listeners live on the handle, paired with setPointerCapture
+  // so a fast drag stays glued to the handle regardless of what's under
+  // the cursor mid-gesture.
   handle.addEventListener('pointerdown', function(e){
     dragging = true;
     dragRect = widget.getBoundingClientRect();
@@ -415,13 +414,51 @@ JS = '''
     dragRect = null;
     handle.releasePointerCapture(e.pointerId);
   });
-  handle.addEventListener('pointercancel', function(){ dragging = false; dragRect = null; });
+  handle.addEventListener('pointercancel', function(){
+    dragging = false;
+    dragRect = null;
+  });
   handle.addEventListener('keydown', function(e){
     var current = parseFloat(handle.getAttribute('aria-valuenow')) || 50;
     if (e.key === 'ArrowLeft'){ applyPct(current - 5); e.preventDefault(); }
     else if (e.key === 'ArrowRight'){ applyPct(current + 5); e.preventDefault(); }
     else if (e.key === 'Home'){ applyPct(0); e.preventDefault(); }
     else if (e.key === 'End'){ applyPct(100); e.preventDefault(); }
+  });
+});
+
+// The "see the full page" toggle: the second .compare-frame (screenshot
+// mode, hidden by default) only exists so the top-of-page live widget
+// above doesn't need scrolling at all -- see the CSS comment on
+// .compare-frame.is-live iframe for why that widget is frozen. Plain
+// show/hide, no data to fetch: both screenshots are already real files in
+// this build, same as the frozen widget's own poster-frame images.
+(function(){
+  var btn = document.getElementById('compareFullToggleBtn');
+  var panel = document.getElementById('compareFull');
+  if (!btn || !panel) return;
+  btn.addEventListener('click', function(){
+    var showing = !panel.hidden;
+    panel.hidden = showing;
+    btn.setAttribute('aria-expanded', String(!showing));
+    btn.textContent = showing ? btn.getAttribute('data-show-label') : btn.getAttribute('data-hide-label');
+    if (!showing){
+      // A real, confirmed bug: this panel starts `hidden` (display:none),
+      // so its .compare-inner's height -- computed once from each image's
+      // natural size times the *then-zero* widget.clientWidth (see the
+      // layout() comment above) -- got permanently set to 0px before this
+      // click ever happened. With the after-layer's height:100% resolving
+      // against that real (if zero) explicit height, it collapsed to
+      // nothing and clipped away 100% of its own content -- the before
+      // image, a normal in-flow block, wasn't affected and rendered fine,
+      // which is exactly why only "before" was ever visible no matter
+      // where the handle was dragged. layout() never re-runs on its own
+      // once the panel becomes visible -- only a resize event or a fresh
+      // image load re-triggers it -- so it has to be forced here, now that
+      // widget.clientWidth is finally real.
+      window.dispatchEvent(new Event('resize'));
+      panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+    }
   });
 })();
 function getBaseDir(){
@@ -438,14 +475,6 @@ function getBaseDir(){
 }
 function copyPageLink(){
   copyText(getBaseDir() + 'index.html', event.target);
-}
-function viewSource(e){
-  // The old version linked href="index.html" -- that's just this same
-  // page, so clicking it did nothing observable. view-source: on the
-  // page's own real, resolved URL actually shows the real HTML, matching
-  // what a developer clicking "View source" expects.
-  e.preventDefault();
-  window.open('view-source:' + location.href.split('#')[0].split('?')[0], '_blank');
 }
 function escAttr(s){
   // The generated <iframe> is copy-pasted as raw HTML text onto someone
@@ -508,12 +537,30 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
     is_live = bool(before_embed_url and after_embed_url)
     frame_cls = "compare-frame is-live" if is_live else "compare-frame"
     if is_live:
-        before_el = f'<iframe id="beforeImg" src="{html.escape(before_embed_url)}" title="Before: {subject_esc}\'s original design, live, {before_label_esc}" loading="lazy"></iframe>'
-        after_el = f'<iframe id="afterImg" src="{html.escape(rel_prefix + after_embed_url)}" title="After: {subject_esc} redesigned as {after_label_esc}, live" loading="lazy"></iframe>'
-        caption_note = ' <span class="live-note">(real, live pages)</span>'
+        # scrolling="no": both iframes are permanently non-interactive (see
+        # the CSS comment on this rule) and frozen to the top of each real
+        # page, so a visible native scrollbar on either one is pure
+        # leftover chrome from before that freeze -- confirmed real:
+        # pointer-events:none stops the scrollbar from being *usable*, but
+        # doesn't stop the browser from *drawing* it, since the iframe's
+        # own content is still genuinely scrollable underneath. This
+        # attribute (still respected by Chromium despite being long
+        # deprecated in the HTML spec) suppresses the scrollbar itself,
+        # backed by the matching overflow:hidden on the CSS rule below for
+        # engines that ignore the attribute.
+        before_el = f'<iframe class="before-media" src="{html.escape(before_embed_url)}" title="Before: {subject_esc}\'s original design, live, {before_label_esc}" loading="lazy" tabindex="-1" scrolling="no"></iframe>'
+        after_el = f'<iframe class="after-media" src="{html.escape(rel_prefix + after_embed_url)}" title="After: {subject_esc} redesigned as {after_label_esc}, live" loading="lazy" tabindex="-1" scrolling="no"></iframe>'
+        # Real, but frozen: this widget only ever shows the top of each real
+        # page (the two iframes are permanently non-interactive -- see the
+        # CSS comment on that rule -- so there's no scrolling to advertise
+        # here). Scrolling the rest of both real pages together is the
+        # second, screenshot-based widget further down (the "see the full
+        # page" toggle) -- this note points there instead of promising a
+        # scroll interaction this widget doesn't have.
+        caption_note = ' <span class="live-note">(live pages, top of page only -- see the full page below for the rest)</span>'
     else:
-        before_el = f'<img id="beforeImg" src="{rel_prefix}{before_rel}" alt="Before: {subject_esc}\'s original design, {before_label_esc}">'
-        after_el = f'<img id="afterImg" src="{rel_prefix}{after_rel}" alt="After: {subject_esc} redesigned as {after_label_esc}">'
+        before_el = f'<img class="before-media" src="{rel_prefix}{before_rel}" alt="Before: {subject_esc}\'s original design, {before_label_esc}">'
+        after_el = f'<img class="after-media" src="{rel_prefix}{after_rel}" alt="After: {subject_esc} redesigned as {after_label_esc}">'
         caption_note = ""
     # tabindex/aria-label on the wrapper only apply in screenshot mode,
     # where this div is itself the real scrollable region (confirmed via a
@@ -523,20 +570,30 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
     # overflow:hidden on it), so keeping the same tabindex/aria-label here
     # would be a real, confirmed aria-prohibited-attr finding: a static,
     # non-scrolling div falsely labeled as a scrollable region. The two
-    # iframes are natively focusable and keyboard-scrollable without any
-    # extra ARIA needed.
+    # iframes are permanently non-interactive in live mode (see the CSS
+    # comment on that rule), so they don't need to be in the tab order
+    # either -- tabindex="-1" above, alongside dropping this wrapper's own
+    # tabindex/aria-label.
     wrapper_attrs = "" if is_live else ' tabindex="0" aria-label="Scrollable page preview"'
+    # No ids on any of the repeated inner pieces (widget/inner/layer/
+    # divider/handle/before-media/after-media) -- this function can now
+    # render onto the same page twice (the frozen live widget up top, the
+    # full-page screenshot widget behind the "see the full page" toggle
+    # further down), and duplicate ids would be invalid HTML plus silently
+    # break every getElementById lookup the old single-instance JS used to
+    # rely on. The shared init script below now selects each instance's
+    # pieces relative to its own .compare-frame instead.
     return f'''<div class="{frame_cls}">
-      <div class="compare" id="compareWidget"{wrapper_attrs}>
-        <div class="compare-inner" id="compareInner">
+      <div class="compare"{wrapper_attrs}>
+        <div class="compare-inner">
           {before_el}
-          <div class="after-layer" id="afterLayer">
+          <div class="after-layer">
             {after_el}
           </div>
-          <div class="divider" id="compareDivider" aria-hidden="true"></div>
+          <div class="divider" aria-hidden="true"></div>
         </div>
       </div>
-      <div class="handle" id="compareHandle" role="slider" tabindex="0" aria-label="Before and after comparison position"
+      <div class="handle" role="slider" tabindex="0" aria-label="Before and after comparison position"
            aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
     </div>
     <div class="compare-caption"><span>Before</span><span>{compare_after_label}{caption_note}</span></div>'''
@@ -677,12 +734,19 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
   <section id="compare">
     <span class="section-label">The Redesign</span>
     <h2>Before &rarr; After</h2>
-    <p style="color:var(--muted);margin-bottom:20px;">{"Drag the handle to compare." if before_embed_url and after_embed_url else "Drag the handle to compare. Scroll inside the frame to see the rest of each page."}</p>
+    <p style="color:var(--muted);margin-bottom:20px;">Drag the handle to compare the top of each real page.</p>
     {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url)}
     <div class="compare-embed">
       <span class="share-label">Share this chapter</span>
       <button class="share-btn" onclick="{html.escape(f'copyCompareEmbed({json.dumps("Before and after: " + data["subject"])})')}" aria-label="Copy embeddable code for this before/after comparison">Copy the code</button>
     </div>
+    {f'''<div class="compare-full-toggle">
+      <button class="share-btn" id="compareFullToggleBtn" type="button" aria-expanded="false" aria-controls="compareFull" data-show-label="See the full page, top to bottom" data-hide-label="Hide the full page">See the full page, top to bottom</button>
+    </div>
+    <div class="compare-full" id="compareFull" hidden>
+      <p style="color:var(--muted);margin-bottom:20px;">A full-page comparison (static screenshots, not the live sites above) -- drag the handle, then scroll down inside it to see the rest of both pages together.</p>
+      {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"])}
+    </div>''' if before_embed_url and after_embed_url else ""}
   </section>
 
   <section id="what-changed">
@@ -717,12 +781,7 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     <h2>How This Was Actually Built</h2>
     <div class="repro-block">
       <p style="margin-top:0;color:var(--muted);font-size:14px;">This redesign is built on real open-source work. Thanks to every project below: each is listed because real evidence of its use exists in this run.</p>
-      <div class="repro-links">
-        <a href="https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/redesign-lab">GitHub repository</a>
-        <a href="#" id="viewSourceLink" onclick="viewSource(event)">View source</a>
-      </div>
       <ul class="tool-list">{tools_html}</ul>
-      <code>git clone https://github.com/cogfoundry-labs/loomloom && cd loomloom/examples/community/redesign-lab</code>
       {f'<p class="note">{html.escape(data["diff_capture_note"])}</p>' if data.get("diff_capture_note") else ""}
     </div>
   </section>

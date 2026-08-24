@@ -1,13 +1,19 @@
 
-(function(){
-  var widget = document.getElementById('compareWidget');
+// Initializes every .compare-frame on the page independently (the case
+// study now renders this widget twice -- the frozen live top-of-page one,
+// and the full-page screenshot one behind the "see the full page" toggle
+// -- see the render_compare_widget_html comment on why none of its inner
+// pieces carry ids any more). Each instance's pieces are found relative to
+// its own .compare-frame, not via a single fixed set of page-wide ids.
+Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), function(frameEl){
+  var widget = frameEl.querySelector('.compare');
   if (!widget) return; // script.js is shared by pages with no compare widget (embed/ch-*.html)
-  var inner = document.getElementById('compareInner');
-  var layer = document.getElementById('afterLayer');
-  var divider = document.getElementById('compareDivider');
-  var handle = document.getElementById('compareHandle');
-  var beforeImg = document.getElementById('beforeImg');
-  var afterImg = document.getElementById('afterImg');
+  var inner = frameEl.querySelector('.compare-inner');
+  var layer = frameEl.querySelector('.after-layer');
+  var divider = frameEl.querySelector('.divider');
+  var handle = frameEl.querySelector('.handle');
+  var beforeImg = inner.querySelector(':scope > iframe, :scope > img');
+  var afterImg = layer.querySelector('iframe, img');
   var isLive = beforeImg.tagName === 'IFRAME';
 
   // Screenshot mode only: the widget's own frame is a fixed 16:9 box (CSS
@@ -17,11 +23,10 @@
   // height is set to the taller of the two: a redesign that changed real
   // page length (this one compressed 8340px down to 2932px) means one side
   // runs out of real content before the other, shown honestly, not padded
-  // or stretched to match. Live-embed mode needs none of this: neither
-  // side's real height is readable (the before iframe is cross-origin),
-  // and with .after-layer now always the full widget width (see the CSS
-  // comment on that rule), each iframe's own plain width:100%;height:100%
-  // already sizes both sides correctly with no JS involvement at all.
+  // or stretched to match. Live-embed mode needs none of this: both
+  // iframes are permanently non-interactive and frozen to the top of each
+  // real page (see the CSS comment on that rule) -- there's no scroll
+  // height to measure or match here at all.
   function layout(){
     if (isLive) return;
     var w = widget.clientWidth;
@@ -41,11 +46,11 @@
   function applyPct(pct){
     pct = Math.min(Math.max(pct, 0), 100);
     // clip-path, not width -- see the .after-layer CSS comment. inset(top
-    // right bottom left): 0 from top/bottom/left, (100-pct)% off the right
-    // edge, so pct=100 clips nothing (fully revealed) and pct=0 clips
-    // everything (fully hidden), matching the old width-based behavior
-    // exactly, just computed on the GPU instead of forcing layout.
-    layer.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+    // right bottom left): 0 from top/right/bottom, pct% off the LEFT edge,
+    // so the after-layer (the redesign) is only ever revealed to the right
+    // of the handle, matching the page's own "BEFORE -> AFTER" labels
+    // (before on the left, after on the right).
+    layer.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
     divider.style.left = pct + '%';
     handle.style.left = pct + '%';
     handle.setAttribute('aria-valuenow', Math.round(pct));
@@ -82,20 +87,10 @@
     pendingPct = (x / dragRect.width) * 100;
     scheduleApply();
   }
-  // Dragging starts only from the handle itself, not anywhere in the widget
-  // -- the widget's background now has a real, independent job (native
-  // vertical scroll), so a pointerdown anywhere used to fight that gesture
-  // by also jumping the horizontal reveal. The handle is a precise, visible
-  // grab target; scrolling the rest of the widget no longer touches it.
-  //
-  // Listeners live on the handle itself, not window, paired with
-  // setPointerCapture: without capture, a fast drag that crosses over
-  // either live iframe mid-gesture can hand pointer events to that
-  // iframe's own document instead of continuing to reach this page's
-  // listeners -- a real gap the old static-screenshot version never had
-  // anything underneath it to hit. Capture pins every event for this
-  // gesture to the handle regardless of what's visually under the
-  // cursor, iframe or not.
+  // Dragging starts only from the handle itself, not anywhere in the
+  // widget -- listeners live on the handle, paired with setPointerCapture
+  // so a fast drag stays glued to the handle regardless of what's under
+  // the cursor mid-gesture.
   handle.addEventListener('pointerdown', function(e){
     dragging = true;
     dragRect = widget.getBoundingClientRect();
@@ -108,13 +103,51 @@
     dragRect = null;
     handle.releasePointerCapture(e.pointerId);
   });
-  handle.addEventListener('pointercancel', function(){ dragging = false; dragRect = null; });
+  handle.addEventListener('pointercancel', function(){
+    dragging = false;
+    dragRect = null;
+  });
   handle.addEventListener('keydown', function(e){
     var current = parseFloat(handle.getAttribute('aria-valuenow')) || 50;
     if (e.key === 'ArrowLeft'){ applyPct(current - 5); e.preventDefault(); }
     else if (e.key === 'ArrowRight'){ applyPct(current + 5); e.preventDefault(); }
     else if (e.key === 'Home'){ applyPct(0); e.preventDefault(); }
     else if (e.key === 'End'){ applyPct(100); e.preventDefault(); }
+  });
+});
+
+// The "see the full page" toggle: the second .compare-frame (screenshot
+// mode, hidden by default) only exists so the top-of-page live widget
+// above doesn't need scrolling at all -- see the CSS comment on
+// .compare-frame.is-live iframe for why that widget is frozen. Plain
+// show/hide, no data to fetch: both screenshots are already real files in
+// this build, same as the frozen widget's own poster-frame images.
+(function(){
+  var btn = document.getElementById('compareFullToggleBtn');
+  var panel = document.getElementById('compareFull');
+  if (!btn || !panel) return;
+  btn.addEventListener('click', function(){
+    var showing = !panel.hidden;
+    panel.hidden = showing;
+    btn.setAttribute('aria-expanded', String(!showing));
+    btn.textContent = showing ? btn.getAttribute('data-show-label') : btn.getAttribute('data-hide-label');
+    if (!showing){
+      // A real, confirmed bug: this panel starts `hidden` (display:none),
+      // so its .compare-inner's height -- computed once from each image's
+      // natural size times the *then-zero* widget.clientWidth (see the
+      // layout() comment above) -- got permanently set to 0px before this
+      // click ever happened. With the after-layer's height:100% resolving
+      // against that real (if zero) explicit height, it collapsed to
+      // nothing and clipped away 100% of its own content -- the before
+      // image, a normal in-flow block, wasn't affected and rendered fine,
+      // which is exactly why only "before" was ever visible no matter
+      // where the handle was dragged. layout() never re-runs on its own
+      // once the panel becomes visible -- only a resize event or a fresh
+      // image load re-triggers it -- so it has to be forced here, now that
+      // widget.clientWidth is finally real.
+      window.dispatchEvent(new Event('resize'));
+      panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+    }
   });
 })();
 function getBaseDir(){
@@ -131,14 +164,6 @@ function getBaseDir(){
 }
 function copyPageLink(){
   copyText(getBaseDir() + 'index.html', event.target);
-}
-function viewSource(e){
-  // The old version linked href="index.html" -- that's just this same
-  // page, so clicking it did nothing observable. view-source: on the
-  // page's own real, resolved URL actually shows the real HTML, matching
-  // what a developer clicking "View source" expects.
-  e.preventDefault();
-  window.open('view-source:' + location.href.split('#')[0].split('?')[0], '_blank');
 }
 function escAttr(s){
   // The generated <iframe> is copy-pasted as raw HTML text onto someone
