@@ -1,0 +1,62 @@
+name: Deploy Redesign Lab case study to GitHub Pages
+
+# Publishes only examples/community/redesign-lab/case-studies/aider.chat/
+# to GitHub Pages, not the whole repo -- the repo also has its own
+# top-level docs/ folder (loomloom's project documentation), unrelated to
+# this, which is why "Deploy from a branch" -> "/docs" isn't the right
+# source here, and publishing from repo root would bury the case study
+# under a long nested path instead of serving it at the Pages root. This
+# follows GitHub's own documented custom-workflow pattern:
+# https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
+#
+# One-time manual step this workflow can't do by itself: in the target
+# repo's Settings -> Pages -> Build and deployment -> Source, switch from
+# "Deploy from a branch" to "GitHub Actions". After that, every push to
+# main touching the case-studies path (or a manual run) redeploys.
+#
+# A second case study later means either adding its own workflow (same
+# shape, different path/name), or restructuring this one to publish the
+# whole case-studies/ folder with a real landing index.html -- not decided
+# here, since there's only one case study to serve right now.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "examples/community/redesign-lab/case-studies/**"
+      - ".github/workflows/deploy-redesign-case-study.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one Pages deployment at a time; a newer push cancels a still-running
+# older one rather than queuing behind it.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the aider.chat case study as the Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: examples/community/redesign-lab/case-studies/aider.chat
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
