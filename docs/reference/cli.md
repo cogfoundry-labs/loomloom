@@ -178,7 +178,7 @@ For building your own private workflows.
 
 | Command | Description |
 |---|---|
-| `loomloom template-spec check <spec.json>` | Validate a TemplateSpec used to create a private template. |
+| `loomloom template-spec check <spec.json>` | Validate a TemplateSpec with the current Server authority used by version creation. |
 | `loomloom template-spec docs [topic]` | Show bundled TemplateSpec documentation. |
 | `loomloom template-spec models <step-type>` | List models for a step type. |
 | `loomloom template-spec authoring-context` | Show the current server-side Capability Profiles, their ports, and eligible models for TemplateSpec v2. |
@@ -188,6 +188,7 @@ For building your own private workflows.
 | `loomloom template-spec list` | List my private templates. |
 | `loomloom template-spec get <template-id>` | Show one private template and its versions. |
 | `loomloom template-spec versions <template-id>` | List versions of a private template. |
+| `loomloom template-spec get-version <template-id> <version-id> [-f spec.json]` | Read or export one owner-visible historical authoring spec. |
 | `loomloom template-spec download-workbook <template-id> <version-id>` | Download a user-template workbook. |
 | `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx>` | Validate a user-template workbook. |
 | `loomloom template-spec precheck-workbook <template-id> <version-id> <xlsx>` | Estimate cost and balance for a user-template workbook without submitting. |

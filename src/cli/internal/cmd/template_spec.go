@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -28,6 +29,26 @@ type saveTemplateVersionResponse struct {
 	VersionNumber  flexInt64 `json:"versionNumber"`
 	DefinitionHash string    `json:"definitionHash"`
 	CreatedAt      flexInt64 `json:"createdAt"`
+}
+
+type validateTemplateSpecResponse struct {
+	Valid                bool   `json:"valid"`
+	PrimaryOutputType    string `json:"primaryOutputType"`
+	DefinitionHash       string `json:"definitionHash"`
+	ContractBundleHash   string `json:"contractBundleHash"`
+	AuthorityFingerprint string `json:"authorityFingerprint"`
+}
+
+type templateVersionSpecResponse struct {
+	TemplateID     string          `json:"templateId"`
+	VersionID      string          `json:"versionId"`
+	VersionNumber  flexInt64       `json:"versionNumber"`
+	SpecVersion    string          `json:"specVersion"`
+	CanonicalSpec  json.RawMessage `json:"canonicalSpec"`
+	DefinitionHash string          `json:"definitionHash"`
+	VersionNote    string          `json:"versionNote,omitempty"`
+	CreatedBy      flexInt64       `json:"createdBy,omitempty"`
+	CreatedAtUnix  flexInt64       `json:"createdAtUnix"`
 }
 
 type submitUserTemplateWorkbookResponse struct {
@@ -160,6 +181,7 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecListCmd(opts),
 		newTemplateSpecGetCmd(opts),
 		newTemplateSpecVersionsCmd(opts),
+		newTemplateSpecGetVersionCmd(opts),
 		newTemplateSpecCreateCmd(opts),
 		newTemplateSpecCreateVersionCmd(opts),
 		newTemplateSpecDownloadWorkbookCmd(opts),
@@ -411,21 +433,22 @@ func templateSpecLanguageRevision(manifest templatespecdocs.Manifest, language s
 func newTemplateSpecCheckCmd(opts *rootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "check <spec-json>",
-		Short: "Check that a TemplateSpec JSON file is parseable and has the required top-level shape",
+		Short: "Validate a TemplateSpec v2 file against the current server authority",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			spec, raw, err := loadTemplateSpecFile(args[0])
+			raw, err := loadTemplateSpecTransportFile(args[0])
 			if err != nil {
 				return err
 			}
-			result := map[string]any{
-				"valid":       true,
-				"name":        spec.Meta.Name,
-				"description": spec.Meta.Description,
-				"steps":       len(spec.Steps),
-				"inputs":      len(spec.TemplateInputs),
-				"bindings":    countTemplateSpecBindings(spec),
-				"bytes":       len(raw),
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			result, err := validateTemplateSpecVersion(ctx, httpClient, raw)
+			if err != nil {
+				return err
 			}
 			if opts.output == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
@@ -434,11 +457,9 @@ func newTemplateSpecCheckCmd(opts *rootOptions) *cobra.Command {
 			}
 			_, err = fmt.Fprintf(
 				cmd.OutOrStdout(),
-				"valid\nname\t%s\nsteps\t%d\nbindings\t%d\nbytes\t%d\n",
-				spec.Meta.Name,
-				len(spec.Steps),
-				countTemplateSpecBindings(spec),
-				len(raw),
+				"valid\t%t\nprimary_output_type\t%s\ndefinition_hash\t%s\ncontract_bundle_hash\t%s\nauthority_fingerprint\t%s\n",
+				result.Valid, result.PrimaryOutputType, result.DefinitionHash,
+				result.ContractBundleHash, result.AuthorityFingerprint,
 			)
 			return err
 		},
@@ -499,15 +520,24 @@ func newTemplateSpecCreateCmd(opts *rootOptions) *cobra.Command {
 		Short: "Create a private user template and save the TemplateSpec JSON as version 1",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			spec, raw, err := loadTemplateSpecFile(args[0])
+			raw, err := loadTemplateSpecTransportFile(args[0])
 			if err != nil {
 				return err
 			}
-			effectiveName := firstNonEmpty(name, spec.Meta.Name)
+			var authoringMeta struct {
+				Meta struct {
+					Name        string `json:"name"`
+					Description string `json:"description"`
+				} `json:"meta"`
+			}
+			if err := json.Unmarshal(raw, &authoringMeta); err != nil {
+				return fmt.Errorf("decode TemplateSpec metadata: %w", err)
+			}
+			effectiveName := firstNonEmpty(name, authoringMeta.Meta.Name)
 			if effectiveName == "" {
 				return errors.New("template name is required; set meta.name or pass --name")
 			}
-			effectiveDescription := firstNonEmpty(description, spec.Meta.Description)
+			effectiveDescription := firstNonEmpty(description, authoringMeta.Meta.Description)
 
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
@@ -515,6 +545,9 @@ func newTemplateSpecCreateCmd(opts *rootOptions) *cobra.Command {
 			}
 			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
 			defer cancel()
+			if _, err := validateTemplateSpecVersion(ctx, httpClient, raw); err != nil {
+				return fmt.Errorf("validate template spec: %w", err)
+			}
 
 			var createResp createUserTemplateResponse
 			if err := httpClient.PostJSON(ctx, "/users/me/templates", map[string]any{
@@ -573,7 +606,7 @@ func newTemplateSpecCreateVersionCmd(opts *rootOptions) *cobra.Command {
 			if templateID == "" {
 				return errors.New("template ID is required")
 			}
-			_, raw, err := loadTemplateSpecFile(args[1])
+			raw, err := loadTemplateSpecTransportFile(args[1])
 			if err != nil {
 				return err
 			}
@@ -584,6 +617,9 @@ func newTemplateSpecCreateVersionCmd(opts *rootOptions) *cobra.Command {
 			}
 			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
 			defer cancel()
+			if _, err := validateTemplateSpecVersion(ctx, httpClient, raw); err != nil {
+				return fmt.Errorf("validate template spec: %w", err)
+			}
 
 			versionResp, err := saveTemplateSpecVersion(ctx, httpClient, templateID, raw, versionNote)
 			if err != nil {
@@ -624,6 +660,20 @@ func saveTemplateSpecVersion(ctx context.Context, httpClient *client.Client, tem
 		"canonicalSpecV2": json.RawMessage(rawSpec),
 	}, &versionResp)
 	return versionResp, err
+}
+
+func validateTemplateSpecVersion(ctx context.Context, httpClient *client.Client, rawSpec []byte) (validateTemplateSpecResponse, error) {
+	var resp validateTemplateSpecResponse
+	err := httpClient.PostProductJSON(ctx, "/templateSpecs:validate", map[string]any{
+		"specVersion": "template-spec/v2", "canonicalSpecV2": json.RawMessage(rawSpec),
+	}, &resp)
+	if err != nil {
+		return validateTemplateSpecResponse{}, err
+	}
+	if !resp.Valid {
+		return validateTemplateSpecResponse{}, errors.New("server returned valid=false without an error")
+	}
+	return resp, nil
 }
 
 func newTemplateSpecDownloadWorkbookCmd(opts *rootOptions) *cobra.Command {
@@ -981,6 +1031,60 @@ func newTemplateSpecVersionsCmd(opts *rootOptions) *cobra.Command {
 			return writeIndentedJSON(cmd.OutOrStdout(), resp)
 		},
 	}
+}
+
+func newTemplateSpecGetVersionCmd(opts *rootOptions) *cobra.Command {
+	var outputPath string
+	cmd := &cobra.Command{
+		Use:   "get-version <template-id> <version-id>",
+		Short: "Get one historical private TemplateSpec authoring definition",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			templateID, versionID := strings.TrimSpace(args[0]), strings.TrimSpace(args[1])
+			if templateID == "" || versionID == "" {
+				return errors.New("template ID and version ID are required")
+			}
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			endpoint := "/users/me/templates/" + url.PathEscape(templateID) + "/versions/" + url.PathEscape(versionID)
+			var resp templateVersionSpecResponse
+			if err := httpClient.GetProductJSON(ctx, endpoint, &resp); err != nil {
+				return err
+			}
+			if len(resp.CanonicalSpec) == 0 || !json.Valid(resp.CanonicalSpec) {
+				return errors.New("server returned an invalid canonicalSpec")
+			}
+			if strings.TrimSpace(outputPath) != "" {
+				targetPath, err := resolveFilePath(outputPath, templateID+"-"+versionID+".json")
+				if err != nil {
+					return fmt.Errorf("resolve output file path: %w", err)
+				}
+				var pretty bytes.Buffer
+				if err := json.Indent(&pretty, resp.CanonicalSpec, "", "  "); err != nil {
+					return fmt.Errorf("format canonicalSpec: %w", err)
+				}
+				pretty.WriteByte('\n')
+				if err := os.WriteFile(targetPath, pretty.Bytes(), 0o644); err != nil {
+					return fmt.Errorf("write TemplateSpec: %w", err)
+				}
+				if opts.output == "json" {
+					return writeIndentedJSON(cmd.OutOrStdout(), map[string]any{
+						"templateId": resp.TemplateID, "versionId": resp.VersionID, "specVersion": resp.SpecVersion,
+						"definitionHash": resp.DefinitionHash, "path": targetPath,
+					})
+				}
+				_, err = fmt.Fprintf(cmd.OutOrStdout(), "template_id\t%s\nversion_id\t%s\nspec_version\t%s\npath\t%s\n", resp.TemplateID, resp.VersionID, resp.SpecVersion, targetPath)
+				return err
+			}
+			return writeIndentedJSON(cmd.OutOrStdout(), resp)
+		},
+	}
+	cmd.Flags().StringVarP(&outputPath, "output-file", "f", "", "Write canonicalSpec to a JSON file or target directory")
+	return cmd
 }
 
 func newTemplateSpecPrecheckCmd(opts *rootOptions) *cobra.Command {

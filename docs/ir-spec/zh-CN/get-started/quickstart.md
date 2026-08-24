@@ -17,10 +17,10 @@
 }
 ```
 
-本地检查：
+在准备创建版本的目标 Server 上检查：
 
 ```bash
 loomloom template-spec check template.json
 ```
 
-检查通过只证明结构和本地规则正确。正式创建时 Core 还会确认 Subject/Profile 存在、端口匹配、模型可用，并冻结合同。创建成功后再下载 Workbook、填写一行、validate、precheck 和提交 Run。
+`check` 使用与创建版本相同的服务端合同解析规则，确认 Subject/Profile、端口和模型当前可用；它不会写入版本。正式创建时服务端会再次校验并冻结合同，避免检查后权威数据变化。创建成功后再下载 Workbook、填写一行、validate、precheck 和提交 Run。

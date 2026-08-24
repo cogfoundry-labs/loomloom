@@ -220,14 +220,27 @@ func TestLoadTemplateSpecFile_AllowsThreeVisibleFieldParamBinding(t *testing.T) 
 	}
 }
 
-func TestTemplateSpecCheckCmdCountsInputBindings(t *testing.T) {
+func TestTemplateSpecCheckCmdUsesCurrentServerAuthority(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
-	content := `{"meta":{"name":"Binding count"},"templateInputs":{"prompt":{"kind":"value","valueType":"string","required":true,"blankPolicy":"error","presentation":{"label":"Prompt","order":10}}},"steps":[{"stepId":"stp_text01","displayName":"Text","executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-text-v2"},"inputBindings":{"prompt":{"source":"templateInput","inputKey":"prompt"}}}],"workbook":{}}`
+	// This is valid JSON but intentionally fails the embedded semantic validator.
+	// The check command must still send it to the server, which owns authority.
+	content := `{"meta":{},"steps":[]}`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
+	var requestedPath string
+	var payload map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPath = r.URL.Path
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode validation request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"valid":true,"primaryOutputType":"markdown","definitionHash":"hash-def","contractBundleHash":"hash-bundle","authorityFingerprint":"hash-bundle"}`))
+	}))
+	defer server.Close()
 
-	opts := &rootOptions{output: "text"}
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "text"}
 	cmd := newTemplateSpecCheckCmd(opts)
 	var out bytes.Buffer
 	cmd.SetOut(&out)
@@ -236,8 +249,30 @@ func TestTemplateSpecCheckCmdCountsInputBindings(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("check command error = %v", err)
 	}
-	if !strings.Contains(out.String(), "bindings\t1") {
-		t.Fatalf("output missing binding count: %s", out.String())
+	if requestedPath != "/loom/v1/templateSpecs:validate" {
+		t.Fatalf("path=%q", requestedPath)
+	}
+	if payload["specVersion"] != "template-spec/v2" {
+		t.Fatalf("specVersion=%#v", payload["specVersion"])
+	}
+	if !strings.Contains(out.String(), "authority_fingerprint\thash-bundle") {
+		t.Fatalf("output missing server authority result: %s", out.String())
+	}
+}
+
+func TestTemplateSpecCheckCmdReturnsServerRejection(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "spec.json")
+	if err := os.WriteFile(path, []byte(`{"meta":{"name":"T"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, `{"error":"subject revision is not enabled"}`, http.StatusBadRequest)
+	}))
+	defer server.Close()
+	cmd := newTemplateSpecCheckCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second})
+	cmd.SetArgs([]string{path})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "subject revision is not enabled") {
+		t.Fatalf("error=%v", err)
 	}
 }
 
@@ -562,14 +597,20 @@ func TestTemplateSpecCreateVersionPostsCanonicalSpecV2(t *testing.T) {
 		t.Fatalf("write spec: %v", err)
 	}
 
-	var requestedPath string
+	var requestedPaths []string
 	var payload map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestedPath = r.URL.Path
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		requestedPaths = append(requestedPaths, r.URL.Path)
+		var current map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&current); err != nil {
 			t.Fatalf("decode request: %v", err)
 		}
 		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/loom/v1/templateSpecs:validate" {
+			_, _ = w.Write([]byte(`{"valid":true,"primaryOutputType":"markdown","definitionHash":"hash_123","contractBundleHash":"hash_bundle","authorityFingerprint":"hash_bundle"}`))
+			return
+		}
+		payload = current
 		_, _ = w.Write([]byte(`{"versionId":"ver_123","versionNumber":2,"definitionHash":"hash_123","createdAt":"1777699967"}`))
 	}))
 	defer server.Close()
@@ -587,8 +628,8 @@ func TestTemplateSpecCreateVersionPostsCanonicalSpecV2(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("create-version command error = %v", err)
 	}
-	if requestedPath != "/loom/v1/users/me/templates/tmpl_123/versions" {
-		t.Fatalf("path=%q want /loom/v1/users/me/templates/tmpl_123/versions", requestedPath)
+	if len(requestedPaths) != 2 || requestedPaths[0] != "/loom/v1/templateSpecs:validate" || requestedPaths[1] != "/loom/v1/users/me/templates/tmpl_123/versions" {
+		t.Fatalf("paths=%v", requestedPaths)
 	}
 	if payload["versionNote"] != "fix judge template" {
 		t.Fatalf("versionNote=%q", payload["versionNote"])
@@ -617,15 +658,67 @@ func TestTemplateSpecCreateVersionPostsCanonicalSpecV2(t *testing.T) {
 	}
 }
 
+func TestTemplateSpecGetVersionExportsHistoricalCanonicalSpec(t *testing.T) {
+	var requestedPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"templateId":"tmpl_123","versionId":"ver_002","versionNumber":2,"specVersion":"template-spec/v2","canonicalSpec":{"meta":{"name":"Historical"},"steps":[]},"definitionHash":"hash-def","createdAtUnix":1710000000}`))
+	}))
+	defer server.Close()
+	target := filepath.Join(t.TempDir(), "historical.json")
+	cmd := newTemplateSpecGetVersionCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"tmpl_123", "ver_002", "--output-file", target})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("get-version command error = %v", err)
+	}
+	if requestedPath != "/loom/v1/users/me/templates/tmpl_123/versions/ver_002" {
+		t.Fatalf("path=%q", requestedPath)
+	}
+	written, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatalf("read exported spec: %v", err)
+	}
+	if !strings.Contains(string(written), `"name": "Historical"`) {
+		t.Fatalf("exported spec=%s", written)
+	}
+	if !strings.Contains(out.String(), `"definitionHash": "hash-def"`) || !strings.Contains(out.String(), `"path":`) {
+		t.Fatalf("output=%s", out.String())
+	}
+}
+
+func TestTemplateSpecGetVersionPrintsCanonicalSpecWithoutOutputFile(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"templateId":"tmpl_123","versionId":"ver_001","versionNumber":1,"specVersion":"template-spec/v1","canonicalSpec":{"Meta":{"Name":"Legacy"}},"definitionHash":"hash-v1"}`))
+	}))
+	defer server.Close()
+	cmd := newTemplateSpecGetVersionCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"tmpl_123", "ver_001"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("get-version command error = %v", err)
+	}
+	if !strings.Contains(out.String(), `"canonicalSpec":`) || !strings.Contains(out.String(), `"Name": "Legacy"`) {
+		t.Fatalf("output=%s", out.String())
+	}
+}
+
 func TestTemplateSpecCreateCommandsRejectV1BeforeRemoteMutation(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "v1.json")
 	content := `{"meta":{"name":"Legacy"},"steps":[{"stepId":"stp_text01","executionUnit":"text-generate"}],"inputSchema":{"fields":[]}}`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
-	requestCount := 0
-	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-		requestCount++
+	var requestedPaths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPaths = append(requestedPaths, r.URL.Path)
+		http.Error(w, `{"error":"TemplateSpec v2 schema validation failed: legacy v1 is read-only"}`, http.StatusBadRequest)
 	}))
 	defer server.Close()
 	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
@@ -647,8 +740,13 @@ func TestTemplateSpecCreateCommandsRejectV1BeforeRemoteMutation(t *testing.T) {
 			}
 		})
 	}
-	if requestCount != 0 {
-		t.Fatalf("remote request count = %d, want 0", requestCount)
+	if len(requestedPaths) != 2 {
+		t.Fatalf("validation request count = %d, want 2", len(requestedPaths))
+	}
+	for _, requestedPath := range requestedPaths {
+		if requestedPath != "/loom/v1/templateSpecs:validate" {
+			t.Fatalf("unexpected mutation path: %s", requestedPath)
+		}
 	}
 }
 
@@ -998,7 +1096,11 @@ func TestTemplateSpecCheckRejectsInvalidStepID(t *testing.T) {
 		t.Fatalf("write spec: %v", err)
 	}
 
-	opts := &rootOptions{output: "json"}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, `{"error":"TemplateSpec v2 schema validation failed: invalid step ID"}`, http.StatusBadRequest)
+	}))
+	defer server.Close()
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
 	cmd := newTemplateSpecCheckCmd(opts)
 	cmd.SetArgs([]string{path})
 	err := cmd.Execute()
@@ -1019,7 +1121,11 @@ func TestTemplateSpecCheckRejectsUnwrappedSampleRows(t *testing.T) {
 		t.Fatalf("write spec: %v", err)
 	}
 
-	opts := &rootOptions{output: "json"}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, `{"error":"TemplateSpec v2 schema validation failed: invalid sample row shape"}`, http.StatusBadRequest)
+	}))
+	defer server.Close()
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
 	cmd := newTemplateSpecCheckCmd(opts)
 	cmd.SetArgs([]string{path})
 	err := cmd.Execute()

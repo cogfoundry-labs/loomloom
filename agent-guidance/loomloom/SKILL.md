@@ -91,7 +91,7 @@ Download/prepare version-specific input → Validate → Precheck
 
 ```text
 Business conversation → TemplatePlan → User confirms plan
-→ Generate TemplateSpec → Check locally
+→ Generate TemplateSpec → Check with the current LoomLoom Server
 → User confirms creation → Create or append a version
 ```
 
@@ -118,9 +118,11 @@ loomloom template-spec models <step-type>
 Use `authoring-context` for text Capability Profiles and eligible models; use
 `contracts` for fixed-model contracts and their exact port IDs. The model list
 is only a discovery entry point. Rewrite the v1 definition as v2
-`templateInputs`, `executionBinding`, and `inputBindings`, then run `check`
-and create a new immutable version only after explicit confirmation. Do not
-promise a lossless or automatic v1-to-v2 conversion.
+`templateInputs`, `executionBinding`, and `inputBindings`. Use
+`loomloom template-spec get-version <template-id> <version-id> -f historical.json`
+to retrieve an owner-visible historical definition when needed. Then run
+`check` against the same Server where the new version will be saved and create
+a new immutable version only after explicit confirmation. Do not promise a lossless or automatic v1-to-v2 conversion.
 
 ### Market buyer
 

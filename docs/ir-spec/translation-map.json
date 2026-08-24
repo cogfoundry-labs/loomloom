@@ -99,8 +99,8 @@
     },
     {
       "path": "get-started/quickstart.md",
-      "source_sha256": "0147cd4b7856422eac1b7fd4ca2d4373634b65e78d4bca1feb517d09aad98d39",
-      "generated_sha256": "d7781a39bdf9279dbe3e6952be5c05b15d5ad3b0718d34162a78eb8a3260fbb9"
+      "source_sha256": "7f265dea7c6516f757e61aa180a29a831009bc46bcd2dfe0ac56f9a8be880e60",
+      "generated_sha256": "942f4986fd57bdc9a696e043f35bc7115f3595ba9d4c9f5dab92c045676e196c"
     },
     {
       "path": "get-started/understand-template-spec.md",
@@ -154,8 +154,8 @@
     },
     {
       "path": "how-to/validate-create-and-version.md",
-      "source_sha256": "bde40c456d0863744c33e9bf565e9ebaafbaa6ea285b3451b1e6c40742d8f3f1",
-      "generated_sha256": "039bea01b0762155d291bd0d87facd2940b2acbc900f8ede95f35681c154fbdf"
+      "source_sha256": "8b8f5122021a6c03fe1d28826f5be7f61a35b168185b5860605412afc7ec805c",
+      "generated_sha256": "389b722282236b7b14aa2bdab34b1736867c5ebedfdc10a5ed59705be90ab922"
     },
     {
       "path": "reference/bindings.md",

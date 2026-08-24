@@ -42,7 +42,7 @@ loomloom template-spec authoring-context --output json
 # 2b. For an exact fixed-model Step, resolve its contract and input ports
 loomloom template-spec contracts <model-id> --output json
 
-# 3. Validate the spec locally
+# 3. Validate against the same Server where the version will be created
 loomloom template-spec check ./my-template.spec.json
 
 # 4. Confirm, then create a private template
@@ -62,6 +62,8 @@ loomloom template-spec submit-workbook <template-id> <version-id> ./input.xlsx -
 Notes:
 
 - TemplateSpec JSON is the source of truth; workbooks are generated artifacts.
+- `template-spec check` is server-authoritative and does not create a version. Creation validates again before freezing current contracts.
+- Use `template-spec get-version <template-id> <version-id> -f historical.json` to export an owner-visible historical authoring spec. Readback checks only that the stored authoring is a JSON object; it neither exports the frozen execution bundle nor applies current TemplateSpec rules. Run `check` separately on a rewritten v2 candidate.
 - `template-spec contracts` is only for an exact-model `fixedModelContract`. Text-generation models intentionally use the shared `capabilityProfile`, so an empty contract list for a `text-generate` model is expected and does not prevent private template authoring.
 - For a text Step, choose the default model, Profile identity, and ports from `template-spec authoring-context`; normal templates omit `profileRevision`. Do not fabricate a `subjectRevisionId`.
 - Review the bundled spec with `loomloom template-spec docs spec` before writing custom specs.

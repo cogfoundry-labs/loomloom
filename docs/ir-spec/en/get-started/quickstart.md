@@ -17,4 +17,4 @@ Create a TemplateVersion with this request envelope:
 }
 ```
 
-Validate locally with `loomloom template-spec check template.json`. A local pass proves structure and stable authoring rules only. Core still resolves Subject/Profile records, validates ports, and freezes the contract at save time.
+Validate with `loomloom template-spec check template.json` against the Server where the version will be created. The command uses the same current Subject/Profile authority resolution as version creation without saving. Creation validates again and freezes the contract.

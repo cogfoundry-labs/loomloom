@@ -50,7 +50,9 @@ When a user describes a reusable workflow:
 8. Draft a TemplatePlan first.
 9. Show the TemplatePlan and wait for confirmation.
 10. Generate TemplateSpec only after plan confirmation.
-11. Run `loomloom template-spec check <spec.json>`.
+11. Run `loomloom template-spec check <spec.json>` against the same selected
+    Server where the version will be created. This is the server-authoritative
+    contract check, not an offline schema check.
 12. Ask for a separate creation confirmation.
 13. Create only after explicit creation confirmation.
 
