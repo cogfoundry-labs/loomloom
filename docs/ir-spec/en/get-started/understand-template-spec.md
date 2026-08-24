@@ -1,7 +1,16 @@
-# Understand TemplateSpec
+# Understand TemplateSpec v2
 
-A TemplateSpec defines how every future input row is processed. `meta` describes the template, `steps` define processing, `inputSchema` defines user data, parameter bindings compose run parameters, and upstream bindings connect uploaded content or step outputs to typed ports.
+A v2 Spec has four top-level sections:
 
-The definition is separate from run input. Fixed requirements belong in step instructions; row-specific values use field keys. Versions are immutable snapshots, so structural changes require a new version and workbook. Local check is not execution: server creation validates current models, and runtime resolves assets and providers.
+```json
+{"meta":{"name":"Example"},"templateInputs":{},"steps":[],"workbook":{}}
+```
 
-Continue with `concepts/inputs.md`, `concepts/bindings-and-data-flow.md`, and `concepts/validation-layers.md`. Use `reference/template-syntax.md` for exact JSON.
+- `meta` describes the template.
+- `templateInputs` defines values and Artifacts supplied through Workbook or API.
+- `steps` defines the DAG, execution authorities, routing, and input sources.
+- `workbook` contains instructions and sample rows; columns come from `templateInputs`.
+
+Each Step input is identified by `<stepId>.<portId>`. Two models may both expose `prompt` without being implicitly merged. They share data only when both bindings explicitly reference the same Template Input.
+
+On version creation, Core resolves authority records and freezes an executable snapshot. Runtime consumes that frozen version instead of reinterpreting the current catalog.

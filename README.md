@@ -20,13 +20,12 @@
 
 ## 🆕 What's new
 
-- 🚀 0.2.1 — First public beta → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.2.1)
-
+- 🚀 0.3.0 — TemplateSpec v2 authoring, live model contracts, server-side validation, and historical version readback
+- 🚀 0.2.1 — First public beta release → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.2.1)
 
 ## 🔥 Hot topics
 
 * How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
-
 
 ## AI work as software
 

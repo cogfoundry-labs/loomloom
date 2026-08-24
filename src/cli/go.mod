@@ -4,6 +4,8 @@ go 1.24.6
 
 require github.com/spf13/cobra v1.10.1
 
+require github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
+
 require github.com/xuri/excelize/v2 v2.10.1
 
 require golang.org/x/term v0.40.0

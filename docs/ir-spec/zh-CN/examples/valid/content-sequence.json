@@ -1,0 +1,32 @@
+{
+  "meta": {"name": "文本与首帧有序输入", "primaryOutputType": "video"},
+  "templateInputs": {
+    "openingText": {
+      "kind": "value", "valueType": "string", "required": true, "blankPolicy": "error",
+      "presentation": {"label": "提示词", "order": 10}
+    },
+    "firstFrame": {
+      "kind": "artifact", "required": true, "blankPolicy": "error",
+      "acceptedMimeTypes": ["image/*"], "minItems": 1, "maxItems": 1,
+      "presentation": {"label": "首帧图片", "order": 20}
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_seq001", "displayName": "生成视频",
+      "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-content-sequence-v2"},
+      "inputBindings": {
+        "content": {
+          "source": "sequence",
+          "sequence": {
+            "items": [
+              {"position": 0, "kind": "text", "source": {"source": "templateInput", "inputKey": "openingText"}},
+              {"position": 1, "kind": "image", "role": "first_frame", "source": {"source": "templateInput", "inputKey": "firstFrame"}}
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "workbook": {"instructions": ["文本和首帧按位置组成一个原生 content 序列。"]}
+}

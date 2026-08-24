@@ -1,11 +1,11 @@
 {
-  "request": "Create a template that lets operators upload a UTF-8 text file and instructs the model to extract facts only from the uploaded content.",
-  "fixture": "docs/ir-spec/en/examples/valid/uploaded-text-reference.json",
+  "request": "Create a template that accepts an uploaded first-frame image and combines it with text in an ordered multimodal input.",
+  "fixture": "docs/ir-spec/en/examples/valid/content-sequence.json",
   "expected": {
-    "fieldKey": "source_text",
-    "valueType": "text_reference",
-    "acceptedMimeType": "text/plain",
-    "inputPort": "reference",
-    "sourceType": "initial_input"
+    "inputKey": "firstFrame",
+    "inputKind": "artifact",
+    "acceptedMimeType": "image/*",
+    "targetPort": "content",
+    "sourceType": "templateInput"
   }
 }

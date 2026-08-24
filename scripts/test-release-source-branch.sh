@@ -24,14 +24,14 @@ if [[ "$stable_branch" != "main" ]]; then
   exit 1
 fi
 
-git -C "$test_root/work" switch -c refactor/phase-i-repo-structure >/dev/null
+git -C "$test_root/work" switch -c release/v1.1.0 >/dev/null
 printf '%s\n' release > "$test_root/work/state"
 git -C "$test_root/work" commit -am release >/dev/null
 git -C "$test_root/work" tag v1.1.0-internal.1
-git -C "$test_root/work" push origin refactor/phase-i-repo-structure v1.1.0-internal.1 >/dev/null
+git -C "$test_root/work" push origin release/v1.1.0 v1.1.0-internal.1 >/dev/null
 
 prerelease_branch="$(cd "$test_root/work" && "$resolver" v1.1.0-internal.1)"
-if [[ "$prerelease_branch" != "refactor/phase-i-repo-structure" ]]; then
+if [[ "$prerelease_branch" != "release/v1.1.0" ]]; then
   echo "prerelease branch resolution failed: $prerelease_branch" >&2
   exit 1
 fi
@@ -85,16 +85,16 @@ if [[ "$historical_prerelease_branch" != "main" ]]; then
 fi
 
 # A prerelease remains repairable from the release branch after that branch advances.
-git -C "$test_root/work" switch refactor/phase-i-repo-structure >/dev/null
+git -C "$test_root/work" switch release/v1.1.0 >/dev/null
 printf '%s\n' release-advanced > "$test_root/work/state"
 git -C "$test_root/work" commit -am release-advanced >/dev/null
-git -C "$test_root/work" push origin refactor/phase-i-repo-structure >/dev/null
+git -C "$test_root/work" push origin release/v1.1.0 >/dev/null
 if (cd "$test_root/work" && "$resolver" v1.1.0-internal.1 >/dev/null 2>&1); then
   echo "historical release prerelease was accepted without --allow-history" >&2
   exit 1
 fi
 historical_release_branch="$(cd "$test_root/work" && "$resolver" v1.1.0-internal.1 --allow-history)"
-if [[ "$historical_release_branch" != "refactor/phase-i-repo-structure" ]]; then
+if [[ "$historical_release_branch" != "release/v1.1.0" ]]; then
   echo "historical release prerelease resolution failed: $historical_release_branch" >&2
   exit 1
 fi

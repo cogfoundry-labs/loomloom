@@ -57,13 +57,10 @@ func TestGeneratedValidTemplateSpecExamplesPassCLIValidation(t *testing.T) {
 	}
 }
 
-func TestGeneratedExpandedCompatibilityExampleFailsNewAuthoringValidation(t *testing.T) {
-	path := filepath.Join(findRepoRoot(t), "docs", "ir-spec", "en", "examples", "invalid", "expanded-execution-fan-out.json")
-
-	_, _, err := loadTemplateSpecFile(path)
-
-	if err == nil || !strings.Contains(err.Error(), templateSpecExpandedAuthoringPolicyCode) {
-		t.Fatalf("loadTemplateSpecFile() error = %v, want %s", err, templateSpecExpandedAuthoringPolicyCode)
+func TestGeneratedLegacyV1ExampleFailsNewAuthoringValidation(t *testing.T) {
+	path := filepath.Join(findRepoRoot(t), "docs", "ir-spec", "en", "examples", "invalid", "legacy-v1-shape.json")
+	if _, _, err := loadTemplateSpecFile(path); err == nil || !strings.Contains(err.Error(), "TemplateSpec v2 schema validation failed") {
+		t.Fatalf("loadTemplateSpecFile() error = %v, want v2 schema rejection", err)
 	}
 }
 
@@ -77,10 +74,16 @@ func requireGeneratedTemplateSpecDocs(t *testing.T) {
 func TestLoadTemplateSpecFile_ValidSpec(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
 	content := `{
-  "Meta": {"Name": "Spec Test", "Description": "desc"},
-  "Steps": [{"StepID": "stp_text01", "DisplayName": "Text", "ExecutionUnit": "text-generate"}],
-  "InputSchema": {"Fields": [{"Key": "prompt", "Label": "Prompt", "ValueType": "string"}]},
-  "FieldBindings": [{"FieldKey": "prompt", "StepID": "stp_text01", "ParamKey": "prompt", "BindMode": "shared"}]
+  "meta": {"name": "Spec Test", "description": "desc"},
+  "templateInputs": {
+    "prompt": {"kind":"value","valueType":"string","required":true,"blankPolicy":"error","presentation":{"label":"Prompt","order":10}}
+  },
+  "steps": [{
+    "stepId":"stp_text01","displayName":"Text",
+    "executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-text-v2"},
+    "inputBindings":{"prompt":{"source":"templateInput","inputKey":"prompt"}}
+  }],
+  "workbook": {}
 }`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
@@ -96,54 +99,36 @@ func TestLoadTemplateSpecFile_ValidSpec(t *testing.T) {
 	if len(raw) == 0 || raw[0] != '{' {
 		t.Fatalf("expected compact JSON bytes, got %q", string(raw))
 	}
-	if !strings.Contains(string(raw), `"meta"`) {
-		t.Fatalf("expected normalized lowerCamel TemplateSpec JSON, got %s", string(raw))
+	if len(spec.TemplateInputs) != 1 || len(spec.Steps[0].InputBindings) != 1 {
+		t.Fatalf("unexpected v2 input/binding counts: %#v", spec)
 	}
-	if strings.Contains(string(raw), `"Meta"`) {
-		t.Fatalf("expected PascalCase keys to be normalized, got %s", string(raw))
-	}
-}
-
-func TestLoadTemplateSpecFile_RejectsExpandedForNewAuthoring(t *testing.T) {
-	tests := []struct {
-		name     string
-		bindings string
-	}{
-		{name: "field binding", bindings: `"fieldBindings":[{"fieldKey":"prompts","stepId":"stp_text01","paramKey":"prompt","bindMode":"expanded"}]`},
-		{name: "param binding", bindings: `"paramBindings":[{"stepId":"stp_text01","paramKey":"prompt","bindMode":"expanded","sources":[{"kind":"field_ref","fieldKey":"prompts"}]}]`},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "spec.json")
-			content := `{
-  "meta":{"name":"Legacy expansion"},
-  "steps":[{"stepId":"stp_text01","executionUnit":"text-generate"}],
-  "inputSchema":{"fields":[{"key":"prompts","label":"Prompts","valueType":"string","multiValue":true,"maxValues":10}]},
-  ` + tt.bindings + `
-}`
-			if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-				t.Fatalf("write spec: %v", err)
-			}
-
-			_, _, err := loadTemplateSpecFile(path)
-
-			if err == nil || !strings.Contains(err.Error(), templateSpecExpandedAuthoringPolicyCode) {
-				t.Fatalf("loadTemplateSpecFile() error = %v, want %s", err, templateSpecExpandedAuthoringPolicyCode)
-			}
-		})
+	if !strings.Contains(string(raw), `"templateInputs"`) {
+		t.Fatalf("expected exact lowerCamel TemplateSpec v2 JSON, got %s", string(raw))
 	}
 }
 
-func TestLoadTemplateSpecFile_AllowsMultiValueInitialInputCollection(t *testing.T) {
+func TestLoadTemplateSpecFile_RejectsV1ForNewAuthoring(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "spec.json")
+	content := `{"meta":{"name":"Legacy"},"steps":[{"stepId":"stp_text01","executionUnit":"text-generate"}],"inputSchema":{"fields":[]}}`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write spec: %v", err)
+	}
+	if _, _, err := loadTemplateSpecFile(path); err == nil || !strings.Contains(err.Error(), "TemplateSpec v2 schema validation failed") {
+		t.Fatalf("loadTemplateSpecFile() error = %v, want v2 schema rejection", err)
+	}
+}
+
+func TestLoadTemplateSpecFile_AllowsArtifactCollection(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
 	content := `{
-  "meta":{"name":"Reference summary"},
-  "steps":[{
-    "stepId":"stp_text01",
-    "executionUnit":"text-generate",
-    "upstreamBindings":[{"inputPort":"reference","sourceType":"initial_input","sourceInputKey":"references"}]
-  }],
-  "inputSchema":{"fields":[{"key":"references","label":"References","valueType":"text_reference","acceptedMimeTypes":["text/*"],"multiValue":true,"maxValues":10}]}
+  "meta":{"name":"Reference images"},
+  "templateInputs":{"references":{"kind":"artifact","required":false,"blankPolicy":"omit","acceptedMimeTypes":["image/*"],"minItems":0,"maxItems":10,"presentation":{"label":"References","order":10}}},
+	"steps":[{
+    "stepId":"stp_image01","displayName":"Edit image",
+    "executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-image-v2"},
+    "inputBindings":{"images":{"source":"templateInput","inputKey":"references"}}
+	}],
+	"workbook":{}
 }`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
@@ -156,12 +141,7 @@ func TestLoadTemplateSpecFile_AllowsMultiValueInitialInputCollection(t *testing.
 
 func TestLoadTemplateSpecFile_MissingName(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
-	content := `{
-  "Meta": {},
-  "Steps": [{"StepID": "stp_text01"}],
-  "InputSchema": {"Fields": []},
-  "FieldBindings": []
-}`
+	content := `{"meta":{},"steps":[{"stepId":"stp_text01","displayName":"Text","executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-text-v2"}}],"workbook":{}}`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
@@ -171,133 +151,62 @@ func TestLoadTemplateSpecFile_MissingName(t *testing.T) {
 	}
 }
 
-func TestLoadTemplateSpecFile_NormalizesPascalCaseUpstreamBindings(t *testing.T) {
+func TestLoadTemplateSpecFile_RejectsPascalCaseInsteadOfNormalizing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "spec.json")
+	content := `{"Meta":{"Name":"Pascal case"},"Steps":[],"Workbook":{}}`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write spec: %v", err)
+	}
+
+	if _, _, err := loadTemplateSpecFile(path); err == nil || !strings.Contains(err.Error(), "TemplateSpec v2 schema validation failed") {
+		t.Fatalf("loadTemplateSpecFile() error = %v, want exact-wire rejection", err)
+	}
+}
+
+func TestLoadTemplateSpecFile_AllowsComposeValue(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
 	content := `{
-  "Meta": {"Name": "Initial Input Binding Spec"},
-  "Steps": [{
-    "StepID": "stp_text01",
-    "DisplayName": "Text",
-    "ExecutionUnit": "text-generate",
-    "UpstreamBindings": [{
-      "InputPort": "prompt",
-      "SourceType": "initial_input",
-      "SourceInputKey": "patent_input"
-    }]
-  }],
-  "InputSchema": {"Fields": [{
-    "Key": "patent_input",
-    "Label": "Patent Input",
-    "ValueType": "text_reference",
-    "AcceptedMIMETypes": ["text/plain"]
-  }]},
-  "FieldBindings": []
+  "meta":{"name":"Compose"},
+  "templateInputs":{"product":{"kind":"value","valueType":"string","required":true,"blankPolicy":"error","presentation":{"label":"Product","order":10}}},
+  "steps":[{"stepId":"stp_text01","displayName":"Text","executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-text-v2"},"inputBindings":{"prompt":{"source":"composeValue","compose":{"kind":"concat","parts":[{"source":"literal","literal":"Describe"},{"source":"templateInput","inputKey":"product"}]}}}}],
+  "workbook":{}
 }`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
 
-	_, raw, err := loadTemplateSpecFile(path)
+	spec, _, err := loadTemplateSpecFile(path)
 	if err != nil {
 		t.Fatalf("loadTemplateSpecFile() error = %v", err)
 	}
-	normalized := string(raw)
-	if !strings.Contains(normalized, `"upstreamBindings"`) {
-		t.Fatalf("normalized spec missing upstreamBindings: %s", normalized)
-	}
-	if strings.Contains(normalized, `"UpstreamBindings"`) {
-		t.Fatalf("normalized spec still has PascalCase UpstreamBindings: %s", normalized)
-	}
-	if !strings.Contains(normalized, `"acceptedMimeTypes"`) {
-		t.Fatalf("normalized spec missing acceptedMimeTypes: %s", normalized)
+	if spec.Steps[0].InputBindings["prompt"].Source != "composeValue" {
+		t.Fatalf("unexpected prompt binding: %#v", spec.Steps[0].InputBindings["prompt"])
 	}
 }
 
-func TestLoadTemplateSpecFile_AllowsParamBindingOnlySpec(t *testing.T) {
+func TestLoadTemplateSpecFile_RejectsStepOutputWithoutDependency(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
 	content := `{
-  "meta": {"name": "Param Binding Spec"},
-  "steps": [{"stepId": "stp_text01", "displayName": "Text", "executionUnit": "text-generate"}],
-  "inputSchema": {"fields": [{"key": "prompt", "label": "Prompt", "valueType": "string"}]},
-  "paramBindings": [{
-    "stepId": "stp_text01",
-    "paramKey": "prompt",
-    "bindMode": "shared",
-    "sources": [{"kind": "field_ref", "fieldKey": "prompt"}]
-  }]
-}`
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatalf("write spec: %v", err)
-	}
-
-	spec, raw, err := loadTemplateSpecFile(path)
-	if err != nil {
-		t.Fatalf("loadTemplateSpecFile() error = %v", err)
-	}
-	if len(spec.FieldBindings) != 0 {
-		t.Fatalf("FieldBindings len = %d, want 0", len(spec.FieldBindings))
-	}
-	if len(spec.ParamBindings) != 1 {
-		t.Fatalf("ParamBindings len = %d, want 1", len(spec.ParamBindings))
-	}
-	if !strings.Contains(string(raw), `"paramBindings"`) {
-		t.Fatalf("normalized spec missing paramBindings: %s", string(raw))
-	}
-}
-
-func TestLoadTemplateSpecFile_RejectsTextReferenceFieldBindingToPrompt(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "spec.json")
-	content := `{
-  "meta": {"name": "Invalid Text Reference Binding"},
-  "steps": [{"stepId": "stp_text01", "displayName": "Text", "executionUnit": "text-generate"}],
-  "inputSchema": {"fields": [{
-    "key": "patent_input",
-    "label": "Patent Input",
-    "valueType": "text_reference",
-    "acceptedMimeTypes": ["text/plain"]
-  }]},
-  "fieldBindings": [{
-    "fieldKey": "patent_input",
-    "stepId": "stp_text01",
-    "paramKey": "prompt",
-    "bindMode": "shared"
-  }]
+  "meta":{"name":"Missing dependency"},
+  "steps":[
+    {"stepId":"stp_source1","displayName":"Source","executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-a"}},
+    {"stepId":"stp_target1","displayName":"Target","executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-b"},"inputBindings":{"image":{"source":"stepOutput","stepId":"stp_source1","portId":"output"}}}
+  ],
+  "workbook":{}
 }`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
 
 	_, _, err := loadTemplateSpecFile(path)
-	if err == nil {
-		t.Fatal("loadTemplateSpecFile() error = nil, want text_reference binding error")
-	}
-	if !strings.Contains(err.Error(), "text_reference") || !strings.Contains(err.Error(), "initial_input") {
+	if err == nil || !strings.Contains(err.Error(), "must appear in dependsOn") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
 func TestLoadTemplateSpecFile_AllowsThreeVisibleFieldParamBinding(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
-	content := `{
-  "meta": {"name": "Three Field Prompt Spec"},
-  "steps": [{"stepId": "stp_text01", "displayName": "Text", "executionUnit": "text-generate"}],
-  "inputSchema": {"fields": [
-    {"key": "body", "label": "Body", "valueType": "string"},
-    {"key": "style", "label": "Style requirements", "valueType": "string"},
-    {"key": "format", "label": "Output format", "valueType": "string"}
-  ]},
-  "paramBindings": [{
-    "stepId": "stp_text01",
-    "paramKey": "prompt",
-    "bindMode": "shared",
-    "separator": "\n\n",
-    "sources": [
-      {"kind": "field_ref", "fieldKey": "body"},
-      {"kind": "field_ref", "fieldKey": "style"},
-      {"kind": "field_ref", "fieldKey": "format"}
-    ]
-  }]
-}`
+	content := `{"meta":{"name":"Three inputs"},"templateInputs":{"body":{"kind":"value","valueType":"string","required":true,"blankPolicy":"error","presentation":{"label":"Body","order":10}},"style":{"kind":"value","valueType":"string","required":true,"blankPolicy":"error","presentation":{"label":"Style","order":20}},"format":{"kind":"value","valueType":"string","required":true,"blankPolicy":"error","presentation":{"label":"Format","order":30}}},"steps":[{"stepId":"stp_text01","displayName":"Text","executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-text-v2"},"inputBindings":{"prompt":{"source":"composeValue","compose":{"kind":"concat","separator":"\n\n","parts":[{"source":"templateInput","inputKey":"body"},{"source":"templateInput","inputKey":"style"},{"source":"templateInput","inputKey":"format"}]}}}}],"workbook":{}}`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
@@ -306,32 +215,32 @@ func TestLoadTemplateSpecFile_AllowsThreeVisibleFieldParamBinding(t *testing.T) 
 	if err != nil {
 		t.Fatalf("loadTemplateSpecFile() error = %v", err)
 	}
-	if len(spec.ParamBindings) != 1 {
-		t.Fatalf("ParamBindings len = %d, want 1", len(spec.ParamBindings))
-	}
-	if !strings.Contains(string(raw), `"fieldKey":"format"`) {
-		t.Fatalf("normalized spec missing third field source: %s", string(raw))
+	if len(spec.TemplateInputs) != 3 || !strings.Contains(string(raw), `"inputKey":"format"`) {
+		t.Fatalf("v2 compose inputs were not preserved: %s", string(raw))
 	}
 }
 
-func TestTemplateSpecCheckCmdCountsParamBindings(t *testing.T) {
+func TestTemplateSpecCheckCmdUsesCurrentServerAuthority(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
-	content := `{
-  "meta": {"name": "Param Binding Spec"},
-  "steps": [{"stepId": "stp_text01", "displayName": "Text", "executionUnit": "text-generate"}],
-  "inputSchema": {"fields": [{"key": "prompt", "label": "Prompt", "valueType": "string"}]},
-  "paramBindings": [{
-    "stepId": "stp_text01",
-    "paramKey": "prompt",
-    "bindMode": "shared",
-    "sources": [{"kind": "field_ref", "fieldKey": "prompt"}]
-  }]
-}`
+	// This is valid JSON but intentionally fails the embedded semantic validator.
+	// The check command must still send it to the server, which owns authority.
+	content := `{"meta":{},"steps":[]}`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
+	var requestedPath string
+	var payload map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPath = r.URL.Path
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode validation request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"valid":true,"primaryOutputType":"markdown","definitionHash":"hash-def","contractBundleHash":"hash-bundle","authorityFingerprint":"hash-bundle"}`))
+	}))
+	defer server.Close()
 
-	opts := &rootOptions{output: "text"}
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "text"}
 	cmd := newTemplateSpecCheckCmd(opts)
 	var out bytes.Buffer
 	cmd.SetOut(&out)
@@ -340,8 +249,30 @@ func TestTemplateSpecCheckCmdCountsParamBindings(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("check command error = %v", err)
 	}
-	if !strings.Contains(out.String(), "bindings\t1") {
-		t.Fatalf("output missing binding count: %s", out.String())
+	if requestedPath != "/loom/v1/templateSpecs:validate" {
+		t.Fatalf("path=%q", requestedPath)
+	}
+	if payload["specVersion"] != "template-spec/v2" {
+		t.Fatalf("specVersion=%#v", payload["specVersion"])
+	}
+	if !strings.Contains(out.String(), "authority_fingerprint\thash-bundle") {
+		t.Fatalf("output missing server authority result: %s", out.String())
+	}
+}
+
+func TestTemplateSpecCheckCmdReturnsServerRejection(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "spec.json")
+	if err := os.WriteFile(path, []byte(`{"meta":{"name":"T"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, `{"error":"subject revision is not enabled"}`, http.StatusBadRequest)
+	}))
+	defer server.Close()
+	cmd := newTemplateSpecCheckCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second})
+	cmd.SetArgs([]string{path})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "subject revision is not enabled") {
+		t.Fatalf("error=%v", err)
 	}
 }
 
@@ -375,7 +306,7 @@ func TestTemplateSpecDocsCmdPrintsConversation(t *testing.T) {
 		t.Fatalf("docs conversation command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"# Understand TemplateSpec", "immutable snapshots", "Local check is not execution"} {
+	for _, want := range []string{"# Understand TemplateSpec v2", "<stepId>.<portId>", "frozen version"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
 		}
@@ -394,7 +325,7 @@ func TestTemplateSpecDocsCmdPrintsAuthoringDiscoveryPath(t *testing.T) {
 		t.Fatalf("docs authoring command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"# TemplateSpec quickstart", "docs spec", "docs inputs", "docs steps", "docs bindings", "docs execution-units", "do not add `branch` or `parallel`", "do not use `expanded`"} {
+	for _, want := range []string{"# Quickstart", "template-spec/v2", "canonicalSpecV2", "subjectRevisionId", "template-spec check"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
 		}
@@ -413,9 +344,36 @@ func TestTemplateSpecDocsCmdPrintsSpec(t *testing.T) {
 		t.Fatalf("docs spec command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"# TemplateSpec syntax", "lowerCamel", "inputSchema", "fieldBindings", "Field quick reference", "valueType`, not `type`", "docs execution-units"} {
+	for _, want := range []string{"# TemplateSpec v2 syntax", "lowerCamel", "templateInputs", "fixedModelContract", "inputBindings", "stepOutput", "authoring-context"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
+		}
+	}
+}
+
+func TestTemplateSpecAuthoringContextCmdUsesCurrentServerContext(t *testing.T) {
+	var requestedPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"profiles":[{"profileId":"text.basic.openai-chat.v1","revision":"2026-08-15.1","canonicalHash":"sha256:profile","capability":"text","endpoint":"/v1/chat/completions","compiler":"gateway-openai-chat-v1","stream":false,"inputPorts":[{"portId":"prompt","valueType":"string","required":true}],"output":{"text":true,"usage":true},"eligibleModels":[{"modelId":"anthropic/claude-sonnet-5","available":true}]}]}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
+	cmd := newTemplateSpecAuthoringContextCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("authoring-context command error = %v", err)
+	}
+	if requestedPath != "/loom/v1/templateAuthoringContext" {
+		t.Fatalf("path=%q want /loom/v1/templateAuthoringContext", requestedPath)
+	}
+	for _, want := range []string{"text.basic.openai-chat.v1", "2026-08-15.1", "anthropic/claude-sonnet-5"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output missing %q: %s", want, out.String())
 		}
 	}
 }
@@ -432,7 +390,7 @@ func TestTemplateSpecDocsCmdPrintsChineseSpec(t *testing.T) {
 		t.Fatalf("Chinese docs command error = %v", err)
 	}
 	output := out.String()
-	for _, want := range []string{"Language: zh-CN", "# TemplateSpec 语法参考", "顶层对象", "字段"} {
+	for _, want := range []string{"Language: zh-CN", "# TemplateSpec v2 语法参考", "顶层对象", "inputBindings"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("Chinese output missing %q: %s", want, output)
 		}
@@ -479,7 +437,7 @@ func TestTemplateSpecDocsCmdSupportsJSON(t *testing.T) {
 		t.Fatalf("owner=%v want loomloom-docs", payload["owner"])
 	}
 	content, _ := payload["content"].(string)
-	for _, want := range []string{"# TemplateSpec examples", "single-text-generation", "uploaded-text-reference", "Capability", "parallel-text-to-image-branches", "no `branch` or `parallel` property", "template-spec check"} {
+	for _, want := range []string{"# TemplateSpec v2 examples", "multi-step-fixed-model", "artifact-merge", "compose-value", "content-sequence", "capability-profile"} {
 		if !strings.Contains(content, want) {
 			t.Fatalf("content missing %q: %s", want, content)
 		}
@@ -506,7 +464,7 @@ func TestTemplateSpecDocsCmdSupportsChineseJSON(t *testing.T) {
 	if revision, _ := payload["languageRevision"].(string); !strings.HasPrefix(revision, "sha256:") {
 		t.Fatalf("languageRevision=%v want sha256 revision", payload["languageRevision"])
 	}
-	if content, _ := payload["content"].(string); !strings.Contains(content, "# TemplateSpec Examples") || !strings.Contains(content, "本目录中的 JSON") {
+	if content, _ := payload["content"].(string); !strings.Contains(content, "# TemplateSpec v2 示例") || !strings.Contains(content, "canonicalSpecV2") {
 		t.Fatalf("unexpected Chinese examples content: %s", content)
 	}
 }
@@ -526,6 +484,7 @@ func TestTemplateSpecModelsCmdListsAvailableModels(t *testing.T) {
 					"provider": "vertex",
 					"executionAdapter": "vertex",
 					"supportedStepTypes": ["text-generate"],
+					"authoringOptions": [{"kind":"capabilityProfile","capabilityProfile":{"profileId":"text.basic.openai-chat.v1","profileRevision":"2026-08-15.1"}}],
 					"available": true,
 					"isDefault": true
 				}
@@ -550,7 +509,7 @@ func TestTemplateSpecModelsCmdListsAvailableModels(t *testing.T) {
 	if requestedPath != "/loom/v1/models" {
 		t.Fatalf("path=%q want /loom/v1/models", requestedPath)
 	}
-	for _, want := range []string{"stepType=text-generate", "onlyAvailable=true"} {
+	for _, want := range []string{"stepType=text-generate"} {
 		if !strings.Contains(requestedQuery, want) {
 			t.Fatalf("query %q missing %q", requestedQuery, want)
 		}
@@ -568,7 +527,7 @@ func TestTemplateSpecModelsCmdCanFilterProvider(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestedQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"models":[]}`))
+		_, _ = w.Write([]byte(`{"models":[{"modelId":"vertex/gemini","authoringOptions":[{"kind":"capabilityProfile"}]},{"modelId":"other/model","authoringOptions":[{"kind":"fixedModelContract"}]}]}`))
 	}))
 	defer server.Close()
 
@@ -585,31 +544,73 @@ func TestTemplateSpecModelsCmdCanFilterProvider(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("models command error = %v", err)
 	}
-	if !strings.Contains(requestedQuery, "provider=vertex") {
-		t.Fatalf("query %q missing provider=vertex", requestedQuery)
+	if strings.Contains(requestedQuery, "provider=") {
+		t.Fatalf("query %q must not send the unsupported provider parameter", requestedQuery)
+	}
+	if !strings.Contains(out.String(), "vertex/gemini") || strings.Contains(out.String(), "other/model") {
+		t.Fatalf("provider filter output is incorrect: %s", out.String())
 	}
 }
 
-func TestTemplateSpecCreateVersionPostsCanonicalSpec(t *testing.T) {
+func TestTemplateSpecContractsCmdListsAuthoringContract(t *testing.T) {
+	var requestedPath string
+	var requestedModelID string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPath = r.URL.Path
+		requestedModelID = r.URL.Query().Get("modelId")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"contracts":[{"subjectRevisionId":"subject-image-v2","subjectHash":"sha256:abc","modelId":"ali/qwen-image-plus","operation":"text-to-image","variant":"base","executionUnitRef":"image-generate","inputPorts":[{"portId":"prompt","kind":"value","valueType":"string","required":true}]}]}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "text"}
+	cmd := newTemplateSpecContractsCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"ali/qwen-image-plus"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("contracts command error = %v", err)
+	}
+	if requestedPath != "/loom/v1/modelContracts" {
+		t.Fatalf("path=%q want /loom/v1/modelContracts", requestedPath)
+	}
+	if requestedModelID != "ali/qwen-image-plus" {
+		t.Fatalf("modelId=%q", requestedModelID)
+	}
+	for _, want := range []string{"text-to-image", "subject-image-v2", "image-generate", "prompt"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output missing %q: %s", want, out.String())
+		}
+	}
+}
+
+func TestTemplateSpecCreateVersionPostsCanonicalSpecV2(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "spec.json")
 	content := `{
-  "Meta": {"Name": "Spec Test", "Description": "desc"},
-  "Steps": [{"StepID": "stp_text01", "DisplayName": "Text", "ExecutionUnit": "text-generate"}],
-  "InputSchema": {"Fields": [{"Key": "prompt", "Label": "Prompt", "ValueType": "string"}]},
-  "FieldBindings": [{"FieldKey": "prompt", "StepID": "stp_text01", "ParamKey": "prompt", "BindMode": "shared"}]
+  "meta":{"name":"Spec Test","description":"desc"},
+  "templateInputs":{"prompt":{"kind":"value","valueType":"string","required":true,"blankPolicy":"error","presentation":{"label":"Prompt","order":10}}},
+  "steps":[{"stepId":"stp_text01","displayName":"Text","executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-text-v2"},"inputBindings":{"prompt":{"source":"templateInput","inputKey":"prompt"}}}],
+  "workbook":{}
 }`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
 
-	var requestedPath string
+	var requestedPaths []string
 	var payload map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestedPath = r.URL.Path
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		requestedPaths = append(requestedPaths, r.URL.Path)
+		var current map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&current); err != nil {
 			t.Fatalf("decode request: %v", err)
 		}
 		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/loom/v1/templateSpecs:validate" {
+			_, _ = w.Write([]byte(`{"valid":true,"primaryOutputType":"markdown","definitionHash":"hash_123","contractBundleHash":"hash_bundle","authorityFingerprint":"hash_bundle"}`))
+			return
+		}
+		payload = current
 		_, _ = w.Write([]byte(`{"versionId":"ver_123","versionNumber":2,"definitionHash":"hash_123","createdAt":"1777699967"}`))
 	}))
 	defer server.Close()
@@ -627,21 +628,27 @@ func TestTemplateSpecCreateVersionPostsCanonicalSpec(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("create-version command error = %v", err)
 	}
-	if requestedPath != "/loom/v1/users/me/templates/tmpl_123/versions" {
-		t.Fatalf("path=%q want /loom/v1/users/me/templates/tmpl_123/versions", requestedPath)
+	if len(requestedPaths) != 2 || requestedPaths[0] != "/loom/v1/templateSpecs:validate" || requestedPaths[1] != "/loom/v1/users/me/templates/tmpl_123/versions" {
+		t.Fatalf("paths=%v", requestedPaths)
 	}
 	if payload["versionNote"] != "fix judge template" {
 		t.Fatalf("versionNote=%q", payload["versionNote"])
 	}
-	spec, ok := payload["canonicalSpec"].(map[string]any)
+	if payload["specVersion"] != "template-spec/v2" {
+		t.Fatalf("specVersion=%#v, want template-spec/v2", payload["specVersion"])
+	}
+	spec, ok := payload["canonicalSpecV2"].(map[string]any)
 	if !ok {
-		t.Fatalf("canonicalSpec missing or wrong type: %#v", payload["canonicalSpec"])
+		t.Fatalf("canonicalSpecV2 missing or wrong type: %#v", payload["canonicalSpecV2"])
 	}
 	if _, ok := spec["meta"]; !ok {
-		t.Fatalf("canonicalSpec missing lowerCamel meta: %#v", spec)
+		t.Fatalf("canonicalSpecV2 missing lowerCamel meta: %#v", spec)
 	}
 	if _, ok := spec["Meta"]; ok {
-		t.Fatalf("canonicalSpec should not contain PascalCase Meta: %#v", spec)
+		t.Fatalf("canonicalSpecV2 should not contain PascalCase Meta: %#v", spec)
+	}
+	if _, exists := payload["canonicalSpec"]; exists {
+		t.Fatalf("retired canonicalSpec must not be sent: %#v", payload)
 	}
 	if !strings.Contains(out.String(), `"templateId": "tmpl_123"`) {
 		t.Fatalf("output missing template id: %s", out.String())
@@ -651,20 +658,67 @@ func TestTemplateSpecCreateVersionPostsCanonicalSpec(t *testing.T) {
 	}
 }
 
-func TestTemplateSpecCreateCommandsRejectExpandedBeforeRemoteMutation(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "expanded.json")
-	content := `{
-  "meta":{"name":"Legacy expansion"},
-  "steps":[{"stepId":"stp_text01","executionUnit":"text-generate"}],
-  "inputSchema":{"fields":[{"key":"prompts","label":"Prompts","valueType":"string","multiValue":true,"maxValues":10}]},
-  "fieldBindings":[{"fieldKey":"prompts","stepId":"stp_text01","paramKey":"prompt","bindMode":"expanded"}]
-}`
+func TestTemplateSpecGetVersionExportsHistoricalCanonicalSpec(t *testing.T) {
+	var requestedPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"templateId":"tmpl_123","versionId":"ver_002","versionNumber":2,"specVersion":"template-spec/v2","canonicalSpec":{"meta":{"name":"Historical"},"steps":[]},"definitionHash":"hash-def","createdAtUnix":1710000000}`))
+	}))
+	defer server.Close()
+	target := filepath.Join(t.TempDir(), "historical.json")
+	cmd := newTemplateSpecGetVersionCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"tmpl_123", "ver_002", "--output-file", target})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("get-version command error = %v", err)
+	}
+	if requestedPath != "/loom/v1/users/me/templates/tmpl_123/versions/ver_002" {
+		t.Fatalf("path=%q", requestedPath)
+	}
+	written, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatalf("read exported spec: %v", err)
+	}
+	if !strings.Contains(string(written), `"name": "Historical"`) {
+		t.Fatalf("exported spec=%s", written)
+	}
+	if !strings.Contains(out.String(), `"definitionHash": "hash-def"`) || !strings.Contains(out.String(), `"path":`) {
+		t.Fatalf("output=%s", out.String())
+	}
+}
+
+func TestTemplateSpecGetVersionPrintsCanonicalSpecWithoutOutputFile(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"templateId":"tmpl_123","versionId":"ver_001","versionNumber":1,"specVersion":"template-spec/v1","canonicalSpec":{"Meta":{"Name":"Legacy"}},"definitionHash":"hash-v1"}`))
+	}))
+	defer server.Close()
+	cmd := newTemplateSpecGetVersionCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"tmpl_123", "ver_001"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("get-version command error = %v", err)
+	}
+	if !strings.Contains(out.String(), `"canonicalSpec":`) || !strings.Contains(out.String(), `"Name": "Legacy"`) {
+		t.Fatalf("output=%s", out.String())
+	}
+}
+
+func TestTemplateSpecCreateCommandsRejectV1BeforeRemoteMutation(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "v1.json")
+	content := `{"meta":{"name":"Legacy"},"steps":[{"stepId":"stp_text01","executionUnit":"text-generate"}],"inputSchema":{"fields":[]}}`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
-	requestCount := 0
-	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-		requestCount++
+	var requestedPaths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPaths = append(requestedPaths, r.URL.Path)
+		http.Error(w, `{"error":"TemplateSpec v2 schema validation failed: legacy v1 is read-only"}`, http.StatusBadRequest)
 	}))
 	defer server.Close()
 	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
@@ -681,23 +735,24 @@ func TestTemplateSpecCreateCommandsRejectExpandedBeforeRemoteMutation(t *testing
 		t.Run(tt.name, func(t *testing.T) {
 			tt.cmd.SetArgs(tt.args)
 			err := tt.cmd.Execute()
-			if err == nil || !strings.Contains(err.Error(), templateSpecExpandedAuthoringPolicyCode) {
-				t.Fatalf("command error = %v, want %s", err, templateSpecExpandedAuthoringPolicyCode)
+			if err == nil || !strings.Contains(err.Error(), "TemplateSpec v2 schema validation failed") {
+				t.Fatalf("command error = %v, want v2 schema rejection", err)
 			}
 		})
 	}
-	if requestCount != 0 {
-		t.Fatalf("remote request count = %d, want 0", requestCount)
+	if len(requestedPaths) != 2 {
+		t.Fatalf("validation request count = %d, want 2", len(requestedPaths))
+	}
+	for _, requestedPath := range requestedPaths {
+		if requestedPath != "/loom/v1/templateSpecs:validate" {
+			t.Fatalf("unexpected mutation path: %s", requestedPath)
+		}
 	}
 }
 
-func TestTemplateSpecModelsCmdCanIncludeUnavailableModels(t *testing.T) {
-	var requestedQuery string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestedQuery = r.URL.RawQuery
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"models":[]}`))
-	}))
+func TestTemplateSpecModelsCmdRejectsIncludeUnavailableModels(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requestCount++ }))
 	defer server.Close()
 
 	opts := &rootOptions{
@@ -710,14 +765,11 @@ func TestTemplateSpecModelsCmdCanIncludeUnavailableModels(t *testing.T) {
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"image-generate", "--include-unavailable"})
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("models command error = %v", err)
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "no longer supported") {
+		t.Fatalf("models command error = %v, want unsupported semantic", err)
 	}
-	if !strings.Contains(requestedQuery, "onlyAvailable=false") {
-		t.Fatalf("query %q missing onlyAvailable=false", requestedQuery)
-	}
-	if !strings.Contains(out.String(), `"models": []`) {
-		t.Fatalf("json output missing models array: %s", out.String())
+	if requestCount != 0 {
+		t.Fatalf("request count=%d, want 0", requestCount)
 	}
 }
 
@@ -816,6 +868,8 @@ func TestTemplateSpecPrecheckUsesProductAPI(t *testing.T) {
 			"balanceCheck":{
 				"currency":"CNY",
 				"availableBalance":999262000,
+				"availability":"settled_only",
+				"finalAdmission":"gateway",
 				"isSufficient":true
 			}
 		}`))
@@ -861,7 +915,7 @@ func TestTemplateSpecPrecheckJSONKeepsEstimatedTotalCostT(t *testing.T) {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"estimatedTotalCostT":119350,"balanceCheck":{"currency":"CNY","availableBalance":999262000,"isSufficient":true}}`))
+		_, _ = w.Write([]byte(`{"estimatedTotalCostT":119350,"balanceCheck":{"currency":"CNY","availableBalance":999262000,"availability":"settled_only","finalAdmission":"gateway","isSufficient":true}}`))
 	}))
 	defer server.Close()
 
@@ -1035,18 +1089,22 @@ func TestTemplateSpecCheckRejectsInvalidStepID(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "invalid-step-id.json")
 	content := `{
 		"meta":{"name":"Invalid"},
-		"steps":[{"stepId":"stp_text","executionUnit":"text-generate"}],
-		"inputSchema":{"fields":[{"key":"prompt","label":"Prompt","valueType":"string"}]}
+		"steps":[{"stepId":"stp_text","displayName":"Text","executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-text-v2"}}],
+		"workbook":{}
 	}`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
 
-	opts := &rootOptions{output: "json"}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, `{"error":"TemplateSpec v2 schema validation failed: invalid step ID"}`, http.StatusBadRequest)
+	}))
+	defer server.Close()
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
 	cmd := newTemplateSpecCheckCmd(opts)
 	cmd.SetArgs([]string{path})
 	err := cmd.Execute()
-	if err == nil || !strings.Contains(err.Error(), "must match stp_<6-10 base36 chars>") {
+	if err == nil || !strings.Contains(err.Error(), "TemplateSpec v2 schema validation failed") {
 		t.Fatalf("error=%v want invalid step ID", err)
 	}
 }
@@ -1055,21 +1113,23 @@ func TestTemplateSpecCheckRejectsUnwrappedSampleRows(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "invalid-sample-rows.json")
 	content := `{
 		"meta":{"name":"Invalid"},
-		"steps":[{"stepId":"stp_text01","executionUnit":"text-generate"}],
-		"inputSchema":{
-			"fields":[{"key":"prompt","label":"Prompt","valueType":"string"}],
-			"sampleRows":[{"prompt":"hello"}]
-		}
+		"templateInputs":{"prompt":{"kind":"value","valueType":"string","required":true,"blankPolicy":"error","presentation":{"label":"Prompt","order":10}}},
+		"steps":[{"stepId":"stp_text01","displayName":"Text","executionBinding":{"kind":"fixedModelContract","subjectRevisionId":"subject-text-v2"}}],
+		"workbook":{"sampleRows":[{"prompt":"hello"}]}
 	}`
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write spec: %v", err)
 	}
 
-	opts := &rootOptions{output: "json"}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, `{"error":"TemplateSpec v2 schema validation failed: invalid sample row shape"}`, http.StatusBadRequest)
+	}))
+	defer server.Close()
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
 	cmd := newTemplateSpecCheckCmd(opts)
 	cmd.SetArgs([]string{path})
 	err := cmd.Execute()
-	if err == nil || !strings.Contains(err.Error(), "must wrap field values in a values object") {
+	if err == nil || !strings.Contains(err.Error(), "TemplateSpec v2 schema validation failed") {
 		t.Fatalf("error=%v want invalid sample row shape", err)
 	}
 }

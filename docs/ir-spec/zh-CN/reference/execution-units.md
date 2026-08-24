@@ -1,35 +1,11 @@
-# Execution Units Reference
+# 执行合同与端口
 
-本表直接对应 Core `KnownExecutionUnits()`。模型 ID 不在本表中，因为它们由环境目录动态提供。
+TemplateSpec v2 不再把公共 Execution Unit 清单作为作者协议。作者引用固定模型 Subject 或 Capability Profile，Core 从权威记录解析：
 
-## text-generate
+- 输入和输出稳定 portId；
+- 标量类型与约束；
+- Artifact MIME 和 cardinality；
+- Provider 原生 JSON 映射；
+- 适配器与执行面版本。
 
-| Port | Required | Multiple | Accepts | Merge |
-| --- | --- | --- | --- | --- |
-| `prompt` | 是 | 是 | `text/*` | concat_text |
-| `reference` | 否 | 是 | `text/*`, `image/*` | ordered_artifacts |
-
-- Output：`output` / `text/plain`
-- Allowed run parameters：`prompt`
-
-## image-generate
-
-| Port | Required | Multiple | Accepts | Merge |
-| --- | --- | --- | --- | --- |
-| `prompt` | 是 | 是 | `text/*` | concat_text |
-| `reference` | 否 | 是 | `image/*` | ordered_artifacts |
-
-- Output：`output` / `image/png`
-- Allowed run parameters：`prompt`, `aspect_ratio`, `size`
-
-## video-generate
-
-| Port | Required | Multiple | Accepts | Merge |
-| --- | --- | --- | --- | --- |
-| `prompt` | 是 | 否 | `text/*` | concat_text |
-| `image` | 否 | 否 | `image/*` | ordered_artifacts |
-
-- Output：`output` / `video/mp4`
-- Allowed run parameters：`prompt`, `negative_prompt`, `aspect_ratio`, `duration_seconds`, `sample_count`, `generate_audio`, `resolution`, `seed`
-
-`test-fail` 是受环境开关控制的内部测试 unit，不属于公开 TemplateSpec 能力。
+CLI 文档不能静态列出目标环境所有合同。创建 Spec 前应查询当前环境目录；保存时 Core 会再次解析并冻结，目录漂移或合同不匹配会失败关闭。

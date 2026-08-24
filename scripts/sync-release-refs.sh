@@ -95,13 +95,12 @@ if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(internal|beta|rc)\.[0-9]+)?$ ]]; th
   exit 1
 fi
 if [[ -n "$BRANCH" ]]; then
-  case "$BRANCH" in
-    main|refactor/phase-i-repo-structure) ;;
-    *)
-      echo "unsupported release branch: $BRANCH" >&2
-      exit 1
-      ;;
-  esac
+  if [[ "$BRANCH" != "main" &&
+        "$BRANCH" != "refactor/phase-i-repo-structure" &&
+        ! "$BRANCH" =~ ^release/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "unsupported release branch: $BRANCH" >&2
+    exit 1
+  fi
 fi
 if [[ "$ALLOW_HISTORY" == "true" && -z "$BRANCH" ]]; then
   echo "--allow-history requires --branch" >&2

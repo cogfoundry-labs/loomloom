@@ -1,0 +1,6 @@
+{
+  "meta": {"name": "Preset marketing image", "primaryOutputType": "image"},
+  "templateInputs": {"productName": {"kind": "value", "valueType": "string", "required": true, "blankPolicy": "error", "constraints": {"minLength": 1, "maxLength": 80}, "presentation": {"label": "Product name", "order": 10}}},
+  "steps": [{"stepId": "stp_cmp001", "displayName": "Generate marketing image", "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-image-generation-v2"}, "inputBindings": {"prompt": {"source": "composeValue", "compose": {"kind": "concat", "separator": " ", "parts": [{"source": "literal", "literal": "Create a minimal premium product image for:"}, {"source": "templateInput", "inputKey": "productName"}]}}}}],
+  "workbook": {"sampleRows": [{"values": {"productName": "Clear glass perfume bottle"}}]}
+}

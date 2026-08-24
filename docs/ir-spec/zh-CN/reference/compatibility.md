@@ -1,21 +1,14 @@
-# Compatibility Reference
+# 协议兼容边界
 
-## JSON 字段
+<a id="ref-compatibility-write-version"></a>
 
-公开 TemplateSpec 使用 lowerCamel。CLI 可以对部分旧 PascalCase 输入做归一化，但新文档和新示例不得依赖兼容转换。
+## TS-VERSION-002：新写入只接受 v2
 
-## 版本快照
+- 新建模板版本和更新版本只接受 `template-spec/v2`。
+- 已存在的 v1 TemplateVersion 继续按自己的冻结快照读取和运行。
+- v1 不再作为新写入格式；迁移器读取 v1 后创建新的 v2 TemplateVersion，不原地修改历史版本。
+- 当前阶段不在运行时长期维护 v1/v2 双写和大量兼容分支。
 
-Template Version 是不可变执行快照。新字段、新 Binding 或新模型配置只进入新版本，不修改历史版本。
+生产迁移按测试环境演练、预发布全量、生产分批执行。各环境都通过正式服务创建自己的 v2 版本，不能跨环境复制生成后的数据库记录。
 
-## Workbook
-
-工作簿是版本派生产物。字段 key、顺序、枚举、提示或隐藏规则变化后，旧工作簿不保证兼容。
-
-## CLI docs topic
-
-CLI 可能保留 `spec`、`authoring`、`examples`、`conversation` 等历史 topic 名作为兼容入口；它们可以指向新手册页面，但不构成多份规范源。
-
-## Legacy external APIs
-
-新 CLI/Web-facing LoomLoom API 使用 `/loom/v1`。`/batch/v1` 是 legacy Core 路径，不应成为新 TemplateSpec 手册或客户端契约。
+未来稳定阶段可承诺有限的大版本兼容窗口；该长期策略需要跨团队单独评审，不反向扩大本次 v2 的实现范围。

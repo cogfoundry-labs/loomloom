@@ -9,8 +9,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/cogfoundry-labs/loomloom/src/cli/internal/client"
@@ -31,6 +29,26 @@ type saveTemplateVersionResponse struct {
 	VersionNumber  flexInt64 `json:"versionNumber"`
 	DefinitionHash string    `json:"definitionHash"`
 	CreatedAt      flexInt64 `json:"createdAt"`
+}
+
+type validateTemplateSpecResponse struct {
+	Valid                bool   `json:"valid"`
+	PrimaryOutputType    string `json:"primaryOutputType"`
+	DefinitionHash       string `json:"definitionHash"`
+	ContractBundleHash   string `json:"contractBundleHash"`
+	AuthorityFingerprint string `json:"authorityFingerprint"`
+}
+
+type templateVersionSpecResponse struct {
+	TemplateID     string          `json:"templateId"`
+	VersionID      string          `json:"versionId"`
+	VersionNumber  flexInt64       `json:"versionNumber"`
+	SpecVersion    string          `json:"specVersion"`
+	CanonicalSpec  json.RawMessage `json:"canonicalSpec"`
+	DefinitionHash string          `json:"definitionHash"`
+	VersionNote    string          `json:"versionNote,omitempty"`
+	CreatedBy      flexInt64       `json:"createdBy,omitempty"`
+	CreatedAtUnix  flexInt64       `json:"createdAtUnix"`
 }
 
 type submitUserTemplateWorkbookResponse struct {
@@ -68,62 +86,85 @@ type listModelsResponse struct {
 }
 
 type modelSummary struct {
-	ModelID            string   `json:"modelId"`
-	DisplayName        string   `json:"displayName"`
-	Provider           string   `json:"provider"`
-	ExecutionAdapter   string   `json:"executionAdapter"`
-	SupportedStepTypes []string `json:"supportedStepTypes"`
-	SupportedAPIs      []string `json:"supportedApis"`
-	Available          bool     `json:"available"`
-	AvailabilityReason string   `json:"availabilityReason"`
-	IsDefault          bool     `json:"isDefault"`
+	ModelID            string                 `json:"modelId"`
+	DisplayName        string                 `json:"displayName"`
+	Provider           string                 `json:"provider"`
+	ExecutionAdapter   string                 `json:"executionAdapter"`
+	SupportedStepTypes []string               `json:"supportedStepTypes"`
+	SupportedAPIs      []string               `json:"supportedApis"`
+	Available          bool                   `json:"available"`
+	AvailabilityReason string                 `json:"availabilityReason"`
+	IsDefault          bool                   `json:"isDefault"`
+	AuthoringOptions   []modelAuthoringOption `json:"authoringOptions"`
 }
 
-type templateSpecMeta struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+type modelAuthoringOption struct {
+	Kind               string                        `json:"kind"`
+	FixedModelContract map[string]any                `json:"fixedModelContract,omitempty"`
+	CapabilityProfile  *modelCapabilityProfileOption `json:"capabilityProfile,omitempty"`
 }
 
-type templateSpecEnvelope struct {
-	Meta          templateSpecMeta         `json:"meta"`
-	Steps         []templateSpecStep       `json:"steps"`
-	InputSchema   *templateSpecInputSchema `json:"inputSchema"`
-	FieldBindings []templateSpecBinding    `json:"fieldBindings"`
-	ParamBindings []templateSpecBinding    `json:"paramBindings"`
+type modelCapabilityProfileOption struct {
+	ProfileID       string `json:"profileId"`
+	ProfileRevision string `json:"profileRevision"`
+	ProfileHash     string `json:"profileHash"`
+	IsDefault       bool   `json:"isDefault"`
 }
 
-type templateSpecStep struct {
-	StepID           string                        `json:"stepId"`
-	ExecutionUnit    string                        `json:"executionUnit"`
-	UpstreamBindings []templateSpecUpstreamBinding `json:"upstreamBindings"`
+type templateAuthoringContractsResponse struct {
+	Contracts []templateAuthoringContract `json:"contracts"`
 }
 
-type templateSpecInputSchema struct {
-	Fields     []templateSpecInputField `json:"fields"`
-	SampleRows []templateSpecSampleRow  `json:"sampleRows"`
+type templateAuthoringContextResponse struct {
+	Profiles []templateAuthoringProfile `json:"profiles"`
 }
 
-type templateSpecSampleRow struct {
-	Values map[string]any `json:"values"`
+type templateAuthoringProfile struct {
+	ProfileID      string                         `json:"profileId"`
+	Revision       string                         `json:"revision"`
+	CanonicalHash  string                         `json:"canonicalHash"`
+	Capability     string                         `json:"capability"`
+	Endpoint       string                         `json:"endpoint"`
+	Compiler       string                         `json:"compiler"`
+	Stream         bool                           `json:"stream"`
+	InputPorts     []templateAuthoringProfilePort `json:"inputPorts"`
+	EligibleModels []modelSummary                 `json:"eligibleModels"`
 }
 
-type templateSpecInputField struct {
-	Key        string `json:"key"`
-	Label      string `json:"label"`
-	ValueType  string `json:"valueType"`
-	MultiValue bool   `json:"multiValue"`
+type templateAuthoringProfilePort struct {
+	PortID    string `json:"portId"`
+	ValueType string `json:"valueType"`
+	Required  bool   `json:"required"`
 }
 
-type templateSpecBinding struct {
-	FieldKey string `json:"fieldKey"`
-	StepID   string `json:"stepId"`
-	ParamKey string `json:"paramKey"`
-	BindMode string `json:"bindMode"`
+type templateAuthoringContract struct {
+	SubjectRevisionID string                        `json:"subjectRevisionId"`
+	SubjectHash       string                        `json:"subjectHash"`
+	ModelID           string                        `json:"modelId"`
+	Operation         string                        `json:"operation"`
+	Variant           string                        `json:"variant"`
+	ExecutionUnitRef  string                        `json:"executionUnitRef"`
+	InputPorts        []templateAuthoringInputPort  `json:"inputPorts"`
+	OutputPorts       []templateAuthoringOutputPort `json:"outputPorts"`
 }
 
-type templateSpecUpstreamBinding struct {
-	SourceType     string `json:"sourceType"`
-	SourceInputKey string `json:"sourceInputKey"`
+type templateAuthoringInputPort struct {
+	PortID            string          `json:"portId"`
+	Kind              string          `json:"kind"`
+	ValueType         string          `json:"valueType,omitempty"`
+	Required          bool            `json:"required"`
+	Constraints       json.RawMessage `json:"constraints,omitempty"`
+	MinItems          int32           `json:"minItems,omitempty"`
+	MaxItems          int32           `json:"maxItems,omitempty"`
+	AcceptedMIMETypes []string        `json:"acceptedMimeTypes,omitempty"`
+	Sequence          json.RawMessage `json:"sequence,omitempty"`
+	Label             string          `json:"label,omitempty"`
+	Description       string          `json:"description,omitempty"`
+}
+
+type templateAuthoringOutputPort struct {
+	PortID string `json:"portId"`
+	Type   string `json:"type"`
 }
 
 func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
@@ -135,9 +176,12 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecCheckCmd(opts),
 		newTemplateSpecDocsCmd(opts),
 		newTemplateSpecModelsCmd(opts),
+		newTemplateSpecAuthoringContextCmd(opts),
+		newTemplateSpecContractsCmd(opts),
 		newTemplateSpecListCmd(opts),
 		newTemplateSpecGetCmd(opts),
 		newTemplateSpecVersionsCmd(opts),
+		newTemplateSpecGetVersionCmd(opts),
 		newTemplateSpecCreateCmd(opts),
 		newTemplateSpecCreateVersionCmd(opts),
 		newTemplateSpecDownloadWorkbookCmd(opts),
@@ -148,6 +192,94 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecRunCmd(opts),
 	)
 	return cmd
+}
+
+func newTemplateSpecAuthoringContextCmd(opts *rootOptions) *cobra.Command {
+	return &cobra.Command{
+		Use:   "authoring-context",
+		Short: "Show the current server-side Profile contracts and eligible models for TemplateSpec v2",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			var resp templateAuthoringContextResponse
+			if err := httpClient.GetJSON(ctx, "/templateAuthoringContext", &resp); err != nil {
+				return err
+			}
+			if opts.output == "json" {
+				enc := json.NewEncoder(cmd.OutOrStdout())
+				enc.SetIndent("", "  ")
+				return enc.Encode(resp)
+			}
+			if len(resp.Profiles) == 0 {
+				_, err = fmt.Fprintln(cmd.OutOrStdout(), "no authoring profiles")
+				return err
+			}
+			tw := newTabWriter(cmd.OutOrStdout())
+			if _, err := fmt.Fprintln(tw, "profile_id\trevision\tcapability\tendpoint\teligible_models"); err != nil {
+				return err
+			}
+			for _, profile := range resp.Profiles {
+				modelIDs := make([]string, 0, len(profile.EligibleModels))
+				for _, candidate := range profile.EligibleModels {
+					modelIDs = append(modelIDs, candidate.ModelID)
+				}
+				if _, err := fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", profile.ProfileID, profile.Revision, profile.Capability, profile.Endpoint, strings.Join(modelIDs, ",")); err != nil {
+					return err
+				}
+			}
+			return tw.Flush()
+		},
+	}
+}
+
+func newTemplateSpecContractsCmd(opts *rootOptions) *cobra.Command {
+	return &cobra.Command{
+		Use:   "contracts <model-id>",
+		Short: "List enabled model contracts that can be referenced by TemplateSpec v2",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			modelID := strings.TrimSpace(args[0])
+			if modelID == "" {
+				return errors.New("model-id is required")
+			}
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			query := url.Values{}
+			query.Set("modelId", modelID)
+			var resp templateAuthoringContractsResponse
+			if err := httpClient.GetJSONWithQuery(ctx, "/modelContracts", query, &resp); err != nil {
+				return err
+			}
+			if opts.output == "json" {
+				enc := json.NewEncoder(cmd.OutOrStdout())
+				enc.SetIndent("", "  ")
+				return enc.Encode(resp)
+			}
+			if len(resp.Contracts) == 0 {
+				_, err = fmt.Fprintln(cmd.OutOrStdout(), "no enabled authoring contracts")
+				return err
+			}
+			tw := newTabWriter(cmd.OutOrStdout())
+			_, _ = fmt.Fprintln(tw, "operation\tvariant\tsubject_revision_id\texecution_unit\tinput_ports")
+			for _, contract := range resp.Contracts {
+				ports := make([]string, 0, len(contract.InputPorts))
+				for _, port := range contract.InputPorts {
+					ports = append(ports, port.PortID)
+				}
+				_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", contract.Operation, contract.Variant, contract.SubjectRevisionID, contract.ExecutionUnitRef, strings.Join(ports, ","))
+			}
+			return tw.Flush()
+		},
+	}
 }
 
 func newTemplateSpecDocsCmd(opts *rootOptions) *cobra.Command {
@@ -301,20 +433,22 @@ func templateSpecLanguageRevision(manifest templatespecdocs.Manifest, language s
 func newTemplateSpecCheckCmd(opts *rootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "check <spec-json>",
-		Short: "Check that a TemplateSpec JSON file is parseable and has the required top-level shape",
+		Short: "Validate a TemplateSpec v2 file against the current server authority",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			spec, raw, err := loadTemplateSpecFile(args[0])
+			raw, err := loadTemplateSpecTransportFile(args[0])
 			if err != nil {
 				return err
 			}
-			result := map[string]any{
-				"valid":       true,
-				"name":        spec.Meta.Name,
-				"description": spec.Meta.Description,
-				"steps":       len(spec.Steps),
-				"bindings":    len(spec.FieldBindings) + len(spec.ParamBindings),
-				"bytes":       len(raw),
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			result, err := validateTemplateSpecVersion(ctx, httpClient, raw)
+			if err != nil {
+				return err
 			}
 			if opts.output == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
@@ -323,11 +457,9 @@ func newTemplateSpecCheckCmd(opts *rootOptions) *cobra.Command {
 			}
 			_, err = fmt.Fprintf(
 				cmd.OutOrStdout(),
-				"valid\nname\t%s\nsteps\t%d\nbindings\t%d\nbytes\t%d\n",
-				spec.Meta.Name,
-				len(spec.Steps),
-				len(spec.FieldBindings)+len(spec.ParamBindings),
-				len(raw),
+				"valid\t%t\nprimary_output_type\t%s\ndefinition_hash\t%s\ncontract_bundle_hash\t%s\nauthority_fingerprint\t%s\n",
+				result.Valid, result.PrimaryOutputType, result.DefinitionHash,
+				result.ContractBundleHash, result.AuthorityFingerprint,
 			)
 			return err
 		},
@@ -340,7 +472,7 @@ func newTemplateSpecModelsCmd(opts *rootOptions) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "models <step-type>",
-		Short: "List executable models available for a TemplateSpec step type",
+		Short: "List authority-backed models usable for a TemplateSpec step type",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			stepType := strings.TrimSpace(args[0])
@@ -356,15 +488,15 @@ func newTemplateSpecModelsCmd(opts *rootOptions) *cobra.Command {
 
 			query := url.Values{}
 			query.Set("stepType", stepType)
-			query.Set("onlyAvailable", fmt.Sprintf("%t", !includeUnavailable))
-			if strings.TrimSpace(provider) != "" {
-				query.Set("provider", strings.TrimSpace(provider))
+			if includeUnavailable {
+				return errors.New("--include-unavailable is no longer supported: LoomLoom lists only models with an authoring contract")
 			}
 
 			var resp listModelsResponse
 			if err := httpClient.GetJSONWithQuery(ctx, "/models", query, &resp); err != nil {
 				return err
 			}
+			resp.Models = filterModelsByProvider(resp.Models, provider)
 			if opts.output == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
@@ -373,8 +505,8 @@ func newTemplateSpecModelsCmd(opts *rootOptions) *cobra.Command {
 			return printTemplateSpecModels(cmd.OutOrStdout(), resp.Models)
 		},
 	}
-	cmd.Flags().StringVar(&provider, "provider", "", "Optional model provider filter")
-	cmd.Flags().BoolVar(&includeUnavailable, "include-unavailable", false, "Include known but currently unavailable models")
+	cmd.Flags().StringVar(&provider, "provider", "", "Optional client-side model provider filter")
+	cmd.Flags().BoolVar(&includeUnavailable, "include-unavailable", false, "Deprecated: LoomLoom no longer exposes unavailable catalog models")
 	return cmd
 }
 
@@ -388,15 +520,24 @@ func newTemplateSpecCreateCmd(opts *rootOptions) *cobra.Command {
 		Short: "Create a private user template and save the TemplateSpec JSON as version 1",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			spec, raw, err := loadTemplateSpecFile(args[0])
+			raw, err := loadTemplateSpecTransportFile(args[0])
 			if err != nil {
 				return err
 			}
-			effectiveName := firstNonEmpty(name, spec.Meta.Name)
+			var authoringMeta struct {
+				Meta struct {
+					Name        string `json:"name"`
+					Description string `json:"description"`
+				} `json:"meta"`
+			}
+			if err := json.Unmarshal(raw, &authoringMeta); err != nil {
+				return fmt.Errorf("decode TemplateSpec metadata: %w", err)
+			}
+			effectiveName := firstNonEmpty(name, authoringMeta.Meta.Name)
 			if effectiveName == "" {
 				return errors.New("template name is required; set meta.name or pass --name")
 			}
-			effectiveDescription := firstNonEmpty(description, spec.Meta.Description)
+			effectiveDescription := firstNonEmpty(description, authoringMeta.Meta.Description)
 
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
@@ -404,6 +545,9 @@ func newTemplateSpecCreateCmd(opts *rootOptions) *cobra.Command {
 			}
 			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
 			defer cancel()
+			if _, err := validateTemplateSpecVersion(ctx, httpClient, raw); err != nil {
+				return fmt.Errorf("validate template spec: %w", err)
+			}
 
 			var createResp createUserTemplateResponse
 			if err := httpClient.PostJSON(ctx, "/users/me/templates", map[string]any{
@@ -462,7 +606,7 @@ func newTemplateSpecCreateVersionCmd(opts *rootOptions) *cobra.Command {
 			if templateID == "" {
 				return errors.New("template ID is required")
 			}
-			_, raw, err := loadTemplateSpecFile(args[1])
+			raw, err := loadTemplateSpecTransportFile(args[1])
 			if err != nil {
 				return err
 			}
@@ -473,6 +617,9 @@ func newTemplateSpecCreateVersionCmd(opts *rootOptions) *cobra.Command {
 			}
 			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
 			defer cancel()
+			if _, err := validateTemplateSpecVersion(ctx, httpClient, raw); err != nil {
+				return fmt.Errorf("validate template spec: %w", err)
+			}
 
 			versionResp, err := saveTemplateSpecVersion(ctx, httpClient, templateID, raw, versionNote)
 			if err != nil {
@@ -508,10 +655,25 @@ func newTemplateSpecCreateVersionCmd(opts *rootOptions) *cobra.Command {
 func saveTemplateSpecVersion(ctx context.Context, httpClient *client.Client, templateID string, rawSpec []byte, versionNote string) (saveTemplateVersionResponse, error) {
 	var versionResp saveTemplateVersionResponse
 	err := httpClient.PostJSON(ctx, "/users/me/templates/"+templateID+"/versions", map[string]any{
-		"versionNote":   strings.TrimSpace(versionNote),
-		"canonicalSpec": json.RawMessage(rawSpec),
+		"versionNote":     strings.TrimSpace(versionNote),
+		"specVersion":     "template-spec/v2",
+		"canonicalSpecV2": json.RawMessage(rawSpec),
 	}, &versionResp)
 	return versionResp, err
+}
+
+func validateTemplateSpecVersion(ctx context.Context, httpClient *client.Client, rawSpec []byte) (validateTemplateSpecResponse, error) {
+	var resp validateTemplateSpecResponse
+	err := httpClient.PostProductJSON(ctx, "/templateSpecs:validate", map[string]any{
+		"specVersion": "template-spec/v2", "canonicalSpecV2": json.RawMessage(rawSpec),
+	}, &resp)
+	if err != nil {
+		return validateTemplateSpecResponse{}, err
+	}
+	if !resp.Valid {
+		return validateTemplateSpecResponse{}, errors.New("server returned valid=false without an error")
+	}
+	return resp, nil
 }
 
 func newTemplateSpecDownloadWorkbookCmd(opts *rootOptions) *cobra.Command {
@@ -704,224 +866,6 @@ func newTemplateSpecSubmitWorkbookCmd(opts *rootOptions) *cobra.Command {
 	return cmd
 }
 
-func loadTemplateSpecFile(path string) (templateSpecEnvelope, []byte, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return templateSpecEnvelope{}, nil, fmt.Errorf("read %s: %w", path, err)
-	}
-	trimmed := bytes.TrimSpace(data)
-	if len(trimmed) == 0 {
-		return templateSpecEnvelope{}, nil, errors.New("template spec file is empty")
-	}
-	normalized, err := normalizeTemplateSpecJSON(trimmed)
-	if err != nil {
-		return templateSpecEnvelope{}, nil, err
-	}
-	var spec templateSpecEnvelope
-	if err := json.Unmarshal(normalized, &spec); err != nil {
-		return templateSpecEnvelope{}, nil, fmt.Errorf("parse TemplateSpec JSON: %w", err)
-	}
-	if strings.TrimSpace(spec.Meta.Name) == "" {
-		return templateSpecEnvelope{}, nil, errors.New("TemplateSpec meta.name is required")
-	}
-	if len(spec.Steps) == 0 {
-		return templateSpecEnvelope{}, nil, errors.New("TemplateSpec steps must not be empty")
-	}
-	if spec.InputSchema == nil {
-		return templateSpecEnvelope{}, nil, errors.New("TemplateSpec inputSchema is required")
-	}
-	if err := validateTemplateSpecStructure(spec); err != nil {
-		return templateSpecEnvelope{}, nil, err
-	}
-	if err := validateTemplateSpecAssetBindingContract(spec); err != nil {
-		return templateSpecEnvelope{}, nil, err
-	}
-	if err := validateTemplateSpecAuthoringPolicy(spec); err != nil {
-		return templateSpecEnvelope{}, nil, err
-	}
-	var compact bytes.Buffer
-	if err := json.Compact(&compact, normalized); err != nil {
-		return templateSpecEnvelope{}, nil, fmt.Errorf("compact TemplateSpec JSON: %w", err)
-	}
-	return spec, compact.Bytes(), nil
-}
-
-const templateSpecExpandedAuthoringPolicyCode = "TS-TOPOLOGY-001"
-
-func validateTemplateSpecAuthoringPolicy(spec templateSpecEnvelope) error {
-	for i, binding := range spec.FieldBindings {
-		if strings.EqualFold(strings.TrimSpace(binding.BindMode), "expanded") {
-			return templateSpecExpandedAuthoringPolicyError(fmt.Sprintf("fieldBindings[%d]", i))
-		}
-	}
-	for i, binding := range spec.ParamBindings {
-		if strings.EqualFold(strings.TrimSpace(binding.BindMode), "expanded") {
-			return templateSpecExpandedAuthoringPolicyError(fmt.Sprintf("paramBindings[%d]", i))
-		}
-	}
-	return nil
-}
-
-func templateSpecExpandedAuthoringPolicyError(path string) error {
-	return fmt.Errorf(
-		"%s: %s uses bindMode=expanded, which is compatibility-only for historical template versions and cannot be used for new authoring; use one workbook row per independently processed item, or define fixed parallel steps with shared bindings and connect them with dependsOn/upstreamBindings; TemplateSpec v1 does not support dynamic-cardinality step fan-out",
-		templateSpecExpandedAuthoringPolicyCode,
-		path,
-	)
-}
-
-var templateSpecStepIDPattern = regexp.MustCompile(`^stp_[0-9a-z]{6,10}$`)
-
-func validateTemplateSpecStructure(spec templateSpecEnvelope) error {
-	stepIDs := make(map[string]struct{}, len(spec.Steps))
-	for i, step := range spec.Steps {
-		stepID := strings.TrimSpace(step.StepID)
-		if !templateSpecStepIDPattern.MatchString(stepID) {
-			return fmt.Errorf("steps[%d].stepId %q must match stp_<6-10 base36 chars>", i, step.StepID)
-		}
-		if _, exists := stepIDs[stepID]; exists {
-			return fmt.Errorf("steps[%d].stepId %q is duplicated", i, stepID)
-		}
-		stepIDs[stepID] = struct{}{}
-	}
-	for i, row := range spec.InputSchema.SampleRows {
-		if row.Values == nil {
-			return fmt.Errorf("inputSchema.sampleRows[%d] must wrap field values in a values object", i)
-		}
-	}
-	return nil
-}
-
-func validateTemplateSpecAssetBindingContract(spec templateSpecEnvelope) error {
-	if spec.InputSchema == nil || len(spec.FieldBindings) == 0 {
-		return nil
-	}
-	fieldTypes := make(map[string]string, len(spec.InputSchema.Fields))
-	for _, field := range spec.InputSchema.Fields {
-		fieldTypes[strings.TrimSpace(field.Key)] = strings.TrimSpace(field.ValueType)
-	}
-	for i, binding := range spec.FieldBindings {
-		if fieldTypes[strings.TrimSpace(binding.FieldKey)] != "text_reference" {
-			continue
-		}
-		if !strings.EqualFold(strings.TrimSpace(binding.ParamKey), "prompt") {
-			continue
-		}
-		return fmt.Errorf(
-			"fieldBindings[%d].fieldKey %q is text_reference and cannot be bound directly to prompt; bind it with upstreamBindings sourceType=initial_input instead",
-			i,
-			binding.FieldKey,
-		)
-	}
-	return nil
-}
-
-func normalizeTemplateSpecJSON(data []byte) ([]byte, error) {
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.UseNumber()
-	var value any
-	if err := decoder.Decode(&value); err != nil {
-		return nil, fmt.Errorf("parse TemplateSpec JSON: %w", err)
-	}
-	normalized := normalizeTemplateSpecJSONValue(value)
-	out, err := json.Marshal(normalized)
-	if err != nil {
-		return nil, fmt.Errorf("normalize TemplateSpec JSON: %w", err)
-	}
-	return out, nil
-}
-
-func normalizeTemplateSpecJSONValue(value any) any {
-	switch typed := value.(type) {
-	case map[string]any:
-		keys := make([]string, 0, len(typed))
-		for key := range typed {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-		out := make(map[string]any, len(typed))
-		for _, key := range keys {
-			normalizedKey := normalizeTemplateSpecJSONKey(key)
-			if _, exists := out[normalizedKey]; exists {
-				continue
-			}
-			out[normalizedKey] = normalizeTemplateSpecJSONValue(typed[key])
-		}
-		return out
-	case []any:
-		out := make([]any, 0, len(typed))
-		for _, item := range typed {
-			out = append(out, normalizeTemplateSpecJSONValue(item))
-		}
-		return out
-	default:
-		return value
-	}
-}
-
-func normalizeTemplateSpecJSONKey(key string) string {
-	if normalized, ok := templateSpecJSONKeyAliases[key]; ok {
-		return normalized
-	}
-	return key
-}
-
-var templateSpecJSONKeyAliases = map[string]string{
-	"AcceptedMIMETypes":  "acceptedMimeTypes",
-	"AllowModelOverride": "allowModelOverride",
-	"BindMode":           "bindMode",
-	"DefaultModelRef":    "defaultModelRef",
-	"DefaultValue":       "defaultValue",
-	"DependsOn":          "dependsOn",
-	"Description":        "description",
-	"DisplayName":        "displayName",
-	"DisplayOutputType":  "displayOutputType",
-	"EnumValues":         "enumValues",
-	"Examples":           "examples",
-	"ExecutionUnit":      "executionUnit",
-	"FieldBindings":      "fieldBindings",
-	"FieldKey":           "fieldKey",
-	"Fields":             "fields",
-	"Hidden":             "hidden",
-	"Hint":               "hint",
-	"InputPort":          "inputPort",
-	"InputSchema":        "inputSchema",
-	"InputSummary":       "inputSummary",
-	"Instruction":        "instruction",
-	"Instructions":       "instructions",
-	"Key":                "key",
-	"Kind":               "kind",
-	"Label":              "label",
-	"Literal":            "literal",
-	"MaxValues":          "maxValues",
-	"Meta":               "meta",
-	"ModelKey":           "modelKey",
-	"MultiValue":         "multiValue",
-	"Name":               "name",
-	"Order":              "order",
-	"ParamBindings":      "paramBindings",
-	"ParamKey":           "paramKey",
-	"Placeholder":        "placeholder",
-	"Presentation":       "presentation",
-	"PrimaryOutputType":  "primaryOutputType",
-	"Required":           "required",
-	"SampleRows":         "sampleRows",
-	"Scenario":           "scenario",
-	"Separator":          "separator",
-	"SourceInputKey":     "sourceInputKey",
-	"SourceKind":         "sourceKind",
-	"SourcePort":         "sourcePort",
-	"SourceStepID":       "sourceStepId",
-	"SourceType":         "sourceType",
-	"StaticParams":       "staticParams",
-	"StepID":             "stepId",
-	"Steps":              "steps",
-	"Tags":               "tags",
-	"UpstreamBindings":   "upstreamBindings",
-	"ValueType":          "valueType",
-	"Widget":             "widget",
-}
-
 func postUserTemplateWorkbook[T any](ctx context.Context, opts *rootOptions, workbookPath, endpoint string, extra map[string]string) (T, error) {
 	var zero T
 	payload, err := workbookPayload(workbookPath, extra)
@@ -958,28 +902,48 @@ func printTemplateSpecModels(w interface {
 		return err
 	}
 	tw := newTabWriter(w)
-	if _, err := fmt.Fprintln(tw, "model_id\tdisplay_name\tprovider\tdefault\tavailable\treason"); err != nil {
+	if _, err := fmt.Fprintln(tw, "model_id\tdisplay_name\tprovider\tauthoring_options"); err != nil {
 		return err
 	}
 	for _, model := range models {
-		reason := model.AvailabilityReason
-		if reason == "" {
-			reason = "-"
+		kinds := make([]string, 0, len(model.AuthoringOptions))
+		for _, option := range model.AuthoringOptions {
+			kinds = append(kinds, option.Kind)
 		}
 		if _, err := fmt.Fprintf(
 			tw,
-			"%s\t%s\t%s\t%t\t%t\t%s\n",
+			"%s\t%s\t%s\t%s\n",
 			model.ModelID,
 			model.DisplayName,
-			model.Provider,
-			model.IsDefault,
-			model.Available,
-			reason,
+			modelProvider(model),
+			strings.Join(kinds, ","),
 		); err != nil {
 			return err
 		}
 	}
 	return tw.Flush()
+}
+
+func modelProvider(value modelSummary) string {
+	if strings.TrimSpace(value.Provider) != "" {
+		return strings.TrimSpace(value.Provider)
+	}
+	provider, _, _ := strings.Cut(value.ModelID, "/")
+	return provider
+}
+
+func filterModelsByProvider(models []modelSummary, provider string) []modelSummary {
+	provider = strings.TrimSpace(provider)
+	if provider == "" {
+		return models
+	}
+	filtered := make([]modelSummary, 0, len(models))
+	for _, item := range models {
+		if modelProvider(item) == provider {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
 }
 
 func newTemplateSpecListCmd(opts *rootOptions) *cobra.Command {
@@ -1067,6 +1031,60 @@ func newTemplateSpecVersionsCmd(opts *rootOptions) *cobra.Command {
 			return writeIndentedJSON(cmd.OutOrStdout(), resp)
 		},
 	}
+}
+
+func newTemplateSpecGetVersionCmd(opts *rootOptions) *cobra.Command {
+	var outputPath string
+	cmd := &cobra.Command{
+		Use:   "get-version <template-id> <version-id>",
+		Short: "Get one historical private TemplateSpec authoring definition",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			templateID, versionID := strings.TrimSpace(args[0]), strings.TrimSpace(args[1])
+			if templateID == "" || versionID == "" {
+				return errors.New("template ID and version ID are required")
+			}
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			endpoint := "/users/me/templates/" + url.PathEscape(templateID) + "/versions/" + url.PathEscape(versionID)
+			var resp templateVersionSpecResponse
+			if err := httpClient.GetProductJSON(ctx, endpoint, &resp); err != nil {
+				return err
+			}
+			if len(resp.CanonicalSpec) == 0 || !json.Valid(resp.CanonicalSpec) {
+				return errors.New("server returned an invalid canonicalSpec")
+			}
+			if strings.TrimSpace(outputPath) != "" {
+				targetPath, err := resolveFilePath(outputPath, templateID+"-"+versionID+".json")
+				if err != nil {
+					return fmt.Errorf("resolve output file path: %w", err)
+				}
+				var pretty bytes.Buffer
+				if err := json.Indent(&pretty, resp.CanonicalSpec, "", "  "); err != nil {
+					return fmt.Errorf("format canonicalSpec: %w", err)
+				}
+				pretty.WriteByte('\n')
+				if err := os.WriteFile(targetPath, pretty.Bytes(), 0o644); err != nil {
+					return fmt.Errorf("write TemplateSpec: %w", err)
+				}
+				if opts.output == "json" {
+					return writeIndentedJSON(cmd.OutOrStdout(), map[string]any{
+						"templateId": resp.TemplateID, "versionId": resp.VersionID, "specVersion": resp.SpecVersion,
+						"definitionHash": resp.DefinitionHash, "path": targetPath,
+					})
+				}
+				_, err = fmt.Fprintf(cmd.OutOrStdout(), "template_id\t%s\nversion_id\t%s\nspec_version\t%s\npath\t%s\n", resp.TemplateID, resp.VersionID, resp.SpecVersion, targetPath)
+				return err
+			}
+			return writeIndentedJSON(cmd.OutOrStdout(), resp)
+		},
+	}
+	cmd.Flags().StringVarP(&outputPath, "output-file", "f", "", "Write canonicalSpec to a JSON file or target directory")
+	return cmd
 }
 
 func newTemplateSpecPrecheckCmd(opts *rootOptions) *cobra.Command {

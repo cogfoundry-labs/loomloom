@@ -1,0 +1,9 @@
+{
+  "meta": {"name": "Selectable text model", "primaryOutputType": "text"},
+  "templateInputs": {
+    "prompt": {"kind": "value", "valueType": "string", "required": true, "blankPolicy": "error", "presentation": {"label": "Prompt", "order": 10}},
+    "modelChoice": {"kind": "value", "valueType": "string", "required": false, "blankPolicy": "omit", "presentation": {"label": "Model", "order": 20}}
+  },
+  "steps": [{"stepId": "stp_prof01", "displayName": "Generate text", "executionBinding": {"kind": "capabilityProfile", "profileId": "text.basic.openai-chat.v1"}, "modelSelection": {"source": "templateInput", "inputKey": "modelChoice", "defaultModelId": "deepseek/deepseek-v3.2"}, "inputBindings": {"prompt": {"source": "templateInput", "inputKey": "prompt"}}}],
+  "workbook": {"sampleRows": [{"values": {"prompt": "Introduce LoomLoom in one sentence."}}]}
+}

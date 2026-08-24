@@ -297,16 +297,35 @@ normalize_example() {
     def redact_array($key):
       if has($key) then .[$key] |= map("__TRANSLATED__") else . end;
     .meta |= (redact("name") | redact("description") | redact("scenario") | redact("inputSummary"))
-    | .steps |= map(redact("displayName") | redact("instruction"))
-    | .inputSchema.fields |= map(
-        redact("label") | redact("description") | redact("defaultValue") | redact_array("enumValues")
-        | if has("presentation") then
-            .presentation |= (redact("placeholder") | redact("hint") | redact_array("examples"))
+    | if has("templateInputs") then
+        .templateInputs |= with_entries(
+          .value |= (
+            if has("defaultValue") then .defaultValue = "__TRANSLATED__" else . end
+            | if has("presentation") then
+                .presentation |= (redact("label") | redact("description") | redact("placeholder") | redact("hint") | redact_array("examples"))
+              else . end
+          )
+        )
+      else . end
+    | if has("inputSchema") and (.inputSchema | has("fields")) then
+        .inputSchema.fields |= map(redact("label") | redact("description"))
+      else . end
+    | .steps |= map(
+        redact("displayName")
+        | if has("inputBindings") then
+            .inputBindings |= with_entries(
+              .value |= walk(
+                if type == "object" and has("literal") then .literal = "__TRANSLATED__"
+                elif type == "object" and has("value") then .value = "__TRANSLATED__"
+                elif type == "object" and has("fallbackValue") then .fallbackValue = "__TRANSLATED__"
+                else . end
+              )
+            )
           else . end
       )
-    | .inputSchema |= redact_array("instructions")
-    | if .inputSchema | has("sampleRows") then
-        .inputSchema.sampleRows |= map(
+    | .workbook |= redact_array("instructions")
+    | if .workbook | has("sampleRows") then
+        .workbook.sampleRows |= map(
           if has("values") then .values |= with_entries(.value = "__TRANSLATED__") else . end
         )
       else . end

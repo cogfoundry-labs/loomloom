@@ -79,6 +79,12 @@ type templateBalanceCheck struct {
 	IsSufficient          bool           `json:"isSufficient"`
 }
 
+type userBalanceSnapshotResponse struct {
+	Currency         string         `json:"currency"`
+	AvailableBalance *flexInt64     `json:"availableBalanceT,omitempty"`
+	AvailableMoney   *moneyResponse `json:"availableBalance,omitempty"`
+}
+
 type precheckTemplateRowsResponse struct {
 	EstimatedTotalCostT *flexInt64            `json:"estimatedTotalCostT,omitempty"`
 	EstimatedTotalCost  *moneyResponse        `json:"estimatedTotalCost,omitempty"`
@@ -524,7 +530,7 @@ func printPrecheck(w io.Writer, resp precheckTemplateRowsResponse) error {
 	if resp.BalanceCheck == nil {
 		return tw.Flush()
 	}
-	availableBalance, err := formatResponseMoney(
+	availableBalance, err := formatSignedBalanceMoney(
 		resp.BalanceCheck.AvailableBalanceMoney,
 		resp.BalanceCheck.AvailableBalance,
 		currency,

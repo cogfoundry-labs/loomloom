@@ -1,71 +1,26 @@
-# TemplateSpec 快速开始
+# 快速开始
 
-本教程从完整示例创建本地草稿并通过 check。不会创建远程模板或产生模型费用。
+先复制 [多步骤固定模型示例](../examples/valid/multi-step-fixed-model.json)，再替换其中的 `subjectRevisionId`。该 ID 必须来自目标环境当前可用的认证合同，不能照抄示例占位值。
 
-## 前提
+创建 TemplateVersion 的请求外壳为：
 
-- 已安装当前 LoomLoom CLI。
-- CLI 能运行 `loomloom template-spec docs` 和 `check`。
-- 准备一个空目录保存 `template.json`。
-
-## 1. 先读取随 CLI 分发的参考
-
-先阅读语法入口，再按需要读取字段、Step、Binding 和 execution unit 参考；不需要先访问源码仓库：
-
-```bash
-loomloom template-spec docs spec
-loomloom template-spec docs inputs
-loomloom template-spec docs steps
-loomloom template-spec docs bindings
-loomloom template-spec docs execution-units
-loomloom template-spec docs examples
+```json
+{
+  "versionNote": "first v2 version",
+  "specVersion": "template-spec/v2",
+  "canonicalSpecV2": {
+    "meta": {"name": "我的模板"},
+    "templateInputs": {},
+    "steps": [],
+    "workbook": {}
+  }
+}
 ```
 
-`examples` 中的 JSON 是随 CLI 分发的规范示例。固定数量的并行 DAG 分支使用多个独立 root Step 和一对一 `dependsOn` / `upstreamBindings`；不要添加 `branch` 或 `parallel` 字段，也不要用 `expanded` 代替固定分支。
-
-## 2. 复制最小模板
-
-复制[单步文本生成示例](../examples/valid/single-text-generation.json)。它包含：
-
-- 一个 `string` 输入字段 `content`。
-- 一个 `text-generate` Step。
-- 一条把 content 写入 prompt 的 FieldBinding。
-
-## 3. 查询并选择模型
+在准备创建版本的目标 Server 上检查：
 
 ```bash
-loomloom template-spec models text-generate
+loomloom template-spec check template.json
 ```
 
-把示例中的 `defaultModelRef.modelKey` 替换为目标环境实际返回的 model ID。模型目录是动态事实，示例值不保证在所有环境可用。
-
-## 4. 修改业务定义
-
-先只修改：
-
-- `meta.name` 和 `meta.description`。
-- `steps[0].displayName` 与 `instruction`。
-- 输入字段的 label、description 和 presentation。
-
-第一次不要修改 stepId、field key、valueType 或 bindings；这些值互相引用。
-
-## 5. 本地检查
-
-```bash
-loomloom template-spec check ./template.json
-```
-
-输出 valid 说明本地已知结构和 authoring 规则通过。它不验证目标环境所有动态能力。
-
-## 6. 理解结果
-
-运行时一行输入提供 `content`，Binding 把它写入 Step prompt；instruction 作为模板作者固定要求一起生效；Step 输出 `text/plain` artifact。
-
-## 下一步
-
-- [理解 TemplateSpec](understand-template-spec.md)
-- [接收直接文本](../how-to/accept-pasted-text.md)
-- [接收上传文件](../how-to/accept-uploaded-files.md)
-- [校验与创建版本](../how-to/validate-create-and-version.md)
-
-远程 create/create-version 是独立写操作，执行前应再次确认将创建的模板或版本。
+`check` 使用与创建版本相同的服务端合同解析规则，确认 Subject/Profile、端口和模型当前可用；它不会写入版本。正式创建时服务端会再次校验并冻结合同，避免检查后权威数据变化。创建成功后再下载 Workbook、填写一行、validate、precheck 和提交 Run。
