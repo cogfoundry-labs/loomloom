@@ -1,0 +1,12 @@
+{
+  "meta": {"name": "Text-to-image followed by image editing", "description": "Each same-named prompt port has a distinct Template Input", "primaryOutputType": "image"},
+  "templateInputs": {
+    "imagePrompt": {"kind": "value", "valueType": "string", "required": true, "blankPolicy": "error", "constraints": {"minLength": 1, "maxLength": 1000}, "presentation": {"label": "Generation prompt", "widget": "textarea", "order": 10}},
+    "editPrompt": {"kind": "value", "valueType": "string", "required": true, "blankPolicy": "error", "constraints": {"minLength": 1, "maxLength": 1000}, "presentation": {"label": "Editing prompt", "widget": "textarea", "order": 20}}
+  },
+  "steps": [
+    {"stepId": "stp_v2t2i1", "displayName": "Generate image", "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-image-generation-v2"}, "inputBindings": {"prompt": {"source": "templateInput", "inputKey": "imagePrompt"}}},
+    {"stepId": "stp_v2i2i1", "displayName": "Edit image", "dependsOn": ["stp_v2t2i1"], "triggerPolicy": "require_all", "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-image-edit-v2"}, "inputBindings": {"image": {"source": "stepOutput", "stepId": "stp_v2t2i1", "portId": "output"}, "prompt": {"source": "templateInput", "inputKey": "editPrompt"}}}
+  ],
+  "workbook": {"instructions": ["Each row generates and then edits one image."], "sampleRows": [{"values": {"imagePrompt": "An orange paper boat on the sea", "editPrompt": "Change it to a moonlit night"}}]}
+}

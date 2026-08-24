@@ -12,7 +12,7 @@ import (
 func newModelCmd(opts *rootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "model",
-		Short: "Model catalog commands",
+		Short: "LoomLoom model commands",
 	}
 	cmd.AddCommand(newModelListCmd(opts))
 	return cmd
@@ -26,7 +26,7 @@ func newModelListCmd(opts *rootOptions) *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List executable models",
+		Short: "List authority-backed models usable in TemplateSpec",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if strings.TrimSpace(stepType) == "" {
 				return fmt.Errorf("--step-type is required")
@@ -40,17 +40,15 @@ func newModelListCmd(opts *rootOptions) *cobra.Command {
 
 			query := url.Values{}
 			query.Set("stepType", strings.TrimSpace(stepType))
-			if strings.TrimSpace(provider) != "" {
-				query.Set("provider", strings.TrimSpace(provider))
-			}
-			if cmd.Flags().Changed("only-available") {
-				query.Set("onlyAvailable", fmt.Sprintf("%t", onlyAvailable))
+			if cmd.Flags().Changed("only-available") && !onlyAvailable {
+				return fmt.Errorf("--only-available=false is no longer supported: LoomLoom lists only models with an authoring contract")
 			}
 
 			var resp listModelsResponse
 			if err := httpClient.GetProductJSONWithQuery(ctx, "/models", query, &resp); err != nil {
 				return err
 			}
+			resp.Models = filterModelsByProvider(resp.Models, provider)
 			if opts.output == "json" {
 				return writeIndentedJSON(cmd.OutOrStdout(), resp)
 			}
@@ -58,7 +56,7 @@ func newModelListCmd(opts *rootOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&stepType, "step-type", "", "Step type, e.g. text-generate, image-generate, video-generate (required)")
-	cmd.Flags().StringVar(&provider, "provider", "", "Provider filter")
-	cmd.Flags().BoolVar(&onlyAvailable, "only-available", true, "When false, include unavailable known models")
+	cmd.Flags().StringVar(&provider, "provider", "", "Client-side provider filter")
+	cmd.Flags().BoolVar(&onlyAvailable, "only-available", true, "Deprecated: only authority-backed models are listed")
 	return cmd
 }

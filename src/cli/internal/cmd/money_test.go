@@ -136,15 +136,14 @@ func TestPrintPrecheckAndRunSummaryUseMoney(t *testing.T) {
 		err := printPrecheck(&out, precheckTemplateRowsResponse{
 			EstimatedTotalCost: &moneyResponse{Amount: "1.7027920", Currency: "CNY"},
 			BalanceCheck: &templateBalanceCheck{
-				Currency:              "CNY",
-				AvailableBalanceMoney: &moneyResponse{Amount: "2.0000000", Currency: "CNY"},
-				IsSufficient:          true,
+				Currency: "CNY", AvailableBalanceMoney: &moneyResponse{Amount: "2.0000000", Currency: "CNY"},
+				IsSufficient: true,
 			},
 		})
 		if err != nil {
 			t.Fatalf("printPrecheck() error=%v", err)
 		}
-		for _, want := range []string{"estimated_cost", "CNY 1.7027920", "available_balance", "CNY 2.0000000"} {
+		for _, want := range []string{"estimated_cost", "CNY 1.7027920", "available_balance", "CNY 2.0000000", "sufficient"} {
 			if !strings.Contains(out.String(), want) {
 				t.Fatalf("output=%q missing %q", out.String(), want)
 			}

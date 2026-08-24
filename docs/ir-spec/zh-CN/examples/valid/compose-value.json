@@ -1,0 +1,29 @@
+{
+  "meta": {"name": "预设营销主视觉", "primaryOutputType": "image"},
+  "templateInputs": {
+    "productName": {
+      "kind": "value", "valueType": "string", "required": true, "blankPolicy": "error",
+      "constraints": {"minLength": 1, "maxLength": 80},
+      "presentation": {"label": "产品名称", "order": 10}
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_cmp001", "displayName": "生成营销主视觉",
+      "executionBinding": {"kind": "fixedModelContract", "subjectRevisionId": "subject-image-generation-v2"},
+      "inputBindings": {
+        "prompt": {
+          "source": "composeValue",
+          "compose": {
+            "kind": "concat", "separator": " ",
+            "parts": [
+              {"source": "literal", "literal": "生成一张极简高端的电商产品主视觉，产品是："},
+              {"source": "templateInput", "inputKey": "productName"}
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "workbook": {"sampleRows": [{"values": {"productName": "透明玻璃香水瓶"}}]}
+}

@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "name": "文生图后继续图生图",
+    "description": "两个 Step 的同名 prompt 端口由不同 Template Input 提供",
+    "primaryOutputType": "image"
+  },
+  "templateInputs": {
+    "imagePrompt": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "constraints": {"minLength": 1, "maxLength": 1000},
+      "presentation": {"label": "文生图提示词", "widget": "textarea", "order": 10}
+    },
+    "editPrompt": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "constraints": {"minLength": 1, "maxLength": 1000},
+      "presentation": {"label": "图生图提示词", "widget": "textarea", "order": 20}
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_v2t2i1",
+      "displayName": "文生图",
+      "executionBinding": {
+        "kind": "fixedModelContract",
+        "subjectRevisionId": "subject-image-generation-v2"
+      },
+      "inputBindings": {
+        "prompt": {"source": "templateInput", "inputKey": "imagePrompt"}
+      }
+    },
+    {
+      "stepId": "stp_v2i2i1",
+      "displayName": "图生图",
+      "dependsOn": ["stp_v2t2i1"],
+      "triggerPolicy": "require_all",
+      "executionBinding": {
+        "kind": "fixedModelContract",
+        "subjectRevisionId": "subject-image-edit-v2"
+      },
+      "inputBindings": {
+        "image": {"source": "stepOutput", "stepId": "stp_v2t2i1", "portId": "output"},
+        "prompt": {"source": "templateInput", "inputKey": "editPrompt"}
+      }
+    }
+  ],
+  "workbook": {
+    "instructions": ["每行执行一次文生图和图生图。"],
+    "sampleRows": [{"values": {"imagePrompt": "橙色纸船漂浮在海面", "editPrompt": "改成月光下的场景"}}]
+  }
+}

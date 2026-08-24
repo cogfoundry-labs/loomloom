@@ -167,6 +167,7 @@ Generated files from workflows (images, videos, documents, etc.)
 | Command | Description |
 |---|---|
 | `loomloom model list --step-type <type>` | List executable models for a step type. |
+| `loomloom balance` | Show the currently observable settled LoomLoom balance. Gateway remains the final model-request admission authority. |
 | `loomloom asset list` | Aggregated list of my private templates and available Market SkillBots; does not include official templates. |
 
 ## 7. Private templates (created via TemplateSpec)
@@ -177,14 +178,17 @@ For building your own private workflows.
 
 | Command | Description |
 |---|---|
-| `loomloom template-spec check <spec.json>` | Validate a TemplateSpec used to create a private template. |
+| `loomloom template-spec check <spec.json>` | Validate a TemplateSpec with the current Server authority used by version creation. |
 | `loomloom template-spec docs [topic]` | Show bundled TemplateSpec documentation. |
 | `loomloom template-spec models <step-type>` | List models for a step type. |
+| `loomloom template-spec authoring-context` | Show the current server-side Capability Profiles, their ports, and eligible models for TemplateSpec v2. |
+| `loomloom template-spec contracts <model-id>` | List enabled TemplateSpec v2 contracts and their input ports for one model. |
 | `loomloom template-spec create <spec.json>` | Create a private template. |
 | `loomloom template-spec create-version <template-id> <spec.json>` | Add a new version to an existing private template. |
 | `loomloom template-spec list` | List my private templates. |
 | `loomloom template-spec get <template-id>` | Show one private template and its versions. |
 | `loomloom template-spec versions <template-id>` | List versions of a private template. |
+| `loomloom template-spec get-version <template-id> <version-id> [-f spec.json]` | Read or export one owner-visible historical authoring spec. |
 | `loomloom template-spec download-workbook <template-id> <version-id>` | Download a user-template workbook. |
 | `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx>` | Validate a user-template workbook. |
 | `loomloom template-spec precheck-workbook <template-id> <version-id> <xlsx>` | Estimate cost and balance for a user-template workbook without submitting. |

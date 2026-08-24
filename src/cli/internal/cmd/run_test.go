@@ -191,6 +191,8 @@ func TestRunPrecheckOnlyEstimatesRows(t *testing.T) {
 					"currency":"CNY",
 					"availableBalance":200000,
 					"availableBalanceMoney":{"amount":"0.0200000","currency":"CNY"},
+					"availability":"settled_only",
+					"finalAdmission":"gateway",
 					"isSufficient":true
 				}
 			}`))
@@ -233,7 +235,7 @@ func TestRunPrecheckOnlyEstimatesRows(t *testing.T) {
 	assertContainsNone(t, out.String(), `"runId"`)
 }
 
-func TestRunPrecheckInsufficientBalanceUsesCurrencyFormat(t *testing.T) {
+func TestRunPrecheckSettledSnapshotDoesNotBlockGatewayAdmission(t *testing.T) {
 	isolateCmdConfigHome(t)
 	var paths []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -248,6 +250,8 @@ func TestRunPrecheckInsufficientBalanceUsesCurrencyFormat(t *testing.T) {
 				"balanceCheck":{
 					"currency":"CNY",
 					"availableBalance":1000,
+					"availability":"settled_only",
+					"finalAdmission":"gateway",
 					"isSufficient":false
 				}
 			}`))
@@ -268,16 +272,8 @@ func TestRunPrecheckInsufficientBalanceUsesCurrencyFormat(t *testing.T) {
 	cmd.SilenceErrors = true
 	cmd.SetArgs([]string{"text-v1", "--file", inputPath})
 
-	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("run precheck error = nil, want insufficient balance")
-	}
-	if !strings.Contains(err.Error(), "estimated_cost=CNY 0.0119350") ||
-		!strings.Contains(err.Error(), "available=CNY 0.0001000") {
-		t.Fatalf("error=%q want currency-aware amounts", err)
-	}
-	if strings.Contains(err.Error(), "¥") {
-		t.Fatalf("error=%q must not use legacy yen-style symbol", err)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("run precheck error = %v", err)
 	}
 	wantPaths := []string{
 		"/loom/v1/officialTemplates/text-v1/schema",
@@ -286,6 +282,7 @@ func TestRunPrecheckInsufficientBalanceUsesCurrencyFormat(t *testing.T) {
 	if strings.Join(paths, ",") != strings.Join(wantPaths, ",") {
 		t.Fatalf("paths=%v want %v", paths, wantPaths)
 	}
+
 }
 
 func TestRunExecuteOnlySubmitsRows(t *testing.T) {
@@ -500,7 +497,7 @@ func TestRunSubmitPrintsGeneratedClientRequestIDBeforeRunFailure(t *testing.T) {
 	}
 }
 
-func TestRunSubmitInsufficientBalanceUsesCurrencyFormat(t *testing.T) {
+func TestRunSubmitSettledSnapshotDoesNotBlockGatewayAdmission(t *testing.T) {
 	isolateCmdConfigHome(t)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -515,9 +512,13 @@ func TestRunSubmitInsufficientBalanceUsesCurrencyFormat(t *testing.T) {
 				"balanceCheck":{
 					"currency":"CNY",
 					"availableBalance":1000,
+					"availability":"settled_only",
+					"finalAdmission":"gateway",
 					"isSufficient":false
 				}
 			}`))
+		case "/loom/v1/officialTemplates/text-v1:runRows":
+			_, _ = w.Write([]byte(`{"runId":"run-1","status":"queued"}`))
 		default:
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
@@ -533,20 +534,12 @@ func TestRunSubmitInsufficientBalanceUsesCurrencyFormat(t *testing.T) {
 	cmd := newRunSubmitCmd(opts)
 	cmd.SetArgs([]string{"text-v1", "--file", inputPath})
 
-	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("run submit error = nil, want insufficient balance")
-	}
-	if !strings.Contains(err.Error(), "estimated_cost=CNY 0.0119350") ||
-		!strings.Contains(err.Error(), "available=CNY 0.0001000") {
-		t.Fatalf("error=%q want currency-aware amounts", err)
-	}
-	if strings.Contains(err.Error(), "¥") {
-		t.Fatalf("error=%q must not use legacy yen-style symbol", err)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("run submit error = %v", err)
 	}
 }
 
-func TestRunSubmitInsufficientBalanceUsesBoundPlatformMessage(t *testing.T) {
+func TestRunSubmitSettledSnapshotDoesNotUsePlatformBalanceMessage(t *testing.T) {
 	isolateCmdConfigHome(t)
 	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun}); err != nil {
 		t.Fatalf("SaveState error=%v", err)
@@ -564,9 +557,13 @@ func TestRunSubmitInsufficientBalanceUsesBoundPlatformMessage(t *testing.T) {
 				"balanceCheck":{
 					"currency":"CNY",
 					"availableBalance":1000,
+					"availability":"settled_only",
+					"finalAdmission":"gateway",
 					"isSufficient":false
 				}
 			}`))
+		case "/loom/v1/officialTemplates/text-v1:runRows":
+			_, _ = w.Write([]byte(`{"runId":"run-1","status":"queued"}`))
 		default:
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
@@ -582,12 +579,8 @@ func TestRunSubmitInsufficientBalanceUsesBoundPlatformMessage(t *testing.T) {
 	cmd := newRunSubmitCmd(opts)
 	cmd.SetArgs([]string{"text-v1", "--file", inputPath})
 
-	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("run submit error = nil, want insufficient balance")
-	}
-	if err.Error() != insufficientShengSuanYunBalanceMessage {
-		t.Fatalf("error=%q want fixed ShengSuanYun balance message", err)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("run submit error = %v", err)
 	}
 }
 

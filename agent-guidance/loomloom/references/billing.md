@@ -34,6 +34,8 @@ Create a new client request ID for each newly confirmed execution. Reuse the ori
 
 ## Fee And Currency Rules
 
+`loomloom balance` displays one LoomLoom available balance. Wallet assets, applicable vouchers and pending charges are internal calculation inputs, not user-facing CLI fields. Gateway still makes the final request-admission decision.
+
 - For official and private precheck, use `estimatedTotalCostT` and the currency returned by the service.
 - For Market quote, use `estimatedBuyerPayableT` as the estimated pre-authorization.
 - Compute the creator call fee from `taskCount × taskFixedFeeT` only when both fields are returned.

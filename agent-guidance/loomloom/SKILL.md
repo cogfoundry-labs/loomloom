@@ -91,9 +91,54 @@ Download/prepare version-specific input → Validate → Precheck
 
 ```text
 Business conversation → TemplatePlan → User confirms plan
-→ Generate TemplateSpec → Check locally
+→ Generate TemplateSpec → Check with the current LoomLoom Server
 → User confirms creation → Create or append a version
 ```
+
+### Legacy TemplateSpec v1 upgrade gate
+
+Historical v1 TemplateVersions remain readable and runnable, but v1 cannot be
+used to create a new template or save a new version. When a user needs to
+change, copy, or newly author a v1 template, create a new `template-spec/v2`
+version; never overwrite or claim to repair the historical v1 version.
+
+Before changing, copying, or appending a version to an existing private
+template, inspect the exact target version reported by the current Server:
+
+```text
+loomloom template-spec get <template-id> --output json
+loomloom template-spec versions <template-id> --output json
+```
+
+Resolve whether the user means the published, latest, or another explicit
+version, then inspect that version's returned `specVersion`. Do not infer the
+version from JSON shape, a 404, or an error message. If it is
+`template-spec/v1`, do not submit its historical JSON to `create-version`.
+Explain that the historical version remains readable/runnable but is read-only,
+and guide the user through creating a new v2 version. Do not force this upgrade
+when the user only wants to run an existing v1 version.
+
+Do not infer a v2 contract from v1 `modelKey`, `staticParams`, field bindings,
+or provider-native fields. Read the current v2 protocol and the target
+environment's authoring facts first:
+
+```text
+loomloom template-spec docs spec --lang zh-CN
+loomloom template-spec docs inputs --lang zh-CN
+loomloom template-spec docs bindings --lang zh-CN
+loomloom template-spec authoring-context --output json
+loomloom template-spec contracts <model-id> --output json
+loomloom template-spec models <step-type>
+```
+
+Use `authoring-context` for text Capability Profiles and eligible models; use
+`contracts` for fixed-model contracts and their exact port IDs. The model list
+is only a discovery entry point. Rewrite the v1 definition as v2
+`templateInputs`, `executionBinding`, and `inputBindings`. Use
+`loomloom template-spec get-version <template-id> <version-id> -f historical.json`
+to retrieve an owner-visible historical definition when needed. Then run
+`check` against the same Server where the new version will be saved and create
+a new immutable version only after explicit confirmation. Do not promise a lossless or automatic v1-to-v2 conversion.
 
 ### Market buyer
 

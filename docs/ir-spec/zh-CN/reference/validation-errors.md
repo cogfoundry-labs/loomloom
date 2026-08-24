@@ -1,22 +1,9 @@
-# Validation Errors Reference
+# Validation Errors
 
-按最早失败层修复：JSON → Schema → TemplateSpec validator → model/registry → workbook/input → runtime。
-
-| Rule / 症状 | 原因 | 修复 |
+| Rule ID | 拒绝条件 | 修复 |
 | --- | --- | --- |
-| TS-IN-001 | 直接文本未按普通字段使用 | string + compatible parameter binding |
-| TS-IN-002 | text_reference 被写入 prompt，未作为 initial input | 绑定到接受 MIME 的 input port |
-| TS-IN-003 | string 说明要求填写资产 ID | 改成普通文本，或改用引用字段 |
-| TS-TOPOLOGY-001 | 新模板、新版本或新发布流程使用 expanded execution | 独立对象使用 workbook 多行；固定并行显式声明多个 Step；多内容集合使用 initial_input |
-| meta.name is required | 名称为空 | 提供非空名称 |
-| step_id pattern | ID 不满足 stp_ + base36 | 使用 6～10 位小写字母数字 |
-| unknown execution unit | unit 不在 registry | 使用公开 unit |
-| duplicate field/label/step | 标识重复 | 保持唯一 |
-| source_kind default required | 隐藏/默认字段没有值 | 提供 defaultValue |
-| duplicate target | 多条 Binding 写同一参数 | 只保留一种来源 |
-| param not allowed | 参数不属于 unit | 查询 Execution Units |
-| port/type not accepted | MIME 与 input port 不兼容 | 更换端口或上游类型 |
-| model unavailable | model ID 不在当前环境或不支持 unit | 重新查询模型目录 |
-| dependency cycle | Step 图有环 | 改为有向无环结构 |
+| TS-VERSION-002 | 用 v1 创建新版本 | 离线迁移为 v2 后创建新的 TemplateVersion |
+| TS-BINDING-002 | stepOutput 未声明对应 dependsOn | 同时声明调度依赖和数据 binding |
+| TS-PROFILE-002 | Profile Step 缺少合法 modelSelection | 引用可空 string Template Input，并设置默认模型 |
 
-稳定机器元数据见 [rules.json](../../machine/rules.json)。未分配 rule ID 的 validator 文本仍可能随实现改进，自动化不应依赖整段英文错误字符串。
+JSON Schema 负责对象形状；Core validator 负责跨字段、DAG 和 source 语义；保存门禁再验证当前 Subject/Profile、端口和值域。结构通过不等于目标环境可执行。

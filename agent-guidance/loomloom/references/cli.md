@@ -97,17 +97,45 @@ On successful `login --output json`, the `token` field is masked and is not a re
 - `loomloom template-spec docs [spec|authoring|examples|conversation|all]`
 - `loomloom template-spec check <spec.json>`
 - `loomloom template-spec models <text-generate|image-generate|video-generate>`
+- `loomloom template-spec authoring-context --output json`
+- `loomloom template-spec contracts <model-id>`
 - `loomloom template-spec create <spec.json>`
 - `loomloom template-spec create-version <template-id> <spec.json>`
 - `loomloom template-spec list`
 - `loomloom template-spec get <template-id>`
 - `loomloom template-spec versions <template-id>`
+- `loomloom template-spec get-version <template-id> <version-id> [-f spec.json]`
 - `loomloom template-spec download-workbook <template-id> <version-id>`
 - `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx-path>`
 - `loomloom template-spec precheck-workbook <template-id> <version-id> <xlsx-path>`
 - `loomloom template-spec submit-workbook <template-id> <version-id> <xlsx-path> --client-request-id <id>`
 - `loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>`
 - `loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <id>`
+
+`template-spec authoring-context` is the current target-environment discovery
+entry for Capability Profiles. It returns Profile IDs, current revisions and
+ports, plus eligible models. Agents must call it before authoring a
+`capabilityProfile` Step and normally submit only `profileId`.
+
+`template-spec contracts` lists enabled per-model `fixedModelContract`
+authoring contracts. It is not a general model-usability check. In particular,
+`text-generate` models normally return no per-model contracts because private
+text Steps use the shared `capabilityProfile` shown by
+`loomloom template-spec docs examples`. Do not report text authoring as
+unavailable solely because `template-spec contracts <text-model-id>` is empty.
+
+`template-spec check` calls the selected LoomLoom Server and uses the same
+current contract-authority resolver as version creation. It is not an offline
+schema check. A successful check is evidence for that Server at that time;
+version creation validates again because authoring authority can change.
+
+`template-spec get-version` returns the stored owner-visible authoring spec for
+one immutable historical version. It intentionally does not return the frozen
+execution bundle or apply current TemplateSpec rules to historical authoring.
+Successful readback means only that the stored authoring is a JSON object. Use
+`-f` to save `canonicalSpec` as a JSON file before a manual v1-to-v2 rewrite;
+run `check` separately only for the rewritten v2 candidate, and never overwrite
+the historical version.
 
 ### Runs and artifacts
 

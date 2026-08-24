@@ -1,21 +1,9 @@
-# 排查 TemplateSpec 问题
+# 排查 TemplateSpec v2
 
-## 先判断失败层级
+1. JSON 解析失败：检查 lowerCamel 字段和未知字段。
+2. 本地 check 失败：按 rule ID 查 Schema、正反例和 Reference。
+3. 创建版本失败：检查 Subject/Profile revision、目标 portId、DAG 和值域兼容。
+4. Workbook 失败：检查 input key、必填/空白策略、MIME 和数量。
+5. Run 失败：按 Step 查看实际模型、合同、Gateway request ID、Provider 错误和 Artifact。
 
-1. JSON 无法解析：修复语法和大小写。
-2. Schema 失败：修复类型、required、enum 和简单条件。
-3. local check 失败：修复 authoring guard 与明显引用错误。
-4. create/version 失败：检查模型目录、拓扑、Binding、端口和服务版本。
-5. workbook/input 失败：检查字段 key、必填值、枚举、MIME 和版本。
-6. runtime 失败：检查 provider、资产读取、内容限制和 Step 错误。
-
-## 高频问题
-
-- 模型只看到 `ia_xxx`：字段错误声明为 string 或错误绑定到 prompt。
-- unknown step/field：ID 或 key 拼写与声明不一致。
-- duplicate target：多个 Binding 写同一 Step 参数。
-- model unavailable：重新查询目标环境模型目录。
-- old workbook incompatible：按当前 version 重新下载。
-- downstream input incompatible：核对上游 MIME 与目标 port accepts。
-
-错误索引见 [Validation Errors](../reference/validation-errors.md)，限制见 [Limits](../reference/limits.md)。
+不要通过反复提交同一请求定位不确定状态；先使用稳定 client request ID 查询既有 Run。

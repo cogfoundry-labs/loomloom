@@ -1,15 +1,7 @@
 # Bindings and data flow
 
-FieldBinding maps one field to one parameter. ParamBinding combines field references and literals. UpstreamBinding connects initial uploaded content or an upstream artifact to a typed port. One target parameter has one source. Asset IDs are content references, never prompt strings.
+v2 separates what an input is from where it comes from. Template Inputs describe public values; Step `inputBindings` connect those values to contract ports.
 
-## Parameter bindings
+A binding has one source. Direct sources are templateInput, stepOutput, literal, and platformContext. Composite sources are composeValue, sequence, and merge. Scalars and Artifacts use the same model.
 
-FieldBinding is the direct choice for one field. ParamBinding joins several fields and fixed literals in source order using a separator. Both target `stepId + paramKey`; duplicate writers are rejected.
-
-## Content bindings
-
-Use `initial_input` for uploaded/reference fields and `step_output` for artifacts produced by a dependency. Port names, accepted MIME, multiplicity, and merge behavior come from the execution-unit registry.
-
-## Prompt text versus referenced content
-
-A prompt parameter is ordinary text. An `ia_*` value only becomes referenced content when a reference field is resolved through initial input. Putting that ID into a string prompt sends the literal identifier to the model.
+`dependsOn` controls scheduling; `inputBindings` controls data. A Step output reference requires both.

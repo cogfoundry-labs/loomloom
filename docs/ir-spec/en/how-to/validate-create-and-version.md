@@ -1,11 +1,7 @@
 # Validate, create, and version
 
-Run `loomloom template-spec check <file>` first. After reviewing the name, fields, steps, models, and check result, separately confirm and run `create`. Modify an existing template with `create-version`; historical versions are not overwritten. Re-download the workbook for the new version.
+Run `loomloom template-spec check template.json` against the target Server, then create with `specVersion=template-spec/v2` and `canonicalSpecV2`. Check and create share current authority resolution; creation validates again and freezes the contracts.
 
-```bash
-loomloom template-spec check ./template.json
-loomloom template-spec create ./template.json
-loomloom template-spec create-version <template-id> ./template.json
-```
+Use `loomloom template-spec get-version <template-id> <version-id> -f historical.json` to export an owner-visible historical authoring spec. It does not export the frozen execution bundle. Historical v1 definitions must be manually rewritten as v2 before creating a new immutable version.
 
-Check is local and creates nothing. Create and create-version are remote writes and require explicit confirmation. Preserve returned template/version IDs. If the server rejects a locally valid spec, inspect dynamic model availability, unit capability, port MIME, and the deployed server version.
+Append a new immutable TemplateVersion for changes. Download a new Workbook and validate/precheck before submitting a Run.
