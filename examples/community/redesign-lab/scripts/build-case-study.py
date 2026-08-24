@@ -192,7 +192,12 @@ def cmd_plan(args):
         results = {}
         for label, target in [("before", args.before), ("after", args.after)]:
             page = browser.new_page(viewport={"width": 1280, "height": 800})
-            page.goto(diff_transformations.to_target(target), wait_until="networkidle")
+            # "networkidle" never settles against a real autoplaying/looping
+            # hero <video> (implement-design.md's own hero-video upgrade,
+            # confirmed against a real run) -- see mechanical-check.py's and
+            # render-and-screenshot.py's goto calls for the same fix.
+            page.goto(diff_transformations.to_target(target), wait_until="load")
+            page.wait_for_timeout(1500)
             results[label] = diff_transformations.extract_facts(page)
             page.close()
         browser.close()
