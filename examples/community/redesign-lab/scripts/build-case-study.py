@@ -275,6 +275,8 @@ def cmd_plan(args):
             "before_label": args.before_label,
             "after_label": args.after_label,
             "canonical_url": args.canonical_url,
+            "before_embed_url": args.before_embed_url,
+            "redesign_dir": args.redesign_dir,
         },
         "loomloom": {
             "narrative_template_id": narrative_created["templateId"],
@@ -393,6 +395,8 @@ def cmd_generate(args):
         after_label=render_inputs["after_label"],
         out_dir=site_dir,
         canonical_url=render_inputs.get("canonical_url"),
+        before_embed_url=render_inputs.get("before_embed_url"),
+        redesign_dir=render_inputs.get("redesign_dir"),
     )
     print(f"wrote {result['out_dir']}/ ({result['file_count']} files, {result['total_bytes']/1024/1024:.2f}MB total)")
     print(f"  index.html: {result['index_html_bytes']/1024:.1f}KB")
@@ -430,6 +434,8 @@ def main():
     p_plan.add_argument("--canonical-url", default=None, help="the real URL this will be published at, if known (e.g. a GitHub Pages URL)")
     p_plan.add_argument("--mechanical-report", default=None, help="path to the chosen page's real mechanical-check.py JSON report")
     p_plan.add_argument("--a11y-report", default=None, help="path to the chosen page's real a11y-audit scan JSON")
+    p_plan.add_argument("--before-embed-url", default=None, help="real external URL of the live 'before' site -- if given (together with --redesign-dir), the compare widget renders real <iframe>s instead of the before/after screenshots")
+    p_plan.add_argument("--redesign-dir", default=None, help="local directory of the real redesigned page + its own real local assets, copied into the case study's redesign/ and iframed as the live 'after' side")
     p_plan.set_defaults(func=cmd_plan)
 
     p_gen = sub.add_parser("generate")

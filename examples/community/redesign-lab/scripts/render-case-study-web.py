@@ -50,8 +50,8 @@ STATUS_COPY = {
     },
     "preview": {
         "compare_after_label": "After: validated redesign preview",
-        "hero_status": "built and mechanically validated as a real redesign preview — not yet deployed to the live site.",
-        "badge": "PREVIEW — not deployed",
+        "hero_status": "built and mechanically validated as a real redesign preview, not yet deployed to the live site.",
+        "badge": "PREVIEW (not deployed)",
     },
 }
 
@@ -68,12 +68,12 @@ CATEGORY_QUICK_LABELS = {
 }
 
 PIPELINE_STAGES = [
-    ("Discover", "Understand the existing site: real structure, real assets, real constraints — no model call."),
+    ("Discover", "Understand the existing site: real structure, real assets, real constraints, no model call."),
     ("Analyze", "Measure the real design system and audit it against a declared design authority's own rules."),
-    ("Explore", "Build real, working direction slices and structural variants — real code, never a mockup."),
+    ("Explore", "Build real, working direction slices and structural variants: real code, never a mockup."),
     ("Select", "A human picks the direction and variant that actually fits, from real rendered pages."),
     ("Implement", "Turn the chosen direction into the real page: real copy, real assets, real responsive layout."),
-    ("Validate", "Real mechanical checks and a real axe-core accessibility scan — any failure blocks completion."),
+    ("Validate", "Real mechanical checks and a real axe-core accessibility scan; any failure blocks completion."),
 ]
 
 MIME_FOR = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml"}
@@ -148,6 +148,23 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .compare img{width:100%;height:auto;display:block;}
 .compare .after-layer{position:absolute;top:0;left:0;height:100%;overflow:hidden;width:50%;border-right:2px solid var(--accent-fill);}
 .compare .after-layer img{max-width:none;}
+/* Live-embed mode (real <iframe> in place of a static screenshot): neither
+   side's real content height is readable here -- the "before" iframe is a
+   different origin (the live external site), which browsers block reading
+   scrollHeight from regardless of X-Frame-Options, so the Math.max(before,
+   after) natural-image-height trick above can't apply to this mode at all,
+   not even for an after side that happens to be same-origin. Both sides
+   instead fill the existing fixed 16:9 .compare-frame box completely and
+   scroll internally on their own -- this is a real, deliberate trade-off,
+   not an oversight: the previous synced-scroll-together behavior needed
+   one shared scrolling container with both images stacked in normal flow,
+   which an embedded live page (with its own real DOM, scripts, and scroll
+   position) can't be made to participate in from the parent page's JS. */
+.compare-frame.is-live .compare{overflow:hidden;touch-action:auto;}
+.compare-frame.is-live .compare-inner{height:100%;}
+.compare-frame.is-live .compare-inner > iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;}
+.compare-frame.is-live .after-layer{height:100%;}
+.compare-frame.is-live .after-layer iframe{width:100%;height:100%;}
 .compare-frame .handle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;background:var(--accent-fill);display:flex;align-items:center;justify-content:center;cursor:ew-resize;box-shadow:var(--shadow);z-index:2;touch-action:none;}
 .compare-frame .handle::before{content:"\\2194";color:var(--on-accent-fill);font-size:18px;font-weight:900;}
 .compare-frame .handle:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
@@ -194,6 +211,7 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .tool-list .name{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:700;}
 .tool-list .role{display:block;font-size:14px;color:var(--muted);margin-top:4px;line-height:1.5;}
 .compare-embed{display:flex;align-items:center;gap:10px;margin-top:14px;}
+.live-note{font-weight:400;text-transform:none;letter-spacing:0;}
 .note{font-size:13px;color:var(--faint);margin-top:18px;}
 .final-cta{text-align:center;padding:56px 0;}
 .final-cta h2{margin-bottom:24px;}
@@ -219,7 +237,14 @@ JS = '''
   // the two: a redesign that changed real page length (this one compressed
   // 8340px down to 2932px) means one side runs out of real content before
   // the other, which is shown honestly, not padded or stretched to match.
+  // Live-embed mode (real <iframe>s, see the CSS comment above this same
+  // widget's rules): neither side's real height is readable from here, so
+  // there's nothing for this function to measure or set -- the fixed 16:9
+  // .compare-frame box plus this CSS mode's height:100% rules already size
+  // both sides correctly on their own.
+  var isLive = beforeImg.tagName === 'IFRAME';
   function layout(){
+    if (isLive) return;
     var w = widget.clientWidth;
     var beforeH = beforeImg.naturalWidth ? w * (beforeImg.naturalHeight / beforeImg.naturalWidth) : 0;
     var afterH = afterImg.naturalWidth ? w * (afterImg.naturalHeight / afterImg.naturalWidth) : 0;
@@ -227,6 +252,7 @@ JS = '''
     afterImg.style.width = w + 'px'; // full-widget width, then clipped narrower by .after-layer's own width -- same reveal-window trick as before
   }
   function whenReady(img, cb){
+    if (isLive) return;
     if (img.complete && img.naturalWidth) cb();
     else img.addEventListener('load', cb);
   }
@@ -328,12 +354,72 @@ def looks_like_color(value):
     return bool(re.match(r"^#[0-9a-fA-F]{3,8}$", value.strip()) or re.match(r"^(rgb|hsl)a?\(", value.strip()))
 
 
+def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc,
+                                compare_after_label, before_embed_url=None, after_embed_url=None,
+                                rel_prefix=""):
+    """The compare-frame markup shared by the main page and the standalone
+    embed fragment (render_embed_compare_html) -- one place that decides
+    <img> (real screenshots) vs <iframe> (real live pages) so the two
+    callers can't drift into rendering this widget two different ways.
+
+    rel_prefix is "" for the main page, "../" for the embed fragment (one
+    directory deeper). Applied to before_rel/after_rel (the screenshot
+    paths) same as before. For the embed URLs, applied only to
+    after_embed_url (a same-origin relative path into this same deployed
+    site -- needs the same "one directory deeper" adjustment) and never to
+    before_embed_url (always a real absolute external URL, the live
+    "before" site, which a relative-path prefix would break)."""
+    is_live = bool(before_embed_url and after_embed_url)
+    frame_cls = "compare-frame is-live" if is_live else "compare-frame"
+    if is_live:
+        before_el = f'<iframe id="beforeImg" src="{html.escape(before_embed_url)}" title="Before: {subject_esc}\'s original design, live, {before_label_esc}" loading="lazy"></iframe>'
+        after_el = f'<iframe id="afterImg" src="{html.escape(rel_prefix + after_embed_url)}" title="After: {subject_esc} redesigned as {after_label_esc}, live" loading="lazy"></iframe>'
+        caption_note = ' <span class="live-note">(real, live pages: each side scrolls independently)</span>'
+    else:
+        before_el = f'<img id="beforeImg" src="{rel_prefix}{before_rel}" alt="Before: {subject_esc}\'s original design, {before_label_esc}">'
+        after_el = f'<img id="afterImg" src="{rel_prefix}{after_rel}" alt="After: {subject_esc} redesigned as {after_label_esc}">'
+        caption_note = ""
+    # tabindex/aria-label on the wrapper only apply in screenshot mode,
+    # where this div is itself the real scrollable region (confirmed via a
+    # real axe-core scrollable-region-focusable finding, see
+    # build-case-study.md). In live-embed mode each iframe scrolls on its
+    # own -- this wrapper no longer scrolls at all (.is-live sets
+    # overflow:hidden on it), so keeping the same tabindex/aria-label here
+    # would be a real, confirmed aria-prohibited-attr finding: a static,
+    # non-scrolling div falsely labeled as a scrollable region. The two
+    # iframes are natively focusable and keyboard-scrollable without any
+    # extra ARIA needed.
+    wrapper_attrs = "" if is_live else ' tabindex="0" aria-label="Scrollable page preview"'
+    return f'''<div class="{frame_cls}">
+      <div class="compare" id="compareWidget"{wrapper_attrs}>
+        <div class="compare-inner" id="compareInner">
+          {before_el}
+          <div class="after-layer" id="afterLayer">
+            {after_el}
+          </div>
+        </div>
+      </div>
+      <div class="handle" id="compareHandle" role="slider" tabindex="0" aria-label="Before and after comparison position"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
+    </div>
+    <div class="compare-caption"><span>Before</span><span>{compare_after_label}{caption_note}</span></div>'''
+
+
 def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, title, before_label, after_label,
-                            og_image_rel, canonical_url=None):
+                            og_image_rel, canonical_url=None, before_embed_url=None, after_embed_url=None):
     """The one function that turns case-study-data.json into the page's
     index.html body+head. Takes real relative asset paths (already copied
     into the output folder by the caller), never inlines them -- this is a
-    real GitHub-Pages-deployable folder, not a standalone preview file."""
+    real GitHub-Pages-deployable folder, not a standalone preview file.
+
+    before_embed_url/after_embed_url are optional: when given, the compare
+    widget renders real <iframe>s pointing at them instead of the static
+    before_rel/after_rel screenshots (which still get copied and used for
+    the Open Graph preview image regardless, since a social-media card
+    can't render an iframe). See the CSS/JS "live-embed mode" comments on
+    this same widget for why both sides fill a fixed box and scroll
+    independently in this mode, rather than the synced-scroll-through-the-
+    whole-page behavior the screenshot mode has."""
     status = data["status"]
     copy = STATUS_COPY[status]
 
@@ -446,19 +532,7 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     <span class="section-label">The Redesign</span>
     <h2>Before &rarr; After</h2>
     <p style="color:var(--muted);margin-bottom:20px;">Drag the handle to compare. Scroll inside the frame to see the rest of each page.</p>
-    <div class="compare-frame">
-      <div class="compare" id="compareWidget" tabindex="0" aria-label="Scrollable page preview">
-        <div class="compare-inner" id="compareInner">
-          <img id="beforeImg" src="{before_rel}" alt="Before: {subject_esc}'s original design, {before_label_esc}">
-          <div class="after-layer" id="afterLayer">
-            <img id="afterImg" src="{after_rel}" alt="After: {subject_esc} redesigned as {after_label_esc}">
-          </div>
-        </div>
-      </div>
-      <div class="handle" id="compareHandle" role="slider" tabindex="0" aria-label="Before and after comparison position"
-           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
-    </div>
-    <div class="compare-caption"><span>Before</span><span>{copy["compare_after_label"]}</span></div>
+    {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url)}
     <div class="compare-embed">
       <span class="share-label">Share this chapter</span>
       <button class="share-btn" onclick="{html.escape(f'copyCompareEmbed({json.dumps("Before and after: " + data["subject"])})')}" aria-label="Copy embeddable code for this before/after comparison">Copy the code</button>
@@ -482,7 +556,7 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     <h2>The Workflow</h2>
     <div class="pipeline">{pipeline_html}
     </div>
-    <div class="loomloom-note">loomloom's role in this case study: writing the {len(data["chapters"])} narrative paragraphs above from real, verified facts &mdash; the only real model call in this run's Share stage. No image was generated: the hero above uses the real color tokens from the actual redesign directly, not an AI illustration of them.</div>
+    <div class="loomloom-note">loomloom's role in this case study: writing the {len(data["chapters"])} narrative paragraphs above from real, verified facts, the only real model call in this run's Share stage. No image was generated: the hero above uses the real color tokens from the actual redesign directly, not an AI illustration of them.</div>
   </section>
 
   <section id="validate">
@@ -495,7 +569,7 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     <span class="section-label">Reproduce This</span>
     <h2>How This Was Actually Built</h2>
     <div class="repro-block">
-      <p style="margin-top:0;color:var(--muted);font-size:14px;">This redesign is built on real open-source work. Thanks to every project below — each is listed because real evidence of its use exists in this run.</p>
+      <p style="margin-top:0;color:var(--muted);font-size:14px;">This redesign is built on real open-source work. Thanks to every project below: each is listed because real evidence of its use exists in this run.</p>
       <div class="repro-links">
         <a href="https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/redesign-lab">GitHub repository</a>
         <a href="#" id="viewSourceLink" onclick="viewSource(event)">View source</a>
@@ -545,7 +619,8 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     return head
 
 
-def render_embed_compare_html(data, before_rel, after_rel, before_label, after_label):
+def render_embed_compare_html(data, before_rel, after_rel, before_label, after_label,
+                               before_embed_url=None, after_embed_url=None):
     """A standalone fragment for the 'Copy the code' embed on the Before/
     After section -- meant to be dropped into an <iframe> on someone else's
     blog. Reuses the main page's real styles.css/script.js via a relative
@@ -554,6 +629,8 @@ def render_embed_compare_html(data, before_rel, after_rel, before_label, after_l
     sits alongside `index.html`)."""
     subject_esc = html.escape(data["subject"])
     copy = STATUS_COPY[data["status"]]
+    before_label_esc = html.escape(before_label)
+    after_label_esc = html.escape(after_label)
     return f'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -568,19 +645,7 @@ def render_embed_compare_html(data, before_rel, after_rel, before_label, after_l
 <main>
 <div class="wrap" style="padding:20px 16px;">
   <h1 class="embed-h1">Before and after: {subject_esc}</h1>
-  <div class="compare-frame">
-    <div class="compare" id="compareWidget" tabindex="0" aria-label="Scrollable page preview">
-      <div class="compare-inner" id="compareInner">
-        <img id="beforeImg" src="../{before_rel}" alt="Before: {subject_esc}, {html.escape(before_label)}">
-        <div class="after-layer" id="afterLayer">
-          <img id="afterImg" src="../{after_rel}" alt="After: {subject_esc} redesigned as {html.escape(after_label)}">
-        </div>
-      </div>
-    </div>
-    <div class="handle" id="compareHandle" role="slider" tabindex="0" aria-label="Before and after comparison position"
-         aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
-  </div>
-  <div class="compare-caption"><span>Before</span><span>{copy["compare_after_label"]}</span></div>
+  {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url, rel_prefix="../")}
   <p style="font-family:&quot;IBM Plex Mono&quot;,monospace;font-size:11px;color:var(--faint);margin-top:14px;">From a <a href="../index.html" target="_top">Redesign Lab case study</a></p>
 </div>
 </main>
@@ -631,12 +696,30 @@ def render_embed_chapter_html(data, ch, num):
 
 
 def build_case_study_site(data, before_image, after_image, logo, title, before_label, after_label,
-                           out_dir, canonical_url=None):
+                           out_dir, canonical_url=None, before_embed_url=None, redesign_dir=None):
     """Copies real assets into `out_dir/assets/` and writes index.html +
     styles.css + script.js -- a real GitHub-Pages-ready folder. This is the
     one function both the CLI (`main`, below) and `build-case-study.py`
     (called in-process, no subprocess) use, so the two never drift into
-    writing the folder two different ways."""
+    writing the folder two different ways.
+
+    before_image/after_image (real screenshots) are always copied and
+    always used for the Open Graph preview image, regardless of live-embed
+    mode -- a social-media card can't render an iframe.
+
+    Live-embed mode (real <iframe>s in the compare widget instead of the
+    screenshots) needs both before_embed_url (a real external URL -- the
+    live "before" site) and redesign_dir (a local directory: the real
+    redesigned page plus its own real local assets, e.g. what
+    implement-design.md's asset-pipeline rule produces once a page has a
+    real host behind it). redesign_dir is copied into `out_dir/redesign/`
+    wholesale so the "after" side is served same-origin (its real content
+    height stays readable by this page's own JS, even though the "before"
+    side's cross-origin height never can be -- see the CSS/JS "live-embed
+    mode" comments on the compare widget for why that asymmetry doesn't
+    actually matter here, both sides fill a fixed box either way). Passing
+    only one of the two leaves the widget in ordinary screenshot mode --
+    live-embed is all-or-nothing, not one side at a time."""
     out_dir = Path(out_dir)
     assets_dir = out_dir / "assets"
     assets_dir.mkdir(parents=True, exist_ok=True)
@@ -654,9 +737,18 @@ def build_case_study_site(data, before_image, after_image, logo, title, before_l
     logo_rel = copy_asset(logo, "logo") if logo else None
     favicon_rel = copy_asset(logo, "favicon") if logo else None
 
+    after_embed_url = None
+    if before_embed_url and redesign_dir:
+        redesign_out = out_dir / "redesign"
+        if redesign_out.exists():
+            shutil.rmtree(redesign_out)
+        shutil.copytree(redesign_dir, redesign_out)
+        after_embed_url = "redesign/index.html"
+
     html_text = render_case_study_html(
         data, before_rel, after_rel, logo_rel, favicon_rel, title,
         before_label, after_label, og_image_rel=after_rel, canonical_url=canonical_url,
+        before_embed_url=before_embed_url, after_embed_url=after_embed_url,
     )
     (out_dir / "styles.css").write_text(CSS, encoding="utf-8")
     (out_dir / "script.js").write_text(JS, encoding="utf-8")
@@ -670,7 +762,10 @@ def build_case_study_site(data, before_image, after_image, logo, title, before_l
     embed_dir = out_dir / "embed"
     embed_dir.mkdir(exist_ok=True)
     (embed_dir / "compare.html").write_text(
-        render_embed_compare_html(data, before_rel, after_rel, before_label, after_label), encoding="utf-8"
+        render_embed_compare_html(
+            data, before_rel, after_rel, before_label, after_label,
+            before_embed_url=before_embed_url, after_embed_url=after_embed_url,
+        ), encoding="utf-8"
     )
     for i, ch in enumerate(data["chapters"], start=1):
         num = f"{i:02d}"
@@ -696,12 +791,15 @@ def main():
     parser.add_argument("--after-label", required=True, help="short, real characterization of the redesign (e.g. 'Enterprise Operations Console')")
     parser.add_argument("--canonical-url", default=None)
     parser.add_argument("--out-dir", required=True, help="GitHub-Pages-ready folder: index.html, styles.css, script.js, assets/")
+    parser.add_argument("--before-embed-url", default=None, help="real external URL of the live 'before' site -- if given (together with --redesign-dir), the compare widget renders real <iframe>s instead of the before/after screenshots")
+    parser.add_argument("--redesign-dir", default=None, help="local directory of the real redesigned page + its own real local assets, copied into out-dir/redesign/ and iframed as the live 'after' side")
     args = parser.parse_args()
 
     data = json.loads(Path(args.data).read_text(encoding="utf-8"))
     result = build_case_study_site(
         data, args.before_image, args.after_image, args.logo, args.title,
         args.before_label, args.after_label, args.out_dir, canonical_url=args.canonical_url,
+        before_embed_url=args.before_embed_url, redesign_dir=args.redesign_dir,
     )
     print(f"wrote {result['out_dir']}/ ({result['file_count']} files, {result['total_bytes']/1024/1024:.2f}MB total)")
     print(f"  index.html: {result['index_html_bytes']/1024:.1f}KB")
