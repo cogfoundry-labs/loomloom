@@ -162,7 +162,18 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
    position) can't be made to participate in from the parent page's JS. */
 .compare-frame.is-live .compare{overflow:hidden;touch-action:auto;}
 .compare-frame.is-live .compare-inner{height:100%;}
-.compare-frame.is-live .compare-inner > iframe{position:absolute;inset:0;top:0;left:0;height:100%;border:0;background:#fff;}
+/* `.compare-inner > iframe` (direct-child combinator) only ever matched the
+   BEFORE iframe -- the AFTER iframe lives one level deeper, inside
+   .after-layer, so it never matched this rule at all and was rendering at
+   the browser's bare default iframe size (~300x150px) inside a much taller
+   container. A real, confirmed bug: the visible boundary at the bottom of
+   that undersized box looked exactly like a stray horizontal scrollbar,
+   and -- being a fixed default height, unrelated to the drag handle or the
+   video's own playback -- it stayed put at every reveal position, which is
+   what made it so easy to mistake for something else while debugging.
+   Listing both selectors together closes the gap. */
+.compare-frame.is-live .compare-inner > iframe,
+.compare-frame.is-live .after-layer iframe{position:absolute;inset:0;top:0;left:0;height:100%;border:0;background:#fff;}
 .compare-frame.is-live .after-layer{height:100%;}
 /* NOT width:100% here -- the after iframe's real width is set in JS to the
    *full widget width*, same as the after IMAGE trick above (afterImg.style.
