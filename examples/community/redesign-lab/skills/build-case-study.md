@@ -7,8 +7,7 @@ description: Gate 4 / Share stage. Assembles a real, interactive Case Study from
 
 Share's real implementation, not a description of one. The Golden Case
 Study run this was generalized from is documented in
-`../references/model-policy.md` and `../references/price-report-zh.md`
-(the real loomloom costs).
+`../references/model-policy.md` (the real loomloom costs).
 
 ## Prerequisite: loomloom isn't required until this exact moment
 

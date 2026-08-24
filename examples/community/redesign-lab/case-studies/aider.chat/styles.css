@@ -164,7 +164,7 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .compare-frame .handle:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
 .compare:focus-visible{outline:3px solid var(--ink);outline-offset:-3px;}
 .compare-caption{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--faint);margin-top:10px;}
-.compare-full-toggle{text-align:center;margin:20px 0 0;}
+.compare-full-toggle{margin:20px 0 0;}
 /* The full-page comparison: real, static screenshots (no video, no
    cross-origin iframe), sized to the same 800px column as the rest of the
    article's prose instead of the 1280px full-bleed width the frozen live

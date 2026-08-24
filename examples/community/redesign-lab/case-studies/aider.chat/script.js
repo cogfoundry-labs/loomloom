@@ -6,15 +6,31 @@
 // pieces carry ids any more). Each instance's pieces are found relative to
 // its own .compare-frame, not via a single fixed set of page-wide ids.
 Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), function(frameEl){
+ try { // Two real instances of this widget can be on one page now (the
+  // frozen live one, the full-page screenshot one) -- forEach doesn't
+  // catch per-iteration errors on its own, so one instance rendering
+  // incompletely (a future template edit, a data gap) would otherwise
+  // throw here and silently abort init for every instance after it in
+  // document order. This try/catch keeps each instance's init isolated.
   var widget = frameEl.querySelector('.compare');
   if (!widget) return; // script.js is shared by pages with no compare widget (embed/ch-*.html)
   var inner = frameEl.querySelector('.compare-inner');
   var layer = frameEl.querySelector('.after-layer');
   var divider = frameEl.querySelector('.divider');
   var handle = frameEl.querySelector('.handle');
-  var beforeImg = inner.querySelector(':scope > iframe, :scope > img');
-  var afterImg = layer.querySelector('iframe, img');
-  var isLive = beforeImg.tagName === 'IFRAME';
+  // .before-media/.after-media, not a tag-name search -- this diff added
+  // those exact classes to both elements for this lookup; a plain
+  // `querySelector('iframe, img')` would silently grab the wrong node if
+  // a future edit ever adds another image (a spinner, a placeholder)
+  // inside .after-layer ahead of the real one.
+  var beforeImg = frameEl.querySelector('.before-media');
+  var afterImg = frameEl.querySelector('.after-media');
+  // The class Python already stamps on frameEl itself, not a re-derived
+  // tag-name check -- frame_cls in render_compare_widget_html sets
+  // "is-live" for exactly this, and the CSS already keys off it too; this
+  // was an independent (and easy to drift out of sync) re-check of the
+  // same fact.
+  var isLive = frameEl.classList.contains('is-live');
 
   // Screenshot mode only: the widget's own frame is a fixed 16:9 box (CSS
   // aspect-ratio) so it reads like a video player regardless of content
@@ -42,6 +58,11 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
   whenReady(beforeImg, layout);
   whenReady(afterImg, layout);
   window.addEventListener('resize', layout);
+  // Exposed so the "see the full page" toggle below can force a re-layout
+  // for just the one instance it's revealing, instead of broadcasting a
+  // page-wide synthetic resize event that every .compare-frame's own
+  // resize listener would also receive.
+  frameEl._compareLayout = layout;
 
   function applyPct(pct){
     pct = Math.min(Math.max(pct, 0), 100);
@@ -108,12 +129,20 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
     dragRect = null;
   });
   handle.addEventListener('keydown', function(e){
-    var current = parseFloat(handle.getAttribute('aria-valuenow')) || 50;
+    // Not `parseFloat(...) || 50` -- a real, confirmed bug: when the
+    // handle sits at 0 (after Home, or a drag to the far left),
+    // parseFloat returns the number 0, and `0 || 50` evaluates to 50
+    // because 0 is falsy in JS. That turned a real ArrowRight nudge (0 ->
+    // 5) into a jarring jump (0 -> 55). isNaN is the actual "is this
+    // missing" check; 0 is a perfectly valid position, not a missing one.
+    var raw = parseFloat(handle.getAttribute('aria-valuenow'));
+    var current = isNaN(raw) ? 50 : raw;
     if (e.key === 'ArrowLeft'){ applyPct(current - 5); e.preventDefault(); }
     else if (e.key === 'ArrowRight'){ applyPct(current + 5); e.preventDefault(); }
     else if (e.key === 'Home'){ applyPct(0); e.preventDefault(); }
     else if (e.key === 'End'){ applyPct(100); e.preventDefault(); }
   });
+ } catch (err) { /* isolated per-instance -- see the try comment above */ }
 });
 
 // The "see the full page" toggle: the second .compare-frame (screenshot
@@ -127,11 +156,11 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
   var panel = document.getElementById('compareFull');
   if (!btn || !panel) return;
   btn.addEventListener('click', function(){
-    var showing = !panel.hidden;
-    panel.hidden = showing;
-    btn.setAttribute('aria-expanded', String(!showing));
-    btn.textContent = showing ? btn.getAttribute('data-show-label') : btn.getAttribute('data-hide-label');
-    if (!showing){
+    panel.hidden = !panel.hidden;
+    var isOpen = !panel.hidden;
+    btn.setAttribute('aria-expanded', String(isOpen));
+    btn.textContent = isOpen ? btn.getAttribute('data-hide-label') : btn.getAttribute('data-show-label');
+    if (isOpen){
       // A real, confirmed bug: this panel starts `hidden` (display:none),
       // so its .compare-inner's height -- computed once from each image's
       // natural size times the *then-zero* widget.clientWidth (see the
@@ -144,8 +173,32 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
       // where the handle was dragged. layout() never re-runs on its own
       // once the panel becomes visible -- only a resize event or a fresh
       // image load re-triggers it -- so it has to be forced here, now that
-      // widget.clientWidth is finally real.
-      window.dispatchEvent(new Event('resize'));
+      // widget.clientWidth is finally real. Calls the revealed instance's
+      // own layout() directly (stashed as frameEl._compareLayout by the
+      // init loop above) instead of broadcasting a page-wide synthetic
+      // resize event, so this doesn't also re-run layout for the other,
+      // already-correctly-sized widget still visible above.
+      var revealedFrame = panel.querySelector('.compare-frame');
+      if (revealedFrame){
+        // The two images in this instance render with data-src, not src
+        // (see render_compare_widget_html's defer_load), so nothing has
+        // fetched yet -- this is the one, deterministic trigger. Each
+        // gets its own fresh 'load' listener (the one whenReady attached
+        // at page-init time already fired trivially back then, since a
+        // src-less <img> counts as "complete" with nothing to report) so
+        // layout() gets a real recompute once each image actually
+        // finishes loading, not just once at open time before either has
+        // any pixels to measure.
+        var deferred = revealedFrame.querySelectorAll('img[data-src]');
+        Array.prototype.forEach.call(deferred, function(img){
+          img.addEventListener('load', function(){
+            if (revealedFrame._compareLayout) revealedFrame._compareLayout();
+          });
+          img.src = img.getAttribute('data-src');
+          img.removeAttribute('data-src');
+        });
+        if (revealedFrame._compareLayout) revealedFrame._compareLayout();
+      }
       panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
     }
   });

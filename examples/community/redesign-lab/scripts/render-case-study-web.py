@@ -249,7 +249,7 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .compare-frame .handle:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
 .compare:focus-visible{outline:3px solid var(--ink);outline-offset:-3px;}
 .compare-caption{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--faint);margin-top:10px;}
-.compare-full-toggle{text-align:center;margin:20px 0 0;}
+.compare-full-toggle{margin:20px 0 0;}
 /* The full-page comparison: real, static screenshots (no video, no
    cross-origin iframe), sized to the same 800px column as the rest of the
    article's prose instead of the 1280px full-bleed width the frozen live
@@ -317,15 +317,31 @@ JS = '''
 // pieces carry ids any more). Each instance's pieces are found relative to
 // its own .compare-frame, not via a single fixed set of page-wide ids.
 Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), function(frameEl){
+ try { // Two real instances of this widget can be on one page now (the
+  // frozen live one, the full-page screenshot one) -- forEach doesn't
+  // catch per-iteration errors on its own, so one instance rendering
+  // incompletely (a future template edit, a data gap) would otherwise
+  // throw here and silently abort init for every instance after it in
+  // document order. This try/catch keeps each instance's init isolated.
   var widget = frameEl.querySelector('.compare');
   if (!widget) return; // script.js is shared by pages with no compare widget (embed/ch-*.html)
   var inner = frameEl.querySelector('.compare-inner');
   var layer = frameEl.querySelector('.after-layer');
   var divider = frameEl.querySelector('.divider');
   var handle = frameEl.querySelector('.handle');
-  var beforeImg = inner.querySelector(':scope > iframe, :scope > img');
-  var afterImg = layer.querySelector('iframe, img');
-  var isLive = beforeImg.tagName === 'IFRAME';
+  // .before-media/.after-media, not a tag-name search -- this diff added
+  // those exact classes to both elements for this lookup; a plain
+  // `querySelector('iframe, img')` would silently grab the wrong node if
+  // a future edit ever adds another image (a spinner, a placeholder)
+  // inside .after-layer ahead of the real one.
+  var beforeImg = frameEl.querySelector('.before-media');
+  var afterImg = frameEl.querySelector('.after-media');
+  // The class Python already stamps on frameEl itself, not a re-derived
+  // tag-name check -- frame_cls in render_compare_widget_html sets
+  // "is-live" for exactly this, and the CSS already keys off it too; this
+  // was an independent (and easy to drift out of sync) re-check of the
+  // same fact.
+  var isLive = frameEl.classList.contains('is-live');
 
   // Screenshot mode only: the widget's own frame is a fixed 16:9 box (CSS
   // aspect-ratio) so it reads like a video player regardless of content
@@ -353,6 +369,11 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
   whenReady(beforeImg, layout);
   whenReady(afterImg, layout);
   window.addEventListener('resize', layout);
+  // Exposed so the "see the full page" toggle below can force a re-layout
+  // for just the one instance it's revealing, instead of broadcasting a
+  // page-wide synthetic resize event that every .compare-frame's own
+  // resize listener would also receive.
+  frameEl._compareLayout = layout;
 
   function applyPct(pct){
     pct = Math.min(Math.max(pct, 0), 100);
@@ -419,12 +440,20 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
     dragRect = null;
   });
   handle.addEventListener('keydown', function(e){
-    var current = parseFloat(handle.getAttribute('aria-valuenow')) || 50;
+    // Not `parseFloat(...) || 50` -- a real, confirmed bug: when the
+    // handle sits at 0 (after Home, or a drag to the far left),
+    // parseFloat returns the number 0, and `0 || 50` evaluates to 50
+    // because 0 is falsy in JS. That turned a real ArrowRight nudge (0 ->
+    // 5) into a jarring jump (0 -> 55). isNaN is the actual "is this
+    // missing" check; 0 is a perfectly valid position, not a missing one.
+    var raw = parseFloat(handle.getAttribute('aria-valuenow'));
+    var current = isNaN(raw) ? 50 : raw;
     if (e.key === 'ArrowLeft'){ applyPct(current - 5); e.preventDefault(); }
     else if (e.key === 'ArrowRight'){ applyPct(current + 5); e.preventDefault(); }
     else if (e.key === 'Home'){ applyPct(0); e.preventDefault(); }
     else if (e.key === 'End'){ applyPct(100); e.preventDefault(); }
   });
+ } catch (err) { /* isolated per-instance -- see the try comment above */ }
 });
 
 // The "see the full page" toggle: the second .compare-frame (screenshot
@@ -438,11 +467,11 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
   var panel = document.getElementById('compareFull');
   if (!btn || !panel) return;
   btn.addEventListener('click', function(){
-    var showing = !panel.hidden;
-    panel.hidden = showing;
-    btn.setAttribute('aria-expanded', String(!showing));
-    btn.textContent = showing ? btn.getAttribute('data-show-label') : btn.getAttribute('data-hide-label');
-    if (!showing){
+    panel.hidden = !panel.hidden;
+    var isOpen = !panel.hidden;
+    btn.setAttribute('aria-expanded', String(isOpen));
+    btn.textContent = isOpen ? btn.getAttribute('data-hide-label') : btn.getAttribute('data-show-label');
+    if (isOpen){
       // A real, confirmed bug: this panel starts `hidden` (display:none),
       // so its .compare-inner's height -- computed once from each image's
       // natural size times the *then-zero* widget.clientWidth (see the
@@ -455,8 +484,32 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
       // where the handle was dragged. layout() never re-runs on its own
       // once the panel becomes visible -- only a resize event or a fresh
       // image load re-triggers it -- so it has to be forced here, now that
-      // widget.clientWidth is finally real.
-      window.dispatchEvent(new Event('resize'));
+      // widget.clientWidth is finally real. Calls the revealed instance's
+      // own layout() directly (stashed as frameEl._compareLayout by the
+      // init loop above) instead of broadcasting a page-wide synthetic
+      // resize event, so this doesn't also re-run layout for the other,
+      // already-correctly-sized widget still visible above.
+      var revealedFrame = panel.querySelector('.compare-frame');
+      if (revealedFrame){
+        // The two images in this instance render with data-src, not src
+        // (see render_compare_widget_html's defer_load), so nothing has
+        // fetched yet -- this is the one, deterministic trigger. Each
+        // gets its own fresh 'load' listener (the one whenReady attached
+        // at page-init time already fired trivially back then, since a
+        // src-less <img> counts as "complete" with nothing to report) so
+        // layout() gets a real recompute once each image actually
+        // finishes loading, not just once at open time before either has
+        // any pixels to measure.
+        var deferred = revealedFrame.querySelectorAll('img[data-src]');
+        Array.prototype.forEach.call(deferred, function(img){
+          img.addEventListener('load', function(){
+            if (revealedFrame._compareLayout) revealedFrame._compareLayout();
+          });
+          img.src = img.getAttribute('data-src');
+          img.removeAttribute('data-src');
+        });
+        if (revealedFrame._compareLayout) revealedFrame._compareLayout();
+      }
       panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
     }
   });
@@ -521,7 +574,8 @@ def looks_like_color(value):
 
 def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc,
                                 compare_after_label, before_embed_url=None, after_embed_url=None,
-                                rel_prefix=""):
+                                rel_prefix="", has_full_page_toggle=False, handle_label_suffix="",
+                                defer_load=False):
     """The compare-frame markup shared by the main page and the standalone
     embed fragment (render_embed_compare_html) -- one place that decides
     <img> (real screenshots) vs <iframe> (real live pages) so the two
@@ -533,7 +587,23 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
     after_embed_url (a same-origin relative path into this same deployed
     site -- needs the same "one directory deeper" adjustment) and never to
     before_embed_url (always a real absolute external URL, the live
-    "before" site, which a relative-path prefix would break)."""
+    "before" site, which a relative-path prefix would break).
+
+    has_full_page_toggle: only True for the main case-study page's top
+    (frozen, live) widget, which has a real "see the full page" toggle +
+    second widget right below it -- render_embed_compare_html never passes
+    this, since the standalone embed fragment has no such counterpart.
+    Controls whether the live-mode caption promises "see the full page
+    below": confirmed a real bug when this was unconditional -- the embed
+    fragment rendered the exact same caption pointing at content that was
+    never on that page.
+
+    handle_label_suffix: distinguishes this instance's slider from another
+    one that might be visible on the same page at once (only the main page
+    can render this function twice -- the embed fragment always renders it
+    once). Without this, two identical role="slider" aria-labels exist in
+    the accessibility tree together once "see the full page" is opened,
+    with no way for a screen-reader user to tell them apart."""
     is_live = bool(before_embed_url and after_embed_url)
     frame_cls = "compare-frame is-live" if is_live else "compare-frame"
     if is_live:
@@ -547,20 +617,56 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
         # attribute (still respected by Chromium despite being long
         # deprecated in the HTML spec) suppresses the scrollbar itself,
         # backed by the matching overflow:hidden on the CSS rule below for
-        # engines that ignore the attribute.
+        # engines that ignore the attribute. Known, accepted cost: unlike
+        # plain overflow:hidden, scrolling="no" also blocks the iframe's
+        # keyboard-driven scroll (Tab in, then arrow keys) -- there's no
+        # CSS-only way to suppress a cross-origin iframe's native scrollbar
+        # from the embedding page (we don't control the real external
+        # site's own stylesheet), so this is the only mechanism available
+        # for the "before" side specifically. tabindex="-1" below matches
+        # that reality instead of leaving a focusable control that can no
+        # longer do anything when focused.
         before_el = f'<iframe class="before-media" src="{html.escape(before_embed_url)}" title="Before: {subject_esc}\'s original design, live, {before_label_esc}" loading="lazy" tabindex="-1" scrolling="no"></iframe>'
         after_el = f'<iframe class="after-media" src="{html.escape(rel_prefix + after_embed_url)}" title="After: {subject_esc} redesigned as {after_label_esc}, live" loading="lazy" tabindex="-1" scrolling="no"></iframe>'
         # Real, but frozen: this widget only ever shows the top of each real
         # page (the two iframes are permanently non-interactive -- see the
         # CSS comment on that rule -- so there's no scrolling to advertise
-        # here). Scrolling the rest of both real pages together is the
-        # second, screenshot-based widget further down (the "see the full
-        # page" toggle) -- this note points there instead of promising a
-        # scroll interaction this widget doesn't have.
-        caption_note = ' <span class="live-note">(live pages, top of page only -- see the full page below for the rest)</span>'
+        # here). The "see the full page below" pointer is only accurate
+        # when a caller actually renders that toggle+widget -- confirmed a
+        # real bug when this was unconditional: the standalone embed
+        # fragment (render_embed_compare_html) shares this same live-mode
+        # branch but never gets a full-page counterpart, so it rendered an
+        # identical caption pointing at content that didn't exist on that
+        # page.
+        caption_note = (
+            ' <span class="live-note">(live pages, top of page only -- see the full page below for the rest)</span>'
+            if has_full_page_toggle else
+            ' <span class="live-note">(live pages, top of page only)</span>'
+        )
     else:
-        before_el = f'<img class="before-media" src="{rel_prefix}{before_rel}" alt="Before: {subject_esc}\'s original design, {before_label_esc}">'
-        after_el = f'<img class="after-media" src="{rel_prefix}{after_rel}" alt="After: {subject_esc} redesigned as {after_label_esc}">'
+        # defer_load (data-src, not loading="lazy"): only the toggle-
+        # revealed full-page widget passes this -- it starts inside a
+        # [hidden] panel most visitors never open, so its two full-page
+        # screenshots (the same class of asset that covers an 8340px page
+        # in this file's own comments elsewhere) shouldn't fetch until
+        # someone actually opens it. loading="lazy" looked like the
+        # obvious fix and was tried first, but confirmed unreliable for
+        # this exact shape of problem: an image inside an ancestor that
+        # starts display:none and later gets shown via JS is a known,
+        # documented edge case browsers' native lazy-loading doesn't
+        # handle consistently (there's no spec-guaranteed re-check when a
+        # hidden ancestor becomes visible -- it's built for scrolling down
+        # a long page, not a JS-toggled reveal). data-src is deterministic
+        # instead: no src attribute at all until the toggle's own click
+        # handler in script.js copies data-src into src, which is a real,
+        # unambiguous fetch trigger regardless of browser/engine
+        # lazy-load heuristics. The always-visible primary widget (this
+        # same branch, when defer_load is False) keeps loading immediately
+        # -- deferring it would only delay real, immediately-needed
+        # content for no benefit.
+        src_attr = "data-src" if defer_load else "src"
+        before_el = f'<img class="before-media" {src_attr}="{rel_prefix}{before_rel}" alt="Before: {subject_esc}\'s original design, {before_label_esc}">'
+        after_el = f'<img class="after-media" {src_attr}="{rel_prefix}{after_rel}" alt="After: {subject_esc} redesigned as {after_label_esc}">'
         caption_note = ""
     # tabindex/aria-label on the wrapper only apply in screenshot mode,
     # where this div is itself the real scrollable region (confirmed via a
@@ -593,7 +699,7 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
           <div class="divider" aria-hidden="true"></div>
         </div>
       </div>
-      <div class="handle" role="slider" tabindex="0" aria-label="Before and after comparison position"
+      <div class="handle" role="slider" tabindex="0" aria-label="Before and after comparison position{handle_label_suffix}"
            aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
     </div>
     <div class="compare-caption"><span>Before</span><span>{compare_after_label}{caption_note}</span></div>'''
@@ -616,6 +722,12 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     whole-page behavior the screenshot mode has."""
     status = data["status"]
     copy = STATUS_COPY[status]
+    # Computed once, reused for both the intro paragraph's conditional text
+    # and the "see the full page" toggle block's own gate below -- these
+    # two used to be checked separately with slightly different syntax
+    # (bool(...) here vs. a bare truthy check there), a real risk of the
+    # two silently drifting out of agreement if only one got updated.
+    has_live_embed = bool(before_embed_url and after_embed_url)
 
     title_esc = html.escape(title)
     subject_esc = html.escape(data["subject"])
@@ -734,8 +846,8 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
   <section id="compare">
     <span class="section-label">The Redesign</span>
     <h2>Before &rarr; After</h2>
-    <p style="color:var(--muted);margin-bottom:20px;">Drag the handle to compare the top of each real page.</p>
-    {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url)}
+    <p style="color:var(--muted);margin-bottom:20px;">{"Drag the handle to compare the top of each real page." if has_live_embed else "Drag the handle to compare. Scroll inside the frame to see the rest of each page."}</p>
+    {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url, has_full_page_toggle=has_live_embed, handle_label_suffix=" (top of page)" if has_live_embed else "")}
     <div class="compare-embed">
       <span class="share-label">Share this chapter</span>
       <button class="share-btn" onclick="{html.escape(f'copyCompareEmbed({json.dumps("Before and after: " + data["subject"])})')}" aria-label="Copy embeddable code for this before/after comparison">Copy the code</button>
@@ -745,8 +857,8 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     </div>
     <div class="compare-full" id="compareFull" hidden>
       <p style="color:var(--muted);margin-bottom:20px;">A full-page comparison (static screenshots, not the live sites above) -- drag the handle, then scroll down inside it to see the rest of both pages together.</p>
-      {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"])}
-    </div>''' if before_embed_url and after_embed_url else ""}
+      {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], handle_label_suffix=" (full page)", defer_load=True)}
+    </div>''' if has_live_embed else ""}
   </section>
 
   <section id="what-changed">
