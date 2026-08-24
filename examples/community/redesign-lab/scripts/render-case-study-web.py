@@ -41,6 +41,7 @@ import json
 import re
 import shutil
 from pathlib import Path
+from urllib.parse import urljoin
 
 STATUS_COPY = {
     "implemented": {
@@ -740,7 +741,8 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     for i, ch in enumerate(data["chapters"], start=1):
         num = f"{i:02d}"
         cat = ch["category"]
-        title_text = html.escape(cat.replace("-", " ").title())
+        title_raw = cat.replace("-", " ").title()
+        title_text = html.escape(title_raw)
         before_fact = html.escape(ch["before_fact"])
         after_fact = html.escape(ch["after_fact"])
         narrative = html.escape(ch.get("narrative", "").strip() or f"{ch['before_fact']} {ch['after_fact']}")
@@ -760,7 +762,15 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
         <button class="share-btn" onclick="{html.escape(f'copyChapterEmbed({json.dumps(num)}, {json.dumps(data["subject"] + ": " + cat.replace("-", " ").title())})')}" aria-label="Copy embeddable code for this chapter">Copy the code</button>
       </div>
     </article>'''
-        quick_label = html.escape(CATEGORY_QUICK_LABELS.get(cat, title_text))
+        # title_raw (unescaped), not title_text -- title_text is already
+        # html.escape()'d for its own use above, so using it as the .get()
+        # fallback here double-escaped it once html.escape() below ran
+        # again. Currently inert (category slugs are hyphenated
+        # identifiers unlikely to contain HTML metacharacters) but a real
+        # logic defect: a category ever added to diff-transformations.py
+        # without a matching CATEGORY_QUICK_LABELS entry would render
+        # literal double-escaped entities instead of the real character.
+        quick_label = html.escape(CATEGORY_QUICK_LABELS.get(cat, title_raw))
         quick_hits_html += f'''
       <div class="quick-hit"><span class="num">{num}</span><p>{quick_label}</p></div>'''
 
@@ -785,8 +795,24 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     if validation.get("a11y_violations") is not None:
         n = validation["a11y_violations"]
         validate_cells.append((str(n), "Accessibility violations" if n else "Accessibility violations (real axe-core scan)"))
-    validate_cells.append(("✓", "Responsive layout (mobile / tablet / desktop)"))
-    validate_cells.append(("✓", "Real rendered implementation, not a mockup"))
+    # These two claims aren't backed by their own report file the way the
+    # two above are (there's no --responsive-report/--implementation-report
+    # flag, nor should there be one just for this) -- a real, confirmed bug
+    # when they were unconditional: a run built with neither
+    # --mechanical-report nor --a11y-report still published two green
+    # checkmarks claiming both were verified, contradicting this
+    # codebase's own evidence-gating philosophy elsewhere (see
+    # package-share.py's gather_evidence()). Gated on the same real
+    # evidence the two cells above require: if at least one actual
+    # validation report was provided, Validate genuinely ran against this
+    # page, and both properties (real rendered code, checked responsive
+    # per validate-design.md's webapp-testing piece) are true of anything
+    # that made it through Validate at all -- but an empty validation dict
+    # means Validate's evidence was never passed to this build at all, and
+    # neither claim should be asserted.
+    if validation:
+        validate_cells.append(("✓", "Responsive layout (mobile / tablet / desktop)"))
+        validate_cells.append(("✓", "Real rendered implementation, not a mockup"))
     validate_html = "".join(
         f'<div class="validate-cell"><span class="metric">{html.escape(v)}</span><span class="label">{html.escape(lbl)}</span></div>'
         for v, lbl in validate_cells
@@ -809,15 +835,29 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
         if data.get("request_prompt") else ""
     )
 
-    og_image_tag = f'<meta property="og:image" content="{html.escape(og_image_rel)}">' if og_image_rel else ""
+    # A bare relative og:image path plus no og:url is a real, confirmed
+    # problem: per the Open Graph protocol og:image should be an absolute
+    # URL, and without og:url many crawlers (Facebook's included) have
+    # nothing to resolve a relative path against -- publish without
+    # --canonical-url, share the link, and the preview image is likely to
+    # fail to render. When canonical_url is available, build a real
+    # absolute image URL from it and emit a matching og:url; when it
+    # isn't, at least keep twitter:image (previously missing entirely
+    # despite declaring twitter:card=summary_large_image, which doesn't
+    # reliably fall back to og:image on its own) pointing at the same
+    # value og:image gets, rather than adding no fallback at all.
+    og_image_abs = urljoin(canonical_url, og_image_rel) if (canonical_url and og_image_rel) else og_image_rel
+    og_image_tag = f'<meta property="og:image" content="{html.escape(og_image_abs)}">' if og_image_abs else ""
+    twitter_image_tag = f'<meta name="twitter:image" content="{html.escape(og_image_abs)}">' if og_image_abs else ""
     canonical_tag = f'<link rel="canonical" href="{html.escape(canonical_url)}">' if canonical_url else ""
+    og_url_tag = f'<meta property="og:url" content="{html.escape(canonical_url)}">' if canonical_url else ""
 
     body = f'''
 <header>
 <div class="wrap">
   <div class="topbar">
     <div class="left">
-      {"<img src='" + logo_rel + "' alt='" + subject_esc + " logo'>" if logo_rel else "<span></span>"}
+      {f'<img src="{html.escape(logo_rel)}" alt="{subject_esc} logo">' if logo_rel else "<span></span>"}
       <span class="tag">Case Study &middot; Redesign Lab</span>
     </div>
     <button class="copy-page-btn" onclick="copyPageLink()" aria-label="Copy link to this case study">Copy link</button>
@@ -922,9 +962,11 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
 <meta property="og:title" content="{title_esc}">
 <meta property="og:description" content="{description}">
 {og_image_tag}
+{og_url_tag}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{title_esc}">
 <meta name="twitter:description" content="{description}">
+{twitter_image_tag}
 {canonical_tag}
 {'<link rel="icon" href="' + favicon_rel + '">' if favicon_rel else ""}
 <link rel="stylesheet" href="styles.css">

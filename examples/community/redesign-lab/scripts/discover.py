@@ -100,7 +100,18 @@ def detect_routes(root, framework):
                 for f in d.rglob("*"):
                     if f.suffix in (".tsx", ".jsx", ".astro", ".ts", ".js") and not f.name.startswith("_"):
                         rel = f.relative_to(d).with_suffix("")
-                        route = "/" + str(rel).replace("\\", "/").replace("index", "").rstrip("/")
+                        # Drop a trailing "index" *segment*, not any
+                        # occurrence of the literal substring "index" --
+                        # .replace("index", "") was a real, confirmed bug:
+                        # pages/reindex.tsx became route "/re" (the "index"
+                        # inside "reindex" got stripped), and
+                        # pages/index-page.tsx became "/-page". Only the
+                        # final path segment being exactly "index" means
+                        # the framework's own index-route convention.
+                        segments = str(rel).replace("\\", "/").split("/")
+                        if segments and segments[-1] == "index":
+                            segments = segments[:-1]
+                        route = "/" + "/".join(segments)
                         routes.append(route or "/")
     elif framework == "plain-html":
         for f in root.glob("*.html"):
@@ -108,13 +119,23 @@ def detect_routes(root, framework):
     return sorted(set(routes)) or ["/"]
 
 
-def detect_dev_command(pkg):
+def detect_dev_command(pkg, package_manager="npm"):
     if not pkg:
         return None
     scripts = pkg.get("scripts", {})
+    # runner keyed by the real detected package_manager, not hardcoded npm
+    # -- a project with only pnpm-lock.yaml (no package-lock.json) was
+    # correctly reported as package_manager="pnpm" but dev_command was
+    # still "npm run dev", inconsistent with its own reported manager and
+    # wrong if npm isn't even installed. "none" (no lockfile found) falls
+    # back to npm, since `npm run` still works against a bare package.json
+    # with no lockfile at all.
+    runner = {"pnpm": "pnpm run", "yarn": "yarn run", "bun": "bun run", "npm": "npm run", "none": "npm run"}.get(
+        package_manager, "npm run"
+    )
     for key in ("dev", "start"):
         if key in scripts:
-            return f"npm run {key}"
+            return f"{runner} {key}"
     return None
 
 
@@ -143,11 +164,12 @@ def main():
         deps.update(pkg.get("devDependencies", {}))
 
     framework = detect_framework(root, deps)
+    package_manager = detect_package_manager(root)
     result = {
         "framework": framework,
         "styling_system": detect_styling(root, deps),
-        "package_manager": detect_package_manager(root),
-        "dev_command": detect_dev_command(pkg),
+        "package_manager": package_manager,
+        "dev_command": detect_dev_command(pkg, package_manager),
         "routes": detect_routes(root, framework),
         "existing_components_dir": next(
             (str(d.relative_to(root)) for d in [root / "src" / "components", root / "components"] if d.exists()),

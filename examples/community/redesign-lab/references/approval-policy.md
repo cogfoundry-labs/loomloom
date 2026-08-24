@@ -1,6 +1,6 @@
-# Approval policy: the three gates
+# Approval policy: the four gates
 
-Only these three moments stop for a human. Everything else in the pipeline
+Only these four moments stop for a human. Everything else in the pipeline
 just runs.
 
 ## Every gate: three outcomes, not two
@@ -131,8 +131,8 @@ options it's showing, in both directions.** Confirmed directly: a first
 version used a neutral dark header (`#141416`) that was close enough to a
 dark redesign's own near-black background (`#0A0A0A`) that a human couldn't
 tell, from a screenshot, where the tool's own UI ended and the real page
-began. `build-compare-page.py`'s header uses a saturated amber
-(`#F5B400`) with an explicit "COMPARISON TOOL — NOT PART OF THE DESIGN"
+began. `build-compare-page.py`'s header uses the loomloom brand green
+(`#00FDBC`) with an explicit "COMPARISON TOOL — NOT PART OF THE DESIGN"
 badge — a color and a label no real redesign is likely to produce for its
 own background, so the chrome reads as chrome regardless of whether the
 option currently shown is light or dark, loud or restrained. Don't soften

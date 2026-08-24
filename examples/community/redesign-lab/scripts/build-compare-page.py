@@ -118,10 +118,21 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 
 
 def parse_option(raw):
-    parts = raw.split("=", 2)
-    if len(parts) != 3:
+    # Split from the left for label, then from the RIGHT for score --
+    # not a single max-2 split from the left. A real, confirmed bug: a src
+    # URL with its own query string (e.g. "...index.html?v=2") contains an
+    # "=" itself, and a naive raw.split("=", 2) misassigned everything
+    # after the first embedded "=" into the wrong field with no error --
+    # src got silently truncated and score got corrupted with leftover
+    # path text. label and score are both short, fixed-shape strings
+    # unlikely to contain "=" (a slug-like name, an "11/11"-style score);
+    # src is the one field that realistically can.
+    if "=" not in raw:
         sys.exit(f'--option must be "label=src=score", got: {raw!r}')
-    label, src, score = parts
+    label, rest = raw.split("=", 1)
+    if "=" not in rest:
+        sys.exit(f'--option must be "label=src=score", got: {raw!r}')
+    src, score = rest.rsplit("=", 1)
     return {"label": label, "src": src, "score": score}
 
 

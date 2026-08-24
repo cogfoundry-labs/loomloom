@@ -45,16 +45,20 @@ stages:
   - id: gate-1
     type: human
     title: "Direction choice"
-    # Rev 7 mechanism (../references/approval-policy.md's "How gates are
-    # actually shown"): build and open each slice's own real browser tab
-    # progressively as it's ready (current-fixed first, then each
-    # exploratory direction) -- tell the human as soon as each one is up,
-    # don't wait for all of them. No combined comparison page (a real,
-    # confirmed base64-payload limit broke that for >2-3 image-heavy
-    # options) and no cross-tab links (confirmed inert regardless of href
-    # form -- a data:-rendered page can't navigate to a file:// URL via a
-    # click). Once every slice in this pass is open, the decision itself is
-    # an AskUserQuestion call, not a numbered list in chat.
+    # Rev 8 mechanism (../references/approval-policy.md's "How gates are
+    # actually shown"): serve the run's output over a real local HTTP
+    # server, build each slice's real HTML (current-fixed first, then each
+    # exploratory direction), and generate a single comparison page with
+    # scripts/build-compare-page.py (each slice a real
+    # <iframe src="http://...">, never inlined bytes) -- re-running it with
+    # one more --option and force-reloading the same tab each time a new
+    # slice finishes, so the reveal stays progressive without ever opening
+    # a second tab. An earlier one-tab-per-option mechanism was replaced
+    # after a real, confirmed bug: this environment's Browser pane only
+    # ever composites one tab live, so every tab but the most recently
+    # active one silently showed a stale frame. Once every slice in this
+    # pass is built, the decision itself is an AskUserQuestion call, not a
+    # numbered list in chat.
     #
     # Before building anything: narrate which 2 exploratory directions were
     # picked and why (genome distance, the ivory-serif exclusion), frame the
@@ -95,12 +99,12 @@ stages:
   - id: gate-2
     type: human
     title: "Variant choice"
-    # Same progressive, one-tab-per-variant mechanism as gate-1. Mechanical
-    # score and the aesthetic note are shown as reference information for
-    # the human's own decision, not used to curate/rank which variants get
+    # Same comparison-page mechanism as gate-1 (rev 8). Mechanical score
+    # and the aesthetic note are shown as reference information for the
+    # human's own decision, not used to curate/rank which variants get
     # shown -- with only 3-4 variants built by default there's no curation
-    # step at all; every one built gets its own tab and its own
-    # AskUserQuestion option, in build order.
+    # step at all; every one built gets its own entry in the comparison
+    # page and its own AskUserQuestion option, in build order.
     #
     # AskUserQuestion options:
     #   - one per built variant (name + mechanical score + real composition
@@ -124,7 +128,7 @@ stages:
 
   - id: validate
     skill: skills/validate-design.md
-    engine: local (webapp-testing + a11y-audit + mechanical-check.py) + agent (preservation re-check)
+    engine: local (webapp-testing + a11y-audit + mechanical-check.py + content-coverage-check.py) + agent (preservation re-check)
     scope: "whatever routes the preceding implement pass just built"
     produces: .output/validate-report.md
     on_fail: return_to(implement)
@@ -172,20 +176,21 @@ stages:
     # real loomloom precheck cost) produces the prompt below; only `generate`
     # (after approve) spends anything. Reuses every already-produced artifact
     # (screenshots, mechanical-check scores, analysis.md) — the only new
-    # spend is the cover and the narrative-chapter pass.
+    # spend is the narrative-chapter pass. No image-generation anymore: the
+    # hero is a typographic treatment built from the redesign's own real
+    # color tokens, free, no model call.
     prompt: |
       Share
       Generates:
-        - case-study visual identity (cover)
-        - <N> narrative chapter(s), <N> real transformations selected from
-          <M> found (3-6, ranked by significance — never padded or truncated
-          to hit a target count)
+        - typographic hero from real color tokens (free, no model call)
+        - <N> narrative chapter(s) — the one real loomloom call in Share,
+          <N> real transformations selected from <M> found (3-6, ranked by
+          significance — never padded or truncated to hit a target count)
         - interactive before/after presentation (reused, free)
         - reproducibility information (reused, free)
 
-      Estimated cost: ~$X.XX (cover ~$X.XX + narrative ~$X.XX, from real
-      `template-spec precheck` — note image-generate precheck has undershot
-      actual cost by ~7x in prior runs, so the real charge likely runs higher)
+      Estimated cost: ~$X.XX (narrative only — no image-generation anymore,
+      from real `template-spec precheck`)
 
       [ Generate Share Artifact ]  or  say "skip" to halt — nothing already
       built is lost, and nothing above has been spent yet.

@@ -86,9 +86,13 @@ otherwise-empty folder doesn't error — `gather_evidence()` just finds none
 of the files it's looking for, and the finished case study silently credits
 only `redesign-lab` and `cogfoundry-labs/loomloom`, missing every other real
 dependency the run actually used (the design authority, `taste`,
-`webapp-testing`, `a11y-audit`, any sibling aesthetic skill a Gate 1
-exploration built with). Nothing fails loudly; the case study just under-
-credits real open-source work by default. If this happens after `generate`
+`webapp-testing`, `a11y-audit`). Nothing fails loudly; the case study just
+under-credits real open-source work by default. (`gather_evidence()` has no
+code path that credits a specific Gate-1 direction-variant skill by name,
+e.g. `industrial-brutalist-ui` — only the base design authority declared at
+Discover — so a correct `--output-dir` doesn't change that particular gap;
+it's not a real credit category this function produces at all, not
+something a wrong path merely fails to find.) If this happens after `generate`
 already ran (the narrative already paid for), don't re-run `plan` from
 scratch — that mints a new `case-study-data.json` and re-triggers the paid
 call. Instead, call `package_share.gather_evidence()` directly against the

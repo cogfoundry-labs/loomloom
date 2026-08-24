@@ -64,12 +64,39 @@ def extract_facts(page):
     )
 
     # ---- Headline typography: the same "find the real hero heading" logic
-    # mechanical-check.py already uses, so this stays consistent with what
-    # Validate itself considers "the heading" ----
+    # mechanical-check.py's hero-line-count check uses, so this stays
+    # consistent with what Validate itself considers "the heading". A real,
+    # confirmed gap when this only checked `document.querySelector('h1') ||
+    # document.querySelector('h1,h2,h3')`: mechanical-check.py falls back
+    # to the longest-text-content heading near the top of the viewport
+    # specifically for the sr-only-<h1> pattern it documents as common
+    # (a visually-hidden h1 carrying the brand name for SEO, with the real
+    # prominent headline marked up as h2/h3) -- the simple `||` here always
+    # matched the invisible sr-only h1 first and short-circuited before
+    # ever reaching that fallback, so a page with that exact pattern
+    # silently reported no headline-typography change in the case-study
+    # diff even if the real, visible headline's font/size changed
+    # dramatically between before/after.
     heading_style = page.evaluate(
         """() => {
-            const h = document.querySelector('h1') || document.querySelector('h1,h2,h3');
-            if (!h || h.offsetHeight <= 2) return null;
+            const h1 = document.querySelector('h1');
+            const h1Height = h1 ? h1.offsetHeight : 0;
+            let h;
+            if (h1 && h1Height > 2) {
+                h = h1;
+            } else {
+                const maxTop = window.innerHeight * 0.6;
+                const candidates = Array.from(document.querySelectorAll('h1,h2,h3'));
+                let best = null, bestLen = 0;
+                for (const el of candidates) {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.top > maxTop || rect.width === 0 || el.offsetHeight <= 2) continue;
+                    const len = el.textContent.trim().length;
+                    if (len > bestLen) { bestLen = len; best = el; }
+                }
+                h = best;
+            }
+            if (!h) return null;
             const cs = getComputedStyle(h);
             return {
                 fontFamily: cs.fontFamily,

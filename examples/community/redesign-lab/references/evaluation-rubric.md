@@ -31,6 +31,13 @@ Any Fail here blocks completion. These are observations, not taste: a
 vision model (or a script) verifying them is checking a fact, not forming an
 opinion.
 
+This list is the design-authority's own `preflight_check` subset, not the
+complete list of what `mechanical-check.py` blocks on — it also runs
+`viewport-meta-present` and `responsive-layout-collapses`, added by
+redesign-lab itself rather than pulled from any design authority, and those
+block a slice the same as any check above. See `validate-design.md` for the
+full picture of what Validate actually runs.
+
 ## Aesthetic: advisory only, never eliminates
 
 "Feels distinctive," "reads premium," "composition is interesting." Surfaced

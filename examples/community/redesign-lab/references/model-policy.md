@@ -7,15 +7,25 @@ The only model-selection data loomloom exposes today is a flat list per
 execution unit with a single `isDefault` boolean
 (`src/cli/internal/cmd/template_spec.go:70`): no quality or cost tiering.
 
-Consequence: every loomloom call this pipeline makes hand-pins a specific
-model. Never rely on `isDefault`.
+Consequence: every loomloom call this pipeline actually makes hand-pins a
+specific model. Never rely on `isDefault`.
 
 | Step | modelKey | Why this one, not isDefault |
 |---|---|---|
-| Aesthetic-advisory scoring (`scripts/score.py`, optimized path only) | `google/gemini-3.1-pro-preview` | This is the one place a shallow, generic read would silently break the product's core value: worth the strongest available model, not the default economy pick. |
+| Share's narrative pass (`scripts/build-case-study.py`'s `case-study-narrative` template, `text-generate`) | `google/gemini-2.5-flash` | The only loomloom call this pipeline makes today — real, explicit `defaultModelRef` in the registered template, not left on `isDefault`. |
 
-When a second loomloom call is added to this pipeline, add its row here
-before wiring it up: don't leave a step on `isDefault` by omission.
+**Not active policy — kept for history only:** aesthetic-advisory scoring
+(`scripts/score.py`'s optimized path) was originally meant to pin
+`google/gemini-3.1-pro-preview`, but that path is confirmed broken (see
+"Known gap" below) and doesn't run in this pipeline at all — Explore
+Variants has been 100% agent-scored, free, since rev 6 (see
+`evaluation-rubric.md`, `explore-variants.md`, `SKILL.md`). Don't read this
+row as a live pin; it documents a call that was designed but never actually
+wired up.
+
+When a second real loomloom call is added to this pipeline, add its row to
+the active table above before wiring it up: don't leave a step on
+`isDefault` by omission.
 
 Raise the RFC-0003 gap with the loomloom team directly. This file is a
 documented workaround, not the intended long-term answer.
