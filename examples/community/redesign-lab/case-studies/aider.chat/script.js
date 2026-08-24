@@ -16,21 +16,33 @@
   // 8340px down to 2932px) means one side runs out of real content before
   // the other, which is shown honestly, not padded or stretched to match.
   // Live-embed mode (real <iframe>s, see the CSS comment above this same
-  // widget's rules): neither side's real height is readable from here, so
-  // there's nothing for this function to measure or set -- the fixed 16:9
-  // .compare-frame box plus this CSS mode's height:100% rules already size
-  // both sides correctly on their own.
+  // widget's rules): neither side's real HEIGHT is readable from here, so
+  // there's nothing to measure or set there -- the fixed 16:9 .compare-frame
+  // box plus this CSS mode's height:100% rules already size both sides
+  // correctly on their own. WIDTH is a different story: an iframe is a real,
+  // live document that lays itself out against its own actual rendered
+  // width, unlike a bitmap <img> that just gets visually windowed by a
+  // narrower crop without its own content reflowing. So the after side
+  // still needs the exact same "size it to the full widget width, let
+  // .after-layer's own narrower width visually clip it" trick as the image
+  // case below -- confirmed the hard way: without this, the live "after"
+  // page rendered as if the browser were only as wide as whatever sliver
+  // was currently revealed, triggering mobile/narrow-breakpoint CSS at any
+  // reveal position other than ~100%.
   var isLive = beforeImg.tagName === 'IFRAME';
   function layout(){
-    if (isLive) return;
     var w = widget.clientWidth;
+    if (isLive) {
+      afterImg.style.width = w + 'px';
+      return;
+    }
     var beforeH = beforeImg.naturalWidth ? w * (beforeImg.naturalHeight / beforeImg.naturalWidth) : 0;
     var afterH = afterImg.naturalWidth ? w * (afterImg.naturalHeight / afterImg.naturalWidth) : 0;
     inner.style.height = Math.max(beforeH, afterH) + 'px';
     afterImg.style.width = w + 'px'; // full-widget width, then clipped narrower by .after-layer's own width -- same reveal-window trick as before
   }
   function whenReady(img, cb){
-    if (isLive) return;
+    if (isLive) { cb(); return; }
     if (img.complete && img.naturalWidth) cb();
     else img.addEventListener('load', cb);
   }

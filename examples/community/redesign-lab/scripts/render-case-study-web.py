@@ -162,9 +162,20 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
    position) can't be made to participate in from the parent page's JS. */
 .compare-frame.is-live .compare{overflow:hidden;touch-action:auto;}
 .compare-frame.is-live .compare-inner{height:100%;}
-.compare-frame.is-live .compare-inner > iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;}
+.compare-frame.is-live .compare-inner > iframe{position:absolute;inset:0;top:0;left:0;height:100%;border:0;background:#fff;}
 .compare-frame.is-live .after-layer{height:100%;}
-.compare-frame.is-live .after-layer iframe{width:100%;height:100%;}
+/* NOT width:100% here -- the after iframe's real width is set in JS to the
+   *full widget width*, same as the after IMAGE trick above (afterImg.style.
+   width = w + 'px'), not to .after-layer's own narrower reveal width. An
+   <iframe> is a real, live document that lays itself out responsively
+   against its own actual rendered width (unlike a bitmap <img>, which just
+   gets visually windowed by a narrower crop without changing its own
+   content). Sizing it to the narrower wrapper's width instead of the full
+   widget width was a real, confirmed bug: it made the live "after" page
+   render as if the browser were only as wide as the currently-revealed
+   sliver, triggering mobile/narrow-breakpoint CSS at any reveal position
+   other than ~100%, not just narrow ones.
+   .after-layer iframe{width:100%} is intentionally absent here. */
 .compare-frame .handle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;background:var(--accent-fill);display:flex;align-items:center;justify-content:center;cursor:ew-resize;box-shadow:var(--shadow);z-index:2;touch-action:none;}
 .compare-frame .handle::before{content:"\\2194";color:var(--on-accent-fill);font-size:18px;font-weight:900;}
 .compare-frame .handle:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
@@ -238,21 +249,33 @@ JS = '''
   // 8340px down to 2932px) means one side runs out of real content before
   // the other, which is shown honestly, not padded or stretched to match.
   // Live-embed mode (real <iframe>s, see the CSS comment above this same
-  // widget's rules): neither side's real height is readable from here, so
-  // there's nothing for this function to measure or set -- the fixed 16:9
-  // .compare-frame box plus this CSS mode's height:100% rules already size
-  // both sides correctly on their own.
+  // widget's rules): neither side's real HEIGHT is readable from here, so
+  // there's nothing to measure or set there -- the fixed 16:9 .compare-frame
+  // box plus this CSS mode's height:100% rules already size both sides
+  // correctly on their own. WIDTH is a different story: an iframe is a real,
+  // live document that lays itself out against its own actual rendered
+  // width, unlike a bitmap <img> that just gets visually windowed by a
+  // narrower crop without its own content reflowing. So the after side
+  // still needs the exact same "size it to the full widget width, let
+  // .after-layer's own narrower width visually clip it" trick as the image
+  // case below -- confirmed the hard way: without this, the live "after"
+  // page rendered as if the browser were only as wide as whatever sliver
+  // was currently revealed, triggering mobile/narrow-breakpoint CSS at any
+  // reveal position other than ~100%.
   var isLive = beforeImg.tagName === 'IFRAME';
   function layout(){
-    if (isLive) return;
     var w = widget.clientWidth;
+    if (isLive) {
+      afterImg.style.width = w + 'px';
+      return;
+    }
     var beforeH = beforeImg.naturalWidth ? w * (beforeImg.naturalHeight / beforeImg.naturalWidth) : 0;
     var afterH = afterImg.naturalWidth ? w * (afterImg.naturalHeight / afterImg.naturalWidth) : 0;
     inner.style.height = Math.max(beforeH, afterH) + 'px';
     afterImg.style.width = w + 'px'; // full-widget width, then clipped narrower by .after-layer's own width -- same reveal-window trick as before
   }
   function whenReady(img, cb){
-    if (isLive) return;
+    if (isLive) { cb(); return; }
     if (img.complete && img.naturalWidth) cb();
     else img.addEventListener('load', cb);
   }
