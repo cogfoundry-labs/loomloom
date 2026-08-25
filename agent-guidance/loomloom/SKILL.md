@@ -123,17 +123,30 @@ or provider-native fields. Read the current v2 protocol and the target
 environment's authoring facts first:
 
 ```text
+loomloom model types --output json
 loomloom template-spec docs spec --lang zh-CN
 loomloom template-spec docs inputs --lang zh-CN
 loomloom template-spec docs bindings --lang zh-CN
 loomloom template-spec authoring-context --output json
 loomloom template-spec contracts <model-id> --output json
-loomloom template-spec models <step-type>
+loomloom model list --step-type <step-type> --output json
 ```
 
-Use `authoring-context` for text Capability Profiles and eligible models; use
-`contracts` for fixed-model contracts and their exact port IDs. The model list
-is only a discovery entry point. Rewrite the v1 definition as v2
+First classify every v1 Step by its execution unit. Use `authoring-context`
+only for `text-generate` Steps whose inputs are text and whose output is text.
+For `image-generate`, `video-generate`, `audio-generate`,
+`audio-transcribe`, and `model3d-generate`, do **not** wait for or invent a
+Capability Profile: discover the type with `model types`, choose a target model
+with `model list`, then use `contracts` to obtain the exact
+`subjectRevisionId` and ports for a `fixedModelContract` Step. A text-output
+Step that receives image/video/audio input is a vision or multimodal-understanding
+case; stop and report `needs_vision_profile_or_fixed_contract` when the target
+environment does not offer an appropriate contract.
+
+An empty fixed-contract result means that exact target model/operation is not
+currently authorable. Report `missing_fixed_contract` or choose another
+returned target model; never produce a v2 draft that claims the missing
+contract exists. Rewrite the v1 definition as v2
 `templateInputs`, `executionBinding`, and `inputBindings`. Use
 `loomloom template-spec get-version <template-id> <version-id> -f historical.json`
 to retrieve an owner-visible historical definition when needed. Then run
