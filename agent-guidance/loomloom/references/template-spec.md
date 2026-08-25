@@ -196,6 +196,23 @@ Use `template-spec contracts <model-id>` only when authoring a
 `fixedModelContract` Step for one exact model, such as a model with its own
 multimedia or provider-native input structure.
 
+### Legacy v1 migration routing
+
+Before translating a v1 Step, run `loomloom model types --output json`. The
+returned list is the target environment's valid public step-type set; a type
+with zero models is still valid but has no current authoring target.
+
+| v1 Step shape | v2 route |
+| --- | --- |
+| text input → text output | `capabilityProfile` from `authoring-context` |
+| image/video/audio/3D generation or editing | `fixedModelContract` from `model list` + `contracts` |
+| image/video/audio input → text output | vision/multimodal understanding; require a returned compatible Profile or Fixed Contract |
+
+Do not look for an image-generation Capability Profile. Media generation uses
+the exact target model's Fixed Model Contract. If the original v1 model has no
+target contract, report `missing_fixed_contract`; do not invent a
+`subjectRevisionId`, silently switch models, or call `create-version`.
+
 ## Creation And Versioning
 
 Before creation:
