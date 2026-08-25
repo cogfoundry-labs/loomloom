@@ -56,6 +56,7 @@ Usage:
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -117,6 +118,40 @@ def select_chapters(findings):
     significant -- 'meaningful transformations, not transformation count.'"""
     ranked = sorted(findings, key=lambda f: -f["significance"])
     return ranked[:MAX_CHAPTERS] if len(ranked) >= MIN_CHAPTERS else ranked
+
+
+def frame_ancestors_blocks_embedding(headers):
+    """Real, direct check against the 'before' target's actual HTTP
+    response headers -- not a guess, not a client-side runtime detection
+    (confirmed unreliable: a cross-origin iframe that was blocked by CSP
+    and one that loaded successfully both throw the identical SecurityError
+    when the parent page reads contentWindow.location, so the render can't
+    tell them apart from inside the rendered page at all). Playwright's
+    `response.headers` is already a plain dict of the real, final response
+    headers (post-redirect) from the same `page.goto()` call `plan` already
+    makes for the diff -- no second request.
+
+    Returns a short human-readable reason string if embedding is blocked,
+    None if it looks embeddable. Conservative on purpose: a
+    `frame-ancestors` value other than a bare `*` is treated as blocking,
+    even if it might theoretically list this case study's own eventual
+    origin -- `plan` runs before the case study has a real deployed origin
+    to check against (could be a local preview port, a GitHub Pages URL,
+    anything), so there's no origin to compare a specific allow-list
+    against yet. `x-frame-options: DENY`/`SAMEORIGIN` (case-insensitive)
+    is unambiguous either way -- both always block a different-origin
+    parent, full stop."""
+    headers = {k.lower(): v for k, v in (headers or {}).items()}
+    xfo = headers.get("x-frame-options", "").strip().lower()
+    if xfo in ("deny", "sameorigin"):
+        return f"X-Frame-Options: {headers['x-frame-options']}"
+    csp = headers.get("content-security-policy", "")
+    m = re.search(r"frame-ancestors\s+([^;]+)", csp, re.IGNORECASE)
+    if m:
+        value = m.group(1).strip()
+        if value != "*":
+            return f"Content-Security-Policy: frame-ancestors {value}"
+    return None
 
 
 NARRATIVE_TEMPLATE = {
@@ -185,8 +220,12 @@ def cmd_plan(args):
         )
         print(f"NOTE: {diff_capture_note}", file=sys.stderr)
 
-    # 1. Real diff -- $0, no loomloom.
+    # 1. Real diff -- $0, no loomloom. Also where the "before" target's
+    # embeddability actually gets decided -- see before_embed_blocked_reason
+    # below, checked against this same real response instead of a second
+    # request.
     from playwright.sync_api import sync_playwright
+    before_embed_blocked_reason = None
     with sync_playwright() as p:
         browser = p.chromium.launch()
         results = {}
@@ -196,11 +235,35 @@ def cmd_plan(args):
             # hero <video> (implement-design.md's own hero-video upgrade,
             # confirmed against a real run) -- see mechanical-check.py's and
             # render-and-screenshot.py's goto calls for the same fix.
-            page.goto(diff_transformations.to_target(target), wait_until="load")
+            response = page.goto(diff_transformations.to_target(target), wait_until="load")
             page.wait_for_timeout(1500)
             results[label] = diff_transformations.extract_facts(page)
+            if label == "before" and args.before_embed_url and response is not None:
+                before_embed_blocked_reason = frame_ancestors_blocks_embedding(response.headers)
             page.close()
         browser.close()
+    if before_embed_blocked_reason:
+        # Real, confirmed the hard way (tabbyml.com): a site's own CSP
+        # `frame-ancestors` (or X-Frame-Options) is an anti-clickjacking
+        # control that blocks ANY other origin from framing it, including
+        # this case study, regardless of what that other origin is -- not
+        # something fixable from the embedding side. Client-side JS in the
+        # rendered page can't reliably tell "blocked" apart from "loaded
+        # successfully" (both throw the identical SecurityError reading a
+        # cross-origin contentWindow.location -- confirmed directly, not
+        # assumed), so the only reliable place to catch this is here, with
+        # real server-side access to the actual response headers, before
+        # committing to live-embed mode at all. Falling back to plain
+        # screenshot mode for both sides (not a same-origin/foreign-origin
+        # hybrid) keeps the widget's behavior simple and honest instead of
+        # half-live.
+        print(
+            f"NOTE: live-embed mode disabled -- the 'before' target sends {before_embed_blocked_reason}, "
+            "which blocks this (or any) other page from framing it. Falling back to the "
+            "screenshot-based compare widget for both sides.",
+            file=sys.stderr,
+        )
+        args.before_embed_url = None
     findings = diff_transformations.score_and_diff(results["before"], results["after"])
     chapters = select_chapters(findings)
     print(f"{len(findings)} real difference(s) found; {len(chapters)} selected as chapters.", file=sys.stderr)
@@ -278,6 +341,7 @@ def cmd_plan(args):
             "canonical_url": args.canonical_url,
             "before_embed_url": args.before_embed_url,
             "redesign_dir": args.redesign_dir,
+            "before_video_url": args.before_video_url,
         },
         "loomloom": {
             "narrative_template_id": narrative_created["templateId"],
@@ -400,6 +464,7 @@ def cmd_generate(args):
         canonical_url=render_inputs.get("canonical_url"),
         before_embed_url=render_inputs.get("before_embed_url"),
         redesign_dir=render_inputs.get("redesign_dir"),
+        before_video_url=render_inputs.get("before_video_url"),
     )
     print(f"wrote {result['out_dir']}/ ({result['file_count']} files, {result['total_bytes']/1024/1024:.2f}MB total)")
     print(f"  index.html: {result['index_html_bytes']/1024:.1f}KB")
@@ -438,8 +503,9 @@ def main():
     p_plan.add_argument("--canonical-url", default=None, help="the real URL this will be published at, if known (e.g. a GitHub Pages URL)")
     p_plan.add_argument("--mechanical-report", default=None, help="path to the chosen page's real mechanical-check.py JSON report")
     p_plan.add_argument("--a11y-report", default=None, help="path to the chosen page's real a11y-audit scan JSON")
-    p_plan.add_argument("--before-embed-url", default=None, help="real external URL of the live 'before' site -- if given (together with --redesign-dir), the compare widget renders real <iframe>s instead of the before/after screenshots")
-    p_plan.add_argument("--redesign-dir", default=None, help="local directory of the real redesigned page + its own real local assets, copied into the case study's redesign/ and iframed as the live 'after' side")
+    p_plan.add_argument("--before-embed-url", default=None, help="real external URL of the live 'before' site -- if given, the compare widget's before side renders a real <iframe> instead of a screenshot (independent of --redesign-dir: each side's enhancement stands on its own). Automatically disabled (falls back to a screenshot) if the target's own response headers block framing -- see frame_ancestors_blocks_embedding")
+    p_plan.add_argument("--redesign-dir", default=None, help="local directory of the real redesigned page + its own real local assets, copied into the case study's redesign/ and iframed as the live 'after' side -- works whether or not --before-embed-url is also given or got disabled")
+    p_plan.add_argument("--before-video-url", default=None, help="real URL of a captured video for the original site's hero (a plain media resource, not a page) -- a real alternative to --before-embed-url for a site whose own CSP blocks framing the page at all but not loading its video directly (confirmed real on tabbyml.com)")
     p_plan.set_defaults(func=cmd_plan)
 
     p_gen = sub.add_parser("generate")

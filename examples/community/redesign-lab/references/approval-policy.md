@@ -228,6 +228,24 @@ is that it doesn't match.
   come from `render-and-screenshot.py` at fixed widths and are immune to
   all pane viewport state, which is what makes them the one reliably
   verifiable channel in this environment.
+- **Git Bash on Windows silently mangles a `/`-leading argument into a
+  Windows path** (MSYS's automatic POSIX-to-Windows path conversion) —
+  confirmed directly: `--option "label=/directions/foo/index.html=11/11"`
+  passed to `build-compare-page.py` from the Bash tool on Windows arrived
+  as `label=C:/Program Files/Git/directions/foo/index.html=11/11`, and the
+  script wrote that corrupted path straight into the comparison page's
+  real `<iframe src>` with no error anywhere — the page loaded, the iframe
+  just pointed at a nonexistent `file://` path and showed nothing. This is
+  a Git-Bash-on-Windows shell quirk, not a bug in the script, and doesn't
+  happen from PowerShell or a native Linux/macOS shell. Fix: prefix the
+  command with `MSYS_NO_PATHCONV=1` whenever invoking
+  `build-compare-page.py` (or any script here taking a `/`-leading path
+  argument) from Git Bash specifically — e.g.
+  `MSYS_NO_PATHCONV=1 python build-compare-page.py --option "..."`. If a
+  freshly generated comparison page loads but an option's content is
+  silently blank/missing, check the actual `src=` attributes in the
+  written HTML for a `C:/Program Files/Git/...` prefix before suspecting
+  the target file itself.
 
 ## Gate 1: direction choice
 

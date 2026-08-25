@@ -176,20 +176,26 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .compare .after-layer{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;clip-path:inset(0 0 0 50%);will-change:clip-path;}
 .compare .after-layer img{width:100%;height:auto;display:block;}
 .compare .divider{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--accent-fill);pointer-events:none;}
-/* Live-embed mode (real <iframe> in place of a static screenshot): neither
-   side's real content height is readable here -- the "before" iframe is a
-   different origin (the live external site), which browsers block reading
-   scrollHeight from regardless of X-Frame-Options, so the Math.max(before,
-   after) natural-image-height trick above can't apply to this mode at all,
-   not even for an after side that happens to be same-origin. Both sides
-   instead fill the existing fixed 16:9 .compare-frame box completely and
-   scroll internally on their own -- this is a real, deliberate trade-off,
-   not an oversight: the previous synced-scroll-together behavior needed
-   one shared scrolling container with both images stacked in normal flow,
-   which an embedded live page (with its own real DOM, scripts, and scroll
-   position) can't be made to participate in from the parent page's JS. */
-.compare-frame.is-live .compare{overflow:hidden;touch-action:auto;}
-.compare-frame.is-live .compare-inner{height:100%;}
+/* Enhanced mode (a real <iframe> or a real <video> in place of a static
+   screenshot on at least one side -- see render_compare_widget_html's
+   before_type/after_type, decided independently per side): none of these
+   content types expose a real content height here the way a plain <img>
+   does -- an iframe's "before" side is typically a different origin (the
+   live external site), which browsers block reading scrollHeight from
+   regardless of X-Frame-Options, and a <video> has no comparable "how
+   tall would this be as a page" concept at all, so the Math.max(before,
+   after) natural-image-height trick above can't apply to this mode,
+   even for an after side that happens to be same-origin. Every side
+   instead fills the existing fixed 16:9 .compare-frame box completely and
+   plays/scrolls internally on its own -- this is a real, deliberate
+   trade-off, not an oversight: the previous synced-scroll-together
+   behavior needed one shared scrolling container with both images
+   stacked in normal flow, which an embedded live page (with its own real
+   DOM, scripts, and scroll position) can't be made to participate in
+   from the parent page's JS, and a <video> was never a scrolling
+   participant to begin with. */
+.compare-frame.is-enhanced .compare{overflow:hidden;touch-action:auto;}
+.compare-frame.is-enhanced .compare-inner{height:100%;}
 /* `.compare-inner > iframe` (direct-child combinator) only ever matched the
    BEFORE iframe -- the AFTER iframe lives one level deeper, inside
    .after-layer, so it never matched this rule at all and was rendering at
@@ -217,8 +223,19 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
    based, no video, no cross-origin routing problem) widget below, behind
    the "see the full page" toggle; see render_compare_widget_html and the
    .compare-full rule further down. */
-.compare-frame.is-live .compare-inner > iframe,
-.compare-frame.is-live .after-layer iframe{position:absolute;inset:0;top:0;left:0;width:100%;height:100%;border:0;background:#fff;pointer-events:none;overflow:hidden;}
+.compare-frame.is-enhanced .compare-inner > iframe,
+.compare-frame.is-enhanced .compare-inner > video,
+.compare-frame.is-enhanced .after-layer iframe{position:absolute;inset:0;top:0;left:0;width:100%;height:100%;border:0;background:#fff;pointer-events:none;overflow:hidden;}
+/* object-fit/object-position are no-ops on iframe (not a replaced element
+   with an intrinsic ratio the way <video> is) but required for a real
+   <video> before-side: without them the video distorts to the box's own
+   aspect ratio instead of cropping like every other real screenshot/frame
+   in this widget, and without object-position:top specifically the crop
+   would center vertically instead -- a real source taller/wider than this
+   fixed 16:9 box, cropped to its vertical middle, would contradict this
+   widget's own "top of page only" promise (the caption text right below
+   it, and the plain-screenshot mode's own top-anchored real content). */
+.compare-frame.is-enhanced .compare-inner > video{object-fit:cover;object-position:top;}
 /* width:100% is required here, not optional -- confirmed the hard way on
    the real deployed site: an <iframe> is a *replaced element* (same CSS
    category as <img>/<video>/<object>), and for an absolutely positioned
@@ -250,7 +267,7 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .compare-frame .handle:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
 .compare:focus-visible{outline:3px solid var(--ink);outline-offset:-3px;}
 .compare-caption{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--faint);margin-top:10px;}
-.compare-full-toggle{margin:20px 0 0;}
+.compare-full-toggle{margin:20px 0 0;text-align:center;}
 /* The full-page comparison: real, static screenshots (no video, no
    cross-origin iframe), sized to the same 800px column as the rest of the
    article's prose instead of the 1280px full-bleed width the frozen live
@@ -339,14 +356,16 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
   var afterImg = frameEl.querySelector('.after-media');
   // The class Python already stamps on frameEl itself, not a re-derived
   // tag-name check -- frame_cls in render_compare_widget_html sets
-  // "is-live" for exactly this, and the CSS already keys off it too; this
+  // "is-enhanced" for exactly this (a real iframe or real video on at
+  // least one side, decided independently per side -- see that function's
+  // before_type/after_type), and the CSS already keys off it too; this
   // was an independent (and easy to drift out of sync) re-check of the
   // same fact.
-  var isLive = frameEl.classList.contains('is-live');
+  var isEnhanced = frameEl.classList.contains('is-enhanced');
 
-  // Screenshot mode only: the widget's own frame is a fixed 16:9 box (CSS
-  // aspect-ratio) so it reads like a video player regardless of content
-  // length -- real vertical scrolling happens *inside* it. Both images
+  // Plain screenshot mode only: the widget's own frame is a fixed 16:9 box
+  // (CSS aspect-ratio) so it reads like a video player regardless of
+  // content length -- real vertical scrolling happens *inside* it. Both images
   // render at their real natural aspect ratio (no cropping), and `inner`'s
   // height is set to the taller of the two: a redesign that changed real
   // page length (this one compressed 8340px down to 2932px) means one side
@@ -356,14 +375,14 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
   // real page (see the CSS comment on that rule) -- there's no scroll
   // height to measure or match here at all.
   function layout(){
-    if (isLive) return;
+    if (isEnhanced) return;
     var w = widget.clientWidth;
     var beforeH = beforeImg.naturalWidth ? w * (beforeImg.naturalHeight / beforeImg.naturalWidth) : 0;
     var afterH = afterImg.naturalWidth ? w * (afterImg.naturalHeight / afterImg.naturalWidth) : 0;
     inner.style.height = Math.max(beforeH, afterH) + 'px';
   }
   function whenReady(img, cb){
-    if (isLive) return;
+    if (isEnhanced) return;
     if (img.complete && img.naturalWidth) cb();
     else img.addEventListener('load', cb);
   }
@@ -458,11 +477,11 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
 });
 
 // The "see the full page" toggle: the second .compare-frame (screenshot
-// mode, hidden by default) only exists so the top-of-page live widget
+// mode, hidden by default) only exists so the top-of-page enhanced widget
 // above doesn't need scrolling at all -- see the CSS comment on
-// .compare-frame.is-live iframe for why that widget is frozen. Plain
-// show/hide, no data to fetch: both screenshots are already real files in
-// this build, same as the frozen widget's own poster-frame images.
+// .compare-frame.is-enhanced iframe/video for why that widget is frozen.
+// Plain show/hide, no data to fetch: both screenshots are already real
+// files in this build, same as the frozen widget's own poster-frame images.
 (function(){
   var btn = document.getElementById('compareFullToggleBtn');
   var panel = document.getElementById('compareFull');
@@ -575,8 +594,8 @@ def looks_like_color(value):
 
 def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc,
                                 compare_after_label, before_embed_url=None, after_embed_url=None,
-                                rel_prefix="", has_full_page_toggle=False, handle_label_suffix="",
-                                defer_load=False):
+                                before_video_url=None, rel_prefix="", has_full_page_toggle=False,
+                                handle_label_suffix="", defer_load=False):
     """The compare-frame markup shared by the main page and the standalone
     embed fragment (render_embed_compare_html) -- one place that decides
     <img> (real screenshots) vs <iframe> (real live pages) so the two
@@ -605,12 +624,62 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
     once). Without this, two identical role="slider" aria-labels exist in
     the accessibility tree together once "see the full page" is opened,
     with no way for a screen-reader user to tell them apart."""
-    is_live = bool(before_embed_url and after_embed_url)
-    frame_cls = "compare-frame is-live" if is_live else "compare-frame"
-    if is_live:
-        # scrolling="no": both iframes are permanently non-interactive (see
-        # the CSS comment on this rule) and frozen to the top of each real
-        # page, so a visible native scrollbar on either one is pure
+    # Each side's content type is decided independently -- not a single
+    # binary "live or not" flag. A real, confirmed case this decoupling
+    # exists for: tabbyml.com's own CSP blocks framing the whole page (no
+    # `before_embed_url` possible), but its real hero video (a plain media
+    # resource, not subject to that restriction -- confirmed directly, a
+    # video load isn't "framing" anything) is still a real, genuinely
+    # animated stand-in for the "before" side, while the "after" side (our
+    # own same-origin redesign) can still be a real live iframe regardless
+    # of what happened on the before side. The old all-or-nothing
+    # `is_live = bool(before_embed_url and after_embed_url)` couldn't
+    # represent this mixed case at all -- it either required both sides to
+    # be page iframes or fell all the way back to plain screenshots on
+    # both, losing the wide "frozen, top-of-page" widget entirely the
+    # moment framing was blocked on just one side.
+    before_type = "video" if before_video_url else ("iframe" if before_embed_url else "image")
+    after_type = "iframe" if after_embed_url else "image"
+    is_enhanced = before_type != "image" or after_type != "image"
+    frame_cls = "compare-frame is-enhanced" if is_enhanced else "compare-frame"
+    # defer_load (data-src, not loading="lazy"/autoplay): only the toggle-
+    # revealed full-page widget passes this -- it starts inside a [hidden]
+    # panel most visitors never open, so its assets (the same class of
+    # full-page screenshot that covers an 8340px page in this file's own
+    # comments elsewhere) shouldn't fetch until someone actually opens it.
+    # loading="lazy" looked like the obvious fix and was tried first, but
+    # confirmed unreliable for this exact shape of problem: an element
+    # inside an ancestor that starts display:none and later gets shown via
+    # JS is a known, documented edge case browsers' native lazy-loading
+    # doesn't handle consistently (there's no spec-guaranteed re-check when
+    # a hidden ancestor becomes visible -- it's built for scrolling down a
+    # long page, not a JS-toggled reveal). data-src is deterministic
+    # instead: no src attribute at all until the toggle's own click handler
+    # in script.js copies data-src into src, which is a real, unambiguous
+    # fetch trigger regardless of browser/engine lazy-load heuristics. The
+    # always-visible primary widget (defer_load False, the only case that
+    # ever reaches this function with an enhanced side) keeps loading
+    # immediately -- deferring it would only delay real, immediately-needed
+    # content for no benefit. Never actually exercised for video/iframe
+    # sides in practice (the toggle-revealed widget is always plain
+    # screenshot mode, see has_full_page_toggle's caller), kept here so an
+    # image side stays correct regardless of which widget instance called
+    # this function.
+    src_attr = "data-src" if defer_load else "src"
+
+    if before_type == "video":
+        # autoplay+muted+loop+playsinline: the same real, minimum set
+        # browsers require for autoplay to actually start without a user
+        # gesture (confirmed: autoplay alone, without muted, is silently
+        # blocked by every major browser's media-engagement policy). No
+        # `loading="lazy"` here -- that attribute only applies to
+        # <img>/<iframe>, not <video>; not needed anyway since this branch
+        # is never used for the deferred (defer_load) widget instance.
+        before_el = f'<video class="before-media" src="{html.escape(before_video_url)}" title="Before: {subject_esc}\'s original design, real captured video, {before_label_esc}" autoplay muted loop playsinline tabindex="-1"></video>'
+    elif before_type == "iframe":
+        # scrolling="no": iframes in enhanced mode are permanently
+        # non-interactive (see the CSS comment on that rule) and frozen to
+        # the top of each real page, so a visible native scrollbar is pure
         # leftover chrome from before that freeze -- confirmed real:
         # pointer-events:none stops the scrollbar from being *usable*, but
         # doesn't stop the browser from *drawing* it, since the iframe's
@@ -628,60 +697,47 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
         # that reality instead of leaving a focusable control that can no
         # longer do anything when focused.
         before_el = f'<iframe class="before-media" src="{html.escape(before_embed_url)}" title="Before: {subject_esc}\'s original design, live, {before_label_esc}" loading="lazy" tabindex="-1" scrolling="no"></iframe>'
+    else:
+        before_el = f'<img class="before-media" {src_attr}="{rel_prefix}{before_rel}" alt="Before: {subject_esc}\'s original design, {before_label_esc}">'
+
+    if after_type == "iframe":
         after_el = f'<iframe class="after-media" src="{html.escape(rel_prefix + after_embed_url)}" title="After: {subject_esc} redesigned as {after_label_esc}, live" loading="lazy" tabindex="-1" scrolling="no"></iframe>'
-        # Real, but frozen: this widget only ever shows the top of each real
-        # page (the two iframes are permanently non-interactive -- see the
-        # CSS comment on that rule -- so there's no scrolling to advertise
-        # here). The "see the full page below" pointer is only accurate
-        # when a caller actually renders that toggle+widget -- confirmed a
-        # real bug when this was unconditional: the standalone embed
-        # fragment (render_embed_compare_html) shares this same live-mode
-        # branch but never gets a full-page counterpart, so it rendered an
-        # identical caption pointing at content that didn't exist on that
-        # page.
+    else:
+        after_el = f'<img class="after-media" {src_attr}="{rel_prefix}{after_rel}" alt="After: {subject_esc} redesigned as {after_label_esc}">'
+
+    # "top of page only" without claiming every enhanced side is "live" --
+    # a real, confirmed-accurate wording regardless of which mix of
+    # video/iframe/image is actually in play (the old wording, "live
+    # pages," was only ever true when both sides were literally live page
+    # iframes). The "see the full page below" pointer is only accurate when
+    # a caller actually renders that toggle+widget -- confirmed a real bug
+    # when this was unconditional: the standalone embed fragment
+    # (render_embed_compare_html) shares this same enhanced-mode branch but
+    # never gets a full-page counterpart, so it rendered an identical
+    # caption pointing at content that didn't exist on that page.
+    if is_enhanced:
         caption_note = (
-            ' <span class="live-note">(live pages, top of page only -- see the full page below for the rest)</span>'
-            if has_full_page_toggle else
-            ' <span class="live-note">(live pages, top of page only)</span>'
+            f' <span class="live-note">(top of page only'
+            f'{" -- see the full page below for the rest" if has_full_page_toggle else ""})</span>'
         )
     else:
-        # defer_load (data-src, not loading="lazy"): only the toggle-
-        # revealed full-page widget passes this -- it starts inside a
-        # [hidden] panel most visitors never open, so its two full-page
-        # screenshots (the same class of asset that covers an 8340px page
-        # in this file's own comments elsewhere) shouldn't fetch until
-        # someone actually opens it. loading="lazy" looked like the
-        # obvious fix and was tried first, but confirmed unreliable for
-        # this exact shape of problem: an image inside an ancestor that
-        # starts display:none and later gets shown via JS is a known,
-        # documented edge case browsers' native lazy-loading doesn't
-        # handle consistently (there's no spec-guaranteed re-check when a
-        # hidden ancestor becomes visible -- it's built for scrolling down
-        # a long page, not a JS-toggled reveal). data-src is deterministic
-        # instead: no src attribute at all until the toggle's own click
-        # handler in script.js copies data-src into src, which is a real,
-        # unambiguous fetch trigger regardless of browser/engine
-        # lazy-load heuristics. The always-visible primary widget (this
-        # same branch, when defer_load is False) keeps loading immediately
-        # -- deferring it would only delay real, immediately-needed
-        # content for no benefit.
-        src_attr = "data-src" if defer_load else "src"
-        before_el = f'<img class="before-media" {src_attr}="{rel_prefix}{before_rel}" alt="Before: {subject_esc}\'s original design, {before_label_esc}">'
-        after_el = f'<img class="after-media" {src_attr}="{rel_prefix}{after_rel}" alt="After: {subject_esc} redesigned as {after_label_esc}">'
         caption_note = ""
-    # tabindex/aria-label on the wrapper only apply in screenshot mode,
-    # where this div is itself the real scrollable region (confirmed via a
-    # real axe-core scrollable-region-focusable finding, see
-    # build-case-study.md). In live-embed mode each iframe scrolls on its
-    # own -- this wrapper no longer scrolls at all (.is-live sets
-    # overflow:hidden on it), so keeping the same tabindex/aria-label here
-    # would be a real, confirmed aria-prohibited-attr finding: a static,
-    # non-scrolling div falsely labeled as a scrollable region. The two
-    # iframes are permanently non-interactive in live mode (see the CSS
-    # comment on that rule), so they don't need to be in the tab order
-    # either -- tabindex="-1" above, alongside dropping this wrapper's own
-    # tabindex/aria-label.
-    wrapper_attrs = "" if is_live else ' tabindex="0" aria-label="Scrollable page preview"'
+    # tabindex/aria-label on the wrapper only apply in plain screenshot
+    # mode, where this div is itself the real scrollable region (confirmed
+    # via a real axe-core scrollable-region-focusable finding, see
+    # build-case-study.md). In enhanced mode each video/iframe scrolls (or
+    # plays) on its own -- this wrapper no longer scrolls at all
+    # (.is-enhanced sets overflow:hidden on it), so keeping the same
+    # tabindex/aria-label here would be a real, confirmed
+    # aria-prohibited-attr finding: a static, non-scrolling div falsely
+    # labeled as a scrollable region. Iframes are permanently
+    # non-interactive in enhanced mode (see the CSS comment on that rule),
+    # so they don't need to be in the tab order either -- tabindex="-1"
+    # above, alongside dropping this wrapper's own tabindex/aria-label. A
+    # video side gets the same tabindex="-1" treatment for the same
+    # reason: this widget is frozen/non-interactive regardless of which
+    # enhanced content type either side actually uses.
+    wrapper_attrs = "" if is_enhanced else ' tabindex="0" aria-label="Scrollable page preview"'
     # No ids on any of the repeated inner pieces (widget/inner/layer/
     # divider/handle/before-media/after-media) -- this function can now
     # render onto the same page twice (the frozen live widget up top, the
@@ -707,20 +763,27 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
 
 
 def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, title, before_label, after_label,
-                            og_image_rel, canonical_url=None, before_embed_url=None, after_embed_url=None):
+                            og_image_rel, canonical_url=None, before_embed_url=None, after_embed_url=None,
+                            before_video_url=None):
     """The one function that turns case-study-data.json into the page's
     index.html body+head. Takes real relative asset paths (already copied
     into the output folder by the caller), never inlines them -- this is a
     real GitHub-Pages-deployable folder, not a standalone preview file.
 
-    before_embed_url/after_embed_url are optional: when given, the compare
-    widget renders real <iframe>s pointing at them instead of the static
-    before_rel/after_rel screenshots (which still get copied and used for
-    the Open Graph preview image regardless, since a social-media card
-    can't render an iframe). See the CSS/JS "live-embed mode" comments on
-    this same widget for why both sides fill a fixed box and scroll
+    before_embed_url/after_embed_url/before_video_url are all optional, and
+    before_video_url is a real alternative to before_embed_url, not an
+    addition to it: when a whole-page live embed is given, the compare
+    widget renders real <iframe>s; when the before side instead has a real
+    captured video (the common case when the original site's own CSP
+    blocks framing but its hero video is still a plain, embeddable media
+    resource -- confirmed real on tabbyml.com), that side renders a real
+    <video> instead. Either real thing beats the static before_rel/after_rel
+    screenshots (which still get copied and used for the Open Graph preview
+    image regardless, since a social-media card can't render an iframe or a
+    playing video). See the CSS/JS "enhanced mode" comments on this same
+    widget for why every side fills a fixed box and plays/scrolls
     independently in this mode, rather than the synced-scroll-through-the-
-    whole-page behavior the screenshot mode has."""
+    whole-page behavior the plain screenshot mode has."""
     status = data["status"]
     copy = STATUS_COPY[status]
     # Computed once, reused for both the intro paragraph's conditional text
@@ -728,7 +791,15 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     # two used to be checked separately with slightly different syntax
     # (bool(...) here vs. a bare truthy check there), a real risk of the
     # two silently drifting out of agreement if only one got updated.
-    has_live_embed = bool(before_embed_url and after_embed_url)
+    # Decoupled from whether *both* sides specifically got a live iframe
+    # (the old has_live_embed = bool(before_embed_url and after_embed_url)):
+    # a real captured before-video with a plain after-screenshot, or a live
+    # after-iframe with a before-video, are both real, legitimately
+    # "enhanced" combinations that deserve the same wide top-of-page widget
+    # plus toggle-revealed full-page widget -- see
+    # render_compare_widget_html's own before_type/after_type for where the
+    # actual per-side content-type decision lives.
+    has_live_embed = bool(before_embed_url or after_embed_url or before_video_url)
 
     title_esc = html.escape(title)
     subject_esc = html.escape(data["subject"])
@@ -887,7 +958,7 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     <span class="section-label">The Redesign</span>
     <h2>Before &rarr; After</h2>
     <p style="color:var(--muted);margin-bottom:20px;">{"Drag the handle to compare the top of each real page." if has_live_embed else "Drag the handle to compare. Scroll inside the frame to see the rest of each page."}</p>
-    {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url, has_full_page_toggle=has_live_embed, handle_label_suffix=" (top of page)" if has_live_embed else "")}
+    {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url, before_video_url=before_video_url, has_full_page_toggle=has_live_embed, handle_label_suffix=" (top of page)" if has_live_embed else "")}
     <div class="compare-embed">
       <span class="share-label">Share this chapter</span>
       <button class="share-btn" onclick="{html.escape(f'copyCompareEmbed({json.dumps("Before and after: " + data["subject"])})')}" aria-label="Copy embeddable code for this before/after comparison">Copy the code</button>
@@ -980,7 +1051,7 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
 
 
 def render_embed_compare_html(data, before_rel, after_rel, before_label, after_label,
-                               before_embed_url=None, after_embed_url=None):
+                               before_embed_url=None, after_embed_url=None, before_video_url=None):
     """A standalone fragment for the 'Copy the code' embed on the Before/
     After section -- meant to be dropped into an <iframe> on someone else's
     blog. Reuses the main page's real styles.css/script.js via a relative
@@ -1005,7 +1076,7 @@ def render_embed_compare_html(data, before_rel, after_rel, before_label, after_l
 <main>
 <div class="wrap" style="padding:20px 16px;">
   <h1 class="embed-h1">Before and after: {subject_esc}</h1>
-  {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url, rel_prefix="../")}
+  {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url, before_video_url=before_video_url, rel_prefix="../")}
   <p style="font-family:&quot;IBM Plex Mono&quot;,monospace;font-size:11px;color:var(--faint);margin-top:14px;">From a <a href="../index.html" target="_top">Redesign Lab case study</a></p>
 </div>
 </main>
@@ -1056,7 +1127,8 @@ def render_embed_chapter_html(data, ch, num):
 
 
 def build_case_study_site(data, before_image, after_image, logo, title, before_label, after_label,
-                           out_dir, canonical_url=None, before_embed_url=None, redesign_dir=None):
+                           out_dir, canonical_url=None, before_embed_url=None, redesign_dir=None,
+                           before_video_url=None):
     """Copies real assets into `out_dir/assets/` and writes index.html +
     styles.css + script.js -- a real GitHub-Pages-ready folder. This is the
     one function both the CLI (`main`, below) and `build-case-study.py`
@@ -1064,22 +1136,34 @@ def build_case_study_site(data, before_image, after_image, logo, title, before_l
     writing the folder two different ways.
 
     before_image/after_image (real screenshots) are always copied and
-    always used for the Open Graph preview image, regardless of live-embed
-    mode -- a social-media card can't render an iframe.
+    always used for the Open Graph preview image, regardless of enhanced-
+    mode -- a social-media card can't render an iframe or a playing video.
 
-    Live-embed mode (real <iframe>s in the compare widget instead of the
-    screenshots) needs both before_embed_url (a real external URL -- the
-    live "before" site) and redesign_dir (a local directory: the real
-    redesigned page plus its own real local assets, e.g. what
-    implement-design.md's asset-pipeline rule produces once a page has a
-    real host behind it). redesign_dir is copied into `out_dir/redesign/`
-    wholesale so the "after" side is served same-origin (its real content
-    height stays readable by this page's own JS, even though the "before"
-    side's cross-origin height never can be -- see the CSS/JS "live-embed
-    mode" comments on the compare widget for why that asymmetry doesn't
-    actually matter here, both sides fill a fixed box either way). Passing
-    only one of the two leaves the widget in ordinary screenshot mode --
-    live-embed is all-or-nothing, not one side at a time."""
+    redesign_dir (a local directory: the real redesigned page plus its own
+    real local assets, e.g. what implement-design.md's asset-pipeline rule
+    produces once a page has a real host behind it), when given alone,
+    already gets the "after" side a real live iframe -- it's always
+    same-origin (our own copied files), never subject to a foreign site's
+    CSP, so it doesn't need before_embed_url's cooperation the way it used
+    to. redesign_dir is copied into `out_dir/redesign/` wholesale so that
+    iframe is served same-origin.
+
+    before_embed_url (a real external URL -- the live "before" site) is a
+    separate, independent real enhancement for the "before" side
+    specifically: given alone (no redesign_dir), only the before side goes
+    live and after stays a screenshot; given together with redesign_dir,
+    both sides go live. Neither requires the other any more -- see
+    render_compare_widget_html's before_type/after_type for where each
+    side's actual content-type decision lives.
+
+    before_video_url is a real alternative to before_embed_url, not an
+    addition to it, for exactly the case a whole-page live embed can't
+    reach: a site whose own CSP blocks framing the page at all, but whose
+    real hero video (a plain media resource, not subject to that
+    restriction) is still a genuine, animated stand-in for the "before"
+    side -- confirmed real on tabbyml.com. Passing all three of
+    before_embed_url/redesign_dir/before_video_url as none leaves the
+    widget in ordinary screenshot mode, same as before."""
     out_dir = Path(out_dir)
     assets_dir = out_dir / "assets"
     assets_dir.mkdir(parents=True, exist_ok=True)
@@ -1098,7 +1182,7 @@ def build_case_study_site(data, before_image, after_image, logo, title, before_l
     favicon_rel = copy_asset(logo, "favicon") if logo else None
 
     after_embed_url = None
-    if before_embed_url and redesign_dir:
+    if redesign_dir:
         redesign_out = out_dir / "redesign"
         if redesign_out.exists():
             shutil.rmtree(redesign_out)
@@ -1109,6 +1193,7 @@ def build_case_study_site(data, before_image, after_image, logo, title, before_l
         data, before_rel, after_rel, logo_rel, favicon_rel, title,
         before_label, after_label, og_image_rel=after_rel, canonical_url=canonical_url,
         before_embed_url=before_embed_url, after_embed_url=after_embed_url,
+        before_video_url=before_video_url,
     )
     (out_dir / "styles.css").write_text(CSS, encoding="utf-8")
     (out_dir / "script.js").write_text(JS, encoding="utf-8")
@@ -1125,6 +1210,7 @@ def build_case_study_site(data, before_image, after_image, logo, title, before_l
         render_embed_compare_html(
             data, before_rel, after_rel, before_label, after_label,
             before_embed_url=before_embed_url, after_embed_url=after_embed_url,
+            before_video_url=before_video_url,
         ), encoding="utf-8"
     )
     for i, ch in enumerate(data["chapters"], start=1):
@@ -1151,8 +1237,9 @@ def main():
     parser.add_argument("--after-label", required=True, help="short, real characterization of the redesign (e.g. 'Enterprise Operations Console')")
     parser.add_argument("--canonical-url", default=None)
     parser.add_argument("--out-dir", required=True, help="GitHub-Pages-ready folder: index.html, styles.css, script.js, assets/")
-    parser.add_argument("--before-embed-url", default=None, help="real external URL of the live 'before' site -- if given (together with --redesign-dir), the compare widget renders real <iframe>s instead of the before/after screenshots")
-    parser.add_argument("--redesign-dir", default=None, help="local directory of the real redesigned page + its own real local assets, copied into out-dir/redesign/ and iframed as the live 'after' side")
+    parser.add_argument("--before-embed-url", default=None, help="real external URL of the live 'before' site -- if given, the compare widget's before side renders a real <iframe> instead of a screenshot (independent of --redesign-dir now: each side's enhancement stands on its own)")
+    parser.add_argument("--redesign-dir", default=None, help="local directory of the real redesigned page + its own real local assets, copied into out-dir/redesign/ and iframed as the live 'after' side -- works whether or not --before-embed-url is also given")
+    parser.add_argument("--before-video-url", default=None, help="real URL of a captured video for the original site's hero (a plain media resource, not a page) -- a real alternative to --before-embed-url for a site whose own CSP blocks framing the page at all but not loading its video directly")
     args = parser.parse_args()
 
     data = json.loads(Path(args.data).read_text(encoding="utf-8"))
@@ -1160,6 +1247,7 @@ def main():
         data, args.before_image, args.after_image, args.logo, args.title,
         args.before_label, args.after_label, args.out_dir, canonical_url=args.canonical_url,
         before_embed_url=args.before_embed_url, redesign_dir=args.redesign_dir,
+        before_video_url=args.before_video_url,
     )
     print(f"wrote {result['out_dir']}/ ({result['file_count']} files, {result['total_bytes']/1024/1024:.2f}MB total)")
     print(f"  index.html: {result['index_html_bytes']/1024:.1f}KB")
