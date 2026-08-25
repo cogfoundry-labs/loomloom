@@ -24,14 +24,15 @@ type authoringCapabilityQuery struct {
 }
 
 type authoringCapabilityMatch struct {
-	AuthoringKind    string                     `json:"authoringKind"`
-	Operation        string                     `json:"operation"`
-	StepType         string                     `json:"stepType"`
-	InputModalities  []string                   `json:"inputModalities"`
-	OutputModalities []string                   `json:"outputModalities"`
-	Profile          *templateAuthoringProfile  `json:"profile,omitempty"`
-	Contract         *templateAuthoringContract `json:"contract,omitempty"`
-	EligibleModels   []modelSummary             `json:"eligibleModels"`
+	AuthoringKind           string                     `json:"authoringKind"`
+	Operation               string                     `json:"operation"`
+	StepType                string                     `json:"stepType"`
+	InputModalities         []string                   `json:"inputModalities"`
+	RequiredInputModalities []string                   `json:"requiredInputModalities"`
+	OutputModalities        []string                   `json:"outputModalities"`
+	Profile                 *templateAuthoringProfile  `json:"profile,omitempty"`
+	Contract                *templateAuthoringContract `json:"contract,omitempty"`
+	EligibleModels          []modelSummary             `json:"eligibleModels"`
 }
 
 func newCapabilityCmd(opts *rootOptions) *cobra.Command {

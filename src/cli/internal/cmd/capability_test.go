@@ -21,7 +21,7 @@ func TestCapabilityResolveJSONUsesServerAuthoritativeEndpoint(t *testing.T) {
 			t.Fatalf("unexpected query %s", r.URL.RawQuery)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"schemaVersion":"loomloom-authoring-capability-resolution/v1","status":"supported","query":{"inputModalities":["image","text"],"outputModality":"video","modelId":"ali/wan2.6-i2v"},"matches":[{"authoringKind":"fixedModelContract","operation":"image-to-video","stepType":"video-generate","inputModalities":["image","text"],"outputModalities":["video"],"contract":{"subjectRevisionId":"subject-video-v1"},"eligibleModels":[{"modelId":"ali/wan2.6-i2v","authoringOptions":[]}]}],"nextAction":"author_template_spec"}`))
+		_, _ = w.Write([]byte(`{"schemaVersion":"loomloom-authoring-capability-resolution/v1","status":"supported","query":{"inputModalities":["image","text"],"outputModality":"video","modelId":"ali/wan2.6-i2v"},"matches":[{"authoringKind":"fixedModelContract","operation":"image-to-video","stepType":"video-generate","inputModalities":["image","text"],"requiredInputModalities":["image"],"outputModalities":["video"],"contract":{"subjectRevisionId":"subject-video-v1"},"eligibleModels":[{"modelId":"ali/wan2.6-i2v","authoringOptions":[]}]}],"nextAction":"author_template_spec"}`))
 	}))
 	defer server.Close()
 
@@ -34,7 +34,7 @@ func TestCapabilityResolveJSONUsesServerAuthoritativeEndpoint(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("capability resolve error = %v", err)
 	}
-	for _, want := range []string{"loomloom-authoring-capability-resolution/v1", "subject-video-v1", "ali/wan2.6-i2v"} {
+	for _, want := range []string{"loomloom-authoring-capability-resolution/v1", "subject-video-v1", "ali/wan2.6-i2v", "requiredInputModalities"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output missing %q: %s", want, out.String())
 		}
