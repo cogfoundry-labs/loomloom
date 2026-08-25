@@ -88,13 +88,7 @@ type listModelsResponse struct {
 type modelSummary struct {
 	ModelID            string                 `json:"modelId"`
 	DisplayName        string                 `json:"displayName"`
-	Provider           string                 `json:"provider"`
-	ExecutionAdapter   string                 `json:"executionAdapter"`
 	SupportedStepTypes []string               `json:"supportedStepTypes"`
-	SupportedAPIs      []string               `json:"supportedApis"`
-	Available          bool                   `json:"available"`
-	AvailabilityReason string                 `json:"availabilityReason"`
-	IsDefault          bool                   `json:"isDefault"`
 	AuthoringOptions   []modelAuthoringOption `json:"authoringOptions"`
 }
 
@@ -930,9 +924,6 @@ func printTemplateSpecModels(w interface {
 }
 
 func modelProvider(value modelSummary) string {
-	if strings.TrimSpace(value.Provider) != "" {
-		return strings.TrimSpace(value.Provider)
-	}
 	provider, _, _ := strings.Cut(value.ModelID, "/")
 	return provider
 }
