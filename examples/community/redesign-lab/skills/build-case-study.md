@@ -325,12 +325,28 @@ Two real, separate fixes:
    `is-enhanced`/`isEnhanced` throughout (CSS, JS, Python) since "live"
    stopped being an accurate name once video and mixed before/after modes
    exist.
+3. **Reconstruct the whole "before" hero when only its video is framable.**
+   A bare `--before-video-url` shows only the original hero's *media* (the
+   terminal/demo clip) — not the page around it: nav, headline, CTAs. A human
+   reading a website before/after reads that as broken ("it looks like you
+   are displaying the video only, but nothing else" — confirmed real on
+   tabbyml.com). When the live original can't be framed (see point 1) but its
+   design was captured, rebuild the original hero as a small same-origin page
+   — from the captured tokens (`tabbyml.com.md`) and the before screenshot —
+   that *embeds* the captured video in its own media slot, and pass its folder
+   as `--before-dir`. This mirrors `--redesign-dir` for the after side: it's
+   copied into `out-dir/before/` and iframed same-origin, and it takes
+   priority over `--before-video-url`, so the "before" shows the whole
+   original page, animation and all. Prefer `--before-dir` whenever framing is
+   blocked; use `--before-video-url` alone only as a lighter fallback when a
+   full reconstruction isn't warranted.
 
 Real result: a site that blocks framing entirely still gets the full
-two-widget experience — animated real video on the before side, a live
-same-origin iframe on the after side, toggle-revealed full-page
-screenshots below — instead of silently collapsing to a single static
-widget the way it used to.
+two-widget experience — the whole reconstructed original hero (nav, headline,
+CTAs, and the embedded animated video) on the before side, a live same-origin
+iframe on the after side, toggle-revealed full-page screenshots below —
+instead of silently collapsing to a single static widget, or showing only the
+bare hero video, the way it used to.
 
 ## A "broken" before/after image can be a capture bug, not a widget bug
 

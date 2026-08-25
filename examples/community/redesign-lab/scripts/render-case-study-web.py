@@ -594,8 +594,8 @@ def looks_like_color(value):
 
 def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc,
                                 compare_after_label, before_embed_url=None, after_embed_url=None,
-                                before_video_url=None, rel_prefix="", has_full_page_toggle=False,
-                                handle_label_suffix="", defer_load=False):
+                                before_video_url=None, before_reconstruction_url=None, rel_prefix="",
+                                has_full_page_toggle=False, handle_label_suffix="", defer_load=False):
     """The compare-frame markup shared by the main page and the standalone
     embed fragment (render_embed_compare_html) -- one place that decides
     <img> (real screenshots) vs <iframe> (real live pages) so the two
@@ -638,7 +638,23 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
     # be page iframes or fell all the way back to plain screenshots on
     # both, losing the wide "frozen, top-of-page" widget entirely the
     # moment framing was blocked on just one side.
-    before_type = "video" if before_video_url else ("iframe" if before_embed_url else "image")
+    # A local, same-origin reconstruction of the original hero (a real rebuilt
+    # page that embeds the captured video itself) beats a bare
+    # before_video_url: the video alone shows only the hero's media, not the
+    # actual page (nav, headline, CTAs). Confirmed real on tabbyml.com, whose
+    # CSP blocks framing the live site, so a whole-page before_embed_url is
+    # impossible and the bare hero video used to stand in alone. A
+    # reconstruction is a same-origin relative path (our own copied files), so
+    # rel_prefix applies to it exactly like after_embed_url, never like the
+    # absolute-external before_embed_url.
+    if before_reconstruction_url:
+        before_type = "reconstruction"
+    elif before_video_url:
+        before_type = "video"
+    elif before_embed_url:
+        before_type = "iframe"
+    else:
+        before_type = "image"
     after_type = "iframe" if after_embed_url else "image"
     is_enhanced = before_type != "image" or after_type != "image"
     frame_cls = "compare-frame is-enhanced" if is_enhanced else "compare-frame"
@@ -667,7 +683,14 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
     # this function.
     src_attr = "data-src" if defer_load else "src"
 
-    if before_type == "video":
+    if before_type == "reconstruction":
+        # A same-origin iframe of the rebuilt original hero (which embeds the
+        # captured video itself), so the "before" shows the whole original
+        # page -- nav, headline, CTAs -- not just its hero media. Same
+        # scrolling="no"/tabindex="-1" freeze as the other enhanced iframes.
+        # rel_prefix applies (same-origin relative path, like after_embed_url).
+        before_el = f'<iframe class="before-media" src="{html.escape(rel_prefix + before_reconstruction_url)}" title="Before: {subject_esc}\'s original design, {before_label_esc}" loading="lazy" tabindex="-1" scrolling="no"></iframe>'
+    elif before_type == "video":
         # autoplay+muted+loop+playsinline: the same real, minimum set
         # browsers require for autoplay to actually start without a user
         # gesture (confirmed: autoplay alone, without muted, is silently
@@ -764,7 +787,7 @@ def render_compare_widget_html(before_rel, after_rel, before_label_esc, after_la
 
 def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, title, before_label, after_label,
                             og_image_rel, canonical_url=None, before_embed_url=None, after_embed_url=None,
-                            before_video_url=None):
+                            before_video_url=None, before_reconstruction_url=None):
     """The one function that turns case-study-data.json into the page's
     index.html body+head. Takes real relative asset paths (already copied
     into the output folder by the caller), never inlines them -- this is a
@@ -799,7 +822,7 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     # plus toggle-revealed full-page widget -- see
     # render_compare_widget_html's own before_type/after_type for where the
     # actual per-side content-type decision lives.
-    has_live_embed = bool(before_embed_url or after_embed_url or before_video_url)
+    has_live_embed = bool(before_embed_url or after_embed_url or before_video_url or before_reconstruction_url)
 
     title_esc = html.escape(title)
     subject_esc = html.escape(data["subject"])
@@ -958,7 +981,7 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
     <span class="section-label">The Redesign</span>
     <h2>Before &rarr; After</h2>
     <p style="color:var(--muted);margin-bottom:20px;">{"Drag the handle to compare the top of each real page." if has_live_embed else "Drag the handle to compare. Scroll inside the frame to see the rest of each page."}</p>
-    {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url, before_video_url=before_video_url, has_full_page_toggle=has_live_embed, handle_label_suffix=" (top of page)" if has_live_embed else "")}
+    {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url, before_video_url=before_video_url, before_reconstruction_url=before_reconstruction_url, has_full_page_toggle=has_live_embed, handle_label_suffix=" (top of page)" if has_live_embed else "")}
     <div class="compare-embed">
       <span class="share-label">Share this chapter</span>
       <button class="share-btn" onclick="{html.escape(f'copyCompareEmbed({json.dumps("Before and after: " + data["subject"])})')}" aria-label="Copy embeddable code for this before/after comparison">Copy the code</button>
@@ -1051,7 +1074,8 @@ def render_case_study_html(data, before_rel, after_rel, logo_rel, favicon_rel, t
 
 
 def render_embed_compare_html(data, before_rel, after_rel, before_label, after_label,
-                               before_embed_url=None, after_embed_url=None, before_video_url=None):
+                               before_embed_url=None, after_embed_url=None, before_video_url=None,
+                               before_reconstruction_url=None):
     """A standalone fragment for the 'Copy the code' embed on the Before/
     After section -- meant to be dropped into an <iframe> on someone else's
     blog. Reuses the main page's real styles.css/script.js via a relative
@@ -1076,7 +1100,7 @@ def render_embed_compare_html(data, before_rel, after_rel, before_label, after_l
 <main>
 <div class="wrap" style="padding:20px 16px;">
   <h1 class="embed-h1">Before and after: {subject_esc}</h1>
-  {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url, before_video_url=before_video_url, rel_prefix="../")}
+  {render_compare_widget_html(before_rel, after_rel, before_label_esc, after_label_esc, subject_esc, copy["compare_after_label"], before_embed_url=before_embed_url, after_embed_url=after_embed_url, before_video_url=before_video_url, before_reconstruction_url=before_reconstruction_url, rel_prefix="../")}
   <p style="font-family:&quot;IBM Plex Mono&quot;,monospace;font-size:11px;color:var(--faint);margin-top:14px;">From a <a href="../index.html" target="_top">Redesign Lab case study</a></p>
 </div>
 </main>
@@ -1128,7 +1152,7 @@ def render_embed_chapter_html(data, ch, num):
 
 def build_case_study_site(data, before_image, after_image, logo, title, before_label, after_label,
                            out_dir, canonical_url=None, before_embed_url=None, redesign_dir=None,
-                           before_video_url=None):
+                           before_video_url=None, before_dir=None):
     """Copies real assets into `out_dir/assets/` and writes index.html +
     styles.css + script.js -- a real GitHub-Pages-ready folder. This is the
     one function both the CLI (`main`, below) and `build-case-study.py`
@@ -1189,11 +1213,26 @@ def build_case_study_site(data, before_image, after_image, logo, title, before_l
         shutil.copytree(redesign_dir, redesign_out)
         after_embed_url = "redesign/index.html"
 
+    # Symmetric to redesign_dir, for the "before" side: a local reconstruction
+    # of the original hero (a rebuilt page + its own assets, embedding the real
+    # captured video) copied same-origin into out_dir/before/ and iframed as
+    # the before-media. Takes priority over before_video_url so the before
+    # shows the whole original page (nav, headline, CTAs), not just its hero
+    # media -- the right answer for a site whose CSP blocks framing the live
+    # original (e.g. tabbyml.com).
+    before_reconstruction_url = None
+    if before_dir:
+        before_out = out_dir / "before"
+        if before_out.exists():
+            shutil.rmtree(before_out)
+        shutil.copytree(before_dir, before_out)
+        before_reconstruction_url = "before/index.html"
+
     html_text = render_case_study_html(
         data, before_rel, after_rel, logo_rel, favicon_rel, title,
         before_label, after_label, og_image_rel=after_rel, canonical_url=canonical_url,
         before_embed_url=before_embed_url, after_embed_url=after_embed_url,
-        before_video_url=before_video_url,
+        before_video_url=before_video_url, before_reconstruction_url=before_reconstruction_url,
     )
     (out_dir / "styles.css").write_text(CSS, encoding="utf-8")
     (out_dir / "script.js").write_text(JS, encoding="utf-8")
@@ -1210,7 +1249,7 @@ def build_case_study_site(data, before_image, after_image, logo, title, before_l
         render_embed_compare_html(
             data, before_rel, after_rel, before_label, after_label,
             before_embed_url=before_embed_url, after_embed_url=after_embed_url,
-            before_video_url=before_video_url,
+            before_video_url=before_video_url, before_reconstruction_url=before_reconstruction_url,
         ), encoding="utf-8"
     )
     for i, ch in enumerate(data["chapters"], start=1):
@@ -1240,6 +1279,7 @@ def main():
     parser.add_argument("--before-embed-url", default=None, help="real external URL of the live 'before' site -- if given, the compare widget's before side renders a real <iframe> instead of a screenshot (independent of --redesign-dir now: each side's enhancement stands on its own)")
     parser.add_argument("--redesign-dir", default=None, help="local directory of the real redesigned page + its own real local assets, copied into out-dir/redesign/ and iframed as the live 'after' side -- works whether or not --before-embed-url is also given")
     parser.add_argument("--before-video-url", default=None, help="real URL of a captured video for the original site's hero (a plain media resource, not a page) -- a real alternative to --before-embed-url for a site whose own CSP blocks framing the page at all but not loading its video directly")
+    parser.add_argument("--before-dir", default=None, help="local directory of a reconstructed original hero page + its own assets (embedding the captured before video), copied into out-dir/before/ and iframed as the 'before' side -- preferred over --before-video-url when the original's CSP blocks framing it, so the before shows the whole page (nav, headline, CTAs), not just the bare hero video")
     args = parser.parse_args()
 
     data = json.loads(Path(args.data).read_text(encoding="utf-8"))
@@ -1247,7 +1287,7 @@ def main():
         data, args.before_image, args.after_image, args.logo, args.title,
         args.before_label, args.after_label, args.out_dir, canonical_url=args.canonical_url,
         before_embed_url=args.before_embed_url, redesign_dir=args.redesign_dir,
-        before_video_url=args.before_video_url,
+        before_video_url=args.before_video_url, before_dir=args.before_dir,
     )
     print(f"wrote {result['out_dir']}/ ({result['file_count']} files, {result['total_bytes']/1024/1024:.2f}MB total)")
     print(f"  index.html: {result['index_html_bytes']/1024:.1f}KB")
