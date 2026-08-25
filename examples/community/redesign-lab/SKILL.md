@@ -41,29 +41,33 @@ standing in for what the code will actually look like.
 Read `references/approval-policy.md` in full before running any gate, not
 just for its copy. Every gate — Gate 1, Gate 2, Gate 3, Gate 4, and every
 re-presentation after a fix — shows real work, then asks for a decision.
-For a design choice (Gate 1, Gate 2): build each option's real HTML, open it
-in its own real browser tab as soon as it's ready (progressively — tell the
-human immediately, keep building the next option while they look), then
-once every option in that pass is open, ask which one via `AskUserQuestion`
-— not a combined comparison page, not a numbered list typed in chat. Six
-standing rules apply, no exceptions:
+For a design choice (Gate 1, Gate 2): build each option's real HTML, serve
+the run's output over a real local HTTP server, generate a single real
+comparison page with `scripts/build-compare-page.py` (each option a real
+`<iframe src="http://...">`, never inlined bytes), and re-run it — one more
+`--option` each time — as each option finishes building, force-reloading
+the same one tab so the reveal stays progressive without ever needing a
+second tab. Once every option in that pass is built, ask which one via
+`AskUserQuestion` — not a numbered list typed in chat. Six standing rules
+apply, no exceptions:
 
 1. **"Stop here" is always one of the options in the same `AskUserQuestion`
    call** — not a side channel the human has to know to ask for unprompted,
    and never squeezed out by however many real options exist that run.
-2. **Design choices (Gate 1, Gate 2) are shown as real rendered pages in
-   real, separate tabs, never described or only screenshotted**: each tab
-   is the actual working code for that option, opened directly with no
-   wrapper or meta-header added to the page — a few lines on what's
-   actually notable about it (including a one-line mechanical-check
-   summary) go in the chat message announcing the tab, not printed into
-   the page itself. See approval-policy.md's "How gates are actually
-   shown: real pages, not descriptions" for the full contract, including
-   why a combined comparison page and in-page navigation links were both
-   tried and replaced (a real base64-payload rendering limit, and cross-tab
-   links confirmed completely inert regardless of how they're built), and
-   Gate 3's plain-text-only variant with no per-option tabs at all (it
-   isn't a design choice — the design was already chosen at Gate 2).
+2. **Design choices (Gate 1, Gate 2) are shown as real rendered pages,
+   never described or only screenshotted**: every option is the actual
+   working code, embedded live via a real HTTP-served `<iframe src>` with
+   no wrapper or meta-header added to the option's own page — a few lines
+   on what's actually notable about it (including a one-line
+   mechanical-check summary) go in the chat message announcing it's ready,
+   not printed into the page itself. See approval-policy.md's "How gates
+   are actually shown: real pages, not descriptions" for the full
+   contract, including why this replaced an earlier one-tab-per-option
+   mechanism (this environment's Browser pane only ever composites one tab
+   live, so every tab but the most recently active one silently showed a
+   stale frame — confirmed directly, twice), and Gate 3's plain-text-only
+   variant with no comparison page at all (it isn't a design choice — the
+   design was already chosen at Gate 2).
 3. **Every choice includes the reminder that a problem gets fixed and
    re-presented**, not forced into picking the least-bad of several broken
    options.

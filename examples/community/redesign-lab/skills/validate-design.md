@@ -66,23 +66,29 @@ second is not done.
    and brand identity are never negotiable at any level.
 
    **Brand logo, specifically**: `mechanical-check.py`'s `logo-present`
-   finding reports whether a home-linked `<img>`/`<svg>` exists, but never
-   fails on its own (a genuine text-only wordmark is a valid outcome). The
-   real check is cross-referencing it against `discover.json`'s
-   `assets.logo` entry (written by `capture-assets.py` at Discover): if a
-   real logo was captured but `logo-present` now reports false, that's a
-   Fail at every fidelity level — the asset existed and Implement dropped
-   it, not a deliberate design decision anyone approved.
+   finding reports whether a home-linked `<img>`/`<svg>` exists, and does
+   have its own hard Fail branch when one exists but never decoded (a
+   broken image, not a design choice anyone made). A missing logo image
+   alone isn't automatically a Fail on its own, though — a genuine
+   text-only wordmark is a valid outcome. The additional check beyond what
+   the script itself catches is cross-referencing against
+   `assets/manifest.json`'s (written by `capture-assets.py` at Discover,
+   not `discover.json` — that file has no `assets` object) `logo` entry:
+   if a real logo was captured but `logo-present` now reports false,
+   that's a Fail at every fidelity level — the asset existed and Implement
+   dropped it, not a deliberate design decision anyone approved.
 
    **Hero visual, the same way**: `mechanical-check.py`'s
-   `hero-visual-present` finding is the same pattern — never a Fail on its
-   own (a solid-color/gradient hero can be a genuine real design), only a
-   Fail when it contradicts `discover.json`'s `assets.hero_visual` (a real
-   photo, background-image, or video captured at Discover that Implement
-   silently dropped). If `hero_visual.type` was `video`, also confirm a real
-   `<video>` made it into the rebuilt page (`implement-design.md`) rather
-   than only the static poster frame Direction Slices used — a video that
-   quietly stayed a static image is the same class of regression as a logo
+   `hero-visual-present` finding follows the same pattern — a missing hero
+   visual alone isn't automatically a Fail (a solid-color/gradient hero can
+   be a genuine real design); the cross-check is against
+   `assets/manifest.json`'s `hero_visual` entry (again, not `discover.json`)
+   — a real photo, background-image, or video captured at Discover that
+   Implement silently dropped. If `hero_visual.type` was `video`, also
+   confirm a real `<video>` made it into the rebuilt page
+   (`implement-design.md`) rather than only the static poster frame
+   Direction Slices used — a video that quietly stayed a static image is
+   the same class of regression as a logo
    that quietly stayed text.
 
 5. **`content-coverage-check.py`**: confirms Implement didn't silently drop
@@ -142,11 +148,16 @@ second is not done.
 
 ## Running it
 
-`../scripts/mechanical-check.py` runs pieces 1, 3, and the checkable half of
-4 locally: no model call, no loomloom spend, genuinely free. Piece 2
-(`a11y-audit`) is also local and free; it's listed separately because it's a
-distinct installed skill, not part of the mechanical-check script itself.
-Piece 5 (`content-coverage-check.py`) is also local and free, run against
+`../scripts/mechanical-check.py` runs piece 3 and the checkable half of 4
+locally: no model call, no loomloom spend, genuinely free. It only ever
+loads one already-rendered page and checks its DOM/CSS — it doesn't iterate
+routes, inspect console output, or resolve links, so it does not cover
+piece 1 despite piece 1 being listed first; piece 1 (`webapp-testing`) is
+local and free too, but a distinct installed skill actually invoked
+separately, same as piece 2. Piece 2 (`a11y-audit`) is also local and free;
+it's listed separately because it's a distinct installed skill, not part of
+the mechanical-check script itself. Piece 5 (`content-coverage-check.py`)
+is also local and free, run against
 the same before/after targets Share's `diff-transformations.py` will later
 use. Nothing in Validate spends anything: Gates 1-3 are entirely free (rev 6
 removed loomloom from Explore Variants' aesthetic-advisory scoring

@@ -27,14 +27,16 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
   var afterImg = frameEl.querySelector('.after-media');
   // The class Python already stamps on frameEl itself, not a re-derived
   // tag-name check -- frame_cls in render_compare_widget_html sets
-  // "is-live" for exactly this, and the CSS already keys off it too; this
+  // "is-enhanced" for exactly this (a real iframe or real video on at
+  // least one side, decided independently per side -- see that function's
+  // before_type/after_type), and the CSS already keys off it too; this
   // was an independent (and easy to drift out of sync) re-check of the
   // same fact.
-  var isLive = frameEl.classList.contains('is-live');
+  var isEnhanced = frameEl.classList.contains('is-enhanced');
 
-  // Screenshot mode only: the widget's own frame is a fixed 16:9 box (CSS
-  // aspect-ratio) so it reads like a video player regardless of content
-  // length -- real vertical scrolling happens *inside* it. Both images
+  // Plain screenshot mode only: the widget's own frame is a fixed 16:9 box
+  // (CSS aspect-ratio) so it reads like a video player regardless of
+  // content length -- real vertical scrolling happens *inside* it. Both images
   // render at their real natural aspect ratio (no cropping), and `inner`'s
   // height is set to the taller of the two: a redesign that changed real
   // page length (this one compressed 8340px down to 2932px) means one side
@@ -44,14 +46,14 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
   // real page (see the CSS comment on that rule) -- there's no scroll
   // height to measure or match here at all.
   function layout(){
-    if (isLive) return;
+    if (isEnhanced) return;
     var w = widget.clientWidth;
     var beforeH = beforeImg.naturalWidth ? w * (beforeImg.naturalHeight / beforeImg.naturalWidth) : 0;
     var afterH = afterImg.naturalWidth ? w * (afterImg.naturalHeight / afterImg.naturalWidth) : 0;
     inner.style.height = Math.max(beforeH, afterH) + 'px';
   }
   function whenReady(img, cb){
-    if (isLive) return;
+    if (isEnhanced) return;
     if (img.complete && img.naturalWidth) cb();
     else img.addEventListener('load', cb);
   }
@@ -146,11 +148,11 @@ Array.prototype.forEach.call(document.querySelectorAll('.compare-frame'), functi
 });
 
 // The "see the full page" toggle: the second .compare-frame (screenshot
-// mode, hidden by default) only exists so the top-of-page live widget
+// mode, hidden by default) only exists so the top-of-page enhanced widget
 // above doesn't need scrolling at all -- see the CSS comment on
-// .compare-frame.is-live iframe for why that widget is frozen. Plain
-// show/hide, no data to fetch: both screenshots are already real files in
-// this build, same as the frozen widget's own poster-frame images.
+// .compare-frame.is-enhanced iframe/video for why that widget is frozen.
+// Plain show/hide, no data to fetch: both screenshots are already real
+// files in this build, same as the frozen widget's own poster-frame images.
 (function(){
   var btn = document.getElementById('compareFullToggleBtn');
   var panel = document.getElementById('compareFull');

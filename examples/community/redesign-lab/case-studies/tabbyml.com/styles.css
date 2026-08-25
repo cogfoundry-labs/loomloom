@@ -90,20 +90,26 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .compare .after-layer{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;clip-path:inset(0 0 0 50%);will-change:clip-path;}
 .compare .after-layer img{width:100%;height:auto;display:block;}
 .compare .divider{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--accent-fill);pointer-events:none;}
-/* Live-embed mode (real <iframe> in place of a static screenshot): neither
-   side's real content height is readable here -- the "before" iframe is a
-   different origin (the live external site), which browsers block reading
-   scrollHeight from regardless of X-Frame-Options, so the Math.max(before,
-   after) natural-image-height trick above can't apply to this mode at all,
-   not even for an after side that happens to be same-origin. Both sides
-   instead fill the existing fixed 16:9 .compare-frame box completely and
-   scroll internally on their own -- this is a real, deliberate trade-off,
-   not an oversight: the previous synced-scroll-together behavior needed
-   one shared scrolling container with both images stacked in normal flow,
-   which an embedded live page (with its own real DOM, scripts, and scroll
-   position) can't be made to participate in from the parent page's JS. */
-.compare-frame.is-live .compare{overflow:hidden;touch-action:auto;}
-.compare-frame.is-live .compare-inner{height:100%;}
+/* Enhanced mode (a real <iframe> or a real <video> in place of a static
+   screenshot on at least one side -- see render_compare_widget_html's
+   before_type/after_type, decided independently per side): none of these
+   content types expose a real content height here the way a plain <img>
+   does -- an iframe's "before" side is typically a different origin (the
+   live external site), which browsers block reading scrollHeight from
+   regardless of X-Frame-Options, and a <video> has no comparable "how
+   tall would this be as a page" concept at all, so the Math.max(before,
+   after) natural-image-height trick above can't apply to this mode,
+   even for an after side that happens to be same-origin. Every side
+   instead fills the existing fixed 16:9 .compare-frame box completely and
+   plays/scrolls internally on its own -- this is a real, deliberate
+   trade-off, not an oversight: the previous synced-scroll-together
+   behavior needed one shared scrolling container with both images
+   stacked in normal flow, which an embedded live page (with its own real
+   DOM, scripts, and scroll position) can't be made to participate in
+   from the parent page's JS, and a <video> was never a scrolling
+   participant to begin with. */
+.compare-frame.is-enhanced .compare{overflow:hidden;touch-action:auto;}
+.compare-frame.is-enhanced .compare-inner{height:100%;}
 /* `.compare-inner > iframe` (direct-child combinator) only ever matched the
    BEFORE iframe -- the AFTER iframe lives one level deeper, inside
    .after-layer, so it never matched this rule at all and was rendering at
@@ -131,8 +137,19 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
    based, no video, no cross-origin routing problem) widget below, behind
    the "see the full page" toggle; see render_compare_widget_html and the
    .compare-full rule further down. */
-.compare-frame.is-live .compare-inner > iframe,
-.compare-frame.is-live .after-layer iframe{position:absolute;inset:0;top:0;left:0;width:100%;height:100%;border:0;background:#fff;pointer-events:none;overflow:hidden;}
+.compare-frame.is-enhanced .compare-inner > iframe,
+.compare-frame.is-enhanced .compare-inner > video,
+.compare-frame.is-enhanced .after-layer iframe{position:absolute;inset:0;top:0;left:0;width:100%;height:100%;border:0;background:#fff;pointer-events:none;overflow:hidden;}
+/* object-fit/object-position are no-ops on iframe (not a replaced element
+   with an intrinsic ratio the way <video> is) but required for a real
+   <video> before-side: without them the video distorts to the box's own
+   aspect ratio instead of cropping like every other real screenshot/frame
+   in this widget, and without object-position:top specifically the crop
+   would center vertically instead -- a real source taller/wider than this
+   fixed 16:9 box, cropped to its vertical middle, would contradict this
+   widget's own "top of page only" promise (the caption text right below
+   it, and the plain-screenshot mode's own top-anchored real content). */
+.compare-frame.is-enhanced .compare-inner > video{object-fit:cover;object-position:top;}
 /* width:100% is required here, not optional -- confirmed the hard way on
    the real deployed site: an <iframe> is a *replaced element* (same CSS
    category as <img>/<video>/<object>), and for an absolutely positioned
@@ -164,7 +181,7 @@ h2{font-family:Arial,"Helvetica Neue",sans-serif;font-weight:900;font-size:1.9re
 .compare-frame .handle:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
 .compare:focus-visible{outline:3px solid var(--ink);outline-offset:-3px;}
 .compare-caption{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--faint);margin-top:10px;}
-.compare-full-toggle{margin:20px 0 0;}
+.compare-full-toggle{margin:20px 0 0;text-align:center;}
 /* The full-page comparison: real, static screenshots (no video, no
    cross-origin iframe), sized to the same 800px column as the rest of the
    article's prose instead of the 1280px full-bleed width the frozen live

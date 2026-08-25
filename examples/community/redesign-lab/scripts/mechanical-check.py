@@ -187,7 +187,20 @@ def run_checks(page):
     # would miss these since it respects current CSS display; textContent
     # does not, and "anywhere visible to the user" includes content one click
     # away, not just what's on screen right now.
-    body_text = page.eval_on_selector("body", "el => el.textContent")
+    # Real, confirmed false-positive: plain textContent also recurses into
+    # <script>/<style> tag contents -- source code, never user-reachable
+    # text at all, regardless of collapsed/hidden state. An inlined
+    # analytics/config <script> block with an em dash in a comment or
+    # string literal (e.g. "// config — do not edit") failed this check
+    # even though no visible page text contained one. Clone-and-strip
+    # keeps every real text node (including collapsed content) while
+    # dropping script/style/noscript source entirely before reading it.
+    body_text = page.eval_on_selector(
+        "body",
+        "el => { const c = el.cloneNode(true); "
+        "c.querySelectorAll('script, style, noscript').forEach(n => n.remove()); "
+        "return c.textContent; }",
+    )
     em_hits = sum(body_text.count(c) for c in EM_DASH_CHARS)
     if em_hits > 0:
         fail("no-em-dash", f"found {em_hits} em/en-dash character(s) in page text (including collapsed content)")
@@ -418,7 +431,15 @@ def run_checks(page):
         except Exception:
             pass
         fg_css = el.evaluate("el => getComputedStyle(el).color")
-        fg = parse_rgb(fg_css, treat_transparent_as_none=False)
+        # treat_transparent_as_none=True, not False: a real, confirmed gap
+        # when this was disabled -- color:transparent is a real technique
+        # to hide a text label behind a background-image/sprite icon, and
+        # reading it as opaque black produced a spurious pass/fail against
+        # text nobody actually sees. `fg is None` already skips the
+        # element below (line ~451) exactly like an unresolvable
+        # background does -- correct here too, since transparent text
+        # genuinely can't be contrast-checked, not "can't fail."
+        fg = parse_rgb(fg_css, treat_transparent_as_none=True)
         box = el.bounding_box()
         bg = sample_bg_color(page, el, box) if box else None
         if bg is None:
@@ -545,12 +566,17 @@ def run_checks(page):
     # ---- 7. Real logo present, not silently dropped to a text-only stand-in ----
     # Same home-link heuristic capture-assets.py uses to find a real logo: a
     # site's logo almost always sits inside an <a> pointing at the home page.
-    # This never fails on its own — a plain text wordmark can be the genuine,
-    # correct brand identity for a site with no graphical mark. It's
-    # informational, meant to be cross-checked against discover.json's
-    # assets.logo entry (validate-design.md's job): if Discover captured a
-    # real logo but this reports false, that's a real regression introduced
-    # during Implement, not an acceptable design choice.
+    # A missing logo image alone isn't a Fail here — a plain text wordmark
+    # can be the genuine, correct brand identity for a site with no
+    # graphical mark. (It DOES have its own Fail branch below, for an <img>
+    # that exists but never actually decoded -- see the naturalWidth-0 case
+    # a few lines down. "Missing" and "present but broken" are different
+    # findings.) The missing-logo case is informational, meant to be
+    # cross-checked against assets/manifest.json's `logo` entry (written by
+    # capture-assets.py, not discover.json -- discover.json has no assets
+    # object at all) as part of validate-design.md's job: if Discover
+    # captured a real logo but this reports false, that's a real regression
+    # introduced during Implement, not an acceptable design choice.
     # Existence alone isn't enough: an <img> can sit in the DOM at the right
     # size and still never actually decode (naturalWidth 0), which reads to
     # a human as "no logo" every bit as much as a missing element does.
@@ -603,7 +629,7 @@ def run_checks(page):
         ok(
             "logo-present",
             "image/svg logo found in a home-link" if logo_status == "present"
-            else "no graphical logo found in a home-link (text-only brand name, or no home-link) -- cross-check discover.json's assets.logo before treating this as fine",
+            else "no graphical logo found in a home-link (text-only brand name, or no home-link) -- cross-check assets/manifest.json's logo entry before treating this as fine",
         )
 
     # ---- 8. Real hero visual present, not silently dropped to bare text ----
@@ -612,13 +638,14 @@ def run_checks(page):
     # ancestor levels of the real <h1>. Also never fails on its own — some
     # genuine designs run a solid-color or gradient hero with no photo/video
     # at all. Informational, meant to be cross-checked against
-    # discover.json's assets.hero_visual: if Discover captured a real hero
-    # visual but this reports none, that's a real regression introduced
-    # during Implement, not an acceptable design choice. This exists
-    # because the capture step itself used to be skipped by accident: an
-    # earlier version only captured whatever a human remembered to name,
-    # and a real hero photo went missing on a real site until someone
-    # noticed it by eye afterward.
+    # assets/manifest.json's hero_visual entry (written by capture-assets.py,
+    # not discover.json -- discover.json has no assets object at all): if
+    # Discover captured a real hero visual but this reports none, that's a
+    # real regression introduced during Implement, not an acceptable design
+    # choice. This exists because the capture step itself used to be
+    # skipped by accident: an earlier version only captured whatever a
+    # human remembered to name, and a real hero photo went missing on a
+    # real site until someone noticed it by eye afterward.
     # Ancestor walking alone is not a tight enough boundary: confirmed on a
     # real page where the h1's 2nd-level ancestor was already <main>, whose
     # querySelector('img') matched a product-grid photo hundreds of pixels
@@ -646,8 +673,17 @@ def run_checks(page):
                 }
                 const video = container.querySelector('video');
                 if (video && nearHero(video.getBoundingClientRect())) return true;
+                // Exclude data: URI backgrounds -- same exclusion
+                // capture-assets.py's find_hero_visual already applies, for
+                // the same reason: lazy-load libraries commonly paint a
+                // tiny inline base64 placeholder before the real image
+                // loads. Without this, a hero still showing its lazy-load
+                // placeholder at check time reports "hero visual found --
+                // pass," masking exactly the silently-missing-hero-visual
+                // regression this check exists to catch.
                 const bg = getComputedStyle(container).backgroundImage;
-                if (bg && bg.includes('url(')) return true;
+                const bgMatch = bg && bg.match(/url\\(["']?([^"')]+)["']?\\)/);
+                if (bgMatch && !bgMatch[1].startsWith('data:')) return true;
                 container = container.parentElement;
             }
             return false;

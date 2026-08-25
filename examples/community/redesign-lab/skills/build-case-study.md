@@ -7,8 +7,7 @@ description: Gate 4 / Share stage. Assembles a real, interactive Case Study from
 
 Share's real implementation, not a description of one. The Golden Case
 Study run this was generalized from is documented in
-`../references/model-policy.md` and `../references/price-report-zh.md`
-(the real loomloom costs).
+`../references/model-policy.md` (the real loomloom costs).
 
 ## Prerequisite: loomloom isn't required until this exact moment
 
@@ -87,9 +86,13 @@ otherwise-empty folder doesn't error — `gather_evidence()` just finds none
 of the files it's looking for, and the finished case study silently credits
 only `redesign-lab` and `cogfoundry-labs/loomloom`, missing every other real
 dependency the run actually used (the design authority, `taste`,
-`webapp-testing`, `a11y-audit`, any sibling aesthetic skill a Gate 1
-exploration built with). Nothing fails loudly; the case study just under-
-credits real open-source work by default. If this happens after `generate`
+`webapp-testing`, `a11y-audit`). Nothing fails loudly; the case study just
+under-credits real open-source work by default. (`gather_evidence()` has no
+code path that credits a specific Gate-1 direction-variant skill by name,
+e.g. `industrial-brutalist-ui` — only the base design authority declared at
+Discover — so a correct `--output-dir` doesn't change that particular gap;
+it's not a real credit category this function produces at all, not
+something a wrong path merely fails to find.) If this happens after `generate`
 already ran (the narrative already paid for), don't re-run `plan` from
 scratch — that mints a new `case-study-data.json` and re-triggers the paid
 call. Instead, call `package_share.gather_evidence()` directly against the
@@ -276,6 +279,58 @@ Two more real, confirmed details this rework needed:
   keyboard-only user can Tab to the frame and use arrow/Page keys to
   scroll it, separately from tabbing to the handle to adjust the
   horizontal reveal.
+
+## Real sites can block framing entirely — decouple before/after content types, don't go all-or-nothing
+
+Confirmed on tabbyml.com: some real sites send their own
+`Content-Security-Policy: frame-ancestors` (or `X-Frame-Options`) that
+blocks *any* other origin from framing them at all — a deliberate
+anti-clickjacking control on their end, not a bug, and not fixable from
+the embedding side. The compare widget's live-embed mode used to be
+all-or-nothing (`is_live = bool(before_embed_url and after_embed_url)`):
+if the "before" side couldn't be framed, the whole enhanced widget —
+including the "after" side, which is always our own same-origin copy and
+was never actually blocked — fell back to plain screenshots, and the
+toggle-revealed full-page widget disappeared too, even though nothing
+about *it* depended on framing succeeding. A human had to notice the
+widget had quietly gone from two to one before this got fixed.
+
+Two real, separate fixes:
+
+1. **Detect the block at build time, not runtime.** Client-side JS in the
+   rendered page can't reliably tell "blocked" apart from "loaded
+   successfully" — both throw the identical `SecurityError` reading a
+   cross-origin `contentWindow.location` (confirmed directly: tried this
+   as the fix first, it doesn't work, the two cases are indistinguishable
+   from inside the page). The only reliable signal is the real HTTP
+   response headers, which `plan` already fetches via the same Playwright
+   `page.goto()` call it uses for the diff — no second request needed.
+   `frame_ancestors_blocks_embedding()` checks those headers
+   (`X-Frame-Options: DENY`/`SAMEORIGIN`, or a `Content-Security-Policy`
+   `frame-ancestors` directive other than a bare `*`) and disables
+   `before_embed_url` automatically before ever committing to live-embed
+   mode, rather than shipping a permanently blank iframe for someone else
+   to notice later.
+2. **Decouple before/after content types entirely.**
+   `render_compare_widget_html` now decides `before_type`/`after_type`
+   independently (`video` / `iframe` / `image` for before; `iframe` /
+   `image` for after), and the "after" side's live iframe (from
+   `redesign_dir`) no longer needs `before_embed_url`'s cooperation at
+   all. A new `--before-video-url` lets the "before" side use a real
+   captured hero video instead of a whole-page iframe when the page
+   itself can't be framed but its video file (a plain media resource, not
+   subject to the same restriction — confirmed reachable directly on
+   tabbyml.com) still can be loaded — genuinely animated, not a static
+   fallback standing in for "live." `is-live`/`isLive` renamed to
+   `is-enhanced`/`isEnhanced` throughout (CSS, JS, Python) since "live"
+   stopped being an accurate name once video and mixed before/after modes
+   exist.
+
+Real result: a site that blocks framing entirely still gets the full
+two-widget experience — animated real video on the before side, a live
+same-origin iframe on the after side, toggle-revealed full-page
+screenshots below — instead of silently collapsing to a single static
+widget the way it used to.
 
 ## A "broken" before/after image can be a capture bug, not a widget bug
 

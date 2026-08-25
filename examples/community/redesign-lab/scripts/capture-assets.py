@@ -73,6 +73,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -396,7 +397,20 @@ def score_match(label, alt, common_words):
 
 def slugify(text):
     slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-    return slug[:60] or "image"
+    if slug:
+        return slug[:60]
+    # A real, confirmed bug when this fell back to the fixed string
+    # "image": any non-Latin --match label (e.g. Chinese/Japanese/Korean
+    # product names) strips to empty here, so two different real labels
+    # both collapsed to the same "image" slug -- the second download
+    # silently overwrote the first captured photo on disk at
+    # content-image.<ext>, even though manifest.json still listed both as
+    # distinct entries pointing at the same wrong file. A short stable
+    # hash of the real original text keeps two different non-ASCII labels
+    # apart (and is deterministic, so a re-run of the same capture still
+    # produces the same filename) instead of collapsing every one of them
+    # onto the same generic name.
+    return "image-" + hashlib.sha1(text.encode("utf-8")).hexdigest()[:8]
 
 
 def ensure_svg_dimensions(svg_markup, width, height):

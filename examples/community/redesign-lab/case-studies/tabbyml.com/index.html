@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TabbyML: From Split Hero to Full-Bleed Demo</title>
+<meta name="description" content="TabbyML (tabbyml.com): Split-Panel Terminal Hero to Full-Bleed Cinematic Demo Hero. A real, evidence-based redesign case study.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="TabbyML: From Split Hero to Full-Bleed Demo">
+<meta property="og:description" content="TabbyML (tabbyml.com): Split-Panel Terminal Hero to Full-Bleed Cinematic Demo Hero. A real, evidence-based redesign case study.">
+<meta property="og:image" content="assets/after.png">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TabbyML: From Split Hero to Full-Bleed Demo">
+<meta name="twitter:description" content="TabbyML (tabbyml.com): Split-Panel Terminal Hero to Full-Bleed Cinematic Demo Hero. A real, evidence-based redesign case study.">
+<meta name="twitter:image" content="assets/after.png">
+
+<link rel="icon" href="assets/favicon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+<div class="wrap">
+  <div class="topbar">
+    <div class="left">
+      <img src="assets/logo.png" alt="TabbyML (tabbyml.com) logo">
+      <span class="tag">Case Study &middot; Redesign Lab</span>
+    </div>
+    <button class="copy-page-btn" onclick="copyPageLink()" aria-label="Copy link to this case study">Copy link</button>
+  </div>
+</div>
+</header>
+
+<main>
+<div class="hero">
+  <div class="wrap">
+    <span class="hero-eyebrow">Website Redesign Case Study</span>
+    <span class="badge">PREVIEW (not deployed)</span><br>
+    <h1 class="subject">TabbyML (tabbyml.com)</h1>
+    <div class="hero-shift">
+      <span class="label before">Split-Panel Terminal Hero</span>
+      <span class="arrow">&darr;</span>
+      <span class="label after">Full-Bleed Cinematic Demo Hero</span>
+    </div>
+    <p class="tagline">Real site &middot; Real assets &middot; Real code</p>
+    <div class="swatches"><span class="swatch" style="background:#471A09" title="accent-brown: #471A09"></span><span class="swatch" style="background:#E9E1D5" title="bg-secondary: #E9E1D5"></span><span class="swatch" style="background:#FFFFFF" title="ink-on-dark: #FFFFFF"></span><span class="swatch" style="background:#E68129" title="accent-orange: #E68129"></span><span class="swatch" style="background:#2D292E" title="bg-dark: #2D292E"></span><span class="swatch" style="background:#98C379" title="accent-green: #98C379"></span><span class="swatch" style="background:#000000" title="ink: #000000"></span><span class="swatch" style="background:#FFF8ED" title="bg: #FFF8ED"></span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section id="compare">
+    <span class="section-label">The Redesign</span>
+    <h2>Before &rarr; After</h2>
+    <p style="color:var(--muted);margin-bottom:20px;">Drag the handle to compare the top of each real page.</p>
+    <div class="compare-frame is-enhanced">
+      <div class="compare">
+        <div class="compare-inner">
+          <video class="before-media" src="https://cdn.prod.website-files.com/66d758dfc1a1472af872e216%2F66e2e7c95a1621ce1e727929_tabby-hero-trimmed-transcode.mp4" title="Before: TabbyML (tabbyml.com)'s original design, real captured video, Split-Panel Terminal Hero" autoplay muted loop playsinline tabindex="-1"></video>
+          <div class="after-layer">
+            <iframe class="after-media" src="redesign/index.html" title="After: TabbyML (tabbyml.com) redesigned as Full-Bleed Cinematic Demo Hero, live" loading="lazy" tabindex="-1" scrolling="no"></iframe>
+          </div>
+          <div class="divider" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="handle" role="slider" tabindex="0" aria-label="Before and after comparison position (top of page)"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
+    </div>
+    <div class="compare-caption"><span>Before</span><span>After: validated redesign preview <span class="live-note">(top of page only -- see the full page below for the rest)</span></span></div>
+    <div class="compare-embed">
+      <span class="share-label">Share this chapter</span>
+      <button class="share-btn" onclick="copyCompareEmbed(&quot;Before and after: TabbyML (tabbyml.com)&quot;)" aria-label="Copy embeddable code for this before/after comparison">Copy the code</button>
+    </div>
+    <div class="compare-full-toggle">
+      <button class="share-btn" id="compareFullToggleBtn" type="button" aria-expanded="false" aria-controls="compareFull" data-show-label="See the full page, top to bottom" data-hide-label="Hide the full page">See the full page, top to bottom</button>
+    </div>
+    <div class="compare-full" id="compareFull" hidden>
+      <p style="color:var(--muted);margin-bottom:20px;">A full-page comparison (static screenshots, not the live sites above) -- drag the handle, then scroll down inside it to see the rest of both pages together.</p>
+      <div class="compare-frame">
+      <div class="compare" tabindex="0" aria-label="Scrollable page preview">
+        <div class="compare-inner">
+          <img class="before-media" data-src="assets/before.png" alt="Before: TabbyML (tabbyml.com)'s original design, Split-Panel Terminal Hero">
+          <div class="after-layer">
+            <img class="after-media" data-src="assets/after.png" alt="After: TabbyML (tabbyml.com) redesigned as Full-Bleed Cinematic Demo Hero">
+          </div>
+          <div class="divider" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="handle" role="slider" tabindex="0" aria-label="Before and after comparison position (full page)"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
+    </div>
+    <div class="compare-caption"><span>Before</span><span>After: validated redesign preview</span></div>
+    </div>
+  </section>
+
+  <section id="what-changed">
+    <span class="section-label">What Changed</span>
+    <h2>At A Glance</h2>
+    <div class="quick-hits">
+      <div class="quick-hit"><span class="num">01</span><p>A more disciplined type scale</p></div>
+      <div class="quick-hit"><span class="num">02</span><p>Nav Typography</p></div>
+      <div class="quick-hit"><span class="num">03</span><p>A real, semantic color system</p></div>
+      <div class="quick-hit"><span class="num">04</span><p>Sharper structural framing</p></div>
+      <div class="quick-hit"><span class="num">05</span><p>A deliberate corner language</p></div>
+      <div class="quick-hit"><span class="num">06</span><p>A more focused grid</p></div></div>
+  </section>
+
+  <section id="chapters">
+    <span class="section-label">Design Transformations</span>
+    <h2>Real, Measured Changes</h2>
+    
+    <article class="chapter" id="ch-01">
+      <div class="chapter-head">
+        <span class="chapter-num">/// 01</span>
+        <h3>Headline Typography</h3>
+      </div>
+      <div class="chapter-facts">
+        <div class="fact"><span class="fact-label">Before</span><p>Heading style: {&#x27;fontFamily&#x27;: &#x27;Geistmono, Arial, sans-serif&#x27;, &#x27;fontWeight&#x27;: &#x27;600&#x27;, &#x27;fontSize&#x27;: &#x27;47.001px&#x27;, &#x27;letterSpacing&#x27;: &#x27;-1.9px&#x27;, &#x27;textTransform&#x27;: &#x27;none&#x27;, &#x27;lineHeight&#x27;: &#x27;56.4012px&#x27;}</p></div>
+        <div class="fact"><span class="fact-label">After</span><p>Heading style: {&#x27;fontFamily&#x27;: &#x27;&quot;Geist Mono&quot;, ui-monospace, SFMono-Regular, Consolas, monospace&#x27;, &#x27;fontWeight&#x27;: &#x27;600&#x27;, &#x27;fontSize&#x27;: &#x27;44px&#x27;, &#x27;letterSpacing&#x27;: &#x27;-1.7px&#x27;, &#x27;textTransform&#x27;: &#x27;none&#x27;, &#x27;lineHeight&#x27;: &#x27;50.6px&#x27;}</p></div>
+      </div>
+      <p class="chapter-narrative">The heading typography was initially defined by the &#x27;Geistmono&#x27; font family, a 47.001px size, and -1.9px letter spacing with a 56.4012px line height. The new design implemented a transition to the &#x27;&quot;Geist Mono&quot;&#x27; family with an expanded monospace fallback stack, adjusting the font size to 44px, the letter spacing to -1.7px, and the line height to 50.6px.</p>
+      <div class="chapter-share">
+        <span class="share-label">Share this chapter</span>
+        <button class="share-btn" onclick="copyChapterEmbed(&quot;01&quot;, &quot;TabbyML (tabbyml.com): Headline Typography&quot;)" aria-label="Copy embeddable code for this chapter">Copy the code</button>
+      </div>
+    </article>
+    <article class="chapter" id="ch-02">
+      <div class="chapter-head">
+        <span class="chapter-num">/// 02</span>
+        <h3>Nav Typography</h3>
+      </div>
+      <div class="chapter-facts">
+        <div class="fact"><span class="fact-label">Before</span><p>Nav link style: {&#x27;fontFamily&#x27;: &#x27;Geistmono, Arial, sans-serif&#x27;, &#x27;fontWeight&#x27;: &#x27;500&#x27;, &#x27;fontSize&#x27;: &#x27;18.8004px&#x27;, &#x27;letterSpacing&#x27;: &#x27;-1px&#x27;, &#x27;textTransform&#x27;: &#x27;uppercase&#x27;}</p></div>
+        <div class="fact"><span class="fact-label">After</span><p>Nav link style: {&#x27;fontFamily&#x27;: &#x27;&quot;Geist Mono&quot;, ui-monospace, SFMono-Regular, Consolas, monospace&#x27;, &#x27;fontWeight&#x27;: &#x27;400&#x27;, &#x27;fontSize&#x27;: &#x27;14px&#x27;, &#x27;letterSpacing&#x27;: &#x27;0.42px&#x27;, &#x27;textTransform&#x27;: &#x27;uppercase&#x27;}</p></div>
+      </div>
+      <p class="chapter-narrative">The navigation typography was initially set with Geistmono at a medium weight and larger size, employing negative letter spacing. The refined design transitions to a comprehensive monospace font stack at a regular weight and reduced size, incorporating positive letter spacing to optimize legibility and ensure consistent rendering across diverse systems.</p>
+      <div class="chapter-share">
+        <span class="share-label">Share this chapter</span>
+        <button class="share-btn" onclick="copyChapterEmbed(&quot;02&quot;, &quot;TabbyML (tabbyml.com): Nav Typography&quot;)" aria-label="Copy embeddable code for this chapter">Copy the code</button>
+      </div>
+    </article>
+    <article class="chapter" id="ch-03">
+      <div class="chapter-head">
+        <span class="chapter-num">/// 03</span>
+        <h3>Color System</h3>
+      </div>
+      <div class="chapter-facts">
+        <div class="fact"><span class="fact-label">Before</span><p>Root color tokens: {&#x27;--text-color--text-primary&#x27;: &#x27;black&#x27;, &#x27;--background-color--background-alternate&#x27;: &#x27;black&#x27;, &#x27;--gold&#x27;: &#x27;#ffbf7f&#x27;, &#x27;--base-color-neutral--neutral-light&#x27;: &#x27;#aaa&#x27;, &#x27;--base-color-system--error-red-light&#x27;: &#x27;#fef3f2&#x27;, &#x27;--base-color-neutral--black&#x27;: &#x27;black&#x27;, &#x27;--black-archive&lt;deleted|variable-dccb7db6&gt;&#x27;: &#x27;black&#x27;, &#x27;--base-color-neutral--neutral-lighter&#x27;: &#x27;#ccc&#x27;, &#x27;--base-color-neutral--neutral-dark&#x27;: &#x27;#444&#x27;, &#x27;--border-color--border-primary&#x27;: &#x27;black&#x27;, &#x27;--border-color--border-alternate&#x27;: &#x27;#fff8ed&#x27;, &#x27;--rich-ocre&#x27;: &#x27;#472209&#x27;, &#x27;--base-color-brand--white&#x27;: &#x27;white&#x27;, &#x27;--base-color-brand--black&#x27;: &#x27;#2d292e&#x27;, &#x27;--burnt-gold&#x27;: &#x27;#e68129&#x27;, &#x27;--link-color--link-primary&#x27;: &#x27;black&#x27;, &#x27;--base-color-system--error-red&#x27;: &#x27;#b42318&#x27;, &#x27;--text-color--text-success&#x27;: &#x27;#027a48&#x27;, &#x27;--neutral&#x27;: &#x27;#e9e1d5&#x27;, &#x27;--background-color--background-secondary&#x27;: &#x27;#eee&#x27;, &#x27;--text-color--text-secondary&#x27;: &#x27;black&#x27;, &#x27;--base-color-system--success-green-light&#x27;: &#x27;#ecfdf3&#x27;, &#x27;--text-color--text-alternate&#x27;: &#x27;#fff8ed&#x27;, &#x27;--background-color--background-success&#x27;: &#x27;#ecfdf3&#x27;, &#x27;--base-color-neutral--white&#x27;: &#x27;#fff8ed&#x27;, &#x27;--text-color--text-error&#x27;: &#x27;#b42318&#x27;, &#x27;--base-color-neutral--neutral-darker&#x27;: &#x27;#222&#x27;, &#x27;--link-color--link-alternate&#x27;: &#x27;#fff8ed&#x27;, &#x27;--base-color-neutral--neutral-lightest&#x27;: &#x27;#eee&#x27;, &#x27;--base-color-neutral--neutral&#x27;: &#x27;#666&#x27;, &#x27;--link-color--link-secondary&#x27;: &#x27;#aaa&#x27;, &#x27;--background-color--background-error&#x27;: &#x27;#fef3f2&#x27;, &#x27;--base-color-neutral--neutral-darkest&#x27;: &#x27;#111&#x27;, &#x27;--storm-blue&#x27;: &#x27;#a2bdd1&#x27;, &#x27;--jade&#x27;: &#x27;#ffb46c&#x27;, &#x27;--base-color-system--success-green&#x27;: &#x27;#027a48&#x27;, &#x27;--neutral-light&#x27;: &#x27;#fff8ed&#x27;, &#x27;--border-color--border-secondary&#x27;: &#x27;#aaa&#x27;, &#x27;--background-color--background-primary&#x27;: &#x27;#eee&#x27;, &#x27;--background-color--background-tertiary&#x27;: &#x27;#aaa&#x27;}</p></div>
+        <div class="fact"><span class="fact-label">After</span><p>Root color tokens: {&#x27;--accent-brown&#x27;: &#x27;#471A09&#x27;, &#x27;--bg-secondary&#x27;: &#x27;#E9E1D5&#x27;, &#x27;--ink-on-dark&#x27;: &#x27;#FFFFFF&#x27;, &#x27;--accent-orange&#x27;: &#x27;#E68129&#x27;, &#x27;--bg-dark&#x27;: &#x27;#2D292E&#x27;, &#x27;--accent-green&#x27;: &#x27;#98C379&#x27;, &#x27;--ink&#x27;: &#x27;#000000&#x27;, &#x27;--bg&#x27;: &#x27;#FFF8ED&#x27;}</p></div>
+      </div>
+      <p class="chapter-narrative">The color system underwent a significant consolidation, transitioning from a broad inventory of granular color tokens to a more distilled and intentional palette. This transformation reduced the total number of defined colors from approximately forty specific entries to eight core values. The revised structure provides a more focused and manageable foundation for consistent visual application.</p>
+      <div class="chapter-share">
+        <span class="share-label">Share this chapter</span>
+        <button class="share-btn" onclick="copyChapterEmbed(&quot;03&quot;, &quot;TabbyML (tabbyml.com): Color System&quot;)" aria-label="Copy embeddable code for this chapter">Copy the code</button>
+      </div>
+    </article>
+    <article class="chapter" id="ch-04">
+      <div class="chapter-head">
+        <span class="chapter-num">/// 04</span>
+        <h3>Structural Framing</h3>
+      </div>
+      <div class="chapter-facts">
+        <div class="fact"><span class="fact-label">Before</span><p>Header border: False, section labels: 0</p></div>
+        <div class="fact"><span class="fact-label">After</span><p>Header border: True, section labels: 0</p></div>
+      </div>
+      <p class="chapter-narrative">The structural framing underwent a refinement in its presentation. Previously, the header displayed no distinct border. The updated design introduces a header border, providing a clear visual demarcation for the section.</p>
+      <div class="chapter-share">
+        <span class="share-label">Share this chapter</span>
+        <button class="share-btn" onclick="copyChapterEmbed(&quot;04&quot;, &quot;TabbyML (tabbyml.com): Structural Framing&quot;)" aria-label="Copy embeddable code for this chapter">Copy the code</button>
+      </div>
+    </article>
+    <article class="chapter" id="ch-05">
+      <div class="chapter-head">
+        <span class="chapter-num">/// 05</span>
+        <h3>Corner Treatment</h3>
+      </div>
+      <div class="chapter-facts">
+        <div class="fact"><span class="fact-label">Before</span><p>Rounded corners present: True</p></div>
+        <div class="fact"><span class="fact-label">After</span><p>Rounded corners present: False</p></div>
+      </div>
+      <p class="chapter-narrative">The design evolution included a significant alteration to the corner treatment. Previously, elements featured a distinctly rounded aesthetic. This was subsequently revised to a sharp, angular finish, fundamentally changing the perceived character of the forms.</p>
+      <div class="chapter-share">
+        <span class="share-label">Share this chapter</span>
+        <button class="share-btn" onclick="copyChapterEmbed(&quot;05&quot;, &quot;TabbyML (tabbyml.com): Corner Treatment&quot;)" aria-label="Copy embeddable code for this chapter">Copy the code</button>
+      </div>
+    </article>
+    <article class="chapter" id="ch-06">
+      <div class="chapter-head">
+        <span class="chapter-num">/// 06</span>
+        <h3>Layout Density</h3>
+      </div>
+      <div class="chapter-facts">
+        <div class="fact"><span class="fact-label">Before</span><p>Column layout: multi-column counts [], grid track counts [2, 4, 3, 5]</p></div>
+        <div class="fact"><span class="fact-label">After</span><p>Column layout: multi-column counts [], grid track counts [4, 2, 3]</p></div>
+      </div>
+      <p class="chapter-narrative">The primary change in layout density involved a reduction in the underlying grid tracks. The initial configuration, featuring four distinct grid tracks [2, 4, 3, 5], was subsequently streamlined. This transition resulted in a more consolidated layout, now structured around three grid tracks [4, 2, 3].</p>
+      <div class="chapter-share">
+        <span class="share-label">Share this chapter</span>
+        <button class="share-btn" onclick="copyChapterEmbed(&quot;06&quot;, &quot;TabbyML (tabbyml.com): Layout Density&quot;)" aria-label="Copy embeddable code for this chapter">Copy the code</button>
+      </div>
+    </article>
+  </section>
+
+  <section id="how">
+    <span class="section-label">How loomloom Did It</span>
+    <h2>The Workflow</h2>
+    <div class="request-block"><span class="fact-label">The Request</span><p>&ldquo;redesign https://www.tabbyml.com/&rdquo;</p></div>
+    <div class="pipeline">
+      <div class="pipeline-stage"><span class="name">Discover</span><p class="desc">Understand the existing site: real structure, real assets, real constraints, no model call.</p></div>
+      <div class="pipeline-stage"><span class="name">Analyze</span><p class="desc">Measure the real design system and audit it against a declared design authority&#x27;s own rules.</p></div>
+      <div class="pipeline-stage"><span class="name">Explore</span><p class="desc">Build real, working direction slices and structural variants: real code, never a mockup.</p></div>
+      <div class="pipeline-stage"><span class="name">Select</span><p class="desc">A human picks the direction and variant that actually fits, from real rendered pages.</p></div>
+      <div class="pipeline-stage"><span class="name">Implement</span><p class="desc">Turn the chosen direction into the real page: real copy, real assets, real responsive layout.</p></div>
+      <div class="pipeline-stage"><span class="name">Validate</span><p class="desc">Real mechanical checks and a real axe-core accessibility scan; any failure blocks completion.</p></div>
+    </div>
+    <div class="loomloom-note">loomloom's role in this case study: writing the 6 narrative paragraphs above from real, verified facts, the only real model call in this run's Share stage. No image was generated: the hero above uses the real color tokens from the actual redesign directly, not an AI illustration of them.</div>
+  </section>
+
+  <section id="validate">
+    <span class="section-label">Validation</span>
+    <h2>It Works, Not Just Looks Right</h2>
+    <div class="validate-grid"><div class="validate-cell"><span class="metric">11/11</span><span class="label">Mechanical checks passed</span></div><div class="validate-cell"><span class="metric">0</span><span class="label">Accessibility violations (real axe-core scan)</span></div><div class="validate-cell"><span class="metric">✓</span><span class="label">Responsive layout (mobile / tablet / desktop)</span></div><div class="validate-cell"><span class="metric">✓</span><span class="label">Real rendered implementation, not a mockup</span></div></div>
+  </section>
+
+  <section id="reproduce">
+    <span class="section-label">Reproduce This</span>
+    <h2>How This Was Actually Built</h2>
+    <div class="repro-block">
+      <p style="margin-top:0;color:var(--muted);font-size:14px;">This redesign is built on real open-source work. Thanks to every project below: each is listed because real evidence of its use exists in this run.</p>
+      <ul class="tool-list"><li><a href="https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/redesign-lab" class="name">redesign-lab</a><span class="role">The end-to-end pipeline (Discover, Analyze, Explore, Select, Implement, Validate, Share) that produced this entire redesign and case study.</span></li><li><a href="https://github.com/senlindesign/taste-skill" class="name">senlindesign/taste-skill</a><span class="role">Measured the original page&#x27;s real design system (colors, type, spacing, layout) via screenshot and DOM extraction -- the raw input to Analyze.</span></li><li><a href="https://github.com/Leonxlnx/taste-skill" class="name">leonxlnx-taste-skill</a><span class="role">Supplied the build rules, direction-variant families, and the mechanical Pre-Flight Check this redesign was built and validated against.</span></li><li><a href="https://github.com/anthropics/skills/tree/main/skills/webapp-testing" class="name">anthropics/skills (webapp-testing)</a><span class="role">Rendered and screenshotted every real direction, variant, and the final implementation for functional and responsive checking.</span></li><li><a href="https://github.com/snapsynapse/skill-a11y-audit" class="name">snapsynapse/skill-a11y-audit</a><span class="role">Ran the real axe-core accessibility scan that found (and confirmed the fixes for) this run&#x27;s Validate-stage violations.</span></li><li><a href="https://github.com/cogfoundry-labs/loomloom" class="name">cogfoundry-labs/loomloom</a><span class="role">Generated the 6 narrative paragraphs in the Design Transformations section above from this run&#x27;s real, verified facts.</span></li></ul>
+      <p class="note">The before and after target(s) were fetched live at 2026-08-24T23:20:27.701010+00:00 (Share time), not re-read from a saved snapshot of what Gate 2 actually showed. If a live external site changed since that approval, these facts may not exactly match what the human saw and chose.</p>
+    </div>
+  </section>
+
+  <div class="final-cta">
+    <h2>Want To Redesign Another Site?</h2>
+    <a class="btn" href="https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/redesign-lab">Try Redesign Lab</a>
+  </div>
+
+</div>
+</main>
+
+<footer>Made with Redesign Lab &middot; a loomloom-native design pipeline</footer>
+
+<script src="script.js" defer></script>
+
+</body>
+</html>

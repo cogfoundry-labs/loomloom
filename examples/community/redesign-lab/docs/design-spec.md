@@ -452,18 +452,44 @@ Hero (typographic, real color tokens, $0) → Interactive before/after compariso
 ```
 
 The interactive before/after comparison is a fixed-size frame (16:9, so it
-reads like a normal screen-recorded demo) with a real vertical scrollbar
-inside it, so every part of both real pages stays reachable regardless of
-how their lengths differ — neither page is cropped or stretched to match
-the other.
+reads like a normal screen-recorded demo). Two distinct modes, chosen by
+whether the run actually captured a live embeddable "after" page
+(`before_embed_url`/`after_embed_url`, set when a real local `redesign/`
+build exists to embed):
+
+- **Screenshot mode (default, no live embed available).** Both sides are
+  the real full-page screenshots stacked in one shared scrolling container,
+  with a real native vertical scrollbar — every part of both real pages
+  stays reachable regardless of how their lengths differ, neither page
+  cropped or stretched to match the other.
+- **Live-embed mode.** The top widget embeds the two real pages as live
+  `<iframe>`s, but is permanently frozen to a top-of-page comparison — no
+  scroll, no clicks into either real site. This isn't a missing feature:
+  a real, confirmed Chromium limitation means a cross-origin iframe loses
+  reliable wheel-scroll routing whenever it (or its wrapper) sits inside
+  any `position:absolute` ancestor on a scrollable page, independent of
+  clip-path/siblings/nesting depth — exactly the structure this widget's
+  smooth horizontal drag-reveal needs. Freezing the live widget sidesteps
+  the bug instead of fighting it. A "See the full page, top to bottom"
+  toggle reveals a second, narrower widget directly below, in screenshot
+  mode (same shared-scroll mechanism as the default case above, real
+  synced scrollbar, no video/iframe) — the actual full, scrollable
+  comparison lives there. That second widget's screenshots load on demand
+  (`data-src`, swapped to a real `src` only when the toggle opens it), not
+  on every page load.
 
 Every chapter, and the before/after comparison itself, carries a "Copy the
 code" button producing a real `<iframe>` snippet pointing at a small,
 self-contained fragment page that reuses the main page's own stylesheet and
-script, confirmed to work embedded cross-origin on a third-party page. Tool
-and repo credits are evidence-gated `{name, repo, role}` entries — each
-only appears if the real file/directory proving it ran actually exists —
-including loomloom itself and this pipeline's own repository.
+script, confirmed to work embedded cross-origin on a third-party page. In
+live-embed mode this embed fragment inherits the same top-of-page freeze as
+the main page's widget, but has no "see the full page" counterpart of its
+own (adding one would double the fragment's asset payload for what's meant
+to stay a lightweight snippet) — a known, accepted limitation of the embed
+specifically, not the main case-study page. Tool and repo credits are
+evidence-gated `{name, repo, role}` entries — each only appears if the real
+file/directory proving it ran actually exists — including loomloom itself
+and this pipeline's own repository.
 
 ## 11. Repository layout
 
@@ -492,8 +518,7 @@ redesign-lab/
 │   ├── direction-schema.md
 │   ├── evaluation-rubric.md
 │   ├── model-policy.md
-│   ├── approval-policy.md                # the 4 gates: outcomes + presentation contract
-│   └── price-report-zh.md
+│   └── approval-policy.md                # the 4 gates: outcomes + presentation contract
 ├── test-fixtures/
 │   └── hello-world-site/                 # a real, owned local project for exercising
 │                                          # Implement onward without a live external target
