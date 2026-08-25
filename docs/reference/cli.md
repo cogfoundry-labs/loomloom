@@ -166,6 +166,7 @@ Generated files from workflows (images, videos, documents, etc.)
 
 | Command | Description |
 |---|---|
+| `loomloom capability resolve --input <modality> --output-modality <modality>` | Resolve task modalities to current TemplateSpec authoring choices. |
 | `loomloom model list --step-type <type>` | List executable models for a step type. |
 | `loomloom balance` | Show the currently observable settled LoomLoom balance. Gateway remains the final model-request admission authority. |
 | `loomloom asset list` | Aggregated list of my private templates and available Market SkillBots; does not include official templates. |
@@ -178,6 +179,7 @@ For building your own private workflows.
 
 | Command | Description |
 |---|---|
+| `loomloom capability resolve --input <modality> --output-modality <modality>` | Primary capability-oriented discovery for private-template authoring. |
 | `loomloom template-spec check <spec.json>` | Validate a TemplateSpec with the current Server authority used by version creation. |
 | `loomloom template-spec docs [topic]` | Show bundled TemplateSpec documentation. |
 | `loomloom template-spec models <step-type>` | List models for a step type. |

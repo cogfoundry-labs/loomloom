@@ -19,7 +19,7 @@ Before writing TemplateSpec, read the current CLI-bundled documentation:
 loomloom template-spec docs spec
 loomloom template-spec docs examples
 loomloom template-spec docs conversation
-loomloom template-spec authoring-context --output json
+loomloom capability resolve --input <modality> --output-modality <modality> --output json
 ```
 
 - `spec` is the current JSON contract.
@@ -34,7 +34,7 @@ loomloom template-spec docs spec --lang zh-CN
 
 Select the documentation language as appropriate for the conversation and task.
 
-The installed Skill may contain a `generated-template-spec/` backup. Prefer the CLI docs command because it matches the currently installed CLI. The authoring-context response is the authority for environment-dependent data such as current Profile revision, available model members, and Profile ports; bundled docs are never authority for those changing values.
+The installed Skill may contain a `generated-template-spec/` backup. Prefer the CLI docs command because it matches the currently installed CLI. Once each Step's business modalities are known, use `capability resolve`; its server response is the primary authority-backed selection result. Bundled docs are never authority for changing Profile revisions, eligible models, ports, or fixed contracts.
 
 ## Conversation Flow
 
@@ -157,7 +157,7 @@ Before showing TemplateSpec, verify that Template Input descriptions, Workbook s
 - Use lowerCamel fields such as `meta.name`, `templateInputs`, `steps[].stepId`, and `steps[].inputBindings`.
 - Put user-facing inputs in the top-level `templateInputs` map. Put instructions and sample rows under `workbook`.
 - Bind an exact model with `executionBinding.kind=fixedModelContract` and a real `subjectRevisionId` from the target environment.
-- Resolve that ID and the contract's exact input ports with `loomloom template-spec contracts <model-id> --output json`; do not infer them from the model catalog.
+- Prefer the exact contract returned by `loomloom capability resolve`; use `loomloom template-spec contracts <model-id> --output json` only for lower-level inspection. Do not infer contracts from the model catalog.
 - Bind a replaceable model set with `executionBinding.kind=capabilityProfile`; also declare the separate Step-level `modelSelection` rule.
 - Treat every `inputBindings` map key as the target contract `portId`. Never guess a port ID or use a role, file name, native JSON pointer, or shared field name as its identity.
 - A target port has exactly one binding. Use `templateInput`, `stepOutput`, `literal`, `platformContext`, `composeValue`, `sequence`, or `merge` according to the current bundled documentation.
@@ -176,8 +176,9 @@ TemplateSpec.
 
 For a text-generation Step:
 
-1. Run `loomloom template-spec authoring-context --output json`. Choose one
-   Profile and an eligible model returned by that exact target environment.
+1. Run `loomloom capability resolve` with the Step's input and output
+   modalities. Choose one Profile match and an eligible model returned by that
+   exact target environment.
 2. Set `executionBinding.kind=capabilityProfile` and use the response's stable
    `profileId`. Omit `profileRevision` for normal authoring; Core resolves and
    freezes the current revision. Do not require or fabricate a
@@ -203,15 +204,15 @@ multimedia or provider-native input structure.
 
 ### Legacy v1 migration routing
 
-Before translating a v1 Step, run `loomloom model types --output json`. The
-returned list is the target environment's valid public step-type set; a type
-with zero models is still valid but has no current authoring target.
+Before translating a v1 Step, resolve its business input and output modalities
+with `loomloom capability resolve`. Use `loomloom model types --output json`
+only when diagnosing the lower-level execution-unit inventory.
 
 | v1 Step shape | v2 route |
 | --- | --- |
-| text input → text output | `capabilityProfile` from `authoring-context` |
-| image/video/audio/3D generation or editing | `fixedModelContract` from `model list` + `contracts` |
-| image/video/audio input → text output | vision/multimodal understanding; require a returned compatible Profile or Fixed Contract |
+| text input → text output | returned `capabilityProfile` match |
+| image/video/audio/3D generation or editing | returned `fixedModelContract` match |
+| image/video/audio input → text output | returned vision/multimodal Profile or Fixed Contract match |
 
 Do not look for an image-generation Capability Profile. Media generation uses
 the exact target model's Fixed Model Contract. If the original v1 model has no

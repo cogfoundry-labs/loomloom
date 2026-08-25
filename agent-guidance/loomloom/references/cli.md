@@ -94,6 +94,7 @@ On successful `login --output json`, the `token` field is masked and is not a re
 
 ### TemplateSpec and private templates
 
+- `loomloom capability resolve --input <modality> --output-modality <modality> --output json`
 - `loomloom template-spec docs [spec|authoring|examples|conversation|all]`
 - `loomloom template-spec check <spec.json>`
 - `loomloom template-spec models <text-generate|image-generate|video-generate>`
@@ -114,10 +115,18 @@ On successful `login --output json`, the `token` field is masked and is not a re
 - `loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>`
 - `loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <id>`
 
-`template-spec authoring-context` is the current target-environment discovery
-entry for Capability Profiles. It returns Profile IDs, current revisions and
-ports, plus eligible models. Agents must call it before authoring a
-`capabilityProfile` Step and normally submit only `profileId`.
+`capability resolve` is the primary task-oriented discovery entry. It asks the
+current Server to map input/output modalities to authorable Capability Profiles
+and Fixed Model Contracts. A `supported` result describes TemplateSpec
+authoring eligibility, not balance, channel capacity, or instantaneous provider
+availability. Agents should use the returned match before choosing lower-level
+commands.
+
+`template-spec authoring-context` is the lower-level target-environment query
+for all Capability Profiles. It returns Profile IDs, current revisions and
+ports, plus eligible models. Use it for diagnosis or full Profile inventory;
+normal authoring should consume the Profile returned by `capability resolve`
+and submit only `profileId`.
 
 `template-spec contracts` lists enabled per-model `fixedModelContract`
 authoring contracts. It is not a general model-usability check. In particular,

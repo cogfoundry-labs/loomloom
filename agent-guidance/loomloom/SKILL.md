@@ -127,21 +127,21 @@ loomloom model types --output json
 loomloom template-spec docs spec --lang zh-CN
 loomloom template-spec docs inputs --lang zh-CN
 loomloom template-spec docs bindings --lang zh-CN
+loomloom capability resolve --input <modality> --output-modality <modality> --output json
 loomloom template-spec authoring-context --output json
 loomloom template-spec contracts <model-id> --output json
 loomloom model list --step-type <step-type> --output json
 ```
 
-First classify every v1 Step by its execution unit. Use `authoring-context`
-only for `text-generate` Steps whose inputs are text and whose output is text.
-For `image-generate`, `video-generate`, `audio-generate`,
-`audio-transcribe`, and `model3d-generate`, do **not** wait for or invent a
-Capability Profile: discover the type with `model types`, choose a target model
-with `model list`, then use `contracts` to obtain the exact
-`subjectRevisionId` and ports for a `fixedModelContract` Step. A text-output
-Step that receives image/video/audio input is a vision or multimodal-understanding
-case; stop and report `needs_vision_profile_or_fixed_contract` when the target
-environment does not offer an appropriate contract.
+First classify every v1 Step by its business input and output modalities, then
+call `capability resolve` for that shape. Its returned matches are the primary
+authoring route: a `capabilityProfile` match carries the current Profile, ports,
+and eligible models; a `fixedModelContract` match carries the exact
+`subjectRevisionId` and ports. Use `model types`, `model list`,
+`authoring-context`, and `contracts` only to diagnose or inspect the lower-level
+facts behind that resolution. If the resolver returns `not_supported`, stop and
+report `needs_authoring_capability`; never infer support from a raw model name
+or modality table.
 
 An empty fixed-contract result means that exact target model/operation is not
 currently authorable. Report `missing_fixed_contract` or choose another

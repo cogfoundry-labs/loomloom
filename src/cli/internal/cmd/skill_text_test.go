@@ -287,6 +287,7 @@ func TestBundledSkillGuidesLegacyTemplateSpecV1Upgrade(t *testing.T) {
 		"Do not force this upgrade",
 		"only wants to run an existing v1 version",
 		"loomloom template-spec docs spec --lang zh-CN",
+		"loomloom capability resolve --input <modality> --output-modality <modality> --output json",
 		"loomloom template-spec authoring-context --output json",
 		"loomloom template-spec contracts <model-id> --output json",
 		"promise a lossless or automatic v1-to-v2 conversion",

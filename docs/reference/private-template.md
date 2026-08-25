@@ -33,13 +33,13 @@ The backend also supports unified rows shaped as `steps.<step-id>.executions[]` 
 A typical agent-assisted authoring flow:
 
 ```bash
-# 1. Check available models for an execution unit
-loomloom template-spec models text-generate
+# 1. Resolve the Step's business input/output capability
+loomloom capability resolve --input image --output-modality text --output json
 
-# 2a. For text-generate, retrieve the current Profile and eligible models
+# 2a. For lower-level Profile diagnosis, inspect the full authoring context
 loomloom template-spec authoring-context --output json
 
-# 2b. For an exact fixed-model Step, resolve its contract and input ports
+# 2b. For lower-level fixed-model diagnosis, inspect one model's contracts
 loomloom template-spec contracts <model-id> --output json
 
 # 3. Validate against the same Server where the version will be created
@@ -62,6 +62,7 @@ loomloom template-spec submit-workbook <template-id> <version-id> ./input.xlsx -
 Notes:
 
 - TemplateSpec JSON is the source of truth; workbooks are generated artifacts.
+- `capability resolve` is the primary server-authoritative selection path. It reports authoring eligibility, not instantaneous execution availability.
 - `template-spec check` is server-authoritative and does not create a version. Creation validates again before freezing current contracts.
 - Use `template-spec get-version <template-id> <version-id> -f historical.json` to export an owner-visible historical authoring spec. Readback checks only that the stored authoring is a JSON object; it neither exports the frozen execution bundle nor applies current TemplateSpec rules. Run `check` separately on a rewritten v2 candidate.
 - `template-spec contracts` is only for an exact-model `fixedModelContract`. Text-generation models intentionally use the shared `capabilityProfile`, so an empty contract list for a `text-generate` model is expected and does not prevent private template authoring.
