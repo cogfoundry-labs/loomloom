@@ -19,7 +19,8 @@ Use this reference for installation, `doctor`, browser login, explicit API Token
 
 - Determine the current Agent's supported Skill root from its runtime configuration or official conventions.
 - Use `<agent-skill-root>/loomloom` as the complete LoomLoom Skill destination and pass it to the installer with `--skill-dir` or `-SkillDir`.
-- Do not use another Agent's directory as a fallback. If the current Agent's Skill root is unknown, ask the user for it.
+- `--skill-dir` selects the Agent that receives the Skill; it is not the CLI binary directory. Do not use another Agent's directory as a fallback. In particular, `~/.codex/skills/loomloom` is for Codex only; a WorkBuddy target uses `~/.workbuddy/skills/loomloom`.
+- If the current Agent's Skill root is unknown, ask the user for it.
 - After installation, verify that `<agent-skill-root>/loomloom/SKILL.md` exists.
 - Use GitHub as the default distribution source.
 - If the user explicitly requests Gitee, use the Gitee installer directly.

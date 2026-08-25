@@ -4,6 +4,19 @@ The main product of this project is the loomloom CLI. It is the developer interf
 
 The LoomLoom Agent Skill has one distribution path, `skills/loomloom`. The installer does not detect or select an Agent. For manual installation, determine your Agent's supported Skill root and pass the complete LoomLoom Skill destination, ending in `loomloom`, through `--skill-dir` or `-SkillDir`. If you do not know that location, use [Agent-assisted setup](#agent-assisted-setup).
 
+`--skill-dir` selects the Agent that will see the Skill; it is not the CLI
+binary directory and it is not a cross-Agent default. Never use a Codex path
+as a fallback when installing for another Agent. For example:
+
+| Target Agent | Complete destination |
+| --- | --- |
+| Codex | `<your Codex Skill root>/loomloom` |
+| WorkBuddy | `~/.workbuddy/skills/loomloom` |
+
+If the target Agent's Skill root is unknown, stop and ask the user or inspect
+that Agent's configuration. After installation, verify that the exact selected
+path contains `SKILL.md`.
+
 The following sections describe how to install, configure, and uninstall loomloom on your local development machine using different options.
 
 **Install:**
@@ -29,6 +42,8 @@ curl -fsSL https://raw.githubusercontent.com/cogfoundry-labs/loomloom/main/scrip
 Notes:
 
 - `--skill-dir` must be the complete destination for the LoomLoom Skill, not the parent Skills directory.
+
+- For WorkBuddy, use `--skill-dir "$HOME/.workbuddy/skills/loomloom"`; do not use `~/.codex/skills/loomloom` unless Codex is the target Agent.
 
 - To install a specific version or release channel, use the `--version` or `--channel` option:
   ```bash
