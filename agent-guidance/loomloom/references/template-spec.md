@@ -9,6 +9,7 @@ Use this reference when creating, modifying, versioning, or explaining a private
 - [Usage mode](#usage-mode)
 - [TemplatePlan](#templateplan)
 - [Modeling and input rules](#modeling-and-input-rules)
+- [Legacy v1 semantic preservation](#legacy-v1-semantic-preservation)
 - [Creation and versioning](#creation-and-versioning)
 
 ## Documentation Sources
@@ -202,6 +203,43 @@ Use `template-spec contracts <model-id>` only when authoring a
 `fixedModelContract` Step for one exact model, such as a model with its own
 multimedia or provider-native input structure.
 
+## Legacy v1 Semantic Preservation
+
+A v2 candidate is not an upgrade merely because `template-spec check` returns
+`valid=true`. Check validates the v2 contract against the current Server; it
+does not compare business meaning with the historical v1 source.
+
+Before drafting, record a semantic ledger for every v1 Step:
+
+- Step ID, display purpose, dependencies, trigger policy, and user-visible
+  output;
+- the length or digest of every non-empty `Instruction`, and the exact v2
+  model-bound input that will carry it;
+- default model and `AllowModelOverride` policy;
+- every initial-input and step-output binding, including its text or Artifact
+  transport;
+- static parameters and failure/partial-completion behavior.
+
+Apply these migration rules:
+
+1. A non-empty v1 `Instruction` must not disappear. For a Capability Profile,
+   normally bind it to `systemInstruction`. `workbook.instructions` is not sent
+   to the model.
+2. Preserve fixed model selection. If v1 has `AllowModelOverride=false`, use
+   `modelSelection.source=fixed`; do not add a model selector Template Input.
+3. Map a v1 image/file/media reference to a compatible Artifact port. Never
+   append an Artifact input to `prompt` or `systemInstruction` as a string.
+4. Preserve ordered text composition and author precedence. Use `composeValue`
+   or `merge` only where the current binding contract supports it.
+5. After `check`, compare the candidate with the semantic ledger. A missing or
+   changed item requires explicit human review and must be reported as
+   `semantic_review_required` before any version creation.
+
+The creation confirmation must describe both the semantic diff and pointer
+impact. The current LoomLoom `create-version` behavior makes the new version
+both latest and published; read back `latestVersionId`, `publishedVersionId`,
+and the full version list after creation.
+
 ### Legacy v1 migration routing
 
 Before translating a v1 Step, resolve its business input and output modalities
@@ -226,8 +264,10 @@ Before creation:
 1. Generate the spec only after TemplatePlan confirmation.
 2. Check it locally.
 3. Explain the template name, purpose, and check result in business language.
-4. Ask for explicit creation confirmation.
-5. Run `loomloom template-spec create <spec.json>` only after confirmation.
+4. For a v1 migration, show the semantic preservation ledger and state that
+   the current Server will advance latest and published pointers.
+5. Ask for explicit creation confirmation.
+6. Run `loomloom template-spec create <spec.json>` only after confirmation.
 
 Configuration, environment variables, tokens, "create a template", and "generate spec" do not constitute remote creation confirmation.
 

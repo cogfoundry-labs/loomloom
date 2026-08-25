@@ -290,6 +290,13 @@ func TestBundledSkillGuidesLegacyTemplateSpecV1Upgrade(t *testing.T) {
 		"loomloom capability resolve --input <modality> --output-modality <modality> --output json",
 		"loomloom template-spec authoring-context --output json",
 		"loomloom template-spec contracts <model-id> --output json",
+		"Every non-empty v1",
+		"bind that instruction to `systemInstruction`",
+		"`workbook.instructions` is only a user filling guide",
+		"when `AllowModelOverride=false`, use fixed",
+		"`template-spec check` proves current schema, port, model, and authority",
+		"semantic_review_required",
+		"advances both `latestVersionId` and",
 		"promise a lossless or automatic v1-to-v2 conversion",
 	} {
 		if !strings.Contains(text, want) {

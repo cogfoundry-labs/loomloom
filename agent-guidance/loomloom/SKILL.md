@@ -143,6 +143,27 @@ facts behind that resolution. If the resolver returns `not_supported`, stop and
 report `needs_authoring_capability`; never infer support from a raw model name
 or modality table.
 
+Before writing or checking the v2 candidate, build a per-Step semantic
+preservation ledger from the exported v1 definition. Every non-empty v1
+`Steps[].Instruction` must still reach a model-bound v2 input. For a Capability
+Profile Step, bind that instruction to `systemInstruction` with `literal`,
+`composeValue`, or an appropriate text merge. `workbook.instructions` is only a user filling guide and never substitutes for a model instruction. Preserve the
+v1 model-selection policy: when `AllowModelOverride=false`, use fixed
+`modelSelection` and do not invent a `modelChoice` Template Input. Map image,
+video, audio, file, and step-output references by their actual transport and
+target port, not by converting them to strings.
+
+`template-spec check` proves current schema, port, model, and authority
+compatibility only. It does not prove v1-to-v2 semantic equivalence. After a
+successful check, compare at least the Step topology, every non-empty
+Instruction, input transports, upstream bindings, model-selection policy,
+user-visible outputs, and failure policy. If any meaning is missing or changed,
+stop with `semantic_review_required`; do not create the version. Show this
+semantic diff before asking for creation confirmation. On the current LoomLoom
+Server, `create-version` advances both `latestVersionId` and
+`publishedVersionId`; disclose that impact before confirmation and read both
+pointers back afterward.
+
 An empty fixed-contract result means that exact target model/operation is not
 currently authorable. Report `missing_fixed_contract` or choose another
 returned target model; never produce a v2 draft that claims the missing
