@@ -105,10 +105,11 @@ type modelAuthoringOption struct {
 }
 
 type modelCapabilityProfileOption struct {
-	ProfileID       string `json:"profileId"`
-	ProfileRevision string `json:"profileRevision"`
-	ProfileHash     string `json:"profileHash"`
-	IsDefault       bool   `json:"isDefault"`
+	ProfileID       string                         `json:"profileId"`
+	ProfileRevision string                         `json:"profileRevision"`
+	ProfileHash     string                         `json:"profileHash"`
+	IsDefault       bool                           `json:"isDefault"`
+	InputPorts      []templateAuthoringProfilePort `json:"inputPorts"`
 }
 
 type templateAuthoringContractsResponse struct {
@@ -132,9 +133,13 @@ type templateAuthoringProfile struct {
 }
 
 type templateAuthoringProfilePort struct {
-	PortID    string `json:"portId"`
-	ValueType string `json:"valueType"`
-	Required  bool   `json:"required"`
+	PortID            string   `json:"portId"`
+	Kind              string   `json:"kind"`
+	ValueType         string   `json:"valueType,omitempty"`
+	Required          bool     `json:"required"`
+	AcceptedMIMETypes []string `json:"acceptedMimeTypes,omitempty"`
+	MinItems          int      `json:"minItems,omitempty"`
+	MaxItems          int      `json:"maxItems,omitempty"`
 }
 
 type templateAuthoringContract struct {

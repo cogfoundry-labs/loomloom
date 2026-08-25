@@ -41,6 +41,12 @@
 - `fixedModelContract`：必须给 `subjectRevisionId`。
 - `capabilityProfile`：必须给稳定的 `profileId`，并声明 `modelSelection`。`profileRevision` 只用于明确请求某个历史合同；普通创作必须省略，由 Core 在保存时解析并冻结当前 revision。创建前先调用目标环境的 `GET /loom/v1/templateAuthoringContext`（CLI：`loomloom template-spec authoring-context --output json`），再选择 Profile 和模型。
 
+同为 `text-generate` 的 Profile 可以拥有不同输入合同。纯文本输入使用
+`text.basic.openai-chat.v1`；图片理解必须选择目标环境实际返回的
+`text.vision.openai-chat.v1`，并将一个符合 MIME/数量约束的 Artifact Template
+Input 绑定到 `image` 端口。不得因模型名称或同一路径 `/v1/chat/completions`
+推断视觉能力。
+
 ## inputBindings
 
 map key 是目标合同输入端口。source 支持：

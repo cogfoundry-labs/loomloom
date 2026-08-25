@@ -185,9 +185,14 @@ For a text-generation Step:
 3. Use the response's Profile ports and write `modelSelection.defaultModelId`
    from its eligible model list. Do not copy a revision, port, or model list
    from bundled docs or an older installed Skill.
-4. Bind the user's text to the Profile `prompt` port. Keep the optional model
-   selector as a Template Input when users may choose another eligible model;
-   leaving it blank uses the frozen default model.
+4. Choose the returned Profile by its input contract. Use
+   `text.basic.openai-chat.v1` for text-only input. Use a returned vision Profile
+   such as `text.vision.openai-chat.v1` only when it exposes an Artifact image
+   port and the chosen model appears in that Profile's eligible model list.
+   Bind uploaded images as Artifact Template Inputs; never pass an asset ID as
+   a string prompt. Keep the optional model selector as a Template Input when
+   users may choose another eligible model; leaving it blank uses the frozen
+   default model.
 5. A downstream image, video, or other fixed-model Step may consume the text
    Step's stable output through `stepOutput`. The absence of a per-model text
    authoring contract must never be reported as blocking such a workflow.

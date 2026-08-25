@@ -356,7 +356,7 @@ func TestTemplateSpecAuthoringContextCmdUsesCurrentServerContext(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestedPath = r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"profiles":[{"profileId":"text.basic.openai-chat.v1","revision":"2026-08-15.1","canonicalHash":"sha256:profile","capability":"text","endpoint":"/v1/chat/completions","compiler":"gateway-openai-chat-v1","stream":false,"inputPorts":[{"portId":"prompt","valueType":"string","required":true}],"output":{"text":true,"usage":true},"eligibleModels":[{"modelId":"anthropic/claude-sonnet-5","available":true}]}]}`))
+		_, _ = w.Write([]byte(`{"profiles":[{"profileId":"text.vision.openai-chat.v1","revision":"2026-08-25.1","canonicalHash":"sha256:profile","capability":"text","endpoint":"/v1/chat/completions","compiler":"gateway-openai-chat-vision-v1","stream":false,"inputPorts":[{"portId":"prompt","kind":"value","valueType":"string","required":true},{"portId":"image","kind":"artifact","required":true,"acceptedMimeTypes":["image/jpeg","image/png","image/webp"],"minItems":1,"maxItems":1}],"output":{"text":true,"usage":true},"eligibleModels":[{"modelId":"google/gemini-3-flash"}]}]}`))
 	}))
 	defer server.Close()
 
@@ -371,7 +371,7 @@ func TestTemplateSpecAuthoringContextCmdUsesCurrentServerContext(t *testing.T) {
 	if requestedPath != "/loom/v1/templateAuthoringContext" {
 		t.Fatalf("path=%q want /loom/v1/templateAuthoringContext", requestedPath)
 	}
-	for _, want := range []string{"text.basic.openai-chat.v1", "2026-08-15.1", "anthropic/claude-sonnet-5"} {
+	for _, want := range []string{"text.vision.openai-chat.v1", "2026-08-25.1", "google/gemini-3-flash", `"kind": "artifact"`, `"acceptedMimeTypes": [`, `"image/png"`, `"minItems": 1`, `"maxItems": 1`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output missing %q: %s", want, out.String())
 		}
