@@ -88,13 +88,7 @@ type listModelsResponse struct {
 type modelSummary struct {
 	ModelID            string                 `json:"modelId"`
 	DisplayName        string                 `json:"displayName"`
-	Provider           string                 `json:"provider"`
-	ExecutionAdapter   string                 `json:"executionAdapter"`
 	SupportedStepTypes []string               `json:"supportedStepTypes"`
-	SupportedAPIs      []string               `json:"supportedApis"`
-	Available          bool                   `json:"available"`
-	AvailabilityReason string                 `json:"availabilityReason"`
-	IsDefault          bool                   `json:"isDefault"`
 	AuthoringOptions   []modelAuthoringOption `json:"authoringOptions"`
 }
 
@@ -105,10 +99,11 @@ type modelAuthoringOption struct {
 }
 
 type modelCapabilityProfileOption struct {
-	ProfileID       string `json:"profileId"`
-	ProfileRevision string `json:"profileRevision"`
-	ProfileHash     string `json:"profileHash"`
-	IsDefault       bool   `json:"isDefault"`
+	ProfileID       string                         `json:"profileId"`
+	ProfileRevision string                         `json:"profileRevision"`
+	ProfileHash     string                         `json:"profileHash"`
+	IsDefault       bool                           `json:"isDefault"`
+	InputPorts      []templateAuthoringProfilePort `json:"inputPorts"`
 }
 
 type templateAuthoringContractsResponse struct {
@@ -132,9 +127,13 @@ type templateAuthoringProfile struct {
 }
 
 type templateAuthoringProfilePort struct {
-	PortID    string `json:"portId"`
-	ValueType string `json:"valueType"`
-	Required  bool   `json:"required"`
+	PortID            string   `json:"portId"`
+	Kind              string   `json:"kind"`
+	ValueType         string   `json:"valueType,omitempty"`
+	Required          bool     `json:"required"`
+	AcceptedMIMETypes []string `json:"acceptedMimeTypes,omitempty"`
+	MinItems          int      `json:"minItems,omitempty"`
+	MaxItems          int      `json:"maxItems,omitempty"`
 }
 
 type templateAuthoringContract struct {
@@ -925,9 +924,6 @@ func printTemplateSpecModels(w interface {
 }
 
 func modelProvider(value modelSummary) string {
-	if strings.TrimSpace(value.Provider) != "" {
-		return strings.TrimSpace(value.Provider)
-	}
 	provider, _, _ := strings.Cut(value.ModelID, "/")
 	return provider
 }

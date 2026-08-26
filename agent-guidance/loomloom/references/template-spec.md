@@ -9,6 +9,7 @@ Use this reference when creating, modifying, versioning, or explaining a private
 - [Usage mode](#usage-mode)
 - [TemplatePlan](#templateplan)
 - [Modeling and input rules](#modeling-and-input-rules)
+- [Legacy v1 semantic preservation](#legacy-v1-semantic-preservation)
 - [Creation and versioning](#creation-and-versioning)
 
 ## Documentation Sources
@@ -19,7 +20,7 @@ Before writing TemplateSpec, read the current CLI-bundled documentation:
 loomloom template-spec docs spec
 loomloom template-spec docs examples
 loomloom template-spec docs conversation
-loomloom template-spec authoring-context --output json
+loomloom capability resolve --input <modality> --output-modality <modality> --output json
 ```
 
 - `spec` is the current JSON contract.
@@ -34,7 +35,7 @@ loomloom template-spec docs spec --lang zh-CN
 
 Select the documentation language as appropriate for the conversation and task.
 
-The installed Skill may contain a `generated-template-spec/` backup. Prefer the CLI docs command because it matches the currently installed CLI. The authoring-context response is the authority for environment-dependent data such as current Profile revision, available model members, and Profile ports; bundled docs are never authority for those changing values.
+The installed Skill may contain a `generated-template-spec/` backup. Prefer the CLI docs command because it matches the currently installed CLI. Once each Step's business modalities are known, use `capability resolve`; its server response is the primary authority-backed selection result. Bundled docs are never authority for changing Profile revisions, eligible models, ports, or fixed contracts.
 
 ## Conversation Flow
 
@@ -157,7 +158,7 @@ Before showing TemplateSpec, verify that Template Input descriptions, Workbook s
 - Use lowerCamel fields such as `meta.name`, `templateInputs`, `steps[].stepId`, and `steps[].inputBindings`.
 - Put user-facing inputs in the top-level `templateInputs` map. Put instructions and sample rows under `workbook`.
 - Bind an exact model with `executionBinding.kind=fixedModelContract` and a real `subjectRevisionId` from the target environment.
-- Resolve that ID and the contract's exact input ports with `loomloom template-spec contracts <model-id> --output json`; do not infer them from the model catalog.
+- Prefer the exact contract returned by `loomloom capability resolve`; use `loomloom template-spec contracts <model-id> --output json` only for lower-level inspection. Do not infer contracts from the model catalog.
 - Bind a replaceable model set with `executionBinding.kind=capabilityProfile`; also declare the separate Step-level `modelSelection` rule.
 - Treat every `inputBindings` map key as the target contract `portId`. Never guess a port ID or use a role, file name, native JSON pointer, or shared field name as its identity.
 - A target port has exactly one binding. Use `templateInput`, `stepOutput`, `literal`, `platformContext`, `composeValue`, `sequence`, or `merge` according to the current bundled documentation.
@@ -176,8 +177,9 @@ TemplateSpec.
 
 For a text-generation Step:
 
-1. Run `loomloom template-spec authoring-context --output json`. Choose one
-   Profile and an eligible model returned by that exact target environment.
+1. Run `loomloom capability resolve` with the Step's input and output
+   modalities. Choose one Profile match and an eligible model returned by that
+   exact target environment.
 2. Set `executionBinding.kind=capabilityProfile` and use the response's stable
    `profileId`. Omit `profileRevision` for normal authoring; Core resolves and
    freezes the current revision. Do not require or fabricate a
@@ -185,9 +187,14 @@ For a text-generation Step:
 3. Use the response's Profile ports and write `modelSelection.defaultModelId`
    from its eligible model list. Do not copy a revision, port, or model list
    from bundled docs or an older installed Skill.
-4. Bind the user's text to the Profile `prompt` port. Keep the optional model
-   selector as a Template Input when users may choose another eligible model;
-   leaving it blank uses the frozen default model.
+4. Choose the returned Profile by its input contract. Use
+   `text.basic.openai-chat.v1` for text-only input. Use a returned vision Profile
+   such as `text.vision.openai-chat.v1` only when it exposes an Artifact image
+   port and the chosen model appears in that Profile's eligible model list.
+   Bind uploaded images as Artifact Template Inputs; never pass an asset ID as
+   a string prompt. Keep the optional model selector as a Template Input when
+   users may choose another eligible model; leaving it blank uses the frozen
+   default model.
 5. A downstream image, video, or other fixed-model Step may consume the text
    Step's stable output through `stepOutput`. The absence of a per-model text
    authoring contract must never be reported as blocking such a workflow.
@@ -196,17 +203,54 @@ Use `template-spec contracts <model-id>` only when authoring a
 `fixedModelContract` Step for one exact model, such as a model with its own
 multimedia or provider-native input structure.
 
+## Legacy v1 Semantic Preservation
+
+A v2 candidate is not an upgrade merely because `template-spec check` returns
+`valid=true`. Check validates the v2 contract against the current Server; it
+does not compare business meaning with the historical v1 source.
+
+Before drafting, record a semantic ledger for every v1 Step:
+
+- Step ID, display purpose, dependencies, trigger policy, and user-visible
+  output;
+- the length or digest of every non-empty `Instruction`, and the exact v2
+  model-bound input that will carry it;
+- default model and `AllowModelOverride` policy;
+- every initial-input and step-output binding, including its text or Artifact
+  transport;
+- static parameters and failure/partial-completion behavior.
+
+Apply these migration rules:
+
+1. A non-empty v1 `Instruction` must not disappear. For a Capability Profile,
+   normally bind it to `systemInstruction`. `workbook.instructions` is not sent
+   to the model.
+2. Preserve fixed model selection. If v1 has `AllowModelOverride=false`, use
+   `modelSelection.source=fixed`; do not add a model selector Template Input.
+3. Map a v1 image/file/media reference to a compatible Artifact port. Never
+   append an Artifact input to `prompt` or `systemInstruction` as a string.
+4. Preserve ordered text composition and author precedence. Use `composeValue`
+   or `merge` only where the current binding contract supports it.
+5. After `check`, compare the candidate with the semantic ledger. A missing or
+   changed item requires explicit human review and must be reported as
+   `semantic_review_required` before any version creation.
+
+The creation confirmation must describe both the semantic diff and pointer
+impact. The current LoomLoom `create-version` behavior makes the new version
+both latest and published; read back `latestVersionId`, `publishedVersionId`,
+and the full version list after creation.
+
 ### Legacy v1 migration routing
 
-Before translating a v1 Step, run `loomloom model types --output json`. The
-returned list is the target environment's valid public step-type set; a type
-with zero models is still valid but has no current authoring target.
+Before translating a v1 Step, resolve its business input and output modalities
+with `loomloom capability resolve`. Use `loomloom model types --output json`
+only when diagnosing the lower-level execution-unit inventory.
 
 | v1 Step shape | v2 route |
 | --- | --- |
-| text input → text output | `capabilityProfile` from `authoring-context` |
-| image/video/audio/3D generation or editing | `fixedModelContract` from `model list` + `contracts` |
-| image/video/audio input → text output | vision/multimodal understanding; require a returned compatible Profile or Fixed Contract |
+| text input → text output | returned `capabilityProfile` match |
+| image/video/audio/3D generation or editing | returned `fixedModelContract` match |
+| image/video/audio input → text output | returned vision/multimodal Profile or Fixed Contract match |
 
 Do not look for an image-generation Capability Profile. Media generation uses
 the exact target model's Fixed Model Contract. If the original v1 model has no
@@ -220,8 +264,10 @@ Before creation:
 1. Generate the spec only after TemplatePlan confirmation.
 2. Check it locally.
 3. Explain the template name, purpose, and check result in business language.
-4. Ask for explicit creation confirmation.
-5. Run `loomloom template-spec create <spec.json>` only after confirmation.
+4. For a v1 migration, show the semantic preservation ledger and state that
+   the current Server will advance latest and published pointers.
+5. Ask for explicit creation confirmation.
+6. Run `loomloom template-spec create <spec.json>` only after confirmation.
 
 Configuration, environment variables, tokens, "create a template", and "generate spec" do not constitute remote creation confirmation.
 

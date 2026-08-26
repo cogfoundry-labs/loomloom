@@ -356,7 +356,7 @@ func TestTemplateSpecAuthoringContextCmdUsesCurrentServerContext(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestedPath = r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"profiles":[{"profileId":"text.basic.openai-chat.v1","revision":"2026-08-15.1","canonicalHash":"sha256:profile","capability":"text","endpoint":"/v1/chat/completions","compiler":"gateway-openai-chat-v1","stream":false,"inputPorts":[{"portId":"prompt","valueType":"string","required":true}],"output":{"text":true,"usage":true},"eligibleModels":[{"modelId":"anthropic/claude-sonnet-5","available":true}]}]}`))
+		_, _ = w.Write([]byte(`{"profiles":[{"profileId":"text.vision.openai-chat.v1","revision":"2026-08-25.1","canonicalHash":"sha256:profile","capability":"text","endpoint":"/v1/chat/completions","compiler":"gateway-openai-chat-vision-v1","stream":false,"inputPorts":[{"portId":"prompt","kind":"value","valueType":"string","required":true},{"portId":"image","kind":"artifact","required":true,"acceptedMimeTypes":["image/jpeg","image/png","image/webp"],"minItems":1,"maxItems":1}],"output":{"text":true,"usage":true},"eligibleModels":[{"modelId":"google/gemini-3-flash"}]}]}`))
 	}))
 	defer server.Close()
 
@@ -371,7 +371,7 @@ func TestTemplateSpecAuthoringContextCmdUsesCurrentServerContext(t *testing.T) {
 	if requestedPath != "/loom/v1/templateAuthoringContext" {
 		t.Fatalf("path=%q want /loom/v1/templateAuthoringContext", requestedPath)
 	}
-	for _, want := range []string{"text.basic.openai-chat.v1", "2026-08-15.1", "anthropic/claude-sonnet-5"} {
+	for _, want := range []string{"text.vision.openai-chat.v1", "2026-08-25.1", "google/gemini-3-flash", `"kind": "artifact"`, `"acceptedMimeTypes": [`, `"image/png"`, `"minItems": 1`, `"maxItems": 1`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output missing %q: %s", want, out.String())
 		}
@@ -469,7 +469,7 @@ func TestTemplateSpecDocsCmdSupportsChineseJSON(t *testing.T) {
 	}
 }
 
-func TestTemplateSpecModelsCmdListsAvailableModels(t *testing.T) {
+func TestTemplateSpecModelsCmdListsAuthoringSafeModels(t *testing.T) {
 	var requestedPath string
 	var requestedQuery string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -481,12 +481,8 @@ func TestTemplateSpecModelsCmdListsAvailableModels(t *testing.T) {
 				{
 					"modelId": "google/gemini-2.5-flash",
 					"displayName": "Gemini 2.5 Flash",
-					"provider": "vertex",
-					"executionAdapter": "vertex",
 					"supportedStepTypes": ["text-generate"],
-					"authoringOptions": [{"kind":"capabilityProfile","capabilityProfile":{"profileId":"text.basic.openai-chat.v1","profileRevision":"2026-08-15.1"}}],
-					"available": true,
-					"isDefault": true
+					"authoringOptions": [{"kind":"capabilityProfile","capabilityProfile":{"profileId":"text.basic.openai-chat.v1","profileRevision":"2026-08-15.1"}}]
 				}
 			]
 		}`))
@@ -505,6 +501,11 @@ func TestTemplateSpecModelsCmdListsAvailableModels(t *testing.T) {
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("models command error = %v", err)
+	}
+	for _, forbidden := range []string{"available", "availabilityReason", "executionAdapter", "supportedApis"} {
+		if strings.Contains(out.String(), forbidden) {
+			t.Fatalf("output must not reconstruct removed raw catalog field %q: %s", forbidden, out.String())
+		}
 	}
 	if requestedPath != "/loom/v1/models" {
 		t.Fatalf("path=%q want /loom/v1/models", requestedPath)
@@ -543,6 +544,11 @@ func TestTemplateSpecModelsCmdCanFilterProvider(t *testing.T) {
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("models command error = %v", err)
+	}
+	for _, forbidden := range []string{"available", "availabilityReason", "provider", "executionAdapter", "supportedApis"} {
+		if strings.Contains(out.String(), forbidden) {
+			t.Fatalf("JSON output must not contain removed raw catalog field %q: %s", forbidden, out.String())
+		}
 	}
 	if strings.Contains(requestedQuery, "provider=") {
 		t.Fatalf("query %q must not send the unsupported provider parameter", requestedQuery)

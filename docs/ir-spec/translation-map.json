@@ -129,8 +129,8 @@
     },
     {
       "path": "how-to/configure-models.md",
-      "source_sha256": "4dda8cfdbb144c19666ddc08952703fe0751bce85c1b0a405852a06d46aea2a2",
-      "generated_sha256": "1d95df6d4eb586745e55614ada93837111b04d8eb843e0dda9fb10b9081be1ad"
+      "source_sha256": "5f17ed5b22b1253f713f56addee371ba000bf59b6ef6ce4c5c3e9dc2ddf7b36f",
+      "generated_sha256": "11cc7a3ccf3b136a47211b1dc74b8e997015da2291fa86bfd4af82625e8756d6"
     },
     {
       "path": "how-to/design-workbook-inputs.md",
@@ -194,8 +194,8 @@
     },
     {
       "path": "reference/template-syntax.md",
-      "source_sha256": "3b6f258c048242f85c371acd7b4494ca50888b06512589e7a70c23ab80bfb69d",
-      "generated_sha256": "837610e33e899e4031f657cc9a21065578625a0627982536ab60408bb5387f09"
+      "source_sha256": "2b953b33cfee35231f1f66851f84afefa144fd6612a9c0f6c59ceb6f62fb372a",
+      "generated_sha256": "fabc19e9ffc85372e21a34df827dc95966710a00d8e8e8c0d0ba2332afabdc0e"
     },
     {
       "path": "reference/validation-errors.md",

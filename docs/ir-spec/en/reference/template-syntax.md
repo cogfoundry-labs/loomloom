@@ -33,6 +33,13 @@ JSON map order has no semantic meaning; Workbook column order uses `presentation
 
 Execution binding kinds are `fixedModelContract` with `subjectRevisionId`, or `capabilityProfile` with a stable `profileId`. `profileRevision` is optional and only used to request a specific historical contract; normal authoring omits it and Core freezes the current revision. Run `loomloom template-spec authoring-context --output json` against the target environment before choosing a Profile or model. Profile Steps also require `modelSelection`.
 
+Profiles for the same `text-generate` step type can expose different input
+contracts. Use `text.basic.openai-chat.v1` for text-only input. Image
+understanding requires `text.vision.openai-chat.v1` returned by the target
+environment and one Artifact Template Input bound to its `image` port within
+the returned MIME and cardinality limits. Do not infer vision support from a
+model name or from the shared `/v1/chat/completions` endpoint.
+
 ## inputBindings
 
 The map key is the target contract input port. Sources are:
