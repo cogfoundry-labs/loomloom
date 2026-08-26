@@ -219,16 +219,16 @@ Organizations that prefer a production-ready implementation can also license the
 [redesign-lab](examples/community/redesign-lab/) — a community pipeline built on loomloom — turns an existing website into several real, working design directions, then builds the one you choose. Two full before/after runs:
 
 <div align="center">
-  <video src="https://github.com/user-attachments/assets/9c00a067-a4d4-414f-ab00-efb7f8714600" width="100%" controls></video>
-</div>
-
-> **tabbyml.com** — consolidated a ~40-token color inventory down to 8 deliberate values, upgraded headline and nav type to a true cross-platform Geist Mono stack (real monospace fallbacks instead of Arial), and squared off previously rounded corners for a sharper, angular finish. → [Full case study](examples/community/redesign-lab/case-studies/tabbyml.com/)
-
-<div align="center">
   <video src="https://github.com/user-attachments/assets/3c2c8fb7-68db-4e67-9514-fb93b91612b3" width="100%" controls></video>
 </div>
 
-> **aider.chat** — traded Inter's extra-bold headline for an uppercase Archivo Black display face, tightening letter-spacing for a more assertive visual hierarchy. → [Full case study](examples/community/redesign-lab/case-studies/aider.chat/)
+> **aider.chat** — traded Inter's extra-bold headline for an uppercase Archivo Black display face, tightening letter-spacing for a more assertive visual hierarchy. → [Full case study](https://maxaibuilds.github.io/aider-redesign/)
+
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/9c00a067-a4d4-414f-ab00-efb7f8714600" width="100%" controls></video>
+</div>
+
+> **tabbyml.com** — consolidated a ~40-token color inventory down to 8 deliberate values, upgraded headline and nav type to a true cross-platform Geist Mono stack (real monospace fallbacks instead of Arial), and squared off previously rounded corners for a sharper, angular finish. → [Full case study](https://maxaibuilds.github.io/tabbyml-redesign/)
 
 More community examples land as they're built.
 
