@@ -18,14 +18,14 @@
 
 </div>
 
-## 🆕 What's new
+## What's new
 
-- 🚀 0.3.0 — TemplateSpec v2 authoring, live model contracts, server-side validation, and historical version readback
-- 🚀 0.2.1 — First public beta release → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.2.1)
+- 🚀 0.3.0 — TemplateSpec v2 is now server-authoritative → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.3.0)
 
-## 🔥 Hot topics
+- 0.2.1 — First public beta release → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.2.1)
 
-* How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
+
+- How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
 
 ## AI work as software
 
@@ -216,10 +216,21 @@ Organizations that prefer a production-ready implementation can also license the
 
 ## Examples
 
-We are developing a collection of open-source SkillBot examples to demonstrate how loomloom transforms `AI work` into deployable, modular AI systems.
+[redesign-lab](examples/community/redesign-lab/) — a community pipeline built on loomloom — turns an existing website into several real, working design directions, then builds the one you choose. Two full before/after runs:
 
-- These examples will show how developers can define, compile, and package `AI work` as SkillBots, providing a foundation for building their own AI applications and commercial solutions.
-- The first batch of examples is expected to be released by the end of August 2026.
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/9c00a067-a4d4-414f-ab00-efb7f8714600" width="100%" controls></video>
+</div>
+
+> **tabbyml.com** — consolidated a ~40-token color inventory down to 8 deliberate values, upgraded headline and nav type to a true cross-platform Geist Mono stack (real monospace fallbacks instead of Arial), and squared off previously rounded corners for a sharper, angular finish. → [Full case study](examples/community/redesign-lab/case-studies/tabbyml.com/)
+
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/3c2c8fb7-68db-4e67-9514-fb93b91612b3" width="100%" controls></video>
+</div>
+
+> **aider.chat** — traded Inter's extra-bold headline for an uppercase Archivo Black display face, tightening letter-spacing for a more assertive visual hierarchy. → [Full case study](examples/community/redesign-lab/case-studies/aider.chat/)
+
+More community examples land as they're built.
 
 ## Documentation
 
