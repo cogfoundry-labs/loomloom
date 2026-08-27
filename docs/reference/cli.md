@@ -199,6 +199,8 @@ For building your own private workflows.
 | `loomloom template-spec precheck <template-id> --version-id <id> --input-file-id <id>` | Estimate cost and balance for an uploaded JSONL input without submitting. |
 | `loomloom template-spec run <template-id> --version-id <id> --input-file-id <id> --client-request-id <id>` | Run a private template version from an uploaded JSONL input after confirmation. |
 
+CLI money output uses currency-unit Money objects such as `{"amount":"2000","currency":"CNY"}`. Raw `T` fields (ten-millionths of one currency unit) remain an internal/API precision detail and are not emitted by estimate, precheck, or balance CLI JSON.
+
 ## 8. Local agent skills
 
 Install/uninstall loomloom workflows as local tools for AI agents (e.g., Claude Code, Codex).

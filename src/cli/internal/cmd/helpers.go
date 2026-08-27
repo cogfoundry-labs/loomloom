@@ -336,6 +336,14 @@ func formatMoney(amountT int64, currency string) string {
 // does not guess a currency and instead marks the amount as unknown.
 func formatMoneyT(amountT int64, currency string) string {
 	currency = strings.TrimSpace(currency)
+	amount := decimalAmountT(amountT)
+	if currency == "" {
+		return fmt.Sprintf("(currency unknown) %d", amountT)
+	}
+	return strings.ToUpper(currency) + " " + amount
+}
+
+func decimalAmountT(amountT int64) string {
 	sign := ""
 	displayAmount := amountT
 	if displayAmount < 0 {
@@ -343,10 +351,7 @@ func formatMoneyT(amountT int64, currency string) string {
 		displayAmount = -displayAmount
 	}
 	value := new(big.Rat).SetFrac(big.NewInt(displayAmount), big.NewInt(10_000_000))
-	if currency == "" {
-		return fmt.Sprintf("(currency unknown) %d", amountT)
-	}
-	return strings.ToUpper(currency) + " " + sign + trimDisplayDecimal(value.FloatString(7))
+	return sign + trimDisplayDecimal(value.FloatString(7))
 }
 
 func formatResponseMoney(money *moneyResponse, amountT *flexInt64, fallbackCurrency string) (string, error) {
@@ -561,16 +566,31 @@ func printPrecheck(w io.Writer, resp precheckTemplateRowsResponse) error {
 }
 
 func precheckJSONPayload(resp precheckTemplateRowsResponse) map[string]any {
-	result := map[string]any{
-		"balanceCheck": resp.BalanceCheck,
+	result := map[string]any{}
+	currency := ""
+	if resp.BalanceCheck != nil {
+		currency = strings.ToUpper(strings.TrimSpace(resp.BalanceCheck.Currency))
+		balance := map[string]any{"currency": currency, "isSufficient": resp.BalanceCheck.IsSufficient}
+		if available := moneyJSONValue(resp.BalanceCheck.AvailableBalanceMoney, resp.BalanceCheck.AvailableBalance, currency); available != nil {
+			balance["availableBalance"] = available
+		}
+		result["balanceCheck"] = balance
 	}
-	if resp.EstimatedTotalCostT != nil {
-		result["estimatedTotalCostT"] = int64(*resp.EstimatedTotalCostT)
-	}
-	if resp.EstimatedTotalCost != nil {
-		result["estimatedTotalCost"] = resp.EstimatedTotalCost
+	if estimated := moneyJSONValue(resp.EstimatedTotalCost, resp.EstimatedTotalCostT, currency); estimated != nil {
+		result["estimatedTotalCost"] = estimated
 	}
 	return result
+}
+
+func moneyJSONValue(money *moneyResponse, amountT *flexInt64, fallbackCurrency string) *moneyResponse {
+	if money != nil && isCurrencyCode(strings.ToUpper(strings.TrimSpace(money.Currency))) {
+		return &moneyResponse{Amount: trimDisplayDecimal(money.Amount), Currency: strings.ToUpper(strings.TrimSpace(money.Currency))}
+	}
+	currency := strings.ToUpper(strings.TrimSpace(fallbackCurrency))
+	if amountT == nil || !isCurrencyCode(currency) {
+		return nil
+	}
+	return &moneyResponse{Amount: decimalAmountT(int64(*amountT)), Currency: currency}
 }
 
 func printRunSummary(w io.Writer, resp runStatusResponse) error {

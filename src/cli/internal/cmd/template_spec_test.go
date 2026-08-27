@@ -915,7 +915,7 @@ func TestTemplateSpecPrecheckUsesProductAPI(t *testing.T) {
 	}
 }
 
-func TestTemplateSpecPrecheckJSONKeepsEstimatedTotalCostT(t *testing.T) {
+func TestTemplateSpecPrecheckJSONUsesCurrencyAmountWithoutRawT(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/loom/v1/users/me/templates/tmpl_123:precheck" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -938,12 +938,8 @@ func TestTemplateSpecPrecheckJSONKeepsEstimatedTotalCostT(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("template-spec precheck command error = %v", err)
 	}
-	if !strings.Contains(out.String(), `"estimatedTotalCostT": 119350`) {
-		t.Fatalf("output=%s want estimatedTotalCostT", out.String())
-	}
-	if strings.Contains(out.String(), `"estimatedTotalCost":`) {
-		t.Fatalf("output=%s must not emit estimatedTotalCost", out.String())
-	}
+	assertContainsAll(t, out.String(), `"estimatedTotalCost": {`, `"amount": "0.011935"`, `"currency": "CNY"`)
+	assertContainsNone(t, out.String(), `"estimatedTotalCostT"`)
 }
 
 func TestTemplateSpecPrecheckInsufficientBalanceUsesBoundPlatformMessage(t *testing.T) {
@@ -996,7 +992,7 @@ func TestTemplateSpecEstimateUsesCostOnlyEndpoint(t *testing.T) {
 			t.Fatalf("request=%v", request)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"estimatedTotalCostT":119350}`))
+		_, _ = w.Write([]byte(`{"estimatedTotalCostT":119350,"estimatedTotalCost":{"amount":"0.0119350","currency":"CNY"}}`))
 	}))
 	defer server.Close()
 	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
@@ -1007,8 +1003,8 @@ func TestTemplateSpecEstimateUsesCostOnlyEndpoint(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	assertContainsAll(t, out.String(), `"resourcesValidated": false`, `"estimatedTotalCostT": 119350`)
-	assertContainsNone(t, out.String(), "balanceCheck")
+	assertContainsAll(t, out.String(), `"resourcesValidated": false`, `"estimatedTotalCost": {`, `"amount": "0.011935"`, `"currency": "CNY"`)
+	assertContainsNone(t, out.String(), "balanceCheck", `"estimatedTotalCostT"`)
 }
 
 func TestTemplateSpecEstimateNotReadyIsNotMappedToBalance(t *testing.T) {

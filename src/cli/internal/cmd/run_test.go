@@ -226,13 +226,13 @@ func TestRunPrecheckOnlyEstimatesRows(t *testing.T) {
 	assertContainsAll(
 		t,
 		out.String(),
-		`"estimatedTotalCostT": 119350`,
 		`"estimatedTotalCost": {`,
-		`"amount": "0.0119350"`,
-		`"availableBalanceMoney": {`,
+		`"amount": "0.011935"`,
+		`"availableBalance": {`,
+		`"amount": "0.02"`,
 		`"currency": "CNY"`,
 	)
-	assertContainsNone(t, out.String(), `"runId"`)
+	assertContainsNone(t, out.String(), `"runId"`, `"estimatedTotalCostT"`)
 }
 
 func TestRunPrecheckSettledSnapshotDoesNotBlockGatewayAdmission(t *testing.T) {
