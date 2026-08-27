@@ -195,6 +195,7 @@ For building your own private workflows.
 | `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx>` | Validate a user-template workbook. |
 | `loomloom template-spec precheck-workbook <template-id> <version-id> <xlsx>` | Estimate cost and balance for a user-template workbook without submitting. |
 | `loomloom template-spec submit-workbook <template-id> <version-id> <xlsx> --client-request-id <id>` | Submit a user-template workbook after confirmation. |
+| `loomloom template-spec estimate <template-id> --version-id <id> --input-file-id <id>` | Fast JSONL cost estimate without referenced-resource validation or balance lookup. |
 | `loomloom template-spec precheck <template-id> --version-id <id> --input-file-id <id>` | Estimate cost and balance for an uploaded JSONL input without submitting. |
 | `loomloom template-spec run <template-id> --version-id <id> --input-file-id <id> --client-request-id <id>` | Run a private template version from an uploaded JSONL input after confirmation. |
 
@@ -266,7 +267,7 @@ When building multi-step workflows, agents must treat CLI commands as a determin
 - Use returned identifiers exactly as provided by the CLI
 
 ### 1. TemplateSpec execution flow
-> orchestration-input upload → inputFileId → template-spec precheck → confirm → template-spec run
+> orchestration-input upload → inputFileId → optional template-spec estimate → required template-spec precheck → confirm → template-spec run
 
 ### 2. Run lifecycle flow
 > confirmed template-spec run / run execute → runId → run watch / result commands

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/cogfoundry-labs/loomloom/src/cli/internal/client"
 	templatespecdocs "github.com/cogfoundry-labs/loomloom/src/cli/internal/template_spec_docs"
@@ -187,6 +188,7 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecValidateWorkbookCmd(opts),
 		newTemplateSpecPrecheckWorkbookCmd(opts),
 		newTemplateSpecSubmitWorkbookCmd(opts),
+		newTemplateSpecEstimateCmd(opts),
 		newTemplateSpecPrecheckCmd(opts),
 		newTemplateSpecRunCmd(opts),
 	)
@@ -763,29 +765,34 @@ func newTemplateSpecPrecheckWorkbookCmd(opts *rootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "precheck-workbook <template-id> <version-id> <xlsx-path>",
 		Short: "Estimate cost for a user-template workbook without submitting",
+		Long:  "Estimate cost for a user-template workbook without submitting. The command uses a 10 minute timeout unless --timeout is explicitly supplied.",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			templateID := strings.TrimSpace(args[0])
 			versionID := strings.TrimSpace(args[1])
 			endpoint := "/users/me/templates/" + url.PathEscape(templateID) + "/versions/" + url.PathEscape(versionID) + ":precheckWorkbook"
-			resp, err := postUserTemplateWorkbook[precheckTemplateRowsResponse](cmd.Context(), opts, args[2], endpoint, nil)
+			requestOpts := precheckRootOptions(cmd, opts)
+			resp, err := postUserTemplateWorkbook[precheckTemplateRowsResponse](cmd.Context(), requestOpts, args[2], endpoint, nil)
 			if err != nil {
-				return err
-			}
-			if err := maybeInsufficientBalanceError(opts, resp.BalanceCheck); err != nil {
 				return err
 			}
 			if opts.output == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
-				return enc.Encode(map[string]any{
+				if err := enc.Encode(map[string]any{
 					"templateId": templateID,
 					"versionId":  versionID,
 					"file":       args[2],
 					"precheck":   precheckJSONPayload(resp),
-				})
+				}); err != nil {
+					return err
+				}
+				return printInsufficientBalanceHint(cmd, opts, resp.BalanceCheck)
 			}
-			return printPrecheck(cmd.OutOrStdout(), resp)
+			if err := printPrecheck(cmd.OutOrStdout(), resp); err != nil {
+				return err
+			}
+			return printInsufficientBalanceHint(cmd, opts, resp.BalanceCheck)
 		},
 	}
 }
@@ -1091,6 +1098,7 @@ func newTemplateSpecPrecheckCmd(opts *rootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "precheck <template-id>",
 		Short: "Estimate cost for a private template JSONL input without submitting",
+		Long:  "Estimate cost for a private template JSONL input without submitting. The command uses a 10 minute timeout unless --timeout is explicitly supplied.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			trimmedInputFileID, err := normalizeTemplateSpecInputFileID(inputFileID)
@@ -1098,11 +1106,12 @@ func newTemplateSpecPrecheckCmd(opts *rootOptions) *cobra.Command {
 				return err
 			}
 
-			httpClient, err := newHTTPClient(opts)
+			requestOpts := precheckRootOptions(cmd, opts)
+			httpClient, err := newHTTPClient(requestOpts)
 			if err != nil {
 				return err
 			}
-			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			ctx, cancel := context.WithTimeout(cmd.Context(), requestOpts.timeout)
 			defer cancel()
 
 			templateID := strings.TrimSpace(args[0])
@@ -1117,20 +1126,23 @@ func newTemplateSpecPrecheckCmd(opts *rootOptions) *cobra.Command {
 			if err := httpClient.PostProductJSON(ctx, path, payload, &resp); err != nil {
 				return err
 			}
-			if err := maybeInsufficientBalanceError(opts, resp.BalanceCheck); err != nil {
-				return err
-			}
 			if opts.output == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
-				return enc.Encode(map[string]any{
+				if err := enc.Encode(map[string]any{
 					"templateId":  templateID,
 					"versionId":   trimmedVersionID,
 					"inputFileId": trimmedInputFileID,
 					"precheck":    precheckJSONPayload(resp),
-				})
+				}); err != nil {
+					return err
+				}
+				return printInsufficientBalanceHint(cmd, opts, resp.BalanceCheck)
 			}
-			return printPrecheck(cmd.OutOrStdout(), resp)
+			if err := printPrecheck(cmd.OutOrStdout(), resp); err != nil {
+				return err
+			}
+			return printInsufficientBalanceHint(cmd, opts, resp.BalanceCheck)
 		},
 	}
 	cmd.Flags().StringVar(&versionID, "version-id", "", "Template version ID to precheck")
@@ -1138,6 +1150,72 @@ func newTemplateSpecPrecheckCmd(opts *rootOptions) *cobra.Command {
 	_ = cmd.MarkFlagRequired("version-id")
 	_ = cmd.MarkFlagRequired("input-file-id")
 	return cmd
+}
+
+func newTemplateSpecEstimateCmd(opts *rootOptions) *cobra.Command {
+	var versionID, inputFileID string
+	cmd := &cobra.Command{
+		Use:   "estimate <template-id>",
+		Short: "Estimate private template JSONL cost without validating referenced resources",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			trimmedInputFileID, err := normalizeTemplateSpecInputFileID(inputFileID)
+			if err != nil {
+				return err
+			}
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			templateID, trimmedVersionID := strings.TrimSpace(args[0]), strings.TrimSpace(versionID)
+			var resp precheckTemplateRowsResponse
+			if err := httpClient.PostProductJSON(ctx, "/users/me/templates/"+url.PathEscape(templateID)+":estimate", map[string]any{
+				"versionId": trimmedVersionID, "inputFileId": trimmedInputFileID,
+			}, &resp); err != nil {
+				return err
+			}
+			if opts.output == "json" {
+				payload := precheckJSONPayload(resp)
+				delete(payload, "balanceCheck")
+				return writeIndentedJSON(cmd.OutOrStdout(), map[string]any{
+					"templateId": templateID, "versionId": trimmedVersionID, "inputFileId": trimmedInputFileID,
+					"resourcesValidated": false, "estimate": payload,
+				})
+			}
+			if _, err := fmt.Fprintln(cmd.OutOrStdout(), "resources_validated\tfalse"); err != nil {
+				return err
+			}
+			return printPrecheck(cmd.OutOrStdout(), resp)
+		},
+	}
+	cmd.Flags().StringVar(&versionID, "version-id", "", "Template version ID to estimate")
+	cmd.Flags().StringVar(&inputFileID, "input-file-id", "", "Execution input fileId returned by orchestrationInputs:upload")
+	_ = cmd.MarkFlagRequired("version-id")
+	_ = cmd.MarkFlagRequired("input-file-id")
+	return cmd
+}
+
+const defaultPrecheckHTTPTimeout = 10 * time.Minute
+
+func precheckRootOptions(cmd *cobra.Command, opts *rootOptions) *rootOptions {
+	cloned := *opts
+	if !flagChanged(cmd, "timeout") {
+		cloned.timeout = defaultPrecheckHTTPTimeout
+	}
+	return &cloned
+}
+
+func printInsufficientBalanceHint(cmd *cobra.Command, opts *rootOptions, balance *templateBalanceCheck) error {
+	if balance == nil || balance.IsSufficient {
+		return nil
+	}
+	if message := insufficientBalanceMessage(opts); message != "" {
+		_, err := fmt.Fprintln(cmd.ErrOrStderr(), message)
+		return err
+	}
+	return nil
 }
 
 func newTemplateSpecRunCmd(opts *rootOptions) *cobra.Command {

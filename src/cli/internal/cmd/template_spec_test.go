@@ -968,9 +968,88 @@ func TestTemplateSpecPrecheckInsufficientBalanceUsesBoundPlatformMessage(t *test
 		"--input-file-id", "input-file-1",
 	})
 
+	var out, stderr bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&stderr)
 	err := cmd.Execute()
-	if err == nil || err.Error() != insufficientShengSuanYunBalanceMessage {
-		t.Fatalf("error=%v want fixed ShengSuanYun balance message", err)
+	if err != nil {
+		t.Fatalf("error=%v want successful precheck", err)
+	}
+	if !strings.Contains(out.String(), "estimated_cost") || !strings.Contains(out.String(), "sufficient         false") {
+		t.Fatalf("output=%q want estimate and insufficient balance", out.String())
+	}
+	if !strings.Contains(stderr.String(), insufficientShengSuanYunBalanceMessage) {
+		t.Fatalf("stderr=%q want recharge hint", stderr.String())
+	}
+}
+
+func TestTemplateSpecEstimateUsesCostOnlyEndpoint(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/loom/v1/users/me/templates/tmpl_123:estimate" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		var request map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Fatal(err)
+		}
+		if request["versionId"] != "ver_123" || request["inputFileId"] != "input-file-1" {
+			t.Fatalf("request=%v", request)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"estimatedTotalCostT":119350}`))
+	}))
+	defer server.Close()
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
+	cmd := newTemplateSpecEstimateCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"tmpl_123", "--version-id", "ver_123", "--input-file-id", "input-file-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	assertContainsAll(t, out.String(), `"resourcesValidated": false`, `"estimatedTotalCostT": 119350`)
+	assertContainsNone(t, out.String(), "balanceCheck")
+}
+
+func TestTemplateSpecEstimateNotReadyIsNotMappedToBalance(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"orchestration input asset is not ready"}`))
+	}))
+	defer server.Close()
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newTemplateSpecEstimateCmd(opts)
+	cmd.SetArgs([]string{"tmpl", "--version-id", "ver", "--input-file-id", "input-file-1"})
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "not ready") {
+		t.Fatalf("error=%v", err)
+	}
+	if strings.Contains(err.Error(), "充值") || strings.Contains(err.Error(), "balance") {
+		t.Fatalf("error=%v must not be a balance error", err)
+	}
+}
+
+func TestPrecheckRootOptionsUsesCommandDefaultAndExplicitOverride(t *testing.T) {
+	opts := &rootOptions{timeout: defaultHTTPTimeout}
+	cmd := &cobra.Command{Use: "precheck"}
+	if got := precheckRootOptions(cmd, opts).timeout; got != defaultPrecheckHTTPTimeout {
+		t.Fatalf("default timeout=%s want %s", got, defaultPrecheckHTTPTimeout)
+	}
+	root := &cobra.Command{Use: "root"}
+	root.PersistentFlags().DurationVar(&opts.timeout, "timeout", defaultHTTPTimeout, "timeout")
+	var got time.Duration
+	child := &cobra.Command{Use: "precheck", RunE: func(cmd *cobra.Command, _ []string) error {
+		got = precheckRootOptions(cmd, opts).timeout
+		return nil
+	}}
+	root.AddCommand(child)
+	root.SetArgs([]string{"precheck", "--timeout", "42s"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if got != 42*time.Second {
+		t.Fatalf("timeout=%s want 42s", got)
 	}
 }
 
@@ -1037,6 +1116,35 @@ func TestTemplateSpecPrecheckWorkbookUsesProductAPI(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "estimated_cost") || !strings.Contains(out.String(), "CNY 0.0119") {
 		t.Fatalf("output=%q want formatted estimated cost", out.String())
+	}
+}
+
+func TestTemplateSpecPrecheckWorkbookPrintsEstimateWhenBalanceIsInsufficient(t *testing.T) {
+	isolateCmdConfigHome(t)
+	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun}); err != nil {
+		t.Fatal(err)
+	}
+	workbookPath := filepath.Join(t.TempDir(), "input.xlsx")
+	if err := os.WriteFile(workbookPath, []byte("xlsx"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"estimatedTotalCostT":119350,"balanceCheck":{"currency":"CNY","availableBalance":0,"isSufficient":false}}`))
+	}))
+	defer server.Close()
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newTemplateSpecPrecheckWorkbookCmd(opts)
+	var out, stderr bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"tmpl", "ver", workbookPath})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	assertContainsAll(t, out.String(), "estimated_cost", "sufficient         false")
+	if !strings.Contains(stderr.String(), insufficientShengSuanYunBalanceMessage) {
+		t.Fatalf("stderr=%q", stderr.String())
 	}
 }
 

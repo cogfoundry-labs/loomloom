@@ -112,6 +112,7 @@ On successful `login --output json`, the `token` field is masked and is not a re
 - `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx-path>`
 - `loomloom template-spec precheck-workbook <template-id> <version-id> <xlsx-path>`
 - `loomloom template-spec submit-workbook <template-id> <version-id> <xlsx-path> --client-request-id <id>`
+- `loomloom template-spec estimate <template-id> --version-id <version-id> --input-file-id <input_file_id>`
 - `loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>`
 - `loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <id>`
 
