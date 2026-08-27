@@ -508,9 +508,7 @@ func newRunWatchCmd(opts *rootOptions) *cobra.Command {
 
 				if isTerminalRunStatus(latest.Status) {
 					if opts.output == "json" {
-						enc := json.NewEncoder(cmd.OutOrStdout())
-						enc.SetIndent("", "  ")
-						return enc.Encode(latest)
+						return writeIndentedJSON(cmd.OutOrStdout(), latest)
 					}
 					return printRunSummary(cmd.OutOrStdout(), latest)
 				}
