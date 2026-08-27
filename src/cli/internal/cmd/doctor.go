@@ -48,17 +48,7 @@ func newDoctorCmd(opts *rootOptions) *cobra.Command {
 			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
 			defer cancel()
 
-			publicQuery := url.Values{}
-			publicQuery.Set("pageSize", "1")
-			var marketResp map[string]any
-			if err := httpClient.GetProductJSONWithQuery(ctx, "/marketListings", publicQuery, &marketResp); err != nil {
-				return writeDoctorFailure(cmd, opts, resolvedPlatform, "fix_server", "server probe failed", safeDoctorErrorDetail(err), false)
-			}
-
-			query := url.Values{}
-			query.Set("pageSize", "1")
-			var probeResp map[string]any
-			if err := httpClient.GetProductJSONWithQuery(ctx, "/users/me/executables", query, &probeResp); err != nil {
+			if err := verifyAuthenticatedPrivateAccess(ctx, httpClient); err != nil {
 				if isAuthenticationFailure(err) {
 					return writeDoctorFailure(
 						cmd,
@@ -69,6 +59,9 @@ func newDoctorCmd(opts *rootOptions) *cobra.Command {
 						tokenAuthenticationFailureMessage(),
 						false,
 					)
+				}
+				if isPermissionFailure(err) {
+					return writeDoctorFailure(cmd, opts, resolvedPlatform, "check_permissions", "authenticated probe forbidden", safeDoctorErrorDetail(err), true)
 				}
 				return writeDoctorFailure(cmd, opts, resolvedPlatform, "fix_server", "authenticated probe failed", safeDoctorErrorDetail(err), false)
 			}
@@ -245,5 +238,17 @@ func isAuthenticationFailure(err error) bool {
 	if !errors.As(err, &requestErr) {
 		return false
 	}
-	return requestErr.StatusCode == http.StatusUnauthorized || requestErr.StatusCode == http.StatusForbidden
+	return requestErr.StatusCode == http.StatusUnauthorized
+}
+
+func isPermissionFailure(err error) bool {
+	var requestErr client.RequestError
+	return errors.As(err, &requestErr) && requestErr.StatusCode == http.StatusForbidden
+}
+
+func verifyAuthenticatedPrivateAccess(ctx context.Context, httpClient *client.Client) error {
+	query := url.Values{}
+	query.Set("pageSize", "1")
+	var probeResp map[string]any
+	return httpClient.GetProductJSONWithQuery(ctx, "/users/me/runs", query, &probeResp)
 }

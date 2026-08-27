@@ -16,10 +16,7 @@ func healthyDoctorServer(t *testing.T, authenticatedStatus int) *httptest.Server
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/loom/v1/marketListings":
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"items":[]}`))
-		case "/loom/v1/users/me/executables":
+		case "/loom/v1/users/me/runs":
 			if authenticatedStatus != 0 && authenticatedStatus != http.StatusOK {
 				http.Error(w, `{"error":"unauthorized"}`, authenticatedStatus)
 				return
@@ -169,6 +166,45 @@ func TestDoctorAuthenticationFailureDoesNotPersist(t *testing.T) {
 	}
 	if got := platform.LoadState(); len(got.Servers) != 0 {
 		t.Fatalf("state=%+v want no persistence", got)
+	}
+}
+
+func TestDoctorOPCTenantPrivateProbeSucceedsWhenMarketIsForbidden(t *testing.T) {
+	isolateCmdConfigHome(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/loom/v1/marketListings":
+			http.Error(w, `{"error":"market is unavailable for OPC tenants"}`, http.StatusForbidden)
+		case "/loom/v1/users/me/runs":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"items":[]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	t.Setenv("LOOMLOOM_CLI_RELEASE_API", server.URL+"/release")
+
+	payload := executeDoctorJSON(t, &rootOptions{
+		server: server.URL + "/loom/v1",
+		token:  "opc-token",
+	})
+	if payload["healthy"] != true || payload["token_valid"] != true {
+		t.Fatalf("payload=%v want successful private authentication probe", payload)
+	}
+}
+
+func TestDoctorForbiddenPrivateProbeDoesNotReportInvalidToken(t *testing.T) {
+	isolateCmdConfigHome(t)
+	server := healthyDoctorServer(t, http.StatusForbidden)
+	defer server.Close()
+
+	payload := executeDoctorJSON(t, &rootOptions{
+		server: server.URL + "/loom/v1",
+		token:  "restricted-token",
+	})
+	if payload["token_valid"] != true || payload["next_action"] != "check_permissions" {
+		t.Fatalf("payload=%v want permission guidance without invalidating token", payload)
 	}
 }
 
