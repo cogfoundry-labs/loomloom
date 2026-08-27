@@ -78,8 +78,8 @@ func TestCreatorTransactionsTextShowsFormattedAmountsWithoutEarnings(t *testing.
 		t.Fatalf("creator transactions command error = %v", err)
 	}
 	assertContainsAll(t, out.String(),
-		"CNY 0.5000000",
-		"CNY 0.9800000",
+		"CNY 0.5",
+		"CNY 0.98",
 		"rt-1",
 		"settled",
 	)

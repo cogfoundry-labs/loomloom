@@ -49,7 +49,7 @@ func formatSignedBalanceMoney(money *moneyResponse, amountT *flexInt64, currency
 		if !isCurrencyCode(currency) {
 			return "", fmt.Errorf("invalid money currency %q", money.Currency)
 		}
-		return currency + " " + strings.TrimSpace(money.Amount), nil
+		return currency + " " + trimDisplayDecimal(money.Amount), nil
 	}
 	if amountT == nil {
 		return formatMoneyT(0, currency), nil

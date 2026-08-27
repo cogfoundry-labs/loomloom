@@ -346,7 +346,7 @@ func formatMoneyT(amountT int64, currency string) string {
 	if currency == "" {
 		return fmt.Sprintf("(currency unknown) %d", amountT)
 	}
-	return strings.ToUpper(currency) + " " + sign + value.FloatString(7)
+	return strings.ToUpper(currency) + " " + sign + trimDisplayDecimal(value.FloatString(7))
 }
 
 func formatResponseMoney(money *moneyResponse, amountT *flexInt64, fallbackCurrency string) (string, error) {
@@ -383,7 +383,20 @@ func formatResponseMoney(money *moneyResponse, amountT *flexInt64, fallbackCurre
 			fallbackCurrency,
 		)
 	}
-	return currency + " " + amount, nil
+	return currency + " " + trimDisplayDecimal(amount), nil
+}
+
+func trimDisplayDecimal(value string) string {
+	value = strings.TrimSpace(value)
+	if !strings.Contains(value, ".") {
+		return value
+	}
+	value = strings.TrimRight(value, "0")
+	value = strings.TrimRight(value, ".")
+	if value == "-0" {
+		return "0"
+	}
+	return value
 }
 
 func isCurrencyCode(currency string) bool {

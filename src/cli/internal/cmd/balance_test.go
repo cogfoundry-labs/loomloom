@@ -26,7 +26,7 @@ func TestBalanceCmdUsesSettledSnapshotEndpoint(t *testing.T) {
 	if requestedPath != "/loom/v1/users/me/balance" {
 		t.Fatalf("path=%q want /loom/v1/users/me/balance", requestedPath)
 	}
-	for _, want := range []string{"available_balance", "CNY 10.0000000"} {
+	for _, want := range []string{"available_balance", "CNY 10"} {
 		if !bytes.Contains(out.Bytes(), []byte(want)) {
 			t.Fatalf("output=%q missing %q", out.String(), want)
 		}

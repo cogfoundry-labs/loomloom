@@ -55,6 +55,20 @@ func TestParseMoneyAmountTRejectsInvalidValues(t *testing.T) {
 	}
 }
 
+func TestTrimDisplayDecimalRemovesOnlyInsignificantZeros(t *testing.T) {
+	for _, test := range []struct{ input, want string }{
+		{"2000.0000000", "2000"},
+		{"0.0119350", "0.011935"},
+		{"176.3397374", "176.3397374"},
+		{"0.0000001", "0.0000001"},
+		{"-0.0000000", "0"},
+	} {
+		if got := trimDisplayDecimal(test.input); got != test.want {
+			t.Fatalf("trimDisplayDecimal(%q)=%q want %q", test.input, got, test.want)
+		}
+	}
+}
+
 func TestFormatResponseMoneyPrefersMoneyAndSupportsLegacyFallback(t *testing.T) {
 	raw := flexInt64(5_000_000)
 	tests := []struct {
@@ -67,20 +81,20 @@ func TestFormatResponseMoneyPrefersMoneyAndSupportsLegacyFallback(t *testing.T) 
 		{
 			name:  "money only",
 			money: &moneyResponse{Amount: "0.5000000", Currency: "CNY"},
-			want:  "CNY 0.5000000",
+			want:  "CNY 0.5",
 		},
 		{
 			name:     "money preferred when equivalent raw exists",
 			money:    &moneyResponse{Amount: "0.5000000", Currency: "CNY"},
 			raw:      &raw,
 			currency: "CNY",
-			want:     "CNY 0.5000000",
+			want:     "CNY 0.5",
 		},
 		{
 			name:     "legacy fallback",
 			raw:      &raw,
 			currency: "CNY",
-			want:     "CNY 0.5000000",
+			want:     "CNY 0.5",
 		},
 	}
 
@@ -143,7 +157,7 @@ func TestPrintPrecheckAndRunSummaryUseMoney(t *testing.T) {
 		if err != nil {
 			t.Fatalf("printPrecheck() error=%v", err)
 		}
-		for _, want := range []string{"estimated_cost", "CNY 1.7027920", "available_balance", "CNY 2.0000000", "sufficient"} {
+		for _, want := range []string{"estimated_cost", "CNY 1.702792", "available_balance", "CNY 2", "sufficient"} {
 			if !strings.Contains(out.String(), want) {
 				t.Fatalf("output=%q missing %q", out.String(), want)
 			}
@@ -160,7 +174,7 @@ func TestPrintPrecheckAndRunSummaryUseMoney(t *testing.T) {
 		if err != nil {
 			t.Fatalf("printRunSummary() error=%v", err)
 		}
-		if !strings.Contains(out.String(), "CNY 1.7027920") {
+		if !strings.Contains(out.String(), "CNY 1.702792") {
 			t.Fatalf("output=%q want Money amount", out.String())
 		}
 	})

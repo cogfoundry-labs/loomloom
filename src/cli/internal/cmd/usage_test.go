@@ -41,8 +41,8 @@ func TestUsageListTextShowsFormattedAmounts(t *testing.T) {
 		t.Fatalf("usage list command error = %v", err)
 	}
 	assertContainsAll(t, out.String(),
-		"CNY 0.5000000",
-		"CNY 0.5052000",
+		"CNY 0.5",
+		"CNY 0.5052",
 		"rt-1",
 		"listing-1",
 		"settled",
@@ -155,8 +155,8 @@ func TestUsageGetTextShowsFormattedAmounts(t *testing.T) {
 		t.Fatalf("path=%q want usage get endpoint", requestedPath)
 	}
 	assertContainsAll(t, out.String(),
-		"CNY 0.5000000",
-		"CNY 0.5052000",
+		"CNY 0.5",
+		"CNY 0.5052",
 		"currency",
 	)
 	assertContainsNone(t, out.String(), "task_fixed_fee_t", "final_payable_t")

@@ -331,7 +331,7 @@ func TestListingListTextShowsFormattedFee(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("listing list command error = %v", err)
 	}
-	assertContainsAll(t, out.String(), "CNY 0.5000000", "approved", "on_sale", "available")
+	assertContainsAll(t, out.String(), "CNY 0.5", "approved", "on_sale", "available")
 	assertContainsNone(t, out.String(), "task_fixed_fee_t")
 	if strings.Contains(out.String(), "{") {
 		t.Fatalf("output=%s must not be raw JSON", out.String())
@@ -406,7 +406,7 @@ func TestListingShowTextShowsFormattedFee(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("listing show command error = %v", err)
 	}
-	assertContainsAll(t, out.String(), "CNY 0.5000000", "approved")
+	assertContainsAll(t, out.String(), "CNY 0.5", "approved")
 	assertContainsNone(t, out.String(), "task_fixed_fee_t")
 }
 
@@ -436,7 +436,7 @@ func TestListingVersionsTextShowsFormattedFee(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("listing versions command error = %v", err)
 	}
-	for _, want := range []string{"CNY 0.5000000", "lv-1", "approved", "available"} {
+	for _, want := range []string{"CNY 0.5", "lv-1", "approved", "available"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output=%s missing %q", out.String(), want)
 		}

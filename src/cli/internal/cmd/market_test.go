@@ -268,7 +268,7 @@ func TestMarketShowUsesDetailEndpoint(t *testing.T) {
 	if requestedPath != "/loom/v1/marketListings/listing-1" {
 		t.Fatalf("path=%q want detail endpoint", requestedPath)
 	}
-	assertContainsAll(t, out.String(), "listing-1", "CNY 0.0000010", "fields:", "Prompt", "prompt", "sample_rows:")
+	assertContainsAll(t, out.String(), "listing-1", "CNY 0.000001", "fields:", "Prompt", "prompt", "sample_rows:")
 	assertContainsNone(t, out.String(), "task_fixed_fee_t")
 }
 
@@ -765,9 +765,9 @@ func TestMarketQuoteTextShowsFormattedAmounts(t *testing.T) {
 		t.Fatalf("market quote command error = %v", err)
 	}
 	assertContainsAll(t, out.String(),
-		"CNY 0.5000000",
-		"CNY 1.0069300",
-		"CNY 0.0069300",
+		"CNY 0.5",
+		"CNY 1.00693",
+		"CNY 0.00693",
 	)
 	assertContainsNone(t, out.String(),
 		"task_fixed_fee_t",
@@ -876,7 +876,7 @@ func TestMarketListTextShowsFormattedFee(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("market list command error = %v", err)
 	}
-	assertContainsAll(t, out.String(), "CNY 0.5000000")
+	assertContainsAll(t, out.String(), "CNY 0.5")
 	assertContainsNone(t, out.String(), "task_fixed_fee_t")
 }
 
@@ -941,8 +941,8 @@ func TestMarketRunExecutionTextShowsFormattedAmounts(t *testing.T) {
 		t.Fatalf("market run command error = %v", err)
 	}
 	assertContainsAll(t, out.String(),
-		"USD 0.5000000",
-		"USD 0.5069300",
+		"USD 0.5",
+		"USD 0.50693",
 		"currency",
 	)
 	assertContainsNone(t, out.String(), "estimated_payable_t", "task_fixed_fee_t")
@@ -1382,7 +1382,7 @@ func TestMarketWorkbookRunQuotesThenExecutes(t *testing.T) {
 	if !executeRequest.Confirm || executeRequest.ClientRequestID != "req-1" {
 		t.Fatalf("execute request=%#v want confirm and clientRequestId", executeRequest)
 	}
-	assertContainsAll(t, out.String(), "CNY 0.5000000", "CNY 0.5069300", "currency")
+	assertContainsAll(t, out.String(), "CNY 0.5", "CNY 0.50693", "currency")
 	assertContainsNone(t, out.String(), "task_fixed_fee_t", "estimated_payable_t")
 	if strings.Contains(logs.String(), "eGxzeCBieXRlcw==") {
 		t.Fatalf("logs should not contain workbook base64: %s", logs.String())
