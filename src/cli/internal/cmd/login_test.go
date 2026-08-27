@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -489,5 +491,31 @@ func TestConfiguredTokenFallsBackToSavedToken(t *testing.T) {
 	}
 	if got != "sk-from-env" || source != profile.TokenEnv {
 		t.Fatalf("token=%q source=%q want profile environment override", got, source)
+	}
+}
+
+func TestVerifyLoginTokenUsesPrivateRunsProbe(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/loom/v1/marketListings":
+			http.Error(w, `{"error":"market is unavailable for OPC tenants"}`, http.StatusForbidden)
+		case "/loom/v1/users/me/runs":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"items":[]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	cmd := NewRootCmd()
+	cmd.SetContext(context.Background())
+	err := verifyLoginToken(cmd, &rootOptions{
+		server:  server.URL + "/loom/v1",
+		token:   "opc-token",
+		timeout: time.Second,
+	})
+	if err != nil {
+		t.Fatalf("verifyLoginToken() error = %v", err)
 	}
 }

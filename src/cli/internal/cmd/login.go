@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -180,12 +179,12 @@ func verifyLoginToken(cmd *cobra.Command, opts *rootOptions) error {
 	}
 	ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
 	defer cancel()
-	query := url.Values{}
-	query.Set("pageSize", "1")
-	var probeResp map[string]any
-	if err := httpClient.GetProductJSONWithQuery(ctx, "/users/me/executables", query, &probeResp); err != nil {
+	if err := verifyAuthenticatedPrivateAccess(ctx, httpClient); err != nil {
 		if isAuthenticationFailure(err) {
 			return fmt.Errorf("登录获取的凭据未通过当前 Server 验证，请确认 Server 与登录平台一致后重试")
+		}
+		if isPermissionFailure(err) {
+			return fmt.Errorf("登录获取的凭据已认证，但当前身份无权访问私有 LoomLoom 资源")
 		}
 		return fmt.Errorf("verify login token against %s: %w", opts.server, err)
 	}
