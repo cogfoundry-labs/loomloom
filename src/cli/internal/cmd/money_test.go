@@ -69,6 +69,25 @@ func TestTrimDisplayDecimalRemovesOnlyInsignificantZeros(t *testing.T) {
 	}
 }
 
+func TestWriteIndentedJSONConvertsRawTWhenCurrencyIsAvailable(t *testing.T) {
+	var out bytes.Buffer
+	err := writeIndentedJSON(&out, map[string]any{
+		"currency": "CNY",
+		"items":    []any{map[string]any{"taskFixedFeeT": int64(5_000_000), "name": "kept"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"taskFixedFee": {`, `"amount": "0.5"`, `"currency": "CNY"`, `"name": "kept"`} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output=%s missing %s", out.String(), want)
+		}
+	}
+	if strings.Contains(out.String(), "taskFixedFeeT") {
+		t.Fatalf("output=%s exposes raw T", out.String())
+	}
+}
+
 func TestFormatResponseMoneyPrefersMoneyAndSupportsLegacyFallback(t *testing.T) {
 	raw := flexInt64(5_000_000)
 	tests := []struct {

@@ -111,10 +111,10 @@ func TestCreatorTransactionsTextUnknownCurrencyFallback(t *testing.T) {
 	}
 }
 
-func TestCreatorTransactionsJSONPreservesRawFields(t *testing.T) {
+func TestCreatorTransactionsJSONUsesMoneyWithoutRawT(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"items":[{"runTransactionId":"rt-1","taskFixedFeeT":5000000,"creatorNetEarningT":4500000}],"totalCount":1}`))
+		_, _ = w.Write([]byte(`{"items":[{"runTransactionId":"rt-1","taskFixedFeeT":5000000,"taskFixedFee":{"amount":"0.5000000","currency":"CNY"},"creatorNetEarningT":4500000,"creatorNetEarning":{"amount":"0.4500000","currency":"CNY"}}],"totalCount":1}`))
 	}))
 	defer server.Close()
 
@@ -126,9 +126,10 @@ func TestCreatorTransactionsJSONPreservesRawFields(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("creator transactions command error = %v", err)
 	}
-	for _, want := range []string{`"taskFixedFeeT": 5000000`, `"creatorNetEarningT": 4500000`} {
+	for _, want := range []string{`"taskFixedFee": {`, `"amount": "0.5"`, `"creatorNetEarning": {`, `"amount": "0.45"`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output=%s missing %q", out.String(), want)
 		}
 	}
+	assertContainsNone(t, out.String(), "taskFixedFeeT", "creatorNetEarningT")
 }

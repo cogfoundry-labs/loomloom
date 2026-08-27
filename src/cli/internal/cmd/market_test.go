@@ -839,15 +839,16 @@ func TestMarketQuoteJSONPreservesRawFields(t *testing.T) {
 	}
 	for _, want := range []string{
 		`"currency": "CNY"`,
-		`"taskFixedFeeT": 5000000`,
 		`"taskFixedFee": {`,
-		`"estimatedBuyerPayableT": 5069300`,
 		`"estimatedBuyerPayable": {`,
+		`"amount": "0.5"`,
+		`"amount": "0.50693"`,
 	} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output=%s missing %q", out.String(), want)
 		}
 	}
+	assertContainsNone(t, out.String(), "taskFixedFeeT", "estimatedBuyerPayableT")
 	if strings.Contains(out.String(), "CNY ") {
 		t.Fatalf("output=%s json mode must not format money", out.String())
 	}

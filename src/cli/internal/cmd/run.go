@@ -418,23 +418,17 @@ func newRunSubmitCmd(opts *rootOptions) *cobra.Command {
 				"templateId":      args[0],
 				"inputPath":       inputPath,
 				"rowCount":        len(rows),
-				"balanceCheck":    precheckResp.BalanceCheck,
 				"clientRequestId": requestID,
 				"runId":           submitResp.RunID,
 				"status":          submitResp.Status,
 				"acceptedAt":      int64(submitResp.AcceptedAt),
 			}
-			if precheckResp.EstimatedTotalCostT != nil {
-				result["estimatedTotalCostT"] = int64(*precheckResp.EstimatedTotalCostT)
-			}
-			if precheckResp.EstimatedTotalCost != nil {
-				result["estimatedTotalCost"] = precheckResp.EstimatedTotalCost
+			for key, value := range precheckJSONPayload(precheckResp) {
+				result[key] = value
 			}
 
 			if opts.output == "json" {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				return enc.Encode(result)
+				return writeIndentedJSON(cmd.OutOrStdout(), result)
 			}
 
 			if err := printPrecheck(cmd.OutOrStdout(), precheckResp); err != nil {

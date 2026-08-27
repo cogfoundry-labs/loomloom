@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -200,9 +201,73 @@ func newTabWriter(w io.Writer) *tabwriter.Writer {
 }
 
 func writeIndentedJSON(w io.Writer, value any) error {
+	payload, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	decoder.UseNumber()
+	var normalized any
+	if err := decoder.Decode(&normalized); err != nil {
+		return err
+	}
+	normalizeCLIJSONMoney(normalized, "")
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(value)
+	return enc.Encode(normalized)
+}
+
+var rawMoneyTJSONFields = map[string]string{
+	"actualCostT": "actualCost", "actualExecutionCostT": "actualExecutionCost", "availableBalanceT": "availableBalance",
+	"creatorNetEarningT": "creatorNetEarning", "estimatedBuyerPayableT": "estimatedBuyerPayable", "estimatedCostT": "estimatedCost",
+	"estimatedExecutionCostT": "estimatedExecutionCost", "estimatedTotalCostT": "estimatedTotalCost", "finalBuyerPayableT": "finalBuyerPayable",
+	"pendingModelChargesT": "pendingModelCharges", "settledBalanceT": "settledBalance", "taskFixedFeeT": "taskFixedFee",
+}
+
+func normalizeCLIJSONMoney(value any, inheritedCurrency string) {
+	switch typed := value.(type) {
+	case map[string]any:
+		currency := inheritedCurrency
+		if ownCurrency, ok := typed["currency"].(string); ok && isCurrencyCode(strings.ToUpper(strings.TrimSpace(ownCurrency))) {
+			currency = strings.ToUpper(strings.TrimSpace(ownCurrency))
+		}
+		for rawKey, moneyKey := range rawMoneyTJSONFields {
+			raw, found := typed[rawKey]
+			if found {
+				if _, hasMoney := typed[moneyKey]; !hasMoney && isCurrencyCode(currency) {
+					if amountT, ok := jsonInteger(raw); ok {
+						typed[moneyKey] = map[string]any{"amount": decimalAmountT(amountT), "currency": currency}
+					}
+				}
+				delete(typed, rawKey)
+			}
+		}
+		if amount, ok := typed["amount"].(string); ok {
+			if _, hasCurrency := typed["currency"].(string); hasCurrency {
+				typed["amount"] = trimDisplayDecimal(amount)
+			}
+		}
+		for _, nested := range typed {
+			normalizeCLIJSONMoney(nested, currency)
+		}
+	case []any:
+		for _, nested := range typed {
+			normalizeCLIJSONMoney(nested, inheritedCurrency)
+		}
+	}
+}
+
+func jsonInteger(value any) (int64, bool) {
+	switch typed := value.(type) {
+	case json.Number:
+		parsed, err := typed.Int64()
+		return parsed, err == nil
+	case string:
+		parsed, err := strconv.ParseInt(strings.TrimSpace(typed), 10, 64)
+		return parsed, err == nil
+	default:
+		return 0, false
+	}
 }
 
 func readJSONFileMap(filePath string) (map[string]any, error) {
