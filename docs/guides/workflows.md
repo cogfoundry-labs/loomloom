@@ -63,6 +63,8 @@ loomloom template-spec precheck-workbook <template-id> <version-id> ./input.xlsx
 loomloom template-spec submit-workbook <template-id> <version-id> ./input.xlsx --client-request-id <client-request-id>
 ```
 
+For large JSONL inputs, `template-spec estimate` provides a fast cost-only reference after `orchestration-input upload`. Run the full `template-spec precheck` before confirmation because estimate does not validate referenced resources.
+
 Full authoring guide, including the row-data (JSONL) alternative to workbooks, is in [Understand your private template](../reference/private-template.md).
 
 ## 4. Publish a private template as a paid SkillBot

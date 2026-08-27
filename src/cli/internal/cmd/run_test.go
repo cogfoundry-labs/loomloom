@@ -226,13 +226,13 @@ func TestRunPrecheckOnlyEstimatesRows(t *testing.T) {
 	assertContainsAll(
 		t,
 		out.String(),
-		`"estimatedTotalCostT": 119350`,
 		`"estimatedTotalCost": {`,
-		`"amount": "0.0119350"`,
-		`"availableBalanceMoney": {`,
+		`"amount": "0.011935"`,
+		`"availableBalance": {`,
+		`"amount": "0.02"`,
 		`"currency": "CNY"`,
 	)
-	assertContainsNone(t, out.String(), `"runId"`)
+	assertContainsNone(t, out.String(), `"runId"`, `"estimatedTotalCostT"`)
 }
 
 func TestRunPrecheckSettledSnapshotDoesNotBlockGatewayAdmission(t *testing.T) {
@@ -402,7 +402,7 @@ func TestRunSubmitSendsFlatRowsAndClientRequestID(t *testing.T) {
 			if err := json.NewDecoder(r.Body).Decode(&precheckBody); err != nil {
 				t.Fatalf("decode precheck body: %v", err)
 			}
-			_, _ = w.Write([]byte(`{"estimatedTotalCostT":0}`))
+			_, _ = w.Write([]byte(`{"estimatedTotalCostT":0,"estimatedTotalCost":{"amount":"0.0000000","currency":"CNY"}}`))
 		case "/loom/v1/officialTemplates/text-v1:runRows":
 			if err := json.NewDecoder(r.Body).Decode(&runBody); err != nil {
 				t.Fatalf("decode run body: %v", err)
@@ -429,12 +429,8 @@ func TestRunSubmitSendsFlatRowsAndClientRequestID(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("run submit command error = %v", err)
 	}
-	if !strings.Contains(out.String(), `"estimatedTotalCostT": 0`) {
-		t.Fatalf("output=%s want estimatedTotalCostT", out.String())
-	}
-	if strings.Contains(out.String(), `"estimatedTotalCost":`) {
-		t.Fatalf("output=%s must not emit estimatedTotalCost", out.String())
-	}
+	assertContainsAll(t, out.String(), `"estimatedTotalCost": {`, `"amount": "0"`, `"currency": "CNY"`)
+	assertContainsNone(t, out.String(), `"estimatedTotalCostT"`, `"availableBalanceT"`)
 	for name, body := range map[string]map[string]any{
 		"validate": validateBody,
 		"precheck": precheckBody,

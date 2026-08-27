@@ -41,8 +41,8 @@ func TestUsageListTextShowsFormattedAmounts(t *testing.T) {
 		t.Fatalf("usage list command error = %v", err)
 	}
 	assertContainsAll(t, out.String(),
-		"CNY 0.5000000",
-		"CNY 0.5052000",
+		"CNY 0.5",
+		"CNY 0.5052",
 		"rt-1",
 		"listing-1",
 		"settled",
@@ -96,7 +96,7 @@ func TestUsageListRejectsMoneyAndRawMismatch(t *testing.T) {
 	}
 }
 
-func TestUsageListJSONPreservesRawFields(t *testing.T) {
+func TestUsageListJSONPreservesUnknownFieldsWithoutRawT(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"items":[{
@@ -115,11 +115,12 @@ func TestUsageListJSONPreservesRawFields(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("usage list command error = %v", err)
 	}
-	for _, want := range []string{`"taskFixedFeeT": 5000000`, `"taskFixedFee": {`, `"newBackendField": "kept"`} {
+	for _, want := range []string{`"taskFixedFee": {`, `"amount": "0.5"`, `"newBackendField": "kept"`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output=%s missing %q", out.String(), want)
 		}
 	}
+	assertContainsNone(t, out.String(), "taskFixedFeeT")
 }
 
 func TestUsageGetTextShowsFormattedAmounts(t *testing.T) {
@@ -155,8 +156,8 @@ func TestUsageGetTextShowsFormattedAmounts(t *testing.T) {
 		t.Fatalf("path=%q want usage get endpoint", requestedPath)
 	}
 	assertContainsAll(t, out.String(),
-		"CNY 0.5000000",
-		"CNY 0.5052000",
+		"CNY 0.5",
+		"CNY 0.5052",
 		"currency",
 	)
 	assertContainsNone(t, out.String(), "task_fixed_fee_t", "final_payable_t")

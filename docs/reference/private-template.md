@@ -85,9 +85,12 @@ You can also run a private template version directly from flat JSONL rows, witho
 # 1. Upload the rows and capture the returned input_file_id
 loomloom orchestration-input upload ./rows.jsonl
 
-# 2. Estimate cost and balance
+# 2. Optional fast budget reference; this does not validate referenced resources
+loomloom template-spec estimate <template-id> --version-id <version-id> --input-file-id <input_file_id>
+
+# 3. Required full input precheck, cost estimate, and balance status
 loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>
 
-# 3. Review the estimate, confirm, then run the version with that input
+# 4. Review the precheck, confirm, then run the version with that input
 loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <client-request-id>
 ```

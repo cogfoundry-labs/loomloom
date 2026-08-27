@@ -26,13 +26,35 @@ func TestBalanceCmdUsesSettledSnapshotEndpoint(t *testing.T) {
 	if requestedPath != "/loom/v1/users/me/balance" {
 		t.Fatalf("path=%q want /loom/v1/users/me/balance", requestedPath)
 	}
-	for _, want := range []string{"available_balance", "CNY 10.0000000"} {
+	for _, want := range []string{"available_balance", "CNY 10"} {
 		if !bytes.Contains(out.Bytes(), []byte(want)) {
 			t.Fatalf("output=%q missing %q", out.String(), want)
 		}
 	}
 	if bytes.Contains(out.Bytes(), []byte("pending_model_charges")) {
 		t.Fatalf("output must not expose internal components: %q", out.String())
+	}
+}
+
+func TestBalanceCmdJSONUsesMoneyWithoutRawT(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"currency":"CNY","availableBalanceT":100000000,"availableBalance":{"amount":"10.0000000","currency":"CNY"}}`))
+	}))
+	defer server.Close()
+	cmd := newBalanceCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"availableBalance": {`, `"amount": "10"`, `"currency": "CNY"`} {
+		if !bytes.Contains(out.Bytes(), []byte(want)) {
+			t.Fatalf("output=%q missing %q", out.String(), want)
+		}
+	}
+	if bytes.Contains(out.Bytes(), []byte("availableBalanceT")) {
+		t.Fatalf("output=%q must not expose raw T", out.String())
 	}
 }
 

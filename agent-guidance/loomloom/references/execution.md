@@ -84,9 +84,10 @@ Use only for an explicit JSONL/API/programmatic request:
 1. Prepare the JSONL rows.
 2. `loomloom orchestration-input upload <file.jsonl>`
 3. Preserve the returned `inputFileId`.
-4. `loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>`
-5. Show the private-template fee confirmation and wait for explicit confirmation.
-6. `loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <id>`
+4. Optionally run `loomloom template-spec estimate <template-id> --version-id <version-id> --input-file-id <input_file_id>` for a fast budget reference. This does not validate referenced resources.
+5. `loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>`
+6. Show the private-template fee confirmation and wait for explicit confirmation.
+7. `loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <id>`
 
 For common single-root workflows, each non-empty JSONL line may be a flat object with string values. Unified rows using `steps.<step-id>.executions[]` are also supported when exact step mappings are known. Parameter values must be strings and supported by the selected version. Never guess step IDs.
 

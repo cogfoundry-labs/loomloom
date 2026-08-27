@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -26,9 +25,10 @@ func newBalanceCmd(opts *rootOptions) *cobra.Command {
 				return err
 			}
 			if opts.output == "json" {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				return enc.Encode(resp)
+				return writeIndentedJSON(cmd.OutOrStdout(), map[string]any{
+					"currency":         strings.ToUpper(strings.TrimSpace(resp.Currency)),
+					"availableBalance": moneyJSONValue(resp.AvailableMoney, resp.AvailableBalance, resp.Currency),
+				})
 			}
 			available, err := formatSignedBalanceMoney(resp.AvailableMoney, resp.AvailableBalance, strings.TrimSpace(resp.Currency))
 			if err != nil {
@@ -49,7 +49,7 @@ func formatSignedBalanceMoney(money *moneyResponse, amountT *flexInt64, currency
 		if !isCurrencyCode(currency) {
 			return "", fmt.Errorf("invalid money currency %q", money.Currency)
 		}
-		return currency + " " + strings.TrimSpace(money.Amount), nil
+		return currency + " " + trimDisplayDecimal(money.Amount), nil
 	}
 	if amountT == nil {
 		return formatMoneyT(0, currency), nil
