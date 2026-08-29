@@ -2,7 +2,12 @@
 
 **What if an AI coding agent could redesign a real website — not from a prompt, but from a workflow?**
 
-Give it an existing site. It analyzes the real thing, builds several genuinely different design directions as real working pages (never mockups), lets you choose, builds the winner, and validates the result with real accessibility and functional checks. Built as a Claude Code skill on top of a pluggable design-authority contract, with [loomloom](https://github.com/cogfoundry-labs/loomloom) doing exactly one job in the whole pipeline: writing the narrative prose for the final case study.
+Give it an existing site. It analyzes the real thing, builds several genuinely different design directions as real working pages—not mockups, lets you choose, builds the winner, and validates the result with real accessibility and functional checks.
+
+Built as a Claude Code skill on top of a pluggable design-authority contract.
+
+This started as a [loomloom](https://github.com/cogfoundry-labs/loomloom) example, exploring how a reusable AI-workflow component could fit into a larger agent-native workflow. loomloom is completely optional, though. It is used only in the final Share step to turn the verified results into narrative prose for a case study. If you just want to redesign a website, you don't need loomloom at all.
+
 
 > "Don't choose from mockups. Choose from real working designs."
 
@@ -28,7 +33,7 @@ Each case study shows the actual process — the real before/after diff, the rea
 
 I'm not a web designer. I built Redesign Lab while trying to develop an example SkillBot for loomloom, and it turned into a question I actually wanted an answer to:
 
-**How far can an AI coding agent get at website design if you give it good design *skills*, instead of just a prompt?**
+**How far can an AI coding agent get at website design if you give it good design *skills*, instead of throwing lots of *prompts* at it?**
 
 I didn't try to invent a design system myself — I'm not qualified to. Instead I went looking for some of the most popular, open-source AI design skills already on GitHub, and built a workflow that composes them: one skill measures the existing site, another supplies the design rules and direction ideas, another checks the result actually works, another checks it's accessible. Redesign Lab is the orchestration holding those pieces together, plus the human decision points in between.
 
@@ -45,24 +50,26 @@ npx skills add cogfoundry-labs/loomloom --skill redesign-lab -a claude-code -g -
 That's it — no `git clone`, no `cd`. This installs the skill globally
 (`-g`), the same way every skill this pipeline itself depends on gets
 installed, so it's available in any Claude Code session afterward
-regardless of which directory you're working in. Then, in an agent
-session:
+regardless of which directory you're working in. 
+
+Then, in a Claude Code session, or an agent session, just say:
 
 ```
-Redesign my website. Give me a fixed-baseline option plus a couple of
-substantially different design directions before implementing anything.
+redesign https://aider.chat
 ```
 
-**Nothing else to install first.** The design-authority skills this
-pipeline depends on beyond itself (Analyze, Direction Slices, Validate)
-aren't bundled with it, but you don't need to install them yourself either
-— the first stage, Discover, checks what's already present and installs
-whatever's missing automatically (globally, non-interactively, one real
-security scan printed per package as it happens) before continuing. See
-[Prerequisites](#prerequisites--the-design-authority-installed-automatically)
-below for exactly what gets installed and why, or to pre-install
-everything yourself ahead of time if you'd rather review each one before
-it runs.
+Or, if you're already on the webpage you want to redesign:
+
+```
+redesign this webpage
+```
+
+Redesign Lab takes it from there: it analyzes the existing site, explores different design directions, lets you choose, implements the winner, and validates the result.
+
+Nothing else to install first. The design-authority and validation skills the pipeline depends on aren't bundled with Redesign Lab, but you don't need to install them yourself. The first stage, Discover, checks what's already present and automatically installs anything that's missing before continuing.
+
+See [Prerequisites](#prerequisites--the-design-authority-installed-automatically) below for exactly what gets installed and why, or pre-install everything yourself if you'd rather review each dependency before it runs.
+
 
 Want to read or modify the source instead of just using it? Clone the full
 `loomloom` repo — `redesign-lab` lives inside it as a community example,
@@ -187,19 +194,56 @@ Notes:
   a package reports High Risk that isn't the one already-vetted exception
   (`taste`) documented above.
 
-## It's built from five existing skills, on purpose
+## Built on open-source design skills — real thanks, not name-dropping
 
 Neither of the two case studies above was produced by one big, opinionated
-"design AI." Each was a composition of five real open-source projects,
-coordinated by Claude Code:
+"design AI." Every real design judgment behind them came from someone
+else's open-source work — Redesign Lab is the orchestration and the human
+decision gates around it, not the thing actually deciding what looks good.
+Seven projects, thirteen individual skills between them, grouped by what
+each one actually does in the pipeline:
 
-| Skill | Role |
-|---|---|
-| [senlindesign/taste-skill](https://github.com/senlindesign/taste-skill) | Measures the *existing* site for real — screenshots + DOM extraction — so Analyze starts from evidence, not a guess |
-| [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | The default **design authority**: build rules, direction families, redesign guidance, pre-flight checks. Fully replaceable |
-| [anthropics/skills · webapp-testing](https://github.com/anthropics/skills/tree/main/skills/webapp-testing) | Actually renders and screenshots every direction, variant, and final build, so results get inspected, not assumed |
-| [snapsynapse/skill-a11y-audit](https://github.com/snapsynapse/skill-a11y-audit) | Real axe-core accessibility scanning at Validate. Both case studies above finished at **0 violations** |
-| [cogfoundry-labs/loomloom](https://github.com/cogfoundry-labs/loomloom) | One deliberately small job: turn the run's verified facts into the case study's narrative prose. The aider run cost **$0.0089** |
+**Design authority** — [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill),
+the single biggest contributor here: its build rules, its pre-flight
+check, its redesign audit (`redesign-existing-projects`), and 4 of the 8
+direction-variant families (`design-taste-frontend`, `minimalist-ui`,
+`industrial-brutalist-ui`, `high-end-visual-design`) are where most of a
+run's actual design judgment comes from. This is the default authority —
+fully replaceable, see [below](#bring-your-own-design-authority).
+
+**More direction families, so 3 picks don't converge on the same
+skeleton** — [educlopez/ui-craft](https://github.com/educlopez/ui-craft)
+(`ui-craft`, `ui-craft-editorial`, `ui-craft-dense-dashboard`) and
+[mengto/skills](https://github.com/mengto/skills) by MengTo of
+Design+Code (`product-proof-saas`, `operational-enterprise-ai`) — both
+contributed genuinely **structural**, not just aesthetic, direction
+families: real content-organizing decisions, not another color palette on
+the same hero-plus-grid layout.
+
+**Understanding the existing site** —
+[senlindesign/taste-skill](https://github.com/senlindesign/taste-skill)
+measures the real, existing site — screenshots and DOM extraction —
+before anything is redesigned, so Analyze starts from evidence, not a
+guess.
+
+**Making sure it actually works** —
+[anthropics/skills · webapp-testing](https://github.com/anthropics/skills/tree/main/skills/webapp-testing)
+renders and screenshots every direction, variant, and final build for
+real, so results get inspected rather than assumed.
+[snapsynapse/skill-a11y-audit](https://github.com/snapsynapse/skill-a11y-audit)
+runs a real axe-core accessibility scan at Validate — both case studies
+above finished at **0 violations**.
+
+**The one paid step** —
+[cogfoundry-labs/loomloom](https://github.com/cogfoundry-labs/loomloom)
+turns the run's verified facts into the case study's narrative prose. The
+aider run cost **$0.0089**.
+
+Thank you to every one of these projects and their maintainers — none of
+the above would be possible without the work you've already done and
+published openly. If you maintain any of them and want something changed
+about how you're credited or used here, please open an issue and I'll fix
+it.
 
 This is also why Redesign Lab exists as a loomloom example in the first
 place: it's a real, working demonstration of loomloom sitting inside a
