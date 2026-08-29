@@ -1,24 +1,40 @@
 # Redesign Lab
 
-An agent-native workflow that turns an existing website into several real,
-working design directions, lets a human choose, then builds the winner.
-Built as a Claude Code skill on top of a pluggable design-authority contract,
-with [loomloom](https://github.com/cogfoundry-labs/loomloom) doing exactly
-one job in the whole pipeline: writing the narrative prose for the final
-case study.
+**What if an AI coding agent could redesign a real website — not from a prompt, but from a workflow?**
+
+Give it an existing site. It analyzes the real thing, builds several genuinely different design directions as real working pages (never mockups), lets you choose, builds the winner, and validates the result with real accessibility and functional checks. Built as a Claude Code skill on top of a pluggable design-authority contract, with [loomloom](https://github.com/cogfoundry-labs/loomloom) doing exactly one job in the whole pipeline: writing the narrative prose for the final case study.
 
 > "Don't choose from mockups. Choose from real working designs."
 
-## Why this is useful as a loomloom example
+## See it in action
 
-Most loomloom examples show a TemplateSpec calling a single execution unit
-directly. This one shows the other end of the spectrum: a full multi-stage
-agent skill that treats loomloom as one small, clearly-scoped component
-inside a much larger, mostly-free, mostly-local pipeline — Discover, Analyze,
-generate design directions, gate on human choice, implement, validate, gate
-again, and only then spend real money on one batched `text-generate` call.
-If you're building a SkillBot that's more "real product workflow" than
-"single template," this is the shape to copy.
+Two real redesigns, start to finish — the actual comparison widget from each finished case study, dragged end to end so you can watch both the before and after pages animate for real, not a screenshot.
+
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/3c2c8fb7-68db-4e67-9514-fb93b91612b3" width="100%" controls></video>
+</div>
+
+> **aider.chat** — traded Inter's extra-bold headline for an uppercase Archivo Black display face, tightening letter-spacing for a more assertive visual hierarchy. → [Full case study](https://maxaibuilds.github.io/aider-redesign/)
+
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/9c00a67a-a4d4-414f-ab00-efb7f8714600" width="100%" controls></video>
+</div>
+
+> **tabbyml.com** — consolidated a ~40-token color inventory down to 8 deliberate values, upgraded headline and nav type to a true cross-platform Geist Mono stack, and squared off previously rounded corners for a sharper, angular finish. → [Full case study](https://maxaibuilds.github.io/tabbyml-redesign/)
+
+Each case study shows the actual process — the real before/after diff, the real accessibility scan, the real cost of the one paid step — not just a final screenshot.
+
+## Why I built this
+
+I'm not a web designer. I built Redesign Lab while trying to develop an example SkillBot for loomloom, and it turned into a question I actually wanted an answer to:
+
+**How far can an AI coding agent get at website design if you give it good design *skills*, instead of just a prompt?**
+
+I didn't try to invent a design system myself — I'm not qualified to. Instead I went looking for some of the most popular, open-source AI design skills already on GitHub, and built a workflow that composes them: one skill measures the existing site, another supplies the design rules and direction ideas, another checks the result actually works, another checks it's accessible. Redesign Lab is the orchestration holding those pieces together, plus the human decision points in between.
+
+Because I'm not the person who should be judging whether any of this is *good design*, the whole thing is built to be open: every piece — the design authority, the styling rules, the validation checks — is meant to be swappable. If you already have a skill you trust, or a house design system, you should be able to plug it in instead of the defaults below.
+
+**If you're an experienced web designer or design engineer, I'd genuinely like your read on it** — does this actually work, where does it make bad calls, and what would it take to make this genuinely useful rather than just an interesting experiment? See [Help me test this](#help-me-test-this) below.
 
 ## Quickstart
 
@@ -43,9 +59,10 @@ aren't bundled with it, but you don't need to install them yourself either
 — the first stage, Discover, checks what's already present and installs
 whatever's missing automatically (globally, non-interactively, one real
 security scan printed per package as it happens) before continuing. See
-"Prerequisites" below for exactly what gets installed and why, or to
-pre-install everything yourself ahead of time if you'd rather review each
-one before it runs.
+[Prerequisites](#prerequisites--the-design-authority-installed-automatically)
+below for exactly what gets installed and why, or to pre-install
+everything yourself ahead of time if you'd rather review each one before
+it runs.
 
 Want to read or modify the source instead of just using it? Clone the full
 `loomloom` repo — `redesign-lab` lives inside it as a community example,
@@ -64,6 +81,49 @@ coding agent and local scripts, for $0. loomloom is only needed if you go
 on to generate the interactive case study at the end, and even then it's
 one real API call, with a real cost estimate shown before anything is
 spent.
+
+You can steer the request, too:
+
+```
+Redesign https://example.com. Keep the existing information architecture,
+but explore 3 substantially different visual directions before
+implementing anything.
+```
+
+The agent handles discovery, building, and validating. You make the
+decisions that actually matter — which direction, which variant, whether
+to ship.
+
+## What actually happens
+
+Redesign Lab is deliberately not `prompt → generate website`. It's closer to:
+
+```
+Existing website
+      │
+      ▼
+Discover  →  Analyze
+      │
+      ▼
+Direction Slices ──▶ GATE 1 — you pick a direction
+      │
+      ▼
+Explore Variants ──▶ GATE 2 — you pick a variant
+      │
+      ▼
+Implement  →  Validate ──▶ GATE 3 — you approve the build
+      │
+      ▼
+GATE 4 — Share confirmation (the one paid step)
+      │
+      ▼
+Case Study
+```
+
+Four gates, not zero. The agent explores and executes; you decide what's
+worth pursuing at every point that actually matters. That's the whole
+idea — not a smarter autopilot, a workflow with real stopping points built
+in.
 
 ## Prerequisites — the design authority (installed automatically)
 
@@ -127,6 +187,47 @@ Notes:
   a package reports High Risk that isn't the one already-vetted exception
   (`taste`) documented above.
 
+## It's built from five existing skills, on purpose
+
+Neither of the two case studies above was produced by one big, opinionated
+"design AI." Each was a composition of five real open-source projects,
+coordinated by Claude Code:
+
+| Skill | Role |
+|---|---|
+| [senlindesign/taste-skill](https://github.com/senlindesign/taste-skill) | Measures the *existing* site for real — screenshots + DOM extraction — so Analyze starts from evidence, not a guess |
+| [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | The default **design authority**: build rules, direction families, redesign guidance, pre-flight checks. Fully replaceable |
+| [anthropics/skills · webapp-testing](https://github.com/anthropics/skills/tree/main/skills/webapp-testing) | Actually renders and screenshots every direction, variant, and final build, so results get inspected, not assumed |
+| [snapsynapse/skill-a11y-audit](https://github.com/snapsynapse/skill-a11y-audit) | Real axe-core accessibility scanning at Validate. Both case studies above finished at **0 violations** |
+| [cogfoundry-labs/loomloom](https://github.com/cogfoundry-labs/loomloom) | One deliberately small job: turn the run's verified facts into the case study's narrative prose. The aider run cost **$0.0089** |
+
+This is also why Redesign Lab exists as a loomloom example in the first
+place: it's a real, working demonstration of loomloom sitting inside a
+much larger agent workflow as one small, clearly-scoped execution
+component — not the engine driving the whole thing. Most loomloom
+examples show a TemplateSpec calling a single execution unit directly;
+this one shows the other end of the spectrum, for anyone building a
+SkillBot that's more "real product workflow" than "single template."
+
+## Bring your own design authority
+
+This is the part I'd most like people to push on. Redesign Lab separates
+the *workflow* (discover, explore, gate, implement, validate) from the
+*design authority* (what good design means, which directions to explore,
+what to preserve, what to reject). The workflow doesn't know or care which
+authority is plugged in:
+
+```
+Redesign Lab  +  your design skill  →  your methodology, your redesign workflow
+```
+
+You don't have to agree with Leonxlnx/taste-skill's calls. That's rather
+the point — write your own design-authority skill, point at your team's
+internal system, or find a different one on GitHub, and the same gates,
+the same validation, the same case-study output apply to it too. See
+`references/design-authority.md` for the exact contract a new authority
+needs to fill.
+
 ## What's in this folder
 
 | Path | What it is |
@@ -151,3 +252,45 @@ Every stage above is local and free except one call inside Share: a batched
 `text-generate` pass that turns a mechanically-computed before/after diff
 into narrative prose for the case study's chapters. That's it — loomloom
 never renders a design, never scores a variant, never makes a gate decision.
+
+## What this is — and isn't
+
+**It is**: an open experiment in agent-native website design, a real
+Claude Code skill you can install today, a pluggable design-authority
+system, and a working example of loomloom inside a larger agent workflow.
+
+**It isn't**: a claim that AI replaces web designers, one "correct" AI
+designer model, a finished design methodology, or a guarantee of good
+design. It's stage one of finding out whether this general shape is worth
+building further.
+
+## Help me test this
+
+If you're a web designer, design engineer, or you build agent skills
+yourself — try it against a site you actually know well, then tell me:
+
+- Where did the workflow make a bad design call?
+- Which decisions should the agent own, and which should stop for a human?
+- What design skill is missing that you'd want to plug in?
+- What would make this genuinely useful to a working designer, not just an
+  interesting demo?
+
+And if the whole approach seems wrong to you, I'd like to hear that too —
+the goal isn't to defend this specific version, it's to find out what an
+actually useful AI-native design workflow looks like. Open an issue, or
+find me in [Show and tell](https://github.com/orgs/cogfoundry-labs/discussions/categories/show-and-tell).
+
+## Next step
+
+If enough people find this genuinely useful, the next thing I want to
+explore is turning Redesign Lab into a place where designers and
+skill-builders can contribute their own design authorities, styling
+systems, evaluation checks, and redesign methodologies — so instead of one
+AI designer, there's a workflow where different design skills can be
+swapped in, compared, and improved on. That only makes sense to build if
+this first version actually holds up, which is exactly what I'm trying to
+find out.
+
+---
+
+[→ Quickstart](#quickstart) · [→ Aider case study](https://maxaibuilds.github.io/aider-redesign/) · [→ TabbyML case study](https://maxaibuilds.github.io/tabbyml-redesign/) · [→ Technical spec](docs/design-spec.md)
