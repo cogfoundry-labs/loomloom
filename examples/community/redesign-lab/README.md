@@ -21,7 +21,7 @@ Two real redesigns, start to finish — the actual comparison widget from each f
 > **aider.chat** — traded Inter's extra-bold headline for an uppercase Archivo Black display face, tightening letter-spacing for a more assertive visual hierarchy. → [Full case study](https://maxaibuilds.github.io/aider-redesign/)
 
 <div align="center">
-  <video src="https://github.com/user-attachments/assets/9c00a67a-a4d4-414f-ab00-efb7f8714600" width="100%" controls></video>
+  <video src="https://github.com/user-attachments/assets/9c00a067-a4d4-414f-ab00-efb7f8714600" width="100%" controls></video>
 </div>
 
 > **tabbyml.com** — consolidated a ~40-token color inventory down to 8 deliberate values, upgraded headline and nav type to a true cross-platform Geist Mono stack, and squared off previously rounded corners for a sharper, angular finish. → [Full case study](https://maxaibuilds.github.io/tabbyml-redesign/)
