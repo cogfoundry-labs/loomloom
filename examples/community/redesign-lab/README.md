@@ -2,12 +2,11 @@
 
 **What if an AI coding agent could redesign a real website?**
 
-Give it an existing site. It analyzes the real thing, builds several genuinely different design directions as real working pages—not mockups, lets you choose, builds the winner, and validates the result with real accessibility and functional checks.
+Give it an existing site. It analyzes the real thing, builds several genuinely different design directions as real working pages (not mockups), lets you choose, builds the winner, and validates the result with real accessibility and functional checks.
 
 Built as a Claude Code skill on top of a pluggable design-authority contract.
 
-This started as a [loomloom](https://github.com/cogfoundry-labs/loomloom) example, exploring how a reusable AI-workflow component could fit into a larger agent-native workflow. loomloom is completely optional, though. It is used only in the final Share step to turn the verified results into narrative prose for a case study. If you just want to redesign a website, you don't need loomloom at all.
-
+This started as a [loomloom](https://github.com/cogfoundry-labs/loomloom) example, exploring how a reusable AI-workflow component could fit into a larger agent-native workflow — but loomloom is entirely optional. It's used only in the final Share step, to turn verified results into narrative prose for a case study. If you just want to redesign a website, you don't need loomloom at all.
 
 > "Don't choose from mockups. Choose from real working designs."
 
@@ -35,13 +34,13 @@ I'm not a web designer. I built Redesign Lab while trying to develop an example 
 
 > **How far can an AI coding agent get at website design if you give it good design *skills*, instead of throwing lots of *prompts* at it?**
 
-I didn't try to invent a design system myself — I'm not qualified to. 
+I didn't try to invent a design system myself — I'm not qualified to.
 
-Instead I went looking for some of the most popular, open-source AI design skills already on GitHub, and built a workflow that composes them: 
-- one skill measures the existing site; 
-- another supplies the design rules and direction ideas; 
-- another checks the result actually works; 
-- another checks it's accessible. 
+Instead I went looking for some of the most popular, open-source AI design skills already on GitHub, and built a workflow that composes them:
+- one skill measures the existing site
+- another supplies the design rules and direction ideas
+- another checks the result actually works
+- another checks it's accessible
 
 Redesign Lab is the orchestration holding those pieces together, plus the human decision points in between.
 
@@ -85,7 +84,7 @@ Redesign Lab will:
 6. Stop and let you choose a variant
 7. Build the winner
 8. Run functional and accessibility checks
-9. Stop for final approval — and, optionally, generate a case study
+9. Stop for final approval — then, optionally, generate a case study
 
 You don't need to tell Claude how to perform any of these steps. The
 workflow does that. You make the decisions that matter.
@@ -141,9 +140,10 @@ you choose
 ```
 
 The design directions are built before you choose between them — every
-option at Gate 1 and Gate 2 is a real, rendered page, not a screenshot of
-what the agent *might* build. You're not picking a mockup you hope turns
-out well later. You're picking between things that already work.
+direction and every variant you're asked to pick from is a real, rendered
+page, not a screenshot of what the agent *might* build. You're not picking
+a mockup you hope turns out well later. You're picking between things that
+already work.
 
 ## What actually happens
 
@@ -236,7 +236,7 @@ Notes:
   a package reports High Risk that isn't the one already-vetted exception
   (`taste`) documented above.
 
-## Built on open-source design skills — real thanks, not name-dropping
+## Built on open-source design skills, with real thanks
 
 Neither of the two case studies above was produced by one big, opinionated
 "design AI." Every real design judgment behind them came from someone
@@ -327,10 +327,8 @@ See `docs/design-spec.md` for the full technical specification.
 
 ## Where loomloom fits
 
-Redesign Lab started as a loomloom example — I wanted to see what a real
-SkillBot workflow looks like when loomloom is just one small component
-inside a much larger agent-native system. The redesign itself doesn't
-depend on it. Everything through final validation runs without it, for $0:
+The redesign itself doesn't depend on loomloom at all. Everything through
+final validation runs without it, for $0:
 
 ```
 Discover → Analyze → Direction Slices → GATE 1 → Explore Variants
