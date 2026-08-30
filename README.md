@@ -20,12 +20,11 @@
 
 ## What's new
 
+- 🎨 [redesign-lab](examples/community/redesign-lab/) — turn an existing website into several real, working design directions, then build the one you choose → [See the runs](#examples)
+
 - 🚀 0.3.0 — TemplateSpec v2 is now server-authoritative → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.3.0)
 
-- 0.2.1 — First public beta release → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.2.1)
-
-
-- How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
+- 💬 How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
 
 ## AI work as software
 

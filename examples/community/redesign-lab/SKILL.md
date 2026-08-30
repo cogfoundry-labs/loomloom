@@ -1,12 +1,17 @@
 ---
 name: redesign-lab
-description: Turn an existing website into several real, working design directions, let a human choose, then build the winner. Triggers on "redesign my website", "redesign this site", "I like [reference sites], redesign my site using that taste", or "explore variants of this direction". Built on loomloom and a pluggable design-authority contract (default Leonxlnx/taste-skill).
+license: Apache-2.0
+description: Turn an existing website into several real, working design directions — actual rendered pages, never mockups — then let a human pick one and build it out with validation. Use when someone wants to redesign or modernize a website or landing page, compare multiple design directions before committing, apply a reference site's design taste to their own, or make a generic-looking interface feel intentional. Triggers include "redesign my website", "redesign this site", "make my landing page look less templated", "I like [reference sites], redesign mine with that taste", and "explore variants of this direction".
 ---
 
 # Redesign Lab
 
 "Give me a website. I'll show you what it could become, let you choose, then
 build the winner."
+
+Built on [loomloom](https://github.com/cogfoundry-labs/loomloom) and a
+pluggable design-authority contract (default `leonxlnx-taste-skill`) — see
+`references/design-authority.md`.
 
 ## Entry point
 
