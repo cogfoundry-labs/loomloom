@@ -20,9 +20,9 @@
 
 ## What's new
 
-- 🎨 [redesign-lab](examples/community/redesign-lab/) — turn an existing website into several real, working design directions, then build the one you choose → [See the runs](#examples)
+- 🎨 [redesign-lab](examples/community/redesign-lab/) — a community skill for exploring and building website redesigns → [See the runs](#examples)
 
-- 🚀 0.3.0 — TemplateSpec v2 is now server-authoritative → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.3.0)
+- 🚀 0.3.0 — TemplateSpec v2 is now server-authoritative → [Release note](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.3.0)
 
 - 💬 How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
 
@@ -62,32 +62,11 @@ loomloom --help
 loomloom market --help
 ```
 
-### Install the Agent Skill in the right place
-
-The installer installs both the CLI and the LoomLoom Agent Skill. Its
-`--skill-dir` argument is **not** the CLI installation directory: it is the
-complete Skill directory scanned by the Agent that should use LoomLoom.
-
-Before running the installer, identify the current Agent's Skill root. Do not
-reuse a Codex path for another Agent. If the target Agent's root is unknown,
-ask or check that Agent's configuration first.
-
-| Target Agent | Complete `--skill-dir` example |
-| --- | --- |
-| Codex | `<your Codex Skill root>/loomloom` |
-| WorkBuddy | `~/.workbuddy/skills/loomloom` |
-
-For example, install for WorkBuddy with:
-
-```sh
-curl -fsSL https://github.com/cogfoundry-labs/loomloom/releases/latest/download/install.sh \
-  | bash -s -- --skill-dir "$HOME/.workbuddy/skills/loomloom"
-```
-
-After installation, verify that the exact destination contains `SKILL.md`.
-Installing into `~/.codex/skills/loomloom` only makes the Skill visible to
-Codex; it does not install it for WorkBuddy or another Agent. See the
-[installation guide](docs/quick-start/installation.md) for more examples.
+> **Installing the skill:** the installer's `--skill-dir` is your **agent's**
+> skill root (e.g. `~/.workbuddy/skills/loomloom`), not the CLI location.
+> Point it at the wrong agent and the skill installs where nothing will load
+> it. See the [installation guide](docs/quick-start/installation.md) for
+> per-agent paths and agent-assisted setup.
 
 ## How loomloom works
 
