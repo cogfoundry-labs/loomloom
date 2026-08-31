@@ -22,7 +22,7 @@
 
 - 🎨 [redesign-lab](examples/community/redesign-lab/) — a community skill for exploring and building website redesigns → [See the runs](#examples)
 
-- 🚀 0.3.0 — TemplateSpec v2 is now server-authoritative → [Release note](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.3.0)
+- 🚀 0.3.0 — TemplateSpec v2 is now server-authoritative → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.3.0)
 
 - 💬 How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
 
@@ -62,12 +62,6 @@ loomloom --help
 loomloom market --help
 ```
 
-> **Installing the skill:** the installer's `--skill-dir` is your **agent's**
-> skill root (e.g. `~/.workbuddy/skills/loomloom`), not the CLI location.
-> Point it at the wrong agent and the skill installs where nothing will load
-> it. See the [installation guide](docs/quick-start/installation.md) for
-> per-agent paths and agent-assisted setup.
-
 ## How loomloom works
 
 loomloom treats AI work the same way a traditional compiler treats source code.
@@ -98,7 +92,7 @@ All built around the [IR spec](docs/ir-spec/en/README.md), enabling AI work to b
 <div align="center">
 <br />
 <img src="assets/images/diagrams/ai-work-compiler-pipeline.svg"
-     alt="The same compiler pipeline — now for AI systems"
+     alt="The loomloom AI work compilation pipeline"
      width="750" />
 </div>
 
@@ -187,7 +181,7 @@ Execution platform runs compiled AI systems based on the [IR spec](docs/ir-spec/
 
 Organizations that prefer a production-ready implementation can also license the loomloom execution platform from CogFoundry.
 
-**Implementation status:**
+## Status
 
 - 🚧 loomloom is currently in beta. The core concepts, architecture, and initial implementations are available and working. Some features are already implemented, while others are under active development.
 - ℹ️ Design details may evolve based on community feedback and real-world usage. Significant changes will be documented publicly.
@@ -222,11 +216,13 @@ More community examples land as they're built.
 - [Create your first **template** (AI work IR)](docs/guides/create-your-first-template.md)
 - [Build your first SkillBot](docs/guides/build-your-first-skillbot.md)
 - [loomloom workflows](docs/guides/workflows.md)
+- [Changelog](CHANGELOG.md)
 - [Developer docs](https://docs.cogfoundry.ai/documentation/overview/quickstart)
 
 #### Design proposals (RFCs)
 
 - [RFC-0001: Intent-first CLI](docs/rfc/0001-intent-first-cli.md)
+- [RFC-0002: CLI command model](docs/rfc/0002-cli-command-model.md)
 - [RFC-0003: Model catalog strategy](docs/rfc/0003-model-catalog-strategy.md)
 
 ## Contributing

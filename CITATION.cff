@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use loomloom in your work, please cite it using the metadata below."
+title: loomloom
+abstract: >-
+  An open-source compiler and runtime for AI work: turn prompts, skills, and
+  multi-step agent workflows into versioned, packageable AI systems that run
+  with dependency-aware parallel execution.
+type: software
+authors:
+  - name: "CogFoundry"
+    website: "https://cogfoundry.ai"
+repository-code: "https://github.com/cogfoundry-labs/loomloom"
+url: "https://cogfoundry.ai"
+license: Apache-2.0
+version: "0.3.3"
+date-released: 2026-08-26
+keywords:
+  - ai
+  - ai-agents
+  - ai-compiler
+  - ai-runtime
+  - agentic-workflow
+  - llm
+  - workflow-orchestration
+  - agent-skills
