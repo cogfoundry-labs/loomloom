@@ -22,6 +22,8 @@ For B, do not build or upload a custom ZIP. When publishing, omit `--skill-packa
 
 For A, the Agent builds the generic Skill folder and ZIP locally. Show the creator a preview before uploading: name, purpose, inputs, outputs, effect, permissions, and local capabilities. Obtain explicit confirmation, run the package locally by default, then upload the Agent-created ZIP:
 
+When a custom package invokes LoomLoom, use the current platform's official API documentation where available. The package must implement the applicable secure authentication flow and, before every paid run, precheck or quote, present the returned fee, obtain the user's explicit confirmation, and only then submit the run.
+
 ```bash
 loomloom skill package private upload <template-id> --file <agent-created.zip>
 ```
