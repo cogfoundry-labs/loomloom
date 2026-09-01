@@ -29,6 +29,7 @@ Official template ── platform-maintained and executed directly
 
 Private template ── user-created through TemplateSpec
 └─ Private template version
+   ├─ optional private Agent Skill Package Head
    └─ Submitted to Market review
       └─ Listing Version (immutable publish snapshot)
          └─ Approved and executable as a SkillBot
@@ -90,10 +91,17 @@ Download/prepare version-specific input → Validate → Precheck
 ### Private template authoring
 
 ```text
-Business conversation → TemplatePlan → User confirms plan
-→ Generate TemplateSpec → Check with the current LoomLoom Server
-→ User confirms creation → Create or append a version
+Business conversation → decide LoomLoom-only or Agent-assisted
+→ TemplatePlan → User confirms plan → Generate TemplateSpec
+→ Check with the current LoomLoom Server → User confirms creation
+→ Create or append a version
+→ LoomLoom-only: use automatic package handling; do not create or upload a custom ZIP
+→ Agent-assisted: creator chooses custom Skill Package or automatic package handling
+→ custom: Agent builds Skill ZIP locally → preview → creator confirms
+→ local trial → upload private Package Head
 ```
+
+An Agent-assisted package is built by the Agent, not by the CLI. Never create or upload one for a LoomLoom-only template. When Agent assistance is needed, explicitly offer the creator two business choices: create and upload a custom Skill Package, or use `auto` without uploading a custom ZIP. Every later custom package replacement repeats its preview, creator confirmation, and default local trial.
 
 ### Legacy TemplateSpec v1 upgrade gate
 
@@ -182,6 +190,8 @@ Discover Listing → Inspect public schema → Prepare public input
 → User confirms → Run through Listing → Usage/results
 ```
 
+When the user explicitly says to install or use a Market/official SkillBot, first use its public ZIP package when available. Install or update it automatically in the current Agent's Skill root; do not trigger this for browsing or quoting.
+
 ### Market creator
 
 ```text
@@ -194,12 +204,11 @@ Changing only the price and changing the execution version are different operati
 ### Local Agent Skill
 
 ```text
-Preview exact installation/uninstall effect
-→ Show files, binding, and destination
-→ User confirms → Apply local change
+Explicit install/use request → Agent identifies its own Skill root
+→ Download current public ZIP → validate and atomically install/update
 ```
 
-Installation is not execution and does not authorize a paid run.
+This automatic package installation does not authorize a paid run. Creator package uploads remain a separate, explicitly confirmed flow.
 
 ## Global Rules
 
@@ -255,5 +264,5 @@ The mode never covers persistent or high-impact operations: creating or versioni
 - [Market and SkillBots](references/market.md) — Listings, public input, buyer and creator workflows, price/version changes.
 - [Billing and confirmation](references/billing.md) — fee fields, currency, confirmation templates, settlement, earnings.
 - [Template authoring](references/template-spec.md) — TemplatePlan conversation, usage modes, TemplateSpec modeling and creation.
-- [Local Agent Skill management](references/local-skills.md) — install/uninstall preview, binding, destination, confirmation.
+- [Agent Skill Packages](references/local-skills.md) — Agent-created private packages, public ZIP install/update, and package review binding.
 - [CLI and errors](references/cli.md) — syntax sources, ID chaining, recovery rules, complete capability inventory.

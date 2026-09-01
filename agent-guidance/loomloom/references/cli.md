@@ -200,6 +200,10 @@ the historical version.
 
 ### Local Agent Skills
 
-- `loomloom skill install market <listing-id> --agent <agent> --output-dir <dir>`
+- `loomloom skill package private upload <template-id> --file <agent-created.zip>`
+- `loomloom skill package private show <template-id>`
+- `loomloom skill package private detach <template-id> [--expected-archive-hash <hash> --expected-validation-id <id>]`
+- `loomloom skill package install market <listing-id> --skill-root <current-agent-skill-root>`
+- `loomloom skill package install official <template-slug> --skill-root <current-agent-skill-root>`
 - `loomloom skill install template-spec <template-id> <version-id> --agent <agent> --output-dir <dir>`
 - `loomloom skill uninstall --dir <skill-dir>`

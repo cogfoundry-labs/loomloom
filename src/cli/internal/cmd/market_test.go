@@ -16,17 +16,29 @@ import (
 	"github.com/cogfoundry-labs/loomloom/src/cli/internal/publicinput"
 )
 
-func TestMarketPublishBuildsRequestWithoutGeneratedFields(t *testing.T) {
+func TestMarketPublishPreservesSkillPackageWhenTemplateVersionIsUnchanged(t *testing.T) {
 	var requestedPath string
 	var body map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestedPath = r.URL.Path
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode request body: %v", err)
-		}
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":"listing-1"}`))
+		switch r.URL.Path {
+		case "/loom/v1/creators/me/marketListings/listing-1":
+			_, _ = w.Write([]byte(`{"publishedVersionId":"listing-version-1"}`))
+		case "/loom/v1/creators/me/marketListings/listing-1/versions":
+			if r.URL.Query().Get("pageSize") != "500" {
+				t.Fatalf("pageSize=%q want 500", r.URL.Query().Get("pageSize"))
+			}
+			_, _ = w.Write([]byte(`{"items":[{"id":"listing-version-1","templateVersionId":"version-1"}]}`))
+		case "/loom/v1/marketListings":
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"listing-1"}`))
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
 	}))
 	defer server.Close()
 
@@ -73,8 +85,94 @@ func TestMarketPublishBuildsRequestWithoutGeneratedFields(t *testing.T) {
 	if _, ok := body["definition_hash"]; ok {
 		t.Fatalf("publish body should not include definition_hash: %#v", body)
 	}
+	if _, ok := body["skillPackage"]; ok {
+		t.Fatalf("publish body should omit skillPackage to preserve the current package: %#v", body)
+	}
 	if !strings.Contains(out.String(), `"id": "listing-1"`) {
 		t.Fatalf("unexpected output: %s", out.String())
+	}
+}
+
+func TestMarketPublishUsesAutoWhenTemplateVersionChanges(t *testing.T) {
+	var body map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/loom/v1/creators/me/marketListings/listing-1":
+			_, _ = w.Write([]byte(`{"publishedVersionId":"listing-version-1"}`))
+		case "/loom/v1/creators/me/marketListings/listing-1/versions":
+			_, _ = w.Write([]byte(`{"items":[{"id":"listing-version-1","templateVersionId":"version-old"}]}`))
+		case "/loom/v1/marketListings":
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"listing-1"}`))
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newListingPublishCmd(opts)
+	cmd.SetArgs([]string{
+		"template-1",
+		"--listing-id", "listing-1",
+		"--template-version-id", "version-new",
+		"--display-name", "PRD Review Bot",
+		"--task-fixed-fee", "0.5",
+	})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("market publish command error = %v", err)
+	}
+	selection, ok := body["skillPackage"].(map[string]any)
+	if !ok || selection["mode"] != "auto" {
+		t.Fatalf("skillPackage=%#v want auto", body["skillPackage"])
+	}
+}
+
+func TestMarketPublishSendsArchiveSkillPackageSelection(t *testing.T) {
+	var body map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":"listing-1"}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newListingPublishCmd(opts)
+	cmd.SetArgs([]string{
+		"template-1", "--template-version-id", "version-1", "--display-name", "PRD Review Bot", "--task-fixed-fee", "0.5",
+		"--skill-package-archive-hash", "sha256:archive", "--skill-package-validation-id", "validation-1",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("market publish command error = %v", err)
+	}
+	selection, ok := body["skillPackage"].(map[string]any)
+	if !ok {
+		t.Fatalf("skillPackage=%#v want object", body["skillPackage"])
+	}
+	if selection["mode"] != "archive" || selection["expectedArchiveHash"] != "sha256:archive" || selection["expectedValidationId"] != "validation-1" {
+		t.Fatalf("unexpected skill package selection: %#v", selection)
+	}
+}
+
+func TestMarketPublishRejectsIncompleteSkillPackageSelection(t *testing.T) {
+	for _, args := range [][]string{
+		{"--skill-package-archive-hash", "sha256:archive"},
+		{"--skill-package-validation-id", "validation-1"},
+	} {
+		cmd := newListingPublishCmd(&rootOptions{server: "https://example.test", timeout: time.Second})
+		cmd.SetArgs(append([]string{"template-1", "--template-version-id", "version-1", "--display-name", "PRD Review Bot", "--task-fixed-fee", "0.5"}, args...))
+		if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "must be provided together") {
+			t.Fatalf("args=%v error=%v want tuple validation", args, err)
+		}
 	}
 }
 

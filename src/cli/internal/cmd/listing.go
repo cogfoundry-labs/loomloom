@@ -45,6 +45,7 @@ type creatorMarketListingVersionResponse struct {
 	ExecutionBlockReason        string         `json:"executionBlockReason"`
 	ReviewStatus                string         `json:"reviewStatus"`
 	ReviewReason                string         `json:"reviewReason"`
+	TemplateVersionID           string         `json:"templateVersionId"`
 	TaskFixedFeeT               *flexInt64     `json:"taskFixedFeeT,omitempty"`
 	TaskFixedFee                *moneyResponse `json:"taskFixedFee,omitempty"`
 	Currency                    string         `json:"currency"`
@@ -66,6 +67,7 @@ func newListingCmd(opts *rootOptions) *cobra.Command {
 	cmd.AddCommand(
 		newListingPublishCmd(opts),
 		newListingUpdateCmd(opts),
+		newListingUpdateSkillPackageCmd(opts),
 		newListingListCmd(opts),
 		newListingShowCmd(opts),
 		newListingVersionsCmd(opts),
@@ -84,6 +86,8 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 		description       string
 		taskFixedFee      string
 		taskFixedFeeT     int64
+		skillArchiveHash  string
+		skillValidationID string
 	)
 	cmd := &cobra.Command{
 		Use:   "publish <template-id>",
@@ -110,6 +114,17 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 				Description:       strings.TrimSpace(description),
 				TaskFixedFeeT:     resolvedTaskFixedFeeT,
 			}
+			selection, err := listingSkillPackageSelectionFromFlags(skillArchiveHash, skillValidationID)
+			if err != nil {
+				return err
+			}
+			if selection == nil && req.ListingID != "" {
+				selection, err = inferExistingListingSkillPackageSelection(ctx, httpClient, req.ListingID, req.TemplateVersionID)
+				if err != nil {
+					return err
+				}
+			}
+			req.SkillPackage = selection
 
 			var resp map[string]any
 			if err := httpClient.PostProductJSON(ctx, "/marketListings", req, &resp); err != nil {
@@ -127,9 +142,106 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 	cmd.Flags().StringVar(&description, "description", "", "Market SkillBot description")
 	cmd.Flags().StringVar(&taskFixedFee, "task-fixed-fee", "", "Creator fixed fee per billable task, in currency units (for example 0.5)")
 	cmd.Flags().Int64Var(&taskFixedFeeT, "task-fixed-fee-t", 0, "Deprecated: creator fixed fee per billable task, in raw API units")
+	cmd.Flags().StringVar(&skillArchiveHash, "skill-package-archive-hash", "", "Private Skill Package Head archive hash to freeze with this listing")
+	cmd.Flags().StringVar(&skillValidationID, "skill-package-validation-id", "", "Private Skill Package Head validation ID to freeze with this listing")
 	_ = cmd.Flags().MarkDeprecated("task-fixed-fee-t", "use --task-fixed-fee with a decimal currency amount")
 	_ = cmd.MarkFlagRequired("template-version-id")
 	_ = cmd.MarkFlagRequired("display-name")
+	return cmd
+}
+
+type listingPublishProductReader interface {
+	GetProductJSON(context.Context, string, any) error
+	GetProductJSONWithQuery(context.Context, string, url.Values, any) error
+}
+
+// Existing Listing release updates preserve the current public package only
+// when the execution TemplateVersion is unchanged. A changed (or not-yet-
+// published) execution version explicitly asks the Server to resolve auto.
+func inferExistingListingSkillPackageSelection(ctx context.Context, httpClient listingPublishProductReader, listingID, nextTemplateVersionID string) (*listingSkillPackageSelection, error) {
+	listingID = strings.TrimSpace(listingID)
+	nextTemplateVersionID = strings.TrimSpace(nextTemplateVersionID)
+	if listingID == "" || nextTemplateVersionID == "" {
+		return nil, fmt.Errorf("listing ID and template version ID are required to resolve Skill Package mode")
+	}
+
+	basePath := "/creators/me/marketListings/" + url.PathEscape(listingID)
+	var listing creatorMarketListingResponse
+	if err := httpClient.GetProductJSON(ctx, basePath, &listing); err != nil {
+		return nil, fmt.Errorf("get current listing before publish: %w", err)
+	}
+	publishedVersionID := strings.TrimSpace(listing.PublishedVersionID)
+	if publishedVersionID == "" {
+		return &listingSkillPackageSelection{Mode: "auto"}, nil
+	}
+
+	query := url.Values{}
+	query.Set("pageSize", "500")
+	var versions creatorMarketListingVersionsResponse
+	if err := httpClient.GetProductJSONWithQuery(ctx, basePath+"/versions", query, &versions); err != nil {
+		return nil, fmt.Errorf("get current published listing version before publish: %w", err)
+	}
+	for _, version := range versions.Items {
+		if strings.TrimSpace(version.ID) != publishedVersionID {
+			continue
+		}
+		currentTemplateVersionID := strings.TrimSpace(version.TemplateVersionID)
+		if currentTemplateVersionID == "" {
+			return nil, fmt.Errorf("current published listing version %s is missing templateVersionId", publishedVersionID)
+		}
+		if currentTemplateVersionID == nextTemplateVersionID {
+			return nil, nil // omitted selection maps to preserve for an existing Listing
+		}
+		return &listingSkillPackageSelection{Mode: "auto"}, nil
+	}
+	return nil, fmt.Errorf("current published listing version %s was not returned by the Server", publishedVersionID)
+}
+
+func listingSkillPackageSelectionFromFlags(archiveHash, validationID string) (*listingSkillPackageSelection, error) {
+	archiveHash = strings.TrimSpace(archiveHash)
+	validationID = strings.TrimSpace(validationID)
+	if archiveHash == "" && validationID == "" {
+		return nil, nil
+	}
+	if archiveHash == "" || validationID == "" {
+		return nil, fmt.Errorf("--skill-package-archive-hash and --skill-package-validation-id must be provided together")
+	}
+	return &listingSkillPackageSelection{Mode: "archive", ExpectedArchiveHash: archiveHash, ExpectedValidationID: validationID}, nil
+}
+
+func newListingUpdateSkillPackageCmd(opts *rootOptions) *cobra.Command {
+	var archiveHash, validationID, requestID string
+	cmd := &cobra.Command{
+		Use:   "update-skill-package <listing-id>",
+		Short: "Submit the current private Skill Package Head for Market review",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			selection, err := listingSkillPackageSelectionFromFlags(archiveHash, validationID)
+			if err != nil {
+				return err
+			}
+			if selection == nil {
+				selection = &listingSkillPackageSelection{Mode: "auto"}
+			}
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			resolvedRequestID, generated := effectiveClientRequestID(requestID)
+			printGeneratedClientRequestID(cmd, resolvedRequestID, generated)
+			var response map[string]any
+			path := "/creators/me/marketListings/" + url.PathEscape(strings.TrimSpace(args[0])) + ":updateSkillPackage"
+			if err := httpClient.PostProductJSON(ctx, path, map[string]any{"requestId": resolvedRequestID, "skillPackage": selection}, &response); err != nil {
+				return err
+			}
+			return writeIndentedJSON(cmd.OutOrStdout(), response)
+		},
+	}
+	cmd.Flags().StringVar(&archiveHash, "skill-package-archive-hash", "", "Private Skill Package Head archive hash")
+	cmd.Flags().StringVar(&validationID, "skill-package-validation-id", "", "Private Skill Package Head validation ID")
+	cmd.Flags().StringVar(&requestID, "request-id", "", "Idempotency key; auto-generated if omitted")
 	return cmd
 }
 
