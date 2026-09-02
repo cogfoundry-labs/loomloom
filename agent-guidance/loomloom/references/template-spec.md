@@ -35,7 +35,7 @@ loomloom template-spec docs spec --lang zh-CN
 
 Select the documentation language as appropriate for the conversation and task.
 
-The installed Skill may contain a `generated-template-spec/` backup. Prefer the CLI docs command because it matches the currently installed CLI. Once each Step's business modalities are known, use `capability resolve`; its server response is the primary authority-backed selection result. Bundled docs are never authority for changing Profile revisions, eligible models, ports, or fixed contracts.
+The installed Skill may contain a `generated-template-spec/` backup. Prefer the CLI docs command because it matches the currently installed CLI. Once each Step's business modalities are known, use `capability resolve`; its server response is the primary authority-backed selection result. Bundled docs are never authority for changing Profile definitions, operational defaults, eligible models, ports, or fixed contracts.
 
 ## Conversation Flow
 
@@ -167,41 +167,50 @@ Before showing TemplateSpec, verify that Template Input descriptions, Workbook s
 - Do not bind `provider`, routing mode, complete contracts, or provider-native request objects.
 - Never guess Step IDs, authority IDs, or port IDs.
 
-### Text-generation Steps
+### Capability Profile Steps
 
-`text-generate` uses the shared OpenAI-compatible capability Profile. It does
-not require one `fixedModelContract` or Certification Subject per text model.
-An empty result from `template-spec contracts <text-model-id>` is therefore
-expected and does **not** mean that the model cannot be used in a private
-TemplateSpec.
+A Capability Profile exposes one fixed input/output interface and a live set of
+currently eligible models. It may represent standard text generation, image
+understanding, image generation, video generation, or another capability
+returned by the current Server. The model set can change without changing the
+Profile ports, so adding or removing a model cannot change Step connections.
+Capabilities a model has beyond the Profile definition are not exposed through
+that Step.
 
-For a text-generation Step:
+For a replaceable-model Step:
 
 1. Run `loomloom capability resolve` with the Step's input and output
-   modalities. Choose one Profile match and an eligible model returned by that
-   exact target environment.
+   modalities. Choose a `capabilityProfile` match returned by that exact target
+   environment. Do not restrict Profile use to text Steps.
 2. Set `executionBinding.kind=capabilityProfile` and use the response's stable
-   `profileId`. Omit `profileRevision` for normal authoring; Core resolves and
-   freezes the current revision. Do not require or fabricate a
-   `subjectRevisionId`.
-3. Use the response's Profile ports and write `modelSelection.defaultModelId`
-   from its eligible model list. Do not copy a revision, port, or model list
-   from bundled docs or an older installed Skill.
-4. Choose the returned Profile by its input contract. Use
-   `text.basic.openai-chat.v1` for text-only input. Use a returned vision Profile
-   such as `text.vision.openai-chat.v1` only when it exposes an Artifact image
-   port and the chosen model appears in that Profile's eligible model list.
-   Bind uploaded images as Artifact Template Inputs; never pass an asset ID as
-   a string prompt. Keep the optional model selector as a Template Input when
-   users may choose another eligible model; leaving it blank uses the frozen
-   default model.
-5. A downstream image, video, or other fixed-model Step may consume the text
-   Step's stable output through `stepOutput`. The absence of a per-model text
-   authoring contract must never be reported as blocking such a workflow.
+   `profileId`. Omit `profileRevision`; a dynamic Profile does not accept it.
+   Do not require or fabricate a `subjectRevisionId` for a Profile Step.
+3. Build `inputBindings` and downstream `stepOutput` connections from the
+   returned fixed `definition`. Bind Artifact ports as Artifacts and honor MIME
+   and cardinality constraints. Never infer ports from a model name or Provider
+   endpoint.
+4. Keep model choice in the separate `modelSelection` Template Input. For the
+   current TemplateSpec v2 request shape, set `defaultModelId` from
+   `operations.defaultModelId` and verify both `defaultModelAvailable=true` and
+   membership in `eligibleModels` before creation. A blank model cell uses the
+   Profile's current operational default at run time; an explicit value must be
+   in the current eligible set.
+5. If the current default is unavailable, stop and report
+   `profile_default_model_unavailable`; the first release does not silently
+   choose a replacement. If no models are currently eligible, stop and report
+   `profile_has_no_eligible_models`.
 
-Use `template-spec contracts <model-id>` only when authoring a
-`fixedModelContract` Step for one exact model, such as a model with its own
-multimedia or provider-native input structure.
+Text models remain special only in how their capability facts are certified:
+standard text models do not require one `fixedModelContract` or Certification
+Subject per model. An empty result from
+`template-spec contracts <text-model-id>` is expected and does **not** mean the
+model is unavailable when it appears in a returned text Profile.
+
+Use `fixedModelContract` when the user requires one exact model or a dedicated
+interface that no returned Profile represents. If `capability resolve` returns
+both a Profile and Fixed Model Contracts for the same standard capability,
+choose from the user's model policy rather than assuming multimedia always
+means fixed model.
 
 ## Legacy v1 Semantic Preservation
 
@@ -248,14 +257,16 @@ only when diagnosing the lower-level execution-unit inventory.
 
 | v1 Step shape | v2 route |
 | --- | --- |
-| text input → text output | returned `capabilityProfile` match |
-| image/video/audio/3D generation or editing | returned `fixedModelContract` match |
-| image/video/audio input → text output | returned vision/multimodal Profile or Fixed Contract match |
+| caller may choose among compatible models | returned `capabilityProfile` match |
+| original behavior requires one exact model or dedicated interface | returned `fixedModelContract` match |
+| no compatible match returned | stop with `needs_authoring_capability` |
 
-Do not look for an image-generation Capability Profile. Media generation uses
-the exact target model's Fixed Model Contract. If the original v1 model has no
-target contract, report `missing_fixed_contract`; do not invent a
-`subjectRevisionId`, silently switch models, or call `create-version`.
+Preserve the original model-selection policy. If the historical Step forbids
+model override, require the exact model's returned Fixed Model Contract; if it
+is absent, report `missing_fixed_contract`. Use a returned dynamic Profile only
+when the intended v2 behavior allows a replaceable model set. Never invent a
+`subjectRevisionId`, silently switch models, or call `create-version` when the
+required match is absent.
 
 ## Creation And Versioning
 

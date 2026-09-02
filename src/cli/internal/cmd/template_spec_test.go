@@ -371,7 +371,56 @@ func TestTemplateSpecAuthoringContextCmdUsesCurrentServerContext(t *testing.T) {
 	if requestedPath != "/loom/v1/templateAuthoringContext" {
 		t.Fatalf("path=%q want /loom/v1/templateAuthoringContext", requestedPath)
 	}
-	for _, want := range []string{"text.vision.openai-chat.v1", "2026-08-25.1", "google/gemini-3-flash", `"kind": "artifact"`, `"acceptedMimeTypes": [`, `"image/png"`, `"minItems": 1`, `"maxItems": 1`} {
+	for _, want := range []string{"text.vision.openai-chat.v1", "2026-08-25.1", "google/gemini-3-flash", `"kind": "artifact"`, `"acceptedMimeTypes": [`, `"image/png"`, `"minItems": 1`, `"maxItems": 1`, `"output": {`, `"text": true`} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output missing %q: %s", want, out.String())
+		}
+	}
+	for _, unwanted := range []string{`"dynamic"`, `"definition"`, `"operations"`, `"defaultModelAvailable"`} {
+		if strings.Contains(out.String(), unwanted) {
+			t.Fatalf("legacy response unexpectedly gained %q: %s", unwanted, out.String())
+		}
+	}
+}
+
+func TestTemplateSpecAuthoringContextCmdPreservesDynamicProfileJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"profiles":[{"profileId":"video.text-to-video.v1","revision":"","canonicalHash":"","capability":"","endpoint":"","compiler":"","stream":false,"inputPorts":[{"portId":"prompt","kind":"value","valueType":"string","required":true}],"output":{"text":false,"usage":false},"eligibleModels":[{"modelId":"google/veo3.1-fast-preview"}],"dynamic":true,"definition":{"schemaVersion":"loom_capability_profile_definition_v1","executionUnit":"immediate","operation":"video.generate","inputs":[{"portId":"prompt","kind":"value","valueType":"string","required":true}],"outputs":[{"portId":"output","kind":"artifact","acceptedMimeTypes":["video/mp4"],"minItems":1,"maxItems":1}],"constraints":{}},"operations":{"displayName":"Text to video","description":"Generate video from a text prompt","defaultModelId":"google/veo3.1-fast-preview","sortOrder":40,"recommended":true},"defaultModelAvailable":false}]}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
+	cmd := newTemplateSpecAuthoringContextCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("authoring-context command error = %v", err)
+	}
+	for _, want := range []string{`"dynamic": true`, `"operation": "video.generate"`, `"acceptedMimeTypes": [`, `"video/mp4"`, `"defaultModelId": "google/veo3.1-fast-preview"`, `"defaultModelAvailable": false`} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output missing %q: %s", want, out.String())
+		}
+	}
+}
+
+func TestTemplateSpecAuthoringContextCmdDisplaysDynamicProfileSummary(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"profiles":[{"profileId":"image.text-to-image.v1","eligibleModels":[{"modelId":"ali/qwen-image-plus"}],"dynamic":true,"definition":{"operation":"image.generate","inputs":[{"portId":"prompt","kind":"value","valueType":"string","required":true}],"outputs":[{"portId":"output","kind":"artifact","acceptedMimeTypes":["image/png","image/jpeg"],"minItems":1,"maxItems":1}],"constraints":{}},"operations":{"defaultModelId":"ali/qwen-image-plus"},"defaultModelAvailable":true}]}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "text"}
+	cmd := newTemplateSpecAuthoringContextCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("authoring-context command error = %v", err)
+	}
+	for _, want := range []string{"dynamic", "operation", "default_model", "default_available", "inputs", "outputs", "image.text-to-image.v1", "image.generate", "ali/qwen-image-plus", "prompt:string!", "output:artifact(image/png,image/jpeg)"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output missing %q: %s", want, out.String())
 		}
@@ -528,7 +577,7 @@ func TestTemplateSpecModelsCmdCanFilterProvider(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestedQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"models":[{"modelId":"vertex/gemini","authoringOptions":[{"kind":"capabilityProfile"}]},{"modelId":"other/model","authoringOptions":[{"kind":"fixedModelContract"}]}]}`))
+		_, _ = w.Write([]byte(`{"models":[{"modelId":"vertex/gemini","authoringOptions":[{"kind":"capabilityProfile","capabilityProfile":{"profileId":"text.basic.openai-chat.v1","dynamic":true}}]},{"modelId":"other/model","authoringOptions":[{"kind":"fixedModelContract"}]}]}`))
 	}))
 	defer server.Close()
 
@@ -555,6 +604,9 @@ func TestTemplateSpecModelsCmdCanFilterProvider(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "vertex/gemini") || strings.Contains(out.String(), "other/model") {
 		t.Fatalf("provider filter output is incorrect: %s", out.String())
+	}
+	if !strings.Contains(out.String(), `"dynamic": true`) {
+		t.Fatalf("JSON output dropped dynamic capability-profile identity: %s", out.String())
 	}
 }
 

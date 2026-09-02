@@ -135,9 +135,12 @@ loomloom model list --step-type <step-type> --output json
 
 First classify every v1 Step by its business input and output modalities, then
 call `capability resolve` for that shape. Its returned matches are the primary
-authoring route: a `capabilityProfile` match carries the current Profile, ports,
-and eligible models; a `fixedModelContract` match carries the exact
-`subjectRevisionId` and ports. Use `model types`, `model list`,
+authoring route: a `capabilityProfile` match carries a fixed interface, the
+current operational default, and the live eligible-model set; a
+`fixedModelContract` match carries the exact `subjectRevisionId` and ports. Use
+the Profile when callers need a replaceable model set. Use the Fixed Model
+Contract when the workflow requires one exact model or its dedicated interface.
+Use `model types`, `model list`,
 `authoring-context`, and `contracts` only to diagnose or inspect the lower-level
 facts behind that resolution. If the resolver returns `not_supported`, stop and
 report `needs_authoring_capability`; never infer support from a raw model name
