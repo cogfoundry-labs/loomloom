@@ -1,26 +1,26 @@
 # Agent Skill Packages
 
-Use this reference for a private template that needs local Agent capabilities, and when a user explicitly asks their current Agent to install or use a Market or official SkillBot.
+Use this reference for a private template that needs local Agent capabilities, and when a user explicitly asks their current Agent to install or use an official template or Market SkillBot.
 
 Local package installation is not template execution. It must not create a run, quote/precheck execution cost, call a Market SkillBot, or create billable model/API usage.
 
 ## Creator: private template with Agent capabilities
 
-Before creating a private template, classify the intended work:
+Before deciding whether a private template needs a local Skill, determine what the current LoomLoom Server can author and execute. Resolve the requested input/output modalities with `loomloom capability resolve`; inspect `template-spec authoring-context`, `template-spec contracts`, or `model list` when needed. Do not classify work from its title or apparent simplicity alone.
 
-- If LoomLoom alone can execute it, create the private template normally and use automatic package handling. Do not create or upload a custom Agent Skill Package, and do not ask the creator to choose a package mode.
-- If it needs Agent-side code, files, HTML generation, scripts, or runtime decisions, explain the Agent-side work and, after the private template has a `template_id`, ask the creator to choose:
+- If the supported TemplateSpec and hosted LoomLoom execution can complete the work, create the private template normally. Do not mention a Skill Package, create a local Skill, or ask the creator to choose a package mode.
+- If it needs Agent-local code, files, scripts, HTML output handling, local tools, or runtime decisions, explain the Agent-side work. The Agent creates the required local Skill and asks the creator, during the private-template creation flow, whether that local Skill Package should be uploaded and bound to the template:
 
 ```text
-A. Create and upload a custom Skill Package
-B. Use automatic package handling without uploading a custom ZIP
+A. Upload and bind the local Skill Package
+B. Do not upload the local Skill Package
 ```
 
-Do not expose raw request fields as the user-facing choice. Internally, A maps to `skillPackage.mode=archive`. For B, a new Listing or changed Template Version uses `auto`, while an unchanged Template Version preserves the current public package.
+Do not expose raw request fields as the user-facing choice. The actual upload and binding require a `template_id`, so obtain it before uploading. Internally, A maps to `skillPackage.mode=archive`.
 
-For B, do not build or upload a custom ZIP. When publishing, omit `--skill-package-archive-hash` and `--skill-package-validation-id`. For a new Listing, the Server applies `auto`. For an existing Listing, the CLI compares the requested Template Version with the currently published Listing Version: it preserves the current package when the Template Version is unchanged, and sends `auto` when the Template Version changes.
+For B, keep the local Skill unbound and do not upload a custom ZIP. When publishing, omit `--skill-package-archive-hash` and `--skill-package-validation-id`.
 
-For A, the Agent builds the generic Skill folder and ZIP locally. Show the creator a preview before uploading: name, purpose, inputs, outputs, effect, permissions, and local capabilities. Obtain explicit confirmation, run the package locally by default, then upload the Agent-created ZIP:
+For A, show the creator a preview before uploading: name, purpose, inputs, outputs, effect, permissions, and local capabilities. Obtain explicit confirmation, run the package locally by default, then upload the Agent-created ZIP:
 
 When a custom package invokes LoomLoom, use the current platform's official API documentation where available. The package must implement the applicable secure authentication flow and, before every paid run, precheck or quote, present the returned fee, obtain the user's explicit confirmation, and only then submit the run.
 
@@ -40,9 +40,9 @@ loomloom skill package private detach <template-id> \
 
 Use `--expected-archive-hash` and `--expected-validation-id` for a replacement or detachment whenever a current Head exists, so a stale Agent cannot overwrite another change. Detachment only removes the current package binding; it does not delete the private template, template versions, or historical ZIP archives. Before detaching, explain this effect and obtain the creator's explicit confirmation.
 
-## Consumer: Market and official packages
+## Consumer: official-template and Market packages
 
-Only trigger package installation when the user clearly tells the current Agent to **install** or **use** that Market/official SkillBot. Browsing, quoting, explaining, or merely showing a SkillBot does not authorize installation.
+Only trigger package installation when the user clearly tells the current Agent to **install** or **use** a selected official template or Market SkillBot. Listing, browsing, quoting, explaining, or merely showing it does not authorize installation. Once the template slug or Listing ID is known and the user has made that explicit request, check or install the package before downloading a workbook, reading the concrete input schema, preparing actual input, quoting, or executing.
 
 The Agent determines its own Skill root. Do not hard-code Codex, Claude, or OpenClaw paths, and do not ask the user to choose a platform-specific destination. Pass the root to the CLI:
 
@@ -53,7 +53,7 @@ loomloom skill package install official <template-slug> --skill-root <current-ag
 
 Do not use `loomloom skill install market`. It is a legacy local-wrapper generator retained only for compatibility; it does not download the reviewed backend ZIP and is not the Market SkillBot installation flow.
 
-This is an automatic action after the user's explicit install/use request: do not ask a second confirmation. First read the public package summary. If no public ZIP is available, do not download or trigger package generation; continue with the normal LoomLoom cloud workflow. When a public ZIP is available, compare its `archiveHash` with the current Agent's local `.loomloom-package.json`: if it matches, keep the installed Skill; if it differs, download, verify, and atomically replace the same-source local Skill directory. A same-name directory owned by another source or not managed by LoomLoom is a name conflict and must not be overwritten. Package Skill names must remain stable across versions. If download, validation, extraction, or replacement fails, retain the previous local package.
+This is an automatic action after the user's explicit install/use request: do not ask a second confirmation. First read the public package summary; do not skip this check. If no public ZIP is available, do not download or trigger package generation; continue with the normal LoomLoom cloud workflow. When a public ZIP is available, compare its `archiveHash` with the current Agent's local `.loomloom-package.json`: if it matches, keep the installed Skill; if it differs, download, verify, and atomically replace the same-source local Skill directory. A same-name directory owned by another source or not managed by LoomLoom is a name conflict and must not be overwritten. Package Skill names must remain stable across versions. If download, validation, extraction, or replacement fails, retain the previous local package.
 
 If the public package is unavailable, do not install anything and do not treat the SkillBot as unexecutable: continue with the normal LoomLoom cloud workflow.
 
@@ -80,4 +80,4 @@ loomloom listing update-skill-package <listing-id> \
 
 When `listing update-skill-package` is used without the archive/validation tuple, the CLI sends `skillPackage.mode=auto`. Supplying both tuple flags sends `skillPackage.mode=archive`. Do not supply only one tuple field.
 
-Pure LoomLoom templates are published normally; the platform generates their standard ZIP internally. A creator receives the detail/preview page immediately while review is pending. After approval, the package is publicly downloadable. If rejected, the detail stays creator-visible and the CLI must show the returned `reviewReason`; do not invent a separate “suggestions” field.
+Pure LoomLoom templates are published normally. Creators can use the CLI to view listing and review status. If rejected, show the returned `reviewReason`; do not invent a separate “suggestions” field.

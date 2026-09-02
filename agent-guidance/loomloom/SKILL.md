@@ -65,10 +65,13 @@ Whenever a task involves fees, quote/precheck, currency, balance, confirmation, 
 
 ### Official template
 
+When the user explicitly asks to use a selected official template, first check or install its public Skill Package in the current Agent's Skill root. Do this after the template is identified and before downloading its workbook, reading its concrete input schema, quoting, or executing. Listing or explaining official templates alone does not authorize installation. If the package check reports no public ZIP, continue with the normal LoomLoom cloud workflow.
+
 Default workbook flow:
 
 ```text
-Discover → Download workbook → Fill → Validate → Precheck
+Discover → Select template → Explicit use request → Check/install public Skill Package
+→ Download workbook → Fill → Validate → Precheck
 → Show fee confirmation → User confirms → Submit → Watch → Results
 ```
 
@@ -91,17 +94,20 @@ Download/prepare version-specific input → Validate → Precheck
 ### Private template authoring
 
 ```text
-Business conversation → decide LoomLoom-only or Agent-assisted
+Business conversation → inspect current LoomLoom Server capabilities
+→ decide LoomLoom-only or Agent-assisted
 → TemplatePlan → User confirms plan → Generate TemplateSpec
 → Check with the current LoomLoom Server → User confirms creation
 → Create or append a version
-→ LoomLoom-only: use automatic package handling; do not create or upload a custom ZIP
-→ Agent-assisted: creator chooses custom Skill Package or automatic package handling
-→ custom: Agent builds Skill ZIP locally → preview → creator confirms
-→ local trial → upload private Package Head
+→ LoomLoom-only: continue normally; do not raise Skill Package with the creator
+→ Agent-assisted: Agent creates the required local Skill
+→ creator chooses whether to upload and bind that local Skill Package
+→ upload chosen: preview → creator confirms → local trial → upload private Package Head
 ```
 
-An Agent-assisted package is built by the Agent, not by the CLI. Never create or upload one for a LoomLoom-only template. When Agent assistance is needed, explicitly offer the creator two business choices: create and upload a custom Skill Package, or use `auto` without uploading a custom ZIP. Every later custom package replacement repeats its preview, creator confirmation, and default local trial.
+Before classifying a request, use current Server facts rather than intuition: resolve its input/output modalities with `loomloom capability resolve`, and inspect `authoring-context`, `contracts`, or `model list` when needed. If the supported TemplateSpec and hosted execution can complete the requested work, treat it as LoomLoom-only and do not mention a Skill Package to the creator. Only work that requires Agent-local code, files, scripts, HTML output handling, local tools, or runtime decisions is Agent-assisted.
+
+An Agent-assisted package is built by the Agent, not by the CLI. The Agent creates the required local Skill, then asks the creator, as part of the private-template creation flow, whether that local Skill Package should be uploaded and bound to the template. The actual upload happens only after the template has a `template_id`. If the creator declines, do not upload a ZIP. If the creator chooses upload, show the package preview, obtain confirmation, and run the default local trial before uploading. Every later package replacement repeats preview, creator confirmation, and the default local trial.
 
 ### Legacy TemplateSpec v1 upgrade gate
 
@@ -185,12 +191,13 @@ a new immutable version only after explicit confirmation. Do not promise a lossl
 ### Market buyer
 
 ```text
-Discover Listing → Inspect public schema → Prepare public input
-→ Quote → Show Market fee confirmation
+Discover Listing → Inspect public schema → Select Listing → Explicit use request
+→ Check/install public Skill Package → Prepare public input → Quote
+→ Show Market fee confirmation
 → User confirms → Run through Listing → Usage/results
 ```
 
-When the user explicitly says to install or use a Market/official SkillBot, first use its public ZIP package when available. Install or update it automatically in the current Agent's Skill root; do not trigger this for browsing or quoting.
+Only after the user explicitly says to install or use a selected Market SkillBot, check or install its public Skill Package in the current Agent's Skill root. Do this before preparing the actual input or executing; browsing, explaining, and quoting do not authorize installation. If the package check reports no public ZIP, continue with the normal Market cloud workflow. Package installation does not authorize a paid run.
 
 ### Market creator
 
