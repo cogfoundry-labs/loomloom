@@ -1,4 +1,5 @@
 dist/
+npm/node_modules/
 bin/
 release/
 .release-tag

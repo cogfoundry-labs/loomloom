@@ -1,0 +1,22 @@
+{
+  "name": "loomloom-npm-release-tools",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Build and verify LoomLoom npm distribution packages",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "prepare-packages": "node scripts/prepare-packages.mjs",
+    "verify-packages": "node scripts/verify-packages.mjs",
+    "pack-packages": "node scripts/pack-packages.mjs",
+    "publish-packages": "node scripts/publish-packages.mjs",
+    "test-registry": "node scripts/test-registry.mjs"
+  },
+  "devDependencies": {
+    "npm": "11.19.1",
+    "verdaccio": "6.10.1"
+  }
+}
