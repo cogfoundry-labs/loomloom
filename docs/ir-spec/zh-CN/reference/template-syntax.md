@@ -39,13 +39,18 @@
 `executionBinding.kind`：
 
 - `fixedModelContract`：必须给 `subjectRevisionId`。
-- `capabilityProfile`：必须给稳定的 `profileId`，并声明 `modelSelection`。`profileRevision` 只用于明确请求某个历史合同；普通创作必须省略，由 Core 在保存时解析并冻结当前 revision。创建前先调用目标环境的 `GET /loom/v1/templateAuthoringContext`（CLI：`loomloom template-spec authoring-context --output json`），再选择 Profile 和模型。
+- `capabilityProfile`：必须给稳定的 `profileId`，并声明 `modelSelection`。动态 Profile 不接受 `profileRevision`；普通创作必须省略该字段。创建前先使用 `loomloom capability resolve` 按业务输入输出选择当前匹配结果；需要查看全部 Profile 时再调用目标环境的 `GET /loom/v1/templateAuthoringContext`（CLI：`loomloom template-spec authoring-context --output json`）。
 
-同为 `text-generate` 的 Profile 可以拥有不同输入合同。纯文本输入使用
-`text.basic.openai-chat.v1`；图片理解必须选择目标环境实际返回的
-`text.vision.openai-chat.v1`，并将一个符合 MIME/数量约束的 Artifact Template
-Input 绑定到 `image` 端口。不得因模型名称或同一路径 `/v1/chat/completions`
-推断视觉能力。
+Capability Profile 的 `definition` 是固定接口，`eligibleModels` 是根据当前模型能力
+事实动态计算的集合。Profile 可以描述文本生成、图片理解、图片生成或视频生成等
+标准能力；具体 ID、输入输出端口、当前默认模型和可选模型必须以目标环境返回为准。
+例如图片理解需要将符合 MIME/数量约束的 Artifact Template Input 绑定到返回的
+图片端口；图片或视频生成的 Artifact 输出也必须按返回的稳定输出端口连接。不得因
+模型名称或 Provider 接口路径推断能力。
+
+若 `capability resolve` 返回 Profile，且业务需要可替换模型集合，使用该 Profile；
+若业务要求一个精确模型或其专属接口，使用返回的 `fixedModelContract`。不要因为某个
+模型还存在固定合同，就忽略同一标准能力已经返回的动态 Profile。
 
 ## inputBindings
 

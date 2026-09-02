@@ -66,7 +66,9 @@ Notes:
 - `template-spec check` is server-authoritative and does not create a version. Creation validates again before freezing current contracts.
 - Use `template-spec get-version <template-id> <version-id> -f historical.json` to export an owner-visible historical authoring spec. Readback checks only that the stored authoring is a JSON object; it neither exports the frozen execution bundle nor applies current TemplateSpec rules. Run `check` separately on a rewritten v2 candidate.
 - `template-spec contracts` is only for an exact-model `fixedModelContract`. Text-generation models intentionally use the shared `capabilityProfile`, so an empty contract list for a `text-generate` model is expected and does not prevent private template authoring.
-- For a text Step, choose the default model, Profile identity, and ports from `template-spec authoring-context`; normal templates omit `profileRevision`. Do not fabricate a `subjectRevisionId`.
+- For a Profile Step, read its fixed input/output interface, default model, and live eligible-model set from `template-spec authoring-context`; normal templates write the stable `profileId` and omit `profileRevision`. The same flow applies to text, image, and video Profiles. Do not fabricate a `subjectRevisionId`.
+- A Profile's interface is stable, while its eligible-model set can change as models are certified or disabled. A template remains connected through the fixed ports and callers select only from the currently returned `eligibleModels`.
+- Check `defaultModelAvailable` before using the operations default. If it is false, choose another currently eligible model; the CLI does not silently replace the configured default.
 - Review the bundled spec with `loomloom template-spec docs spec` before writing custom specs.
 - Use `loomloom template-spec docs examples` for patterns.
 - Use `loomloom template-spec docs conversation` for agent-assisted conversational authoring.

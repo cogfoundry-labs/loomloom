@@ -249,9 +249,13 @@ func TestBundledSkillsUseTemplateSpecV2Bindings(t *testing.T) {
 		"Use `sequence` for one ordered heterogeneous multimodal value",
 		"Use `merge` for homogeneous Artifact collections",
 		"TemplateSpec v2 does not provide dynamic-cardinality Step fan-out",
-		"An empty result from `template-spec contracts <text-model-id>`",
+		"An empty result from",
+		"`template-spec contracts <text-model-id>` is expected",
 		"`executionBinding.kind=capabilityProfile`",
-		"must never be reported as blocking such a workflow",
+		"A Capability Profile exposes one fixed input/output interface",
+		"Do not restrict Profile use to text Steps",
+		"`profile_default_model_unavailable`",
+		"choose from the user's model policy",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
@@ -261,6 +265,8 @@ func TestBundledSkillsUseTemplateSpecV2Bindings(t *testing.T) {
 		"Connect steps with `dependsOn` and `upstreamBindings`",
 		"`allowModelOverride=true`",
 		"`inputSchema.sampleRows",
+		"Do not look for an image-generation Capability Profile",
+		"Media generation uses the exact target model's Fixed Model Contract",
 	} {
 		if strings.Contains(text, forbidden) {
 			t.Fatalf("%s still recommends retired v1 authoring with %q", canonicalSkillReferencesDir, forbidden)
