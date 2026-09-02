@@ -28,6 +28,21 @@ jobs:
           go-version-file: src/cli/go.mod
           cache-dependency-path: src/cli/go.sum
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install npm distribution tooling
+        run: |
+          npm install --global npm@11.19.1
+          npm --prefix npm ci --ignore-scripts
+
+      - name: Test npm distribution tooling
+        run: |
+          npm --prefix npm test
+          npm --prefix npm audit --audit-level=high
+
       - name: Test CLI
         run: |
           scripts/template-spec-docs.sh prepare-checked

@@ -1,0 +1,173 @@
+name: npm release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing published LoomLoom Beta release tag (vX.Y.Z-beta.N)
+        required: true
+        type: string
+      action:
+        description: Prepare only, or publish after the npm human gate and Trusted Publisher setup
+        required: true
+        type: choice
+        default: prepare
+        options:
+          - prepare
+          - publish
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  RELEASE_TAG: ${{ inputs.tag }}
+
+concurrency:
+  group: loomloom-npm-release
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Pin npm release client
+        run: npm install --global npm@11.19.1
+
+      - name: Install npm release tooling
+        run: npm --prefix npm ci --ignore-scripts
+
+      - name: Download the published GitHub Release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p release
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir release
+          scripts/validate-release-assets.sh release
+
+      - name: Generate and pack npm packages
+        run: |
+          node npm/scripts/prepare-packages.mjs --tag "$RELEASE_TAG"
+          node npm/scripts/verify-packages.mjs
+          node npm/scripts/pack-packages.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarballs-${{ inputs.tag }}-attempt-${{ github.run_attempt }}
+          path: dist/npm-tarballs/*
+
+  local_registry:
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Pin npm release client
+        run: npm install --global npm@11.19.1
+
+      - name: Install npm release tooling
+        run: npm --prefix npm ci --ignore-scripts
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-tarballs-${{ inputs.tag }}-attempt-${{ github.run_attempt }}
+          path: dist/npm-tarballs
+
+      - name: Verify through an offline local Registry
+        run: node npm/scripts/test-registry.mjs
+
+  publish:
+    if: inputs.action == 'publish'
+    needs:
+      - package
+      - local_registry
+    runs-on: ubuntu-latest
+    environment: npm-beta
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Pin npm release client
+        run: npm install --global npm@11.19.1
+
+      - name: Install npm release tooling
+        run: npm --prefix npm ci --ignore-scripts
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-tarballs-${{ inputs.tag }}-attempt-${{ github.run_attempt }}
+          path: dist/npm-tarballs
+
+      - name: Publish missing packages and verify immutable reruns
+        run: |
+          node npm/scripts/publish-packages.mjs \
+            --publish \
+            --confirm-tag "$RELEASE_TAG"
+
+      - name: Verify the official Registry user path
+        shell: bash
+        run: |
+          prefix="$(mktemp -d)"
+          trap 'rm -rf "$prefix"' EXIT
+          npm_version="${RELEASE_TAG#v}"
+          beta_version="$(npm view @cogfoundry/loomloom dist-tags.beta \
+            --registry https://registry.npmjs.org)"
+          if [ "$beta_version" != "$npm_version" ]; then
+            echo "npm beta tag mismatch: expected $npm_version, got $beta_version" >&2
+            exit 1
+          fi
+          npm install --global "@cogfoundry/loomloom@$npm_version" \
+            --registry https://registry.npmjs.org \
+            --prefix "$prefix" \
+            --ignore-scripts
+          "$prefix/bin/loomloom" --version
+          "$prefix/bin/loomloom" --help >/dev/null
+          npm exec --yes \
+            --registry https://registry.npmjs.org \
+            --package="@cogfoundry/loomloom@$npm_version" \
+            -- loomloom --help >/dev/null
+          npx --yes \
+            --registry https://registry.npmjs.org \
+            "@cogfoundry/loomloom@$npm_version" --version
+          npm uninstall --global @cogfoundry/loomloom \
+            --registry https://registry.npmjs.org \
+            --prefix "$prefix" \
+            --ignore-scripts

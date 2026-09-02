@@ -32,6 +32,28 @@ The following sections describe how to install, configure, and uninstall loomloo
 
 ## Install
 
+### npm Beta (CLI only)
+
+The npm Beta installs the existing Go CLI and its matching platform binary
+through the npm Registry. It does not download a binary from GitHub during an
+npm lifecycle script:
+
+```bash
+npm install -g @cogfoundry/loomloom@beta
+loomloom --version
+```
+
+For a temporary environment or CI job:
+
+```bash
+npx --yes @cogfoundry/loomloom@beta --version
+```
+
+This Beta installs the CLI only. To install the bundled general LoomLoom Agent
+Skill, continue to use an installer below with the complete explicit
+`--skill-dir` / `-SkillDir`. The npm package does not guess or write to an
+Agent's Skill root.
+
 ### macOS / Linux
 
 Set the complete loomloom skill destination for your agent, then install the latest stable release. Replace the example path before running the command:
