@@ -118,3 +118,7 @@ export function assertSafeGeneratedPath(target) {
 export function packageDirectoryName(packageName) {
   return packageName.replace("@cogfoundry/", "");
 }
+
+export function requiresCommandShell(command, platform = process.platform) {
+  return platform === "win32" && /\.(cmd|bat)$/i.test(command);
+}
