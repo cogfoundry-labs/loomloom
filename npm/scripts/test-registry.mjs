@@ -13,6 +13,7 @@ import {
   npxCommand,
   npxCommandArgs,
   parseArgs,
+  requiresCommandShell,
   repoRoot,
 } from "./lib.mjs";
 
@@ -34,7 +35,7 @@ function run(command, commandArgs, options = {}) {
     env: options.env ?? process.env,
     encoding: "utf8",
     stdio: options.capture ? ["ignore", "pipe", "pipe"] : "inherit",
-    shell: false,
+    shell: requiresCommandShell(command),
   });
   if (result.status !== (options.expectedStatus ?? 0)) {
     const details = `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim();

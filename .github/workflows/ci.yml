@@ -63,3 +63,23 @@ jobs:
           scripts/test-release-source-branch.sh
           scripts/test-sync-release-refs.sh
           scripts/test-uninstall.sh
+
+  npm_windows:
+    name: npm Windows
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install npm distribution tooling
+        run: |
+          npm install --global npm@11.19.1
+          npm --prefix npm ci --ignore-scripts
+
+      - name: Test Windows command shims
+        run: npm --prefix npm test
