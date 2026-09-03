@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import {
@@ -18,17 +19,25 @@ const args = parseArgs(process.argv.slice(2), {
   publish: false,
   timeout_ms: "30000",
   publish_timeout_ms: "300000",
+  readback_attempts: "30",
+  readback_interval_ms: "10000",
 });
 const tarballsDir = assertSafeGeneratedPath(args.tarballs_dir);
 const timeout = Number.parseInt(args.timeout_ms, 10);
 const publishTimeout = Number.parseInt(args.publish_timeout_ms, 10);
+const readbackAttempts = Number.parseInt(args.readback_attempts, 10);
+const readbackInterval = Number.parseInt(args.readback_interval_ms, 10);
 if (
   !Number.isSafeInteger(timeout) ||
   timeout <= 0 ||
   !Number.isSafeInteger(publishTimeout) ||
-  publishTimeout <= 0
+  publishTimeout <= 0 ||
+  !Number.isSafeInteger(readbackAttempts) ||
+  readbackAttempts <= 0 ||
+  !Number.isSafeInteger(readbackInterval) ||
+  readbackInterval <= 0
 ) {
-  throw new Error("--timeout-ms and --publish-timeout-ms must be positive integers");
+  throw new Error("npm timeout and read-back options must be positive integers");
 }
 const manifest = JSON.parse(
   fs.readFileSync(path.join(tarballsDir, "publish-manifest.json"), "utf8"),
@@ -65,27 +74,61 @@ function npm(commandArgs, options = {}) {
   });
 }
 
-function registryMetadata(record) {
-  const result = npm(
-    ["view", `${record.name}@${record.version}`, "dist", "--json"],
-    { capture: true },
-  );
-  if (result.error) {
-    throw new Error(`failed to inspect ${record.name}@${record.version}: ${result.error.message}`);
+function registryMetadata(record, { freshCache = false } = {}) {
+  const cacheDirectory = freshCache
+    ? fs.mkdtempSync(path.join(os.tmpdir(), "loomloom-npm-registry-readback-"))
+    : null;
+  try {
+    const commandArgs = ["view", `${record.name}@${record.version}`, "dist", "--json"];
+    if (cacheDirectory) {
+      commandArgs.push("--cache", cacheDirectory, "--prefer-online");
+    }
+    const result = npm(commandArgs, { capture: true });
+    if (result.error) {
+      throw new Error(`failed to inspect ${record.name}@${record.version}: ${result.error.message}`);
+    }
+    if (result.status === 0) {
+      return JSON.parse(result.stdout);
+    }
+    if (/E404|404 Not Found/.test(`${result.stderr}\n${result.stdout}`)) {
+      return null;
+    }
+    throw new Error(`failed to inspect ${record.name}@${record.version}: ${result.stderr.trim()}`);
+  } finally {
+    if (cacheDirectory) {
+      fs.rmSync(cacheDirectory, { recursive: true, force: true });
+    }
   }
-  if (result.status === 0) {
-    return JSON.parse(result.stdout);
+}
+
+function metadataMatches(record, metadata) {
+  return metadata && metadata.integrity === record.integrity && metadata.shasum === record.shasum;
+}
+
+function sleep(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
+function waitForRegistryMetadata(record) {
+  for (let attempt = 1; attempt <= readbackAttempts; attempt += 1) {
+    const metadata = registryMetadata(record, { freshCache: true });
+    if (metadata) {
+      return metadata;
+    }
+    if (attempt < readbackAttempts) {
+      console.log(
+        `waiting for ${record.name}@${record.version} Registry metadata (${attempt}/${readbackAttempts})`,
+      );
+      sleep(readbackInterval);
+    }
   }
-  if (/E404|404 Not Found/.test(`${result.stderr}\n${result.stdout}`)) {
-    return null;
-  }
-  throw new Error(`failed to inspect ${record.name}@${record.version}: ${result.stderr.trim()}`);
+  return null;
 }
 
 for (const record of manifest.packages) {
-  const existing = registryMetadata(record);
+  const existing = registryMetadata(record, { freshCache: true });
   if (existing) {
-    if (existing.integrity !== record.integrity || existing.shasum !== record.shasum) {
+    if (!metadataMatches(record, existing)) {
       throw new Error(
         `${record.name}@${record.version} already exists with different immutable tarball integrity; ` +
         `expected integrity=${record.integrity} shasum=${record.shasum}, ` +
@@ -116,9 +159,12 @@ for (const record of manifest.packages) {
   if (published.status !== 0) {
     throw new Error(`failed to publish ${record.name}@${record.version}`);
   }
-  const verified = registryMetadata(record);
-  if (!verified || verified.integrity !== record.integrity || verified.shasum !== record.shasum) {
-    throw new Error(`registry read-back failed for ${record.name}@${record.version}`);
+  const verified = waitForRegistryMetadata(record);
+  if (!metadataMatches(record, verified)) {
+    throw new Error(
+      `registry read-back did not match ${record.name}@${record.version} after ` +
+      `${readbackAttempts} attempts`,
+    );
   }
   console.log(`published and verified ${record.name}@${record.version}`);
 }
