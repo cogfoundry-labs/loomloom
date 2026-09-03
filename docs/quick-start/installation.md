@@ -57,6 +57,8 @@ npx --yes @cogfoundry/loomloom@beta --version
 ```
 
 `npm install` installs the CLI only; it never writes an Agent Skill directory.
+The npm package carries a read-only copy of the matching official Skill so the
+explicit setup command does not need to fetch it from GitHub.
 For CLI plus the matching general LoomLoom Skill, run the explicit npm setup
 command and name one target Agent:
 
@@ -65,7 +67,8 @@ npx @cogfoundry/loomloom@latest install --agent codex --yes
 ```
 
 The setup command installs the same-version CLI globally, then delegates the
-Skill directory selection to the `skills` manager. It verifies that the named
+Skill directory selection to the `skills` manager and copies the bundled
+same-version Skill to that explicit Agent target. It verifies that the named
 Agent reports the `loomloom` Skill before succeeding. In an interactive
 terminal, omit `--agent` to enter an Agent id when prompted. In CI or an Agent
 session, `--agent` is required.

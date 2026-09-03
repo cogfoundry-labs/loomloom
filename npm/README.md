@@ -11,9 +11,11 @@ named Agent Skill:
 npx @cogfoundry/loomloom@<version> install --agent codex --yes
 ```
 
-It installs the same-version global CLI, then uses the `skills` manager to
-install the tag-pinned general `loomloom` Skill for the named Agent. Ordinary
-`npm install -g @cogfoundry/loomloom` remains CLI-only.
+It installs the same-version global CLI, then uses the bundled general
+`loomloom` Skill from that npm package for the named Agent. The Skill is copied
+to the Agent's selected root, so it does not depend on a GitHub checkout after
+installation. Ordinary `npm install -g @cogfoundry/loomloom` remains CLI-only:
+it does not write to any Agent Skill directory.
 
 ## Prepare and verify
 

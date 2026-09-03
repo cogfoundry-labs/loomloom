@@ -24,7 +24,7 @@ Use this reference for installation, `doctor`, browser login, explicit API Token
   npx @cogfoundry/loomloom@latest install --agent codex --yes
   ```
 
-  The npm setup command delegates the selected Agent's Skill root to the `skills` manager and verifies that the selected Agent reports `loomloom`. In an Agent or non-interactive session, `--agent` is required; never ask the manager to install for every detected Agent.
+  The npm setup command delegates the selected Agent's Skill root to the `skills` manager, copies the matching official Skill bundled in that npm package, and verifies that the selected Agent reports `loomloom`. In an Agent or non-interactive session, `--agent` is required; never ask the manager to install for every detected Agent.
 - For shell or PowerShell installation, determine the current Agent's supported Skill root from its runtime configuration or official conventions. Use `<agent-skill-root>/loomloom` as the complete destination and pass it with `--skill-dir` or `-SkillDir`.
 - `--skill-dir` selects the Agent that receives the Skill; it is not the CLI binary directory. Do not use another Agent's directory as a fallback. In particular, `~/.codex/skills/loomloom` is for Codex only; a WorkBuddy target uses `~/.workbuddy/skills/loomloom`.
 - If the explicit-directory path's current Agent Skill root is unknown, ask the user for it. After installation, verify that `<agent-skill-root>/loomloom/SKILL.md` exists.
