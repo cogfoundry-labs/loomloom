@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestCompareVersions(t *testing.T) {
@@ -91,5 +93,64 @@ func TestCheckLatest(t *testing.T) {
 	}
 	if status.UpgradeHint == "" {
 		t.Fatalf("UpgradeHint should not be empty")
+	}
+}
+
+func TestStableUpdateNoticeCachesStableReleaseAndSkipsPrereleases(t *testing.T) {
+	origVersion := Version
+	origUserCacheDir := userCacheDir
+	t.Cleanup(func() {
+		Version = origVersion
+		userCacheDir = origUserCacheDir
+		_ = os.Unsetenv("LOOMLOOM_CLI_RELEASE_API")
+		_ = os.Unsetenv("LOOMLOOM_NO_UPDATE_CHECK")
+	})
+	cacheDir := t.TempDir()
+	userCacheDir = func() (string, error) { return cacheDir, nil }
+
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		_, _ = w.Write([]byte(`{"tag_name":"v1.2.4"}`))
+	}))
+	defer server.Close()
+	t.Setenv("LOOMLOOM_CLI_RELEASE_API", server.URL)
+
+	Version = "v1.2.3"
+	notice, err := StableUpdateNotice(context.Background())
+	if err != nil {
+		t.Fatalf("StableUpdateNotice() error = %v", err)
+	}
+	if !strings.Contains(notice, "v1.2.4") {
+		t.Fatalf("notice=%q want latest release", notice)
+	}
+	if requests != 1 {
+		t.Fatalf("requests=%d want 1", requests)
+	}
+
+	notice, err = StableUpdateNotice(context.Background())
+	if err != nil || notice == "" {
+		t.Fatalf("cached StableUpdateNotice() notice=%q err=%v", notice, err)
+	}
+	if requests != 1 {
+		t.Fatalf("cached check requests=%d want 1", requests)
+	}
+
+	Version = "v1.2.3-beta.1"
+	notice, err = StableUpdateNotice(context.Background())
+	if err != nil || notice != "" {
+		t.Fatalf("prerelease notice=%q err=%v", notice, err)
+	}
+	if requests != 1 {
+		t.Fatalf("prerelease check requests=%d want 1", requests)
+	}
+}
+
+func TestUpdateCheckCacheFreshness(t *testing.T) {
+	if !cacheFresh(updateCheckCache{CheckedAt: time.Now(), LatestVersion: "v1.2.3"}) {
+		t.Fatal("fresh cache was not accepted")
+	}
+	if cacheFresh(updateCheckCache{CheckedAt: time.Now().Add(-updateCheckTTL - time.Second), LatestVersion: "v1.2.3"}) {
+		t.Fatal("expired cache was accepted")
 	}
 }

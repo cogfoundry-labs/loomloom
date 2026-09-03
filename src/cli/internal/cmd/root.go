@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -15,6 +16,9 @@ import (
 )
 
 const defaultHTTPTimeout = 30 * time.Second
+const updateNoticeTimeout = 750 * time.Millisecond
+
+var checkStableUpdateNotice = version.StableUpdateNotice
 
 type rootOptions struct {
 	server                    string
@@ -66,6 +70,7 @@ func NewRootCmd() *cobra.Command {
 					return err
 				}
 			}
+			writeStableUpdateNotice(cmd, opts)
 			return nil
 		},
 	}
@@ -104,6 +109,19 @@ func NewRootCmd() *cobra.Command {
 		newServerCmd(opts),
 	)
 	return cmd
+}
+
+func writeStableUpdateNotice(cmd *cobra.Command, opts *rootOptions) {
+	if opts.output != "text" || cmd.Name() == "doctor" || envBool("LOOMLOOM_NO_UPDATE_CHECK") {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), updateNoticeTimeout)
+	defer cancel()
+	notice, err := checkStableUpdateNotice(ctx)
+	if err != nil || notice == "" {
+		return
+	}
+	_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "notice: %s\n", notice)
 }
 
 func newHTTPClient(opts *rootOptions) (*client.Client, error) {

@@ -66,6 +66,12 @@ session, `--agent` is required.
 The shell and PowerShell installers below remain supported for environments
 that require an explicit complete `--skill-dir` / `-SkillDir`.
 
+Stable CLI releases check for a newer stable release at most once every 24
+hours during ordinary text commands. An available update is printed to stderr
+and never changes command behavior. Beta, rc, internal, JSON-output, and CI
+users are not prompted; set `LOOMLOOM_NO_UPDATE_CHECK=1` to disable the check
+explicitly.
+
 ### macOS / Linux
 
 Set the complete loomloom skill destination for your agent, then install the latest stable release. Replace the example path before running the command:
