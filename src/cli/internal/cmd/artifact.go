@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -95,8 +96,9 @@ func newArtifactDownloadCmd(opts *rootOptions) *cobra.Command {
 				return err
 			}
 
-			for _, artifact := range resp.Artifacts {
-				filename := inferArtifactFilename(artifact)
+			filenames := artifactDownloadFilenames(resp.Artifacts)
+			for index, artifact := range resp.Artifacts {
+				filename := filenames[index]
 				targetPath, err := resolveFilePath(filepath.Join(baseDir, filename), filename)
 				if err != nil {
 					return err
@@ -156,4 +158,33 @@ func newArtifactDownloadCmd(opts *rootOptions) *cobra.Command {
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "d", "", "Directory to save artifacts into")
 	cmd.Flags().DurationVar(&downloadTimeout, "download-timeout", 5*time.Minute, "Timeout per individual artifact file download")
 	return cmd
+}
+
+func artifactDownloadFilenames(artifacts []artifactEntry) []string {
+	filenames := make([]string, len(artifacts))
+	counts := make(map[string]int, len(artifacts))
+	for index, artifact := range artifacts {
+		filename := inferArtifactFilename(artifact)
+		filenames[index] = filename
+		counts[filename]++
+	}
+
+	for index, artifact := range artifacts {
+		filename := filenames[index]
+		if counts[filename] < 2 {
+			continue
+		}
+		suffix := url.PathEscape(strings.TrimSpace(artifact.ArtifactID))
+		if suffix == "" {
+			suffix = fmt.Sprintf("item-%d", index+1)
+		}
+		filenames[index] = appendFilenameSuffix(filename, suffix)
+	}
+	return filenames
+}
+
+func appendFilenameSuffix(filename, suffix string) string {
+	extension := filepath.Ext(filename)
+	name := strings.TrimSuffix(filename, extension)
+	return name + "-" + suffix + extension
 }
