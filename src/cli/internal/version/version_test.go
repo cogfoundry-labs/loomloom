@@ -96,13 +96,14 @@ func TestCheckLatest(t *testing.T) {
 	}
 }
 
-func TestStableUpdateNoticeCachesStableReleaseAndSkipsPrereleases(t *testing.T) {
+func TestStableUpdateCacheRefreshesStableReleaseAndSkipsPrereleases(t *testing.T) {
 	origVersion := Version
 	origUserCacheDir := userCacheDir
+	origLatestNPMURL := latestNPMURL
 	t.Cleanup(func() {
 		Version = origVersion
 		userCacheDir = origUserCacheDir
-		_ = os.Unsetenv("LOOMLOOM_CLI_RELEASE_API")
+		latestNPMURL = origLatestNPMURL
 		_ = os.Unsetenv("LOOMLOOM_NO_UPDATE_CHECK")
 	})
 	cacheDir := t.TempDir()
@@ -111,46 +112,48 @@ func TestStableUpdateNoticeCachesStableReleaseAndSkipsPrereleases(t *testing.T) 
 	requests := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests++
-		_, _ = w.Write([]byte(`{"tag_name":"v1.2.4"}`))
+		_, _ = w.Write([]byte(`{"version":"1.2.4"}`))
 	}))
 	defer server.Close()
-	t.Setenv("LOOMLOOM_CLI_RELEASE_API", server.URL)
+	latestNPMURL = server.URL
 
 	Version = "v1.2.3"
-	notice, err := StableUpdateNotice(context.Background())
-	if err != nil {
-		t.Fatalf("StableUpdateNotice() error = %v", err)
+	if notice := CachedStableUpdateNotice(); notice != "" {
+		t.Fatalf("cold cache notice=%q want empty", notice)
 	}
-	if !strings.Contains(notice, "v1.2.4") {
-		t.Fatalf("notice=%q want latest release", notice)
-	}
+	RefreshStableUpdateCache(context.Background())
 	if requests != 1 {
 		t.Fatalf("requests=%d want 1", requests)
 	}
 
-	notice, err = StableUpdateNotice(context.Background())
-	if err != nil || notice == "" {
-		t.Fatalf("cached StableUpdateNotice() notice=%q err=%v", notice, err)
+	notice := CachedStableUpdateNotice()
+	if !strings.Contains(notice, "1.2.4") {
+		t.Fatalf("cached notice=%q want latest release", notice)
 	}
+	RefreshStableUpdateCache(context.Background())
 	if requests != 1 {
 		t.Fatalf("cached check requests=%d want 1", requests)
 	}
 
 	Version = "v1.2.3-beta.1"
-	notice, err = StableUpdateNotice(context.Background())
-	if err != nil || notice != "" {
-		t.Fatalf("prerelease notice=%q err=%v", notice, err)
+	notice = CachedStableUpdateNotice()
+	if notice != "" {
+		t.Fatalf("prerelease notice=%q", notice)
 	}
+	RefreshStableUpdateCache(context.Background())
 	if requests != 1 {
 		t.Fatalf("prerelease check requests=%d want 1", requests)
 	}
 }
 
 func TestUpdateCheckCacheFreshness(t *testing.T) {
-	if !cacheFresh(updateCheckCache{CheckedAt: time.Now(), LatestVersion: "v1.2.3"}) {
+	if !cacheFresh(updateCheckCache{CheckedAt: time.Now(), LatestVersion: "1.2.3", Source: "npm"}) {
 		t.Fatal("fresh cache was not accepted")
 	}
-	if cacheFresh(updateCheckCache{CheckedAt: time.Now().Add(-updateCheckTTL - time.Second), LatestVersion: "v1.2.3"}) {
+	if cacheFresh(updateCheckCache{CheckedAt: time.Now().Add(-updateCheckTTL - time.Second), LatestVersion: "1.2.3", Source: "npm"}) {
 		t.Fatal("expired cache was accepted")
+	}
+	if cacheFresh(updateCheckCache{CheckedAt: time.Now(), LatestVersion: "v1.2.3", Source: "github"}) {
+		t.Fatal("cache from another source was accepted")
 	}
 }

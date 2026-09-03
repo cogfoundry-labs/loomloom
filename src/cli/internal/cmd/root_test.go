@@ -89,10 +89,15 @@ func TestRootReadsVerboseEnvironment(t *testing.T) {
 
 func TestRootWritesStableUpdateNoticeOnlyForTextOutput(t *testing.T) {
 	originalCheck := checkStableUpdateNotice
-	t.Cleanup(func() { checkStableUpdateNotice = originalCheck })
-	checkStableUpdateNotice = func(context.Context) (string, error) {
-		return "new LoomLoom stable release available: v1.2.4", nil
+	originalRefresh := refreshStableUpdateCache
+	t.Cleanup(func() {
+		checkStableUpdateNotice = originalCheck
+		refreshStableUpdateCache = originalRefresh
+	})
+	checkStableUpdateNotice = func() string {
+		return "new LoomLoom stable release available: v1.2.4"
 	}
+	refreshStableUpdateCache = func(context.Context) {}
 
 	cmd := &cobra.Command{Use: "template"}
 	var textErr bytes.Buffer

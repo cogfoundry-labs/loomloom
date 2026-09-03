@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,36 +12,51 @@ import (
 )
 
 const updateCheckTTL = 24 * time.Hour
+const updateRegistryURL = "https://registry.npmjs.org/@cogfoundry%2floomloom/latest"
 
 var userCacheDir = os.UserCacheDir
+var latestNPMURL = updateRegistryURL
 
 type updateCheckCache struct {
 	CheckedAt     time.Time `json:"checked_at"`
 	LatestVersion string    `json:"latest_version"`
+	Source        string    `json:"source"`
 }
 
-// StableUpdateNotice returns a non-empty human-readable notice only when the
-// running CLI is a stable release and a newer stable release is known. The
-// cache is a rate limiter, not a release source of truth.
-func StableUpdateNotice(ctx context.Context) (string, error) {
+// CachedStableUpdateNotice reads only local state, so it is safe on every
+// command path. The cache is a rate limiter, not a release source of truth.
+func CachedStableUpdateNotice() string {
 	if updateCheckDisabled() || ReleaseChannel(Version) != "stable" {
-		return "", nil
+		return ""
 	}
 
-	cache, cacheErr := loadUpdateCheckCache()
-	if cacheErr == nil && cacheFresh(cache) {
-		return updateNotice(Version, cache.LatestVersion), nil
-	}
-
-	status, err := CheckLatest(ctx)
+	cache, err := loadUpdateCheckCache()
 	if err != nil {
-		return "", err
+		return ""
+	}
+	return updateNotice(Version, cache.LatestVersion)
+}
+
+// RefreshStableUpdateCache refreshes stale stable-release state. Call it in a
+// goroutine: command execution must never wait for an update check.
+func RefreshStableUpdateCache(ctx context.Context) {
+	if updateCheckDisabled() || ReleaseChannel(Version) != "stable" {
+		return
+	}
+	cache, err := loadUpdateCheckCache()
+	if err == nil && cacheFresh(cache) {
+		return
+	}
+
+	latest, err := fetchLatestNPMVersion(ctx)
+	if err != nil {
+		return
 	}
 	_ = saveUpdateCheckCache(updateCheckCache{
 		CheckedAt:     time.Now().UTC(),
-		LatestVersion: status.LatestVersion,
+		LatestVersion: latest,
+		Source:        "npm",
 	})
-	return updateNotice(status.CurrentVersion, status.LatestVersion), nil
 }
 
 func updateNotice(current, latest string) string {
@@ -60,7 +76,39 @@ func updateCheckDisabled() bool {
 }
 
 func cacheFresh(cache updateCheckCache) bool {
-	return cache.LatestVersion != "" && !cache.CheckedAt.IsZero() && time.Since(cache.CheckedAt) < updateCheckTTL
+	return cache.Source == "npm" && cache.LatestVersion != "" && !cache.CheckedAt.IsZero() && time.Since(cache.CheckedAt) < updateCheckTTL
+}
+
+func fetchLatestNPMVersion(ctx context.Context) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, latestNPMURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "loomloom/"+strings.TrimSpace(Version))
+	response, err := (&http.Client{Timeout: defaultHTTPTimeout}).Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = response.Body.Close() }()
+	if response.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("npm registry: unexpected status %d", response.StatusCode)
+	}
+	var payload struct {
+		Version string `json:"version"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
+		return "", err
+	}
+	if !parseVersionForUpdate(payload.Version) {
+		return "", fmt.Errorf("npm registry: invalid stable version %q", payload.Version)
+	}
+	return payload.Version, nil
+}
+
+func parseVersionForUpdate(raw string) bool {
+	parsed, ok := parseSemver(raw)
+	return ok && parsed.prerelease == ""
 }
 
 func updateCheckCachePath() (string, error) {

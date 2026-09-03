@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -16,9 +15,9 @@ import (
 )
 
 const defaultHTTPTimeout = 30 * time.Second
-const updateNoticeTimeout = 750 * time.Millisecond
 
-var checkStableUpdateNotice = version.StableUpdateNotice
+var checkStableUpdateNotice = version.CachedStableUpdateNotice
+var refreshStableUpdateCache = version.RefreshStableUpdateCache
 
 type rootOptions struct {
 	server                    string
@@ -115,13 +114,10 @@ func writeStableUpdateNotice(cmd *cobra.Command, opts *rootOptions) {
 	if opts.output != "text" || cmd.Name() == "doctor" || envBool("LOOMLOOM_NO_UPDATE_CHECK") {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), updateNoticeTimeout)
-	defer cancel()
-	notice, err := checkStableUpdateNotice(ctx)
-	if err != nil || notice == "" {
-		return
+	if notice := checkStableUpdateNotice(); notice != "" {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "notice: %s\n", notice)
 	}
-	_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "notice: %s\n", notice)
+	go refreshStableUpdateCache(cmd.Context())
 }
 
 func newHTTPClient(opts *rootOptions) (*client.Client, error) {
