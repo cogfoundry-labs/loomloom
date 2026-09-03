@@ -51,6 +51,11 @@ jobs:
       - name: Install npm release tooling
         run: npm --prefix npm ci --ignore-scripts
 
+      - name: Verify the tagged general Skill is discoverable
+        run: |
+          source="https://github.com/${GITHUB_REPOSITORY}/tree/${RELEASE_TAG}/agent-guidance/loomloom"
+          npx --yes skills add "$source" --list | grep -F "loomloom"
+
       - name: Wait for the GitHub Release to be published
         if: github.event_name == 'push'
         env:

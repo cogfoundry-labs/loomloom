@@ -29,7 +29,7 @@ const expectedRepository = JSON.stringify(repository);
 
 function expectedFiles(record) {
   if (record.role === "main") {
-    return new Set(["LICENSE", "README.md", "bin/loomloom.cjs", "package.json", "platforms.json"]);
+    return new Set(["LICENSE", "README.md", "bin/installer.cjs", "bin/loomloom.cjs", "package.json", "platforms.json"]);
   }
   const platform = platforms.find((candidate) => `${candidate.os}-${candidate.cpu}` === record.platform);
   if (!platform) {
