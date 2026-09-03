@@ -94,7 +94,7 @@ jobs:
 
       - name: Verify the bundled Skill is locally installable
         run: |
-          source="dist/npm/loomloom/skill/loomloom"
+          source="${GITHUB_WORKSPACE}/dist/npm/loomloom/skill/loomloom"
           npx --yes skills add "$source" --skill loomloom --global --agent codex --yes --copy
           npx --yes skills ls --global --agent codex --json | grep -F '"loomloom"'
 
