@@ -30,6 +30,14 @@ loomloom skill package private upload <template-id> --file <agent-created.zip>
 
 The upload response is the private Package Head. Preserve its `archiveHash` and `validationId`. When publishing A, pass both values through `--skill-package-archive-hash` and `--skill-package-validation-id`; the CLI sends `skillPackage.mode=archive`. On every later replacement, repeat preview, confirmation, and the default local trial before uploading. The server validates the ZIP and replaces the Head with compare-and-swap; it does not record that local trial.
 
+Treat upload, review binding, and public distribution as three separate states:
+
+- The private Package Head with `validationStatus=passed` proves that the ZIP was uploaded and validated.
+- `skillPackageReview.pending.id` proves that a ZIP version was frozen and bound to the current Market review.
+- `skillPackage.available=true` proves that the approved ZIP is publicly downloadable.
+
+Never infer that upload or review binding failed from `skillPackage.available=false`, `unavailableReason=listing_not_listed`, or an empty Listing `packageHash`. Those fields describe public distribution or the execution snapshot, not the pending review binding. If a pending Listing response does not contain `skillPackageReview`, report the binding state as unknown for the current Server version; do not report it as unbound.
+
 To inspect or remove the private Head:
 
 ```bash

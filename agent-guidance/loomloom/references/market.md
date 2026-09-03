@@ -132,6 +132,8 @@ loomloom listing relist <listing-id>
 loomloom listing withdraw <listing-id>
 ```
 
+For a Listing under review, distinguish the pending review package from the public package. `skillPackageReview.pending` means the ZIP is bound to that review. `skillPackage.available=false` with `unavailableReason=listing_not_listed` only means it is not publicly downloadable before approval; it is not evidence of a failed upload or binding. An empty Listing `packageHash` is also not a Skill Package binding signal.
+
 - `listing update` changes the public profile for review; it does not change price or execution version.
 - `unlist` stops new executions.
 - `relist` resumes listing when allowed.
