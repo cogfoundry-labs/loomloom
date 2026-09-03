@@ -16,6 +16,9 @@ import (
 
 const defaultHTTPTimeout = 30 * time.Second
 
+var checkStableUpdateNotice = version.CachedStableUpdateNotice
+var refreshStableUpdateCache = version.RefreshStableUpdateCache
+
 type rootOptions struct {
 	server                    string
 	token                     string
@@ -66,6 +69,7 @@ func NewRootCmd() *cobra.Command {
 					return err
 				}
 			}
+			writeStableUpdateNotice(cmd, opts)
 			return nil
 		},
 	}
@@ -104,6 +108,16 @@ func NewRootCmd() *cobra.Command {
 		newServerCmd(opts),
 	)
 	return cmd
+}
+
+func writeStableUpdateNotice(cmd *cobra.Command, opts *rootOptions) {
+	if opts.output != "text" || cmd.Name() == "doctor" || envBool("LOOMLOOM_NO_UPDATE_CHECK") {
+		return
+	}
+	if notice := checkStableUpdateNotice(); notice != "" {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "notice: %s\n", notice)
+	}
+	go refreshStableUpdateCache(cmd.Context())
 }
 
 func newHTTPClient(opts *rootOptions) (*client.Client, error) {
