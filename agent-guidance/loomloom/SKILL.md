@@ -100,14 +100,15 @@ Business conversation → inspect current LoomLoom Server capabilities
 → Check with the current LoomLoom Server → User confirms creation
 → Create or append a version
 → LoomLoom-only: continue normally; do not raise Skill Package with the creator
-→ Agent-assisted: Agent creates the required local Skill
-→ creator chooses whether to upload and bind that local Skill Package
-→ upload chosen: preview → creator confirms → local trial → upload private Package Head
+→ Agent-assisted: explain the required local capabilities before creation
+→ after obtaining template_id: create the local Skill → preview → creator confirms upload
+→ local trial → upload private Package Head → verify validationStatus=passed
+→ only then complete authoring and allow Market publication
 ```
 
-Before classifying a request, use current Server facts rather than intuition: resolve its input/output modalities with `loomloom capability resolve`, and inspect `authoring-context`, `contracts`, or `model list` when needed. If the supported TemplateSpec and hosted execution can complete the requested work, treat it as LoomLoom-only and do not mention a Skill Package to the creator. Only work that requires Agent-local code, files, scripts, HTML output handling, local tools, or runtime decisions is Agent-assisted.
+Before classifying a request, use current Server facts rather than intuition: resolve its input/output modalities with `loomloom capability resolve`, and inspect `authoring-context`, `contracts`, or `model list` when needed. If the supported TemplateSpec and hosted execution can complete the requested work, treat it as LoomLoom-only and do not mention a Skill Package to the creator. Treat the work as Agent-assisted when a required capability is not available from the current Server and must be supplied locally, including online search or current information, external websites or APIs, browser interaction, local code or scripts, local files or tools, HTML or special-format handling, or runtime decisions.
 
-An Agent-assisted package is built by the Agent, not by the CLI. The Agent creates the required local Skill, then asks the creator, as part of the private-template creation flow, whether that local Skill Package should be uploaded and bound to the template. The actual upload happens only after the template has a `template_id`. If the creator declines, do not upload a ZIP. If the creator chooses upload, show the package preview, obtain confirmation, and run the default local trial before uploading. Every later package replacement repeats preview, creator confirmation, and the default local trial.
+An Agent-assisted package is built by the Agent, not by the CLI. Explain the required Agent-local capabilities and include the local Skill in the TemplatePlan before creating the private template. The actual upload happens only after the template has a `template_id`. Show the package preview, obtain confirmation, and run the default local trial before uploading. Read the private Package Head back and require `validationStatus=passed` before declaring authoring complete or publishing the template to Market. If the creator declines the required local assistance or package upload, or if creation, trial, upload, or validation fails, stop this authoring and publication path; do not publish a template that cannot deliver its promised behavior. Every later package replacement repeats preview, creator confirmation, the default local trial, upload, and validation. Do not present backend package modes or backend-generated packages as user choices.
 
 ### Legacy TemplateSpec v1 upgrade gate
 

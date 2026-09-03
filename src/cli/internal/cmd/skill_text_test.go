@@ -305,6 +305,51 @@ func TestBundledSkillGuidesLegacyTemplateSpecV1Upgrade(t *testing.T) {
 	}
 }
 
+func TestBundledSkillRequiresValidatedPackageForAgentAssistedTemplates(t *testing.T) {
+	root := findRepoRoot(t)
+	skillData, err := os.ReadFile(filepath.Join(root, "agent-guidance", "loomloom", "SKILL.md"))
+	if err != nil {
+		t.Fatalf("read SKILL.md: %v", err)
+	}
+	localSkills := readCanonicalSkillReference(t, root, "local-skills.md")
+
+	for _, want := range []string{
+		"online search or current information",
+		"external websites or APIs",
+		"browser interaction",
+		"local code or scripts",
+		"before creating the private template",
+		"require `validationStatus=passed`",
+		"stop this authoring and publication path",
+		"Do not present backend package modes or backend-generated packages as user choices",
+	} {
+		if !strings.Contains(string(skillData), want) {
+			t.Fatalf("agent-guidance/loomloom/SKILL.md missing %q", want)
+		}
+	}
+	for _, want := range []string{
+		"online search or current information",
+		"include the local Skill in the TemplatePlan before creating the private template",
+		"Do not present package modes or backend package-generation behavior as user choices",
+		"loomloom skill package private show <template-id>",
+		"Require `validationStatus=passed`",
+		"do not publish the incomplete template to Market",
+	} {
+		if !strings.Contains(localSkills, want) {
+			t.Fatalf("%s/local-skills.md missing %q", canonicalSkillReferencesDir, want)
+		}
+	}
+	for _, forbidden := range []string{
+		"A. Upload and bind the local Skill Package",
+		"B. Do not upload the local Skill Package",
+		"creator chooses whether to upload and bind",
+	} {
+		if strings.Contains(string(skillData), forbidden) || strings.Contains(localSkills, forbidden) {
+			t.Fatalf("bundled Skill still contains optional incomplete package path %q", forbidden)
+		}
+	}
+}
+
 func TestBundledSkillsExposeTemplateSpecDocsLanguageOption(t *testing.T) {
 	root := findRepoRoot(t)
 	text := readCanonicalSkillReference(t, root, "template-spec.md")

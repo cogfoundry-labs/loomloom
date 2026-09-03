@@ -9,18 +9,11 @@ Local package installation is not template execution. It must not create a run, 
 Before deciding whether a private template needs a local Skill, determine what the current LoomLoom Server can author and execute. Resolve the requested input/output modalities with `loomloom capability resolve`; inspect `template-spec authoring-context`, `template-spec contracts`, or `model list` when needed. Do not classify work from its title or apparent simplicity alone.
 
 - If the supported TemplateSpec and hosted LoomLoom execution can complete the work, create the private template normally. Do not mention a Skill Package, create a local Skill, or ask the creator to choose a package mode.
-- If it needs Agent-local code, files, scripts, HTML output handling, local tools, or runtime decisions, explain the Agent-side work. The Agent creates the required local Skill and asks the creator, during the private-template creation flow, whether that local Skill Package should be uploaded and bound to the template:
+- If a required capability is unavailable from the current Server and must be supplied through online search or current information, external websites or APIs, browser interaction, local code or scripts, local files or tools, HTML or special-format handling, or runtime decisions, classify the template as Agent-assisted.
 
-```text
-A. Upload and bind the local Skill Package
-B. Do not upload the local Skill Package
-```
+For an Agent-assisted template, explain the required local capabilities and include the local Skill in the TemplatePlan before creating the private template. Ask whether the creator wants to continue with that complete Agent-assisted solution. Do not present package modes or backend package-generation behavior as user choices.
 
-Do not expose raw request fields as the user-facing choice. The actual upload and binding require a `template_id`, so obtain it before uploading. Internally, A maps to `skillPackage.mode=archive`.
-
-For B, keep the local Skill unbound and do not upload a custom ZIP. When publishing, omit `--skill-package-archive-hash` and `--skill-package-validation-id`.
-
-For A, show the creator a preview before uploading: name, purpose, inputs, outputs, effect, permissions, and local capabilities. Obtain explicit confirmation, run the package locally by default, then upload the Agent-created ZIP:
+After the creator confirms the complete solution, create the private template to obtain its `template_id`, then create the required local Skill. Show the creator a preview before uploading: name, purpose, inputs, outputs, effect, permissions, and local capabilities. Obtain explicit upload confirmation, run the package locally by default, then upload the Agent-created ZIP. If the creator declines the required local assistance or upload, or if creation, trial, upload, or validation fails, stop; do not publish the incomplete template to Market.
 
 When a custom package invokes LoomLoom, use the current platform's official API documentation where available. The package must implement the applicable secure authentication flow and, before every paid run, precheck or quote, present the returned fee, obtain the user's explicit confirmation, and only then submit the run.
 
@@ -28,7 +21,21 @@ When a custom package invokes LoomLoom, use the current platform's official API 
 loomloom skill package private upload <template-id> --file <agent-created.zip>
 ```
 
-The upload response is the private Package Head. Preserve its `archiveHash` and `validationId`. When publishing A, pass both values through `--skill-package-archive-hash` and `--skill-package-validation-id`; the CLI sends `skillPackage.mode=archive`. On every later replacement, repeat preview, confirmation, and the default local trial before uploading. The server validates the ZIP and replaces the Head with compare-and-swap; it does not record that local trial.
+Read the private Package Head back after upload:
+
+```bash
+loomloom skill package private show <template-id>
+```
+
+Require `validationStatus=passed` before declaring the Agent-assisted authoring flow complete. Preserve its `archiveHash` and `validationId`, and pass both values through `--skill-package-archive-hash` and `--skill-package-validation-id` when publishing; the CLI uses them to freeze the exact creator-confirmed ZIP with the review. On every later replacement, repeat preview, confirmation, the default local trial, upload, and validation. The server validates the ZIP and replaces the Head with compare-and-swap; it does not record that local trial.
+
+Treat upload, review binding, and public distribution as three separate states:
+
+- The private Package Head with `validationStatus=passed` proves that the ZIP was uploaded and validated.
+- `skillPackageReview.pending.id` proves that a ZIP version was frozen and bound to the current Market review.
+- `skillPackage.available=true` proves that the approved ZIP is publicly downloadable.
+
+Never infer that upload or review binding failed from `skillPackage.available=false`, `unavailableReason=listing_not_listed`, or an empty Listing `packageHash`. Those fields describe public distribution or the execution snapshot, not the pending review binding. If a pending Listing response does not contain `skillPackageReview`, report the binding state as unknown for the current Server version; do not report it as unbound.
 
 To inspect or remove the private Head:
 

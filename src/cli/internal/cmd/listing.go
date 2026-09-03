@@ -15,19 +15,37 @@ import (
 // creatorMarketListingResponse mirrors the backend marketListingResponse
 // returned by /creators/me/marketListings endpoints.
 type creatorMarketListingResponse struct {
-	ID                          string         `json:"id"`
-	DisplayName                 string         `json:"displayName"`
-	Description                 string         `json:"description"`
-	Status                      string         `json:"status"`
-	PublishedVersionID          string         `json:"publishedVersionId"`
-	ListingVersionID            string         `json:"listingVersionId"`
-	ReviewStatus                string         `json:"reviewStatus"`
-	ReviewReason                string         `json:"reviewReason"`
-	TaskFixedFeeT               *flexInt64     `json:"taskFixedFeeT,omitempty"`
-	TaskFixedFee                *moneyResponse `json:"taskFixedFee,omitempty"`
-	Currency                    string         `json:"currency"`
-	SaleStatus                  string         `json:"saleStatus"`
-	ExecutionAvailabilityStatus string         `json:"executionAvailabilityStatus"`
+	ID                          string                    `json:"id"`
+	DisplayName                 string                    `json:"displayName"`
+	Description                 string                    `json:"description"`
+	Status                      string                    `json:"status"`
+	PublishedVersionID          string                    `json:"publishedVersionId"`
+	ListingVersionID            string                    `json:"listingVersionId"`
+	ReviewRequestID             string                    `json:"reviewRequestId"`
+	ReviewStatus                string                    `json:"reviewStatus"`
+	ReviewReason                string                    `json:"reviewReason"`
+	TaskFixedFeeT               *flexInt64                `json:"taskFixedFeeT,omitempty"`
+	TaskFixedFee                *moneyResponse            `json:"taskFixedFee,omitempty"`
+	Currency                    string                    `json:"currency"`
+	SaleStatus                  string                    `json:"saleStatus"`
+	ExecutionAvailabilityStatus string                    `json:"executionAvailabilityStatus"`
+	SkillPackage                skillPackageSummary       `json:"skillPackage"`
+	SkillPackageReview          *skillPackageReviewStatus `json:"skillPackageReview,omitempty"`
+}
+
+type listingSkillPackageVersionStatus struct {
+	ID                             string `json:"id"`
+	Mode                           string `json:"mode"`
+	Status                         string `json:"status"`
+	DistributionAvailabilityStatus string `json:"distributionAvailabilityStatus"`
+	ArchiveHash                    string `json:"archiveHash"`
+	ValidationID                   string `json:"validationId"`
+	SizeBytes                      int64  `json:"sizeBytes"`
+}
+
+type skillPackageReviewStatus struct {
+	CurrentPublished *listingSkillPackageVersionStatus `json:"currentPublished,omitempty"`
+	Pending          *listingSkillPackageVersionStatus `json:"pending,omitempty"`
 }
 
 type creatorMarketListingsResponse struct {
@@ -234,6 +252,9 @@ func newListingUpdateSkillPackageCmd(opts *rootOptions) *cobra.Command {
 			var response map[string]any
 			path := "/creators/me/marketListings/" + url.PathEscape(strings.TrimSpace(args[0])) + ":updateSkillPackage"
 			if err := httpClient.PostProductJSON(ctx, path, map[string]any{"requestId": resolvedRequestID, "skillPackage": selection}, &response); err != nil {
+				if strings.Contains(err.Error(), "listing_not_published") {
+					return fmt.Errorf("%w\nHint: update-skill-package only applies to an already published listing; bind the ZIP during the initial listing publish instead", err)
+				}
 				return err
 			}
 			return writeIndentedJSON(cmd.OutOrStdout(), response)
@@ -588,6 +609,7 @@ func printCreatorListingDetail(w io.Writer, listing creatorMarketListingResponse
 		{"status", listing.Status},
 		{"published_version_id", listing.PublishedVersionID},
 		{"listing_version_id", listing.ListingVersionID},
+		{"review_request_id", listing.ReviewRequestID},
 		{"review_status", listing.ReviewStatus},
 		{"review_reason", listing.ReviewReason},
 		{"task_fixed_fee", taskFixedFee},
@@ -599,6 +621,44 @@ func printCreatorListingDetail(w io.Writer, listing creatorMarketListingResponse
 		}
 		if _, err := fmt.Fprintf(tw, "%s\t%s\n", row[0], oneLine(row[1])); err != nil {
 			return err
+		}
+	}
+	if listing.SkillPackageReview == nil {
+		if strings.Contains(strings.ToLower(listing.ReviewStatus), "pending") {
+			if _, err := fmt.Fprintln(tw, "skill_package_review_binding\tunknown_from_current_server"); err != nil {
+				return err
+			}
+		}
+	} else if pending := listing.SkillPackageReview.Pending; pending != nil && strings.TrimSpace(pending.ID) != "" {
+		for _, row := range [][2]string{
+			{"skill_package_review_binding", "bound"},
+			{"skill_package_review_version_id", pending.ID},
+			{"skill_package_review_status", pending.Status},
+			{"skill_package_review_mode", pending.Mode},
+			{"skill_package_review_archive_hash", pending.ArchiveHash},
+			{"skill_package_review_validation_id", pending.ValidationID},
+			{"skill_package_review_size_bytes", fmt.Sprintf("%d", pending.SizeBytes)},
+		} {
+			if row[1] == "" {
+				continue
+			}
+			if _, err := fmt.Fprintf(tw, "%s\t%s\n", row[0], oneLine(row[1])); err != nil {
+				return err
+			}
+		}
+	} else {
+		if _, err := fmt.Fprintln(tw, "skill_package_review_binding\tnone"); err != nil {
+			return err
+		}
+	}
+	if listing.SkillPackageReview != nil || listing.SkillPackage.UnavailableReason != "" || listing.SkillPackage.SkillPackageVersionID != "" {
+		if _, err := fmt.Fprintf(tw, "skill_package_public_available\t%t\n", listing.SkillPackage.Available); err != nil {
+			return err
+		}
+		if listing.SkillPackage.UnavailableReason != "" {
+			if _, err := fmt.Fprintf(tw, "skill_package_public_unavailable_reason\t%s\n", oneLine(listing.SkillPackage.UnavailableReason)); err != nil {
+				return err
+			}
 		}
 	}
 	return tw.Flush()

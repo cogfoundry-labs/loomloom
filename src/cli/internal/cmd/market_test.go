@@ -116,6 +116,8 @@ func TestMarketPublishUsesAutoWhenTemplateVersionChanges(t *testing.T) {
 
 	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
 	cmd := newListingPublishCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
 	cmd.SetArgs([]string{
 		"template-1",
 		"--listing-id", "listing-1",
@@ -141,12 +143,18 @@ func TestMarketPublishSendsArchiveSkillPackageSelection(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":"listing-1"}`))
+		_, _ = w.Write([]byte(`{
+			"id":"listing-1",
+			"skillPackage":{"available":false,"unavailableReason":"listing_not_listed"},
+			"skillPackageReview":{"pending":{"id":"skill-package-version-1","status":"pending","archiveHash":"sha256:archive"}}
+		}`))
 	}))
 	defer server.Close()
 
 	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
 	cmd := newListingPublishCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
 	cmd.SetArgs([]string{
 		"template-1", "--template-version-id", "version-1", "--display-name", "PRD Review Bot", "--task-fixed-fee", "0.5",
 		"--skill-package-archive-hash", "sha256:archive", "--skill-package-validation-id", "validation-1",
@@ -161,6 +169,12 @@ func TestMarketPublishSendsArchiveSkillPackageSelection(t *testing.T) {
 	if selection["mode"] != "archive" || selection["expectedArchiveHash"] != "sha256:archive" || selection["expectedValidationId"] != "validation-1" {
 		t.Fatalf("unexpected skill package selection: %#v", selection)
 	}
+	assertContainsAll(t, out.String(),
+		`"unavailableReason": "listing_not_listed"`,
+		`"skillPackageReview": {`,
+		`"id": "skill-package-version-1"`,
+		`"archiveHash": "sha256:archive"`,
+	)
 }
 
 func TestMarketPublishRejectsIncompleteSkillPackageSelection(t *testing.T) {
