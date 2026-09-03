@@ -39,13 +39,20 @@ through the npm Registry. It does not download a binary from GitHub during an
 npm lifecycle script:
 
 ```bash
-npm install -g @cogfoundry/loomloom@beta
+npm install -g @cogfoundry/loomloom
 loomloom --version
 ```
 
 For a temporary environment or CI job:
 
 ```bash
+npx --yes @cogfoundry/loomloom --version
+```
+
+To install the current Beta instead of the stable release:
+
+```bash
+npm install -g @cogfoundry/loomloom@beta
 npx --yes @cogfoundry/loomloom@beta --version
 ```
 
