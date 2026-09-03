@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestCompareVersions(t *testing.T) {
@@ -91,5 +93,67 @@ func TestCheckLatest(t *testing.T) {
 	}
 	if status.UpgradeHint == "" {
 		t.Fatalf("UpgradeHint should not be empty")
+	}
+}
+
+func TestStableUpdateCacheRefreshesStableReleaseAndSkipsPrereleases(t *testing.T) {
+	origVersion := Version
+	origUserCacheDir := userCacheDir
+	origLatestNPMURL := latestNPMURL
+	t.Cleanup(func() {
+		Version = origVersion
+		userCacheDir = origUserCacheDir
+		latestNPMURL = origLatestNPMURL
+		_ = os.Unsetenv("LOOMLOOM_NO_UPDATE_CHECK")
+	})
+	cacheDir := t.TempDir()
+	userCacheDir = func() (string, error) { return cacheDir, nil }
+
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		_, _ = w.Write([]byte(`{"version":"1.2.4"}`))
+	}))
+	defer server.Close()
+	latestNPMURL = server.URL
+
+	Version = "v1.2.3"
+	if notice := CachedStableUpdateNotice(); notice != "" {
+		t.Fatalf("cold cache notice=%q want empty", notice)
+	}
+	RefreshStableUpdateCache(context.Background())
+	if requests != 1 {
+		t.Fatalf("requests=%d want 1", requests)
+	}
+
+	notice := CachedStableUpdateNotice()
+	if !strings.Contains(notice, "1.2.4") {
+		t.Fatalf("cached notice=%q want latest release", notice)
+	}
+	RefreshStableUpdateCache(context.Background())
+	if requests != 1 {
+		t.Fatalf("cached check requests=%d want 1", requests)
+	}
+
+	Version = "v1.2.3-beta.1"
+	notice = CachedStableUpdateNotice()
+	if notice != "" {
+		t.Fatalf("prerelease notice=%q", notice)
+	}
+	RefreshStableUpdateCache(context.Background())
+	if requests != 1 {
+		t.Fatalf("prerelease check requests=%d want 1", requests)
+	}
+}
+
+func TestUpdateCheckCacheFreshness(t *testing.T) {
+	if !cacheFresh(updateCheckCache{CheckedAt: time.Now(), LatestVersion: "1.2.3", Source: "npm"}) {
+		t.Fatal("fresh cache was not accepted")
+	}
+	if cacheFresh(updateCheckCache{CheckedAt: time.Now().Add(-updateCheckTTL - time.Second), LatestVersion: "1.2.3", Source: "npm"}) {
+		t.Fatal("expired cache was accepted")
+	}
+	if cacheFresh(updateCheckCache{CheckedAt: time.Now(), LatestVersion: "v1.2.3", Source: "github"}) {
+		t.Fatal("cache from another source was accepted")
 	}
 }

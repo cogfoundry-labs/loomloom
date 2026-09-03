@@ -13,12 +13,11 @@ Do not use LoomLoom for ordinary one-off writing or chat unless the user explici
 
 When asked to install or update LoomLoom:
 
-1. Use the distributed `skills/loomloom` directory as the Skill source.
-2. Determine the current Agent's supported Skill root from its runtime configuration or official conventions.
-3. Use `<agent-skill-root>/loomloom` as the complete destination.
-4. Pass that destination to the repository installer with `--skill-dir` on macOS/Linux or `-SkillDir` on Windows.
-5. Do not guess the Skill root or fall back to another Agent's directory. If it is unknown, ask the user for it.
-6. Verify that `<agent-skill-root>/loomloom/SKILL.md` exists after installation.
+1. For the npm one-command setup, require one explicit `skills` Agent id. Run `npx @cogfoundry/loomloom@<version> install --agent <agent-id> --yes`; the setup command verifies that the selected Agent reports the `loomloom` Skill.
+2. Do not omit `--agent` in an Agent or non-interactive session, and do not install the Skill for every detected Agent.
+3. For the shell or PowerShell installers, determine the current Agent's supported Skill root from its runtime configuration or official conventions, then use `<agent-skill-root>/loomloom` as the complete destination with `--skill-dir` or `-SkillDir`.
+4. Do not guess a Skill root or fall back to another Agent's directory. If the current Agent or root is unknown, ask the user for it.
+5. Verify either the npm setup success result or `<agent-skill-root>/loomloom/SKILL.md` after the explicit-directory path.
 
 ## Core Objects
 
@@ -150,9 +149,12 @@ loomloom model list --step-type <step-type> --output json
 
 First classify every v1 Step by its business input and output modalities, then
 call `capability resolve` for that shape. Its returned matches are the primary
-authoring route: a `capabilityProfile` match carries the current Profile, ports,
-and eligible models; a `fixedModelContract` match carries the exact
-`subjectRevisionId` and ports. Use `model types`, `model list`,
+authoring route: a `capabilityProfile` match carries a fixed interface, the
+current operational default, and the live eligible-model set; a
+`fixedModelContract` match carries the exact `subjectRevisionId` and ports. Use
+the Profile when callers need a replaceable model set. Use the Fixed Model
+Contract when the workflow requires one exact model or its dedicated interface.
+Use `model types`, `model list`,
 `authoring-context`, and `contracts` only to diagnose or inspect the lower-level
 facts behind that resolution. If the resolver returns `not_supported`, stop and
 report `needs_authoring_capability`; never infer support from a raw model name

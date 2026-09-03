@@ -105,6 +105,7 @@ type modelCapabilityProfileOption struct {
 	ProfileHash     string                         `json:"profileHash"`
 	IsDefault       bool                           `json:"isDefault"`
 	InputPorts      []templateAuthoringProfilePort `json:"inputPorts"`
+	Dynamic         bool                           `json:"dynamic,omitempty"`
 }
 
 type templateAuthoringContractsResponse struct {
@@ -116,15 +117,42 @@ type templateAuthoringContextResponse struct {
 }
 
 type templateAuthoringProfile struct {
-	ProfileID      string                         `json:"profileId"`
-	Revision       string                         `json:"revision"`
-	CanonicalHash  string                         `json:"canonicalHash"`
-	Capability     string                         `json:"capability"`
-	Endpoint       string                         `json:"endpoint"`
-	Compiler       string                         `json:"compiler"`
-	Stream         bool                           `json:"stream"`
-	InputPorts     []templateAuthoringProfilePort `json:"inputPorts"`
-	EligibleModels []modelSummary                 `json:"eligibleModels"`
+	ProfileID             string                              `json:"profileId"`
+	Revision              string                              `json:"revision"`
+	CanonicalHash         string                              `json:"canonicalHash"`
+	Capability            string                              `json:"capability"`
+	Endpoint              string                              `json:"endpoint"`
+	Compiler              string                              `json:"compiler"`
+	Stream                bool                                `json:"stream"`
+	InputPorts            []templateAuthoringProfilePort      `json:"inputPorts"`
+	Output                templateAuthoringProfileOutput      `json:"output"`
+	EligibleModels        []modelSummary                      `json:"eligibleModels"`
+	Dynamic               *bool                               `json:"dynamic,omitempty"`
+	Definition            *dynamicCapabilityProfileDefinition `json:"definition,omitempty"`
+	Operations            *dynamicCapabilityProfileOperations `json:"operations,omitempty"`
+	DefaultModelAvailable *bool                               `json:"defaultModelAvailable,omitempty"`
+}
+
+type templateAuthoringProfileOutput struct {
+	Text  bool `json:"text"`
+	Usage bool `json:"usage"`
+}
+
+type dynamicCapabilityProfileDefinition struct {
+	SchemaVersion string                         `json:"schemaVersion"`
+	ExecutionUnit string                         `json:"executionUnit"`
+	Operation     string                         `json:"operation"`
+	Inputs        []templateAuthoringProfilePort `json:"inputs"`
+	Outputs       []templateAuthoringProfilePort `json:"outputs"`
+	Constraints   map[string]any                 `json:"constraints"`
+}
+
+type dynamicCapabilityProfileOperations struct {
+	DisplayName    string `json:"displayName"`
+	Description    string `json:"description"`
+	DefaultModelID string `json:"defaultModelId"`
+	SortOrder      int32  `json:"sortOrder"`
+	Recommended    bool   `json:"recommended"`
 }
 
 type templateAuthoringProfilePort struct {
@@ -221,7 +249,7 @@ func newTemplateSpecAuthoringContextCmd(opts *rootOptions) *cobra.Command {
 				return err
 			}
 			tw := newTabWriter(cmd.OutOrStdout())
-			if _, err := fmt.Fprintln(tw, "profile_id\trevision\tcapability\tendpoint\teligible_models"); err != nil {
+			if _, err := fmt.Fprintln(tw, "profile_id\trevision\tcapability\tendpoint\tdynamic\toperation\tdefault_model\tdefault_available\tinputs\toutputs\teligible_models"); err != nil {
 				return err
 			}
 			for _, profile := range resp.Profiles {
@@ -229,13 +257,47 @@ func newTemplateSpecAuthoringContextCmd(opts *rootOptions) *cobra.Command {
 				for _, candidate := range profile.EligibleModels {
 					modelIDs = append(modelIDs, candidate.ModelID)
 				}
-				if _, err := fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", profile.ProfileID, profile.Revision, profile.Capability, profile.Endpoint, strings.Join(modelIDs, ",")); err != nil {
+				dynamic, defaultAvailable := "-", "-"
+				if profile.Dynamic != nil {
+					dynamic = fmt.Sprint(*profile.Dynamic)
+				}
+				if profile.DefaultModelAvailable != nil {
+					defaultAvailable = fmt.Sprint(*profile.DefaultModelAvailable)
+				}
+				operation, defaultModel, inputs, outputs := "", "", formatTemplateAuthoringPorts(profile.InputPorts), ""
+				if profile.Definition != nil {
+					operation = profile.Definition.Operation
+					inputs = formatTemplateAuthoringPorts(profile.Definition.Inputs)
+					outputs = formatTemplateAuthoringPorts(profile.Definition.Outputs)
+				}
+				if profile.Operations != nil {
+					defaultModel = profile.Operations.DefaultModelID
+				}
+				if _, err := fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", profile.ProfileID, profile.Revision, profile.Capability, profile.Endpoint, dynamic, operation, defaultModel, defaultAvailable, inputs, outputs, strings.Join(modelIDs, ",")); err != nil {
 					return err
 				}
 			}
 			return tw.Flush()
 		},
 	}
+}
+
+func formatTemplateAuthoringPorts(ports []templateAuthoringProfilePort) string {
+	formatted := make([]string, 0, len(ports))
+	for _, port := range ports {
+		typeName := port.ValueType
+		if typeName == "" {
+			typeName = port.Kind
+		}
+		if len(port.AcceptedMIMETypes) > 0 {
+			typeName += "(" + strings.Join(port.AcceptedMIMETypes, ",") + ")"
+		}
+		if port.Required {
+			typeName += "!"
+		}
+		formatted = append(formatted, port.PortID+":"+typeName)
+	}
+	return strings.Join(formatted, ",")
 }
 
 func newTemplateSpecContractsCmd(opts *rootOptions) *cobra.Command {

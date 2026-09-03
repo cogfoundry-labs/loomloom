@@ -12,6 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `template-spec authoring-context` now exposes dynamic Capability Profile
+  definitions, operations defaults, default-model availability, and fixed
+  input/output ports for text, image, and video authoring.
+- The bundled LoomLoom Agent Skill now selects dynamic multimedia Profiles when
+  callers need a replaceable model set, while retaining Fixed Model Contracts
+  for exact-model or dedicated-interface workflows.
+
+### Changed
+- The text authoring-context table includes dynamic Profile details while
+  retaining the existing identity and legacy contract columns.
+- `capability resolve` text output no longer appends an empty revision suffix to
+  dynamic Profile IDs.
+
 ## [0.3.3] - 2026-08-26
 
 ### Added

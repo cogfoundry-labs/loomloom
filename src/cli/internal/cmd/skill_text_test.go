@@ -42,7 +42,7 @@ func TestBundledSkillsMatchUserLanguage(t *testing.T) {
 	}
 }
 
-func TestBundledSkillDocumentsUnifiedInstallation(t *testing.T) {
+func TestBundledSkillDocumentsInstallationPaths(t *testing.T) {
 	root := findRepoRoot(t)
 	for _, rel := range bundledSkillDirs {
 		text, err := os.ReadFile(filepath.Join(root, rel, "SKILL.md"))
@@ -50,16 +50,14 @@ func TestBundledSkillDocumentsUnifiedInstallation(t *testing.T) {
 			t.Fatalf("read %s: %v", rel, err)
 		}
 		for _, want := range []string{
-			"Use the distributed `skills/loomloom` directory as the Skill source",
-			"Determine the current Agent's supported Skill root from its runtime configuration or official conventions",
-			"Use `<agent-skill-root>/loomloom` as the complete destination",
-			"`--skill-dir` on macOS/Linux or `-SkillDir` on Windows",
-			"Do not guess the Skill root or fall back to another Agent's directory",
-			"If it is unknown, ask the user for it",
-			"Verify that `<agent-skill-root>/loomloom/SKILL.md` exists after installation",
+			"npx @cogfoundry/loomloom@<version> install --agent <agent-id> --yes",
+			"Do not omit `--agent` in an Agent or non-interactive session",
+			"For the shell or PowerShell installers, determine the current Agent's supported Skill root",
+			"Do not guess a Skill root or fall back to another Agent's directory",
+			"Verify either the npm setup success result or `<agent-skill-root>/loomloom/SKILL.md`",
 		} {
 			if !strings.Contains(string(text), want) {
-				t.Errorf("%s missing unified installation rule %q", rel, want)
+				t.Errorf("%s missing installation rule %q", rel, want)
 			}
 		}
 	}
@@ -249,9 +247,13 @@ func TestBundledSkillsUseTemplateSpecV2Bindings(t *testing.T) {
 		"Use `sequence` for one ordered heterogeneous multimodal value",
 		"Use `merge` for homogeneous Artifact collections",
 		"TemplateSpec v2 does not provide dynamic-cardinality Step fan-out",
-		"An empty result from `template-spec contracts <text-model-id>`",
+		"An empty result from",
+		"`template-spec contracts <text-model-id>` is expected",
 		"`executionBinding.kind=capabilityProfile`",
-		"must never be reported as blocking such a workflow",
+		"A Capability Profile exposes one fixed input/output interface",
+		"Do not restrict Profile use to text Steps",
+		"`profile_default_model_unavailable`",
+		"choose from the user's model policy",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("%s missing %q", canonicalSkillReferencesDir, want)
@@ -261,6 +263,8 @@ func TestBundledSkillsUseTemplateSpecV2Bindings(t *testing.T) {
 		"Connect steps with `dependsOn` and `upstreamBindings`",
 		"`allowModelOverride=true`",
 		"`inputSchema.sampleRows",
+		"Do not look for an image-generation Capability Profile",
+		"Media generation uses the exact target model's Fixed Model Contract",
 	} {
 		if strings.Contains(text, forbidden) {
 			t.Fatalf("%s still recommends retired v1 authoring with %q", canonicalSkillReferencesDir, forbidden)

@@ -124,10 +124,12 @@ availability. Agents should use the returned match before choosing lower-level
 commands.
 
 `template-spec authoring-context` is the lower-level target-environment query
-for all Capability Profiles. It returns Profile IDs, current revisions and
-ports, plus eligible models. Use it for diagnosis or full Profile inventory;
-normal authoring should consume the Profile returned by `capability resolve`
-and submit only `profileId`.
+for all Capability Profiles. For a dynamic Profile it returns the stable
+`profileId`, fixed input/output `definition`, current operational default and
+`defaultModelAvailable`, plus the live `eligibleModels`. Dynamic Profiles have
+no authoring revision; normal authoring submits only `profileId` and omits
+`profileRevision`. Use this command for diagnosis or full Profile inventory;
+normal authoring should consume the Profile returned by `capability resolve`.
 
 `template-spec contracts` lists enabled per-model `fixedModelContract`
 authoring contracts. It is not a general model-usability check. In particular,

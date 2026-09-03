@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -83,6 +84,34 @@ func TestRootReadsVerboseEnvironment(t *testing.T) {
 	flag := cmd.PersistentFlags().Lookup("verbose")
 	if flag == nil || flag.DefValue != "true" {
 		t.Fatalf("verbose default=%v want true from environment", flag)
+	}
+}
+
+func TestRootWritesStableUpdateNoticeOnlyForTextOutput(t *testing.T) {
+	originalCheck := checkStableUpdateNotice
+	originalRefresh := refreshStableUpdateCache
+	t.Cleanup(func() {
+		checkStableUpdateNotice = originalCheck
+		refreshStableUpdateCache = originalRefresh
+	})
+	checkStableUpdateNotice = func() string {
+		return "new LoomLoom stable release available: v1.2.4"
+	}
+	refreshStableUpdateCache = func(context.Context) {}
+
+	cmd := &cobra.Command{Use: "template"}
+	var textErr bytes.Buffer
+	cmd.SetErr(&textErr)
+	writeStableUpdateNotice(cmd, &rootOptions{output: "text"})
+	if !strings.Contains(textErr.String(), "new LoomLoom stable release available: v1.2.4") {
+		t.Fatalf("text notice=%q", textErr.String())
+	}
+
+	var jsonErr bytes.Buffer
+	cmd.SetErr(&jsonErr)
+	writeStableUpdateNotice(cmd, &rootOptions{output: "json"})
+	if jsonErr.Len() != 0 {
+		t.Fatalf("JSON output received update notice: %q", jsonErr.String())
 	}
 }
 

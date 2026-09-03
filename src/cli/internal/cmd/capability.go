@@ -102,7 +102,10 @@ func printAuthoringCapabilityResolution(cmd *cobra.Command, resp authoringCapabi
 	for _, match := range resp.Matches {
 		authority := ""
 		if match.Profile != nil {
-			authority = match.Profile.ProfileID + "@" + match.Profile.Revision
+			authority = match.Profile.ProfileID
+			if match.Profile.Revision != "" {
+				authority += "@" + match.Profile.Revision
+			}
 		}
 		if match.Contract != nil {
 			authority = match.Contract.SubjectRevisionID
