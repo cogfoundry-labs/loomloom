@@ -1,14 +1,17 @@
 name: npm release
 
 on:
+  push:
+    tags:
+      - "v*-beta.*"
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing published LoomLoom Beta release tag (vX.Y.Z-beta.N)
+        description: Existing published LoomLoom Beta release tag (vX.Y.Z-beta.N); Beta tag pushes publish automatically
         required: true
         type: string
       action:
-        description: Prepare only, or publish after the npm human gate and Trusted Publisher setup
+        description: Prepare only, or manually repair a Beta publication after Trusted Publisher setup
         required: true
         type: choice
         default: prepare
@@ -18,7 +21,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  RELEASE_TAG: ${{ inputs.tag }}
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 concurrency:
   group: loomloom-npm-release
@@ -32,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v6
@@ -46,6 +49,31 @@ jobs:
 
       - name: Install npm release tooling
         run: npm --prefix npm ci --ignore-scripts
+
+      - name: Wait for the GitHub Release to be published
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..90}; do
+            state="$(
+              gh release view "$RELEASE_TAG" \
+                --repo "$GITHUB_REPOSITORY" \
+                --json isDraft \
+                --jq 'if .isDraft then "draft" else "published" end' \
+                2>/dev/null || true
+            )"
+            if [ "$state" = "published" ]; then
+              echo "GitHub Release is published: $RELEASE_TAG"
+              exit 0
+            fi
+            echo "GitHub Release state for $RELEASE_TAG: ${state:-missing}; retrying in 20 seconds ($attempt/90)"
+            sleep 20
+          done
+          echo "timed out waiting for published GitHub Release: $RELEASE_TAG" >&2
+          exit 1
 
       - name: Download the published GitHub Release assets
         env:
@@ -65,7 +93,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: npm-tarballs-${{ inputs.tag }}-attempt-${{ github.run_attempt }}
+          name: npm-tarballs-${{ env.RELEASE_TAG }}-attempt-${{ github.run_attempt }}
           path: dist/npm-tarballs/*
 
   local_registry:
@@ -82,7 +110,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: actions/setup-node@v6
         with:
@@ -98,14 +126,14 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: npm-tarballs-${{ inputs.tag }}-attempt-${{ github.run_attempt }}
+          name: npm-tarballs-${{ env.RELEASE_TAG }}-attempt-${{ github.run_attempt }}
           path: dist/npm-tarballs
 
       - name: Verify through an offline local Registry
         run: node npm/scripts/test-registry.mjs
 
   publish:
-    if: inputs.action == 'publish'
+    if: github.event_name == 'push' || inputs.action == 'publish'
     needs:
       - package
       - local_registry
@@ -117,7 +145,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: actions/setup-node@v6
         with:
@@ -133,7 +161,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: npm-tarballs-${{ inputs.tag }}-attempt-${{ github.run_attempt }}
+          name: npm-tarballs-${{ env.RELEASE_TAG }}-attempt-${{ github.run_attempt }}
           path: dist/npm-tarballs
 
       - name: Publish missing packages and verify immutable reruns
