@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -106,5 +107,49 @@ func TestArtifactDownloadDoesNotSendUnsupportedPageToken(t *testing.T) {
 	}
 	if string(data) != "hello" {
 		t.Fatalf("downloaded data=%q want hello", data)
+	}
+}
+
+func TestArtifactDownloadPreservesArtifactsWithDuplicateRemoteFilenames(t *testing.T) {
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/loom/v1/users/me/runs/run-1/artifacts":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `{
+				"artifacts": [
+					{"artifactId":"artifact-1","mimeType":"video/mp4","accessUrl":%q},
+					{"artifactId":"artifact-2","mimeType":"video/mp4","accessUrl":%q}
+				]
+			}`, server.URL+"/task-1/0000.mp4", server.URL+"/task-2/0000.mp4")
+		case "/task-1/0000.mp4":
+			_, _ = w.Write([]byte("first"))
+		case "/task-2/0000.mp4":
+			_, _ = w.Write([]byte("second"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	outputDir := t.TempDir()
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
+	cmd := newArtifactDownloadCmd(opts)
+	cmd.SetArgs([]string{"run-1", "--output-dir", outputDir})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("artifact download command error = %v", err)
+	}
+	for filename, want := range map[string]string{
+		"0000-artifact-1.mp4": "first",
+		"0000-artifact-2.mp4": "second",
+	} {
+		data, err := os.ReadFile(filepath.Join(outputDir, filename))
+		if err != nil {
+			t.Fatalf("read %s: %v", filename, err)
+		}
+		if string(data) != want {
+			t.Fatalf("%s data=%q want %q", filename, data, want)
+		}
 	}
 }
