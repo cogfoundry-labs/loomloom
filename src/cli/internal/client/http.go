@@ -283,6 +283,15 @@ func (c *Client) GetBinaryWithQuery(ctx context.Context, path string, query url.
 }
 
 func (c *Client) PostMultipartFile(ctx context.Context, path string, fieldValues map[string]string, fileField string, filePath string, out any) error {
+	return c.multipartFile(ctx, http.MethodPost, path, fieldValues, fileField, filePath, out)
+}
+
+// PutMultipartFile uploads one file without encoding it as JSON or Base64.
+func (c *Client) PutMultipartFile(ctx context.Context, path string, fieldValues map[string]string, fileField string, filePath string, out any) error {
+	return c.multipartFile(ctx, http.MethodPut, path, fieldValues, fileField, filePath, out)
+}
+
+func (c *Client) multipartFile(ctx context.Context, method string, path string, fieldValues map[string]string, fileField string, filePath string, out any) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("open file: %w", err)
@@ -307,7 +316,7 @@ func (c *Client) PostMultipartFile(ctx context.Context, path string, fieldValues
 		return fmt.Errorf("close multipart writer: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint(path), &body)
+	req, err := http.NewRequestWithContext(ctx, method, c.endpoint(path), &body)
 	if err != nil {
 		return err
 	}
@@ -317,6 +326,32 @@ func (c *Client) PostMultipartFile(ctx context.Context, path string, fieldValues
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
 
+	resp, err := c.do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if err := decodeResponse(resp, out); err != nil {
+		return err
+	}
+	c.notifySuccess(req)
+	return nil
+}
+
+// DeleteProduct sends an authenticated DELETE request and decodes an optional JSON response.
+func (c *Client) DeleteProduct(ctx context.Context, path string, query url.Values, out any) error {
+	endpoint := c.endpoint(path)
+	if len(query) > 0 {
+		endpoint += "?" + query.Encode()
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, endpoint, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Accept", "application/json")
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 	resp, err := c.do(req)
 	if err != nil {
 		return err

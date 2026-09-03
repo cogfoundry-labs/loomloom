@@ -28,6 +28,7 @@ Official template ── platform-maintained and executed directly
 
 Private template ── user-created through TemplateSpec
 └─ Private template version
+   ├─ optional private Agent Skill Package Head
    └─ Submitted to Market review
       └─ Listing Version (immutable publish snapshot)
          └─ Approved and executable as a SkillBot
@@ -63,10 +64,13 @@ Whenever a task involves fees, quote/precheck, currency, balance, confirmation, 
 
 ### Official template
 
+When the user explicitly asks to use a selected official template, first check or install its public Skill Package in the current Agent's Skill root. Do this after the template is identified and before downloading its workbook, reading its concrete input schema, quoting, or executing. Listing or explaining official templates alone does not authorize installation. If the package check reports no public ZIP, continue with the normal LoomLoom cloud workflow.
+
 Default workbook flow:
 
 ```text
-Discover → Download workbook → Fill → Validate → Precheck
+Discover → Select template → Explicit use request → Check/install public Skill Package
+→ Download workbook → Fill → Validate → Precheck
 → Show fee confirmation → User confirms → Submit → Watch → Results
 ```
 
@@ -89,10 +93,21 @@ Download/prepare version-specific input → Validate → Precheck
 ### Private template authoring
 
 ```text
-Business conversation → TemplatePlan → User confirms plan
-→ Generate TemplateSpec → Check with the current LoomLoom Server
-→ User confirms creation → Create or append a version
+Business conversation → inspect current LoomLoom Server capabilities
+→ decide LoomLoom-only or Agent-assisted
+→ TemplatePlan → User confirms plan → Generate TemplateSpec
+→ Check with the current LoomLoom Server → User confirms creation
+→ Create or append a version
+→ LoomLoom-only: continue normally; do not raise Skill Package with the creator
+→ Agent-assisted: explain the required local capabilities before creation
+→ after obtaining template_id: create the local Skill → preview → creator confirms upload
+→ local trial → upload private Package Head → verify validationStatus=passed
+→ only then complete authoring and allow Market publication
 ```
+
+Before classifying a request, use current Server facts rather than intuition: resolve its input/output modalities with `loomloom capability resolve`, and inspect `authoring-context`, `contracts`, or `model list` when needed. If the supported TemplateSpec and hosted execution can complete the requested work, treat it as LoomLoom-only and do not mention a Skill Package to the creator. Treat the work as Agent-assisted when a required capability is not available from the current Server and must be supplied locally, including online search or current information, external websites or APIs, browser interaction, local code or scripts, local files or tools, HTML or special-format handling, or runtime decisions.
+
+An Agent-assisted package is built by the Agent, not by the CLI. Explain the required Agent-local capabilities and include the local Skill in the TemplatePlan before creating the private template. The actual upload happens only after the template has a `template_id`. Show the package preview, obtain confirmation, and run the default local trial before uploading. Read the private Package Head back and require `validationStatus=passed` before declaring authoring complete or publishing the template to Market. If the creator declines the required local assistance or package upload, or if creation, trial, upload, or validation fails, stop this authoring and publication path; do not publish a template that cannot deliver its promised behavior. Every later package replacement repeats preview, creator confirmation, the default local trial, upload, and validation. Do not present backend package modes or backend-generated packages as user choices.
 
 ### Legacy TemplateSpec v1 upgrade gate
 
@@ -179,10 +194,13 @@ a new immutable version only after explicit confirmation. Do not promise a lossl
 ### Market buyer
 
 ```text
-Discover Listing → Inspect public schema → Prepare public input
-→ Quote → Show Market fee confirmation
+Discover Listing → Inspect public schema → Select Listing → Explicit use request
+→ Check/install public Skill Package → Prepare public input → Quote
+→ Show Market fee confirmation
 → User confirms → Run through Listing → Usage/results
 ```
+
+Only after the user explicitly says to install or use a selected Market SkillBot, check or install its public Skill Package in the current Agent's Skill root. Do this before preparing the actual input or executing; browsing, explaining, and quoting do not authorize installation. If the package check reports no public ZIP, continue with the normal Market cloud workflow. Package installation does not authorize a paid run.
 
 ### Market creator
 
@@ -196,12 +214,11 @@ Changing only the price and changing the execution version are different operati
 ### Local Agent Skill
 
 ```text
-Preview exact installation/uninstall effect
-→ Show files, binding, and destination
-→ User confirms → Apply local change
+Explicit install/use request → Agent identifies its own Skill root
+→ Download current public ZIP → validate and atomically install/update
 ```
 
-Installation is not execution and does not authorize a paid run.
+This automatic package installation does not authorize a paid run. Creator package uploads remain a separate, explicitly confirmed flow.
 
 ## Global Rules
 
@@ -257,5 +274,5 @@ The mode never covers persistent or high-impact operations: creating or versioni
 - [Market and SkillBots](references/market.md) — Listings, public input, buyer and creator workflows, price/version changes.
 - [Billing and confirmation](references/billing.md) — fee fields, currency, confirmation templates, settlement, earnings.
 - [Template authoring](references/template-spec.md) — TemplatePlan conversation, usage modes, TemplateSpec modeling and creation.
-- [Local Agent Skill management](references/local-skills.md) — install/uninstall preview, binding, destination, confirmation.
+- [Agent Skill Packages](references/local-skills.md) — Agent-created private packages, public ZIP install/update, and package review binding.
 - [CLI and errors](references/cli.md) — syntax sources, ID chaining, recovery rules, complete capability inventory.

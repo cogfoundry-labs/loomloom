@@ -128,6 +128,93 @@ func TestListingUpdateWithBothFieldsSkipsCurrentProfileLookup(t *testing.T) {
 	}
 }
 
+func TestListingUpdateSkillPackageUsesArchiveSelectionAndRequestID(t *testing.T) {
+	var requestedPath string
+	var body map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestedPath = r.URL.Path
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode update-skill-package body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"review-1","status":"pending"}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newListingUpdateSkillPackageCmd(opts)
+	cmd.SetArgs([]string{
+		"listing-1", "--request-id", "request-1",
+		"--skill-package-archive-hash", "sha256:archive",
+		"--skill-package-validation-id", "validation-1",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("update-skill-package command error = %v", err)
+	}
+	if requestedPath != "/loom/v1/creators/me/marketListings/listing-1:updateSkillPackage" {
+		t.Fatalf("path=%q want update-skill-package endpoint", requestedPath)
+	}
+	if body["requestId"] != "request-1" {
+		t.Fatalf("requestId=%v want request-1", body["requestId"])
+	}
+	selection, ok := body["skillPackage"].(map[string]any)
+	if !ok || selection["mode"] != "archive" || selection["expectedArchiveHash"] != "sha256:archive" || selection["expectedValidationId"] != "validation-1" {
+		t.Fatalf("unexpected skillPackage=%#v", body["skillPackage"])
+	}
+}
+
+func TestListingUpdateSkillPackageUsesAutoWhenTupleIsOmitted(t *testing.T) {
+	var body map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode update-skill-package body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"review-1","status":"pending"}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newListingUpdateSkillPackageCmd(opts)
+	cmd.SetArgs([]string{"listing-1", "--request-id", "request-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("update-skill-package command error = %v", err)
+	}
+	selection, ok := body["skillPackage"].(map[string]any)
+	if !ok || selection["mode"] != "auto" {
+		t.Fatalf("skillPackage=%#v want auto", body["skillPackage"])
+	}
+	if _, ok := selection["expectedArchiveHash"]; ok {
+		t.Fatalf("auto selection should not include expectedArchiveHash: %#v", selection)
+	}
+	if _, ok := selection["expectedValidationId"]; ok {
+		t.Fatalf("auto selection should not include expectedValidationId: %#v", selection)
+	}
+}
+
+func TestListingUpdateSkillPackageExplainsListingNotPublished(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"invalid_argument","message":"listing_not_published"}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newListingUpdateSkillPackageCmd(opts)
+	cmd.SetArgs([]string{"listing-1", "--request-id", "request-1"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("update-skill-package command unexpectedly succeeded")
+	}
+	assertContainsAll(t, err.Error(),
+		"listing_not_published",
+		"only applies to an already published listing",
+		"bind the ZIP during the initial listing publish",
+	)
+}
+
 func TestListingUpdateRejectsMissingCurrentDisplayName(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -390,10 +477,20 @@ func TestListingShowTextShowsFormattedFee(t *testing.T) {
 			"id":"listing-1",
 			"displayName":"Writer",
 			"status":"active",
-			"reviewStatus":"approved",
+			"reviewRequestId":"review-1",
+			"reviewStatus":"pending_review",
 			"taskFixedFeeT":5000000,
 			"currency":"CNY",
-			"saleStatus":"on_sale"
+			"saleStatus":"unlisted",
+			"skillPackage":{"available":false,"unavailableReason":"listing_not_listed"},
+			"skillPackageReview":{"pending":{
+				"id":"skill-package-version-1",
+				"mode":"archive",
+				"status":"pending",
+				"archiveHash":"sha256:archive",
+				"validationId":"validation-1",
+				"sizeBytes":7875
+			}}
 		}`))
 	}))
 	defer server.Close()
@@ -407,8 +504,42 @@ func TestListingShowTextShowsFormattedFee(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("listing show command error = %v", err)
 	}
-	assertContainsAll(t, out.String(), "CNY 0.5", "approved")
+	assertContainsAll(t, out.String(),
+		"CNY 0.5",
+		"pending_review",
+		"skill_package_review_binding", "bound",
+		"skill_package_review_version_id", "skill-package-version-1",
+		"skill_package_review_archive_hash", "sha256:archive",
+		"skill_package_public_available", "false",
+		"skill_package_public_unavailable_reason", "listing_not_listed",
+	)
 	assertContainsNone(t, out.String(), "task_fixed_fee_t")
+}
+
+func TestListingShowTextDoesNotTreatMissingReviewViewAsUnbound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"id":"listing-1",
+			"displayName":"Writer",
+			"reviewStatus":"pending_review",
+			"currency":"CNY",
+			"skillPackage":{"available":false,"unavailableReason":"listing_not_listed"}
+		}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newListingShowCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"listing-1"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("listing show command error = %v", err)
+	}
+	assertContainsAll(t, out.String(), "skill_package_review_binding", "unknown_from_current_server")
+	assertContainsNone(t, out.String(), "unbound")
 }
 
 func TestListingVersionsTextShowsFormattedFee(t *testing.T) {

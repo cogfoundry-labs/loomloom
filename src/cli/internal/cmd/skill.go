@@ -23,6 +23,7 @@ func newSkillCmd(opts *rootOptions) *cobra.Command {
 		newSkillInstallTemplateSpecCmd(opts),
 	)
 	cmd.AddCommand(install)
+	cmd.AddCommand(newSkillPackageCmd(opts))
 	cmd.AddCommand(newSkillUninstallCmd(opts))
 	return cmd
 }
