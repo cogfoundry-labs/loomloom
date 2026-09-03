@@ -5,6 +5,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
+const installer = require("./installer.cjs");
 
 const DEFAULT_MANIFEST = path.join(__dirname, "..", "platforms.json");
 const FORWARDED_SIGNALS = process.platform === "win32"
@@ -114,21 +115,22 @@ function execute(binary, args = process.argv.slice(2)) {
   });
 }
 
-function run() {
+async function run(args = process.argv.slice(2), options = {}) {
+  if (args[0] === "install") {
+    return installer.install(args.slice(1), options);
+  }
   const manifest = loadManifest();
   const selected = selectPlatform(manifest);
   const binary = locateBinary(selected);
   verifyBinary(binary, selected.binarySHA256);
-  execute(binary);
+  return execute(binary, args);
 }
 
 if (require.main === module) {
-  try {
-    run();
-  } catch (error) {
+  run().catch((error) => {
     console.error(`loomloom: ${error.message}`);
     process.exitCode = 1;
-  }
+  });
 }
 
 module.exports = {

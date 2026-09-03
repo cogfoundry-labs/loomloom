@@ -33,6 +33,7 @@ const outDir = assertSafeGeneratedPath(args.out_dir);
 const checksumsFile = path.join(assetsDir, "checksums.txt");
 const licenseFile = path.join(repoRoot, "LICENSE");
 const launcherFile = path.join(npmRoot, "launcher", "loomloom.cjs");
+const installerFile = path.join(npmRoot, "launcher", "installer.cjs");
 
 function readChecksums(file) {
   const checksums = new Map();
@@ -115,13 +116,17 @@ function mainReadme() {
     `${installCommand}\n` +
     `loomloom --version\n` +
     `\`\`\`\n\n` +
-    `GitHub Release assets remain the binary source of truth. The launcher selects and verifies one platform package without downloading a binary during npm lifecycle scripts.\n`;
+    `GitHub Release assets remain the binary source of truth. The launcher selects and verifies one platform package without downloading a binary during npm lifecycle scripts.\n\n` +
+    `To install the matching general LoomLoom Skill for one explicit Agent, run:\n\n` +
+    `\`\`\`sh\n` +
+    `npx @cogfoundry/loomloom@${version} install --agent codex --yes\n` +
+    `\`\`\`\n`;
 }
 
 if (!fs.existsSync(checksumsFile)) {
   throw new Error(`missing release checksums: ${checksumsFile}`);
 }
-if (!fs.existsSync(licenseFile) || !fs.existsSync(launcherFile)) {
+if (!fs.existsSync(licenseFile) || !fs.existsSync(launcherFile) || !fs.existsSync(installerFile)) {
   throw new Error("repository LICENSE or npm launcher source is missing");
 }
 
@@ -183,6 +188,7 @@ for (const platform of platforms) {
 const mainPackageDir = path.join(outDir, "loomloom");
 fs.mkdirSync(path.join(mainPackageDir, "bin"), { recursive: true });
 fs.copyFileSync(launcherFile, path.join(mainPackageDir, "bin", "loomloom.cjs"));
+fs.copyFileSync(installerFile, path.join(mainPackageDir, "bin", "installer.cjs"));
 fs.chmodSync(path.join(mainPackageDir, "bin", "loomloom.cjs"), 0o755);
 writeJSON(path.join(mainPackageDir, "platforms.json"), {
   releaseTag: args.tag,

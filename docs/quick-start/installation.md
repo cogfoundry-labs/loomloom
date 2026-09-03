@@ -1,8 +1,8 @@
 # Install loomloom CLI and agent skill
 
-loomloom is a CLI for defining, compiling, executing, and managing AI work as software. The installation scripts install both the CLI and the bundled `loomloom` agent skill; see the [CLI reference](../reference/cli.md) for commands.
+loomloom is a CLI for defining, compiling, executing, and managing AI work as software. npm installs the CLI only; the shell and PowerShell installers install both the CLI and the bundled `loomloom` agent skill when given an explicit Skill destination. See the [CLI reference](../reference/cli.md) for commands.
 
-**Recommended:** if you use an AI agent that supports Skills, start with [agent-assisted setup](#agent-assisted-setup). It determines the agent's supported skill root before installation.
+**Recommended:** if npm and the `skills` manager support your Agent, use [npm CLI and one-command Agent setup](#npm-cli-and-one-command-agent-setup). It requires one explicit Agent id and lets the manager select that Agent's supported Skill root.
 
 #### Choose `--skill-dir` / `-SkillDir`
 
@@ -22,7 +22,7 @@ The installer does not detect or select an agent. Pass the complete destination 
 The following sections describe how to install, configure, and uninstall loomloom on your local development machine using different options.
 
 **Install:**
-[Agent-assisted setup](#agent-assisted-setup) · [macOS / Linux](#macos--linux) · [Windows (PowerShell)](#windows-powershell) · [Verify the CLI and skill](#verify-the-cli-and-skill)
+[npm CLI and one-command Agent setup](#npm-cli-and-one-command-agent-setup) · [Agent-assisted setup](#agent-assisted-setup) · [macOS / Linux](#macos--linux) · [Windows (PowerShell)](#windows-powershell) · [Verify the CLI and skill](#verify-the-cli-and-skill)
 
 **Configure:**
 [Browser login](#browser-login) · [API token fallback](#api-token-fallback) · [Verification and server profiles](#verification-and-server-profiles)
@@ -32,9 +32,9 @@ The following sections describe how to install, configure, and uninstall loomloo
 
 ## Install
 
-### npm Beta (CLI only)
+### npm CLI and one-command Agent setup
 
-The npm Beta installs the existing Go CLI and its matching platform binary
+The npm package installs the existing Go CLI and its matching platform binary
 through the npm Registry. It does not download a binary from GitHub during an
 npm lifecycle script:
 
@@ -49,10 +49,22 @@ For a temporary environment or CI job:
 npx --yes @cogfoundry/loomloom@beta --version
 ```
 
-This Beta installs the CLI only. To install the bundled general LoomLoom Agent
-Skill, continue to use an installer below with the complete explicit
-`--skill-dir` / `-SkillDir`. The npm package does not guess or write to an
-Agent's Skill root.
+`npm install` installs the CLI only; it never writes an Agent Skill directory.
+For CLI plus the matching general LoomLoom Skill, run the explicit npm setup
+command and name one target Agent:
+
+```bash
+npx @cogfoundry/loomloom@latest install --agent codex --yes
+```
+
+The setup command installs the same-version CLI globally, then delegates the
+Skill directory selection to the `skills` manager. It verifies that the named
+Agent reports the `loomloom` Skill before succeeding. In an interactive
+terminal, omit `--agent` to enter an Agent id when prompted. In CI or an Agent
+session, `--agent` is required.
+
+The shell and PowerShell installers below remain supported for environments
+that require an explicit complete `--skill-dir` / `-SkillDir`.
 
 ### macOS / Linux
 

@@ -2,7 +2,18 @@
 
 This directory builds the stable and Beta npm distributions from already-validated GitHub
 Release assets. It does not build the Go CLI and it does not install the
-general LoomLoom Agent Skill.
+general LoomLoom Agent Skill during npm lifecycle scripts.
+
+The published main package provides an explicit setup command for CLI plus one
+named Agent Skill:
+
+```sh
+npx @cogfoundry/loomloom@<version> install --agent codex --yes
+```
+
+It installs the same-version global CLI, then uses the `skills` manager to
+install the tag-pinned general `loomloom` Skill for the named Agent. Ordinary
+`npm install -g @cogfoundry/loomloom` remains CLI-only.
 
 ## Prepare and verify
 
