@@ -6,7 +6,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import {
   assertSafeGeneratedPath,
-  betaVersion,
+  releaseVersion,
   npmRoot,
   packageDirectoryName,
   parseArgs,
@@ -26,7 +26,8 @@ if (!args.tag) {
   throw new Error("--tag is required");
 }
 
-const version = betaVersion(args.tag);
+const release = releaseVersion(args.tag);
+const version = release.version;
 const assetsDir = path.resolve(args.assets_dir);
 const outDir = assertSafeGeneratedPath(args.out_dir);
 const checksumsFile = path.join(assetsDir, "checksums.txt");
@@ -105,10 +106,13 @@ function platformReadme(platform) {
 }
 
 function mainReadme() {
+  const installCommand = release.channel === "stable"
+    ? "npm install -g @cogfoundry/loomloom"
+    : "npm install -g @cogfoundry/loomloom@beta";
   return `# @cogfoundry/loomloom\n\n` +
     `npm distribution for the LoomLoom Go CLI.\n\n` +
     `\`\`\`sh\n` +
-    `npm install -g @cogfoundry/loomloom@beta\n` +
+    `${installCommand}\n` +
     `loomloom --version\n` +
     `\`\`\`\n\n` +
     `GitHub Release assets remain the binary source of truth. The launcher selects and verifies one platform package without downloading a binary during npm lifecycle scripts.\n`;
@@ -206,12 +210,13 @@ packageRecords.push({
   version,
   role: "main",
   directory: "loomloom",
-  publishTag: "beta",
+  publishTag: release.mainDistTag,
 });
 
 writeJSON(path.join(outDir, "release-manifest.json"), {
   releaseTag: args.tag,
   version,
+  channel: release.channel,
   sourceChecksums: path.relative(repoRoot, checksumsFile),
   packages: packageRecords,
 });

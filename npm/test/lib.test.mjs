@@ -6,15 +6,24 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import {
   assertSafeGeneratedPath,
-  betaVersion,
+  releaseVersion,
   repoRoot,
   requiresCommandShell,
 } from "../scripts/lib.mjs";
 
-test("betaVersion accepts only the Beta release channel", () => {
-  assert.equal(betaVersion("v1.2.3-beta.4"), "1.2.3-beta.4");
-  for (const tag of ["v1.2.3", "v1.2.3-rc.1", "1.2.3-beta.1", "v1.2-beta.1"]) {
-    assert.throws(() => betaVersion(tag), /expected vX\.Y\.Z-beta\.N/);
+test("releaseVersion classifies stable and Beta release channels", () => {
+  assert.deepEqual(releaseVersion("v1.2.3"), {
+    version: "1.2.3",
+    channel: "stable",
+    mainDistTag: "latest",
+  });
+  assert.deepEqual(releaseVersion("v1.2.3-beta.4"), {
+    version: "1.2.3-beta.4",
+    channel: "beta",
+    mainDistTag: "beta",
+  });
+  for (const tag of ["v1.2.3-rc.1", "1.2.3-beta.1", "v1.2-beta.1"]) {
+    assert.throws(() => releaseVersion(tag), /expected vX\.Y\.Z or vX\.Y\.Z-beta\.N/);
   }
 });
 

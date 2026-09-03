@@ -6,7 +6,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import {
   assertSafeGeneratedPath,
-  betaVersion,
+  releaseVersion,
   npmCommand,
   npmCommandArgs,
   parseArgs,
@@ -43,7 +43,8 @@ const manifest = JSON.parse(
   fs.readFileSync(path.join(tarballsDir, "publish-manifest.json"), "utf8"),
 );
 
-if (betaVersion(manifest.releaseTag) !== manifest.version) {
+const release = releaseVersion(manifest.releaseTag);
+if (release.version !== manifest.version) {
   throw new Error("publish manifest release tag and npm version do not match");
 }
 if (manifest.packages.length !== 7 || manifest.packages.at(-1)?.role !== "main") {
@@ -51,7 +52,7 @@ if (manifest.packages.length !== 7 || manifest.packages.at(-1)?.role !== "main")
 }
 for (const [index, record] of manifest.packages.entries()) {
   const expectedRole = index === manifest.packages.length - 1 ? "main" : "platform";
-  const expectedTag = expectedRole === "main" ? "beta" : "npm-bootstrap";
+  const expectedTag = expectedRole === "main" ? release.mainDistTag : "npm-bootstrap";
   if (
     record.role !== expectedRole ||
     record.publishTag !== expectedTag ||

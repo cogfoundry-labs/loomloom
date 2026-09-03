@@ -3,15 +3,15 @@ name: npm release
 on:
   push:
     tags:
-      - "v*-beta.*"
+      - "v*"
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing published LoomLoom Beta release tag (vX.Y.Z-beta.N); Beta tag pushes publish automatically
+        description: Existing published LoomLoom npm release tag (vX.Y.Z or vX.Y.Z-beta.N); matching tag pushes publish automatically
         required: true
         type: string
       action:
-        description: Prepare only, or manually repair a Beta publication after Trusted Publisher setup
+        description: Prepare only, or manually repair a stable or Beta publication after Trusted Publisher setup
         required: true
         type: choice
         default: prepare
@@ -29,6 +29,7 @@ concurrency:
 
 jobs:
   package:
+    if: github.event_name == 'workflow_dispatch' || contains(github.ref_name, '-beta.') || !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -176,13 +177,21 @@ jobs:
           prefix="$(mktemp -d)"
           trap 'rm -rf "$prefix"' EXIT
           npm_version="${RELEASE_TAG#v}"
-          beta_version="$(npm view @cogfoundry/loomloom dist-tags.beta \
+          main_dist_tag="beta"
+          if [[ "$RELEASE_TAG" != *-beta.* ]]; then
+            main_dist_tag="latest"
+          fi
+          registry_version="$(npm view @cogfoundry/loomloom "dist-tags.$main_dist_tag" \
             --registry https://registry.npmjs.org)"
-          if [ "$beta_version" != "$npm_version" ]; then
-            echo "npm beta tag mismatch: expected $npm_version, got $beta_version" >&2
+          if [ "$registry_version" != "$npm_version" ]; then
+            echo "npm $main_dist_tag tag mismatch: expected $npm_version, got $registry_version" >&2
             exit 1
           fi
-          npm install --global "@cogfoundry/loomloom@$npm_version" \
+          package_spec="@cogfoundry/loomloom@$npm_version"
+          if [ "$main_dist_tag" = "latest" ]; then
+            package_spec="@cogfoundry/loomloom"
+          fi
+          npm install --global "$package_spec" \
             --registry https://registry.npmjs.org \
             --prefix "$prefix" \
             --ignore-scripts
@@ -190,11 +199,11 @@ jobs:
           "$prefix/bin/loomloom" --help >/dev/null
           npm exec --yes \
             --registry https://registry.npmjs.org \
-            --package="@cogfoundry/loomloom@$npm_version" \
+            --package="$package_spec" \
             -- loomloom --help >/dev/null
           npx --yes \
             --registry https://registry.npmjs.org \
-            "@cogfoundry/loomloom@$npm_version" --version
+            "$package_spec" --version
           npm uninstall --global @cogfoundry/loomloom \
             --registry https://registry.npmjs.org \
             --prefix "$prefix" \
