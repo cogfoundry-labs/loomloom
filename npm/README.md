@@ -29,9 +29,13 @@ node npm/scripts/publish-packages.mjs
 
 ## First publication gate
 
-Do not publish from an implementation branch. After the source PR is merged,
-the GitHub Beta Release is published, all local Registry tests pass, and a
-maintainer explicitly authorizes npm publication, use the reviewed tarballs:
+Do not publish from an implementation branch. Pushing a protected
+`vX.Y.Z-beta.N` tag is the Beta npm publication authorization: the
+`npm-release.yml` workflow waits for the matching GitHub Release, validates its
+assets, runs the local Registry tests, and publishes the reviewed tarballs.
+
+`workflow_dispatch` remains available for a prepare-only diagnostic run or an
+idempotent repair of an already-published Beta release:
 
 ```sh
 node npm/scripts/publish-packages.mjs \
