@@ -1,11 +1,13 @@
 "use strict";
 
 const { spawnSync } = require("node:child_process");
+const fs = require("node:fs");
+const path = require("node:path");
 const readline = require("node:readline/promises");
 
 const PACKAGE_NAME = "@cogfoundry/loomloom";
 const SKILL_NAME = "loomloom";
-const SKILL_PATH = "agent-guidance/loomloom";
+const BUNDLED_SKILL_PATH = path.join(__dirname, "..", "skill", SKILL_NAME);
 
 function parseInstallArgs(argv) {
   const result = { agent: "", yes: false };
@@ -29,11 +31,12 @@ function parseInstallArgs(argv) {
   return result;
 }
 
-function skillSourceURL(version) {
-  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
-    throw new Error(`unsupported npm package version for Skill installation: ${version}`);
+function bundledSkillPath(source = BUNDLED_SKILL_PATH) {
+  const skillFile = path.join(source, "SKILL.md");
+  if (!fs.existsSync(skillFile)) {
+    throw new Error(`npm package does not contain bundled ${SKILL_NAME} Skill at ${source}`);
   }
-  return `https://github.com/cogfoundry-labs/loomloom/tree/v${version}/${SKILL_PATH}`;
+  return source;
 }
 
 function globalPackageSpec(version) {
@@ -41,7 +44,7 @@ function globalPackageSpec(version) {
 }
 
 function skillsAddArgs(source, agent) {
-  return ["--yes", "skills", "add", source, "--skill", SKILL_NAME, "--global", "--agent", agent, "--yes"];
+  return ["--yes", "skills", "add", source, "--skill", SKILL_NAME, "--global", "--agent", agent, "--yes", "--copy"];
 }
 
 function skillsListArgs(agent) {
@@ -100,7 +103,7 @@ function retryCommand(source, agent) {
 async function install(argv, options = {}) {
   const parsed = parseInstallArgs(argv);
   const version = options.packageVersion ?? require("../package.json").version;
-  const source = skillSourceURL(version);
+  const source = bundledSkillPath(options.bundledSkillPath);
   const agent = parsed.agent || await (options.promptForAgent ?? promptForAgent)();
   const execute = options.runCommand ?? runCommand;
 
@@ -126,12 +129,13 @@ async function install(argv, options = {}) {
 module.exports = {
   PACKAGE_NAME,
   SKILL_NAME,
+  BUNDLED_SKILL_PATH,
+  bundledSkillPath,
   globalPackageSpec,
   install,
   parseInstallArgs,
   retryCommand,
   skillInstalled,
-  skillSourceURL,
   skillsAddArgs,
   skillsListArgs,
 };

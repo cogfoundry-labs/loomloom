@@ -1,24 +1,28 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 const require = createRequire(import.meta.url);
 const installer = require("../launcher/installer.cjs");
+const bundledSkillSource = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../agent-guidance/loomloom");
 
-test("installer pins the Skill source and global CLI to one package version", () => {
-  assert.equal(
-    installer.skillSourceURL("1.2.3-beta.4"),
-    "https://github.com/cogfoundry-labs/loomloom/tree/v1.2.3-beta.4/agent-guidance/loomloom",
-  );
+test("installer uses its bundled Skill and global CLI at one package version", () => {
+  assert.equal(installer.bundledSkillPath(bundledSkillSource), bundledSkillSource);
   assert.equal(installer.globalPackageSpec("1.2.3"), "@cogfoundry/loomloom@1.2.3");
   assert.deepEqual(installer.skillsAddArgs("https://example.invalid/skill", "codex"), [
-    "--yes", "skills", "add", "https://example.invalid/skill", "--skill", "loomloom", "--global", "--agent", "codex", "--yes",
+    "--yes", "skills", "add", "https://example.invalid/skill", "--skill", "loomloom", "--global", "--agent", "codex", "--yes", "--copy",
   ]);
 });
 
 test("installer requires an explicit Agent without a terminal", async () => {
   await assert.rejects(
-    () => installer.install([], { packageVersion: "1.2.3", promptForAgent: async () => { throw new Error("--agent is required when stdin is not interactive"); } }),
+    () => installer.install([], {
+      packageVersion: "1.2.3",
+      bundledSkillPath: bundledSkillSource,
+      promptForAgent: async () => { throw new Error("--agent is required when stdin is not interactive"); },
+    }),
     /--agent is required/,
   );
 });
@@ -28,6 +32,7 @@ test("installer verifies the selected Agent Skill after installing", async () =>
   const output = [];
   const result = await installer.install(["--agent", "codex", "--yes"], {
     packageVersion: "1.2.3",
+    bundledSkillPath: bundledSkillSource,
     runCommand(command, args, options) {
       calls.push({ command, args, options });
       if (command === "npx" && args.includes("ls")) {
@@ -48,7 +53,8 @@ test("installer verifies the selected Agent Skill after installing", async () =>
 test("installer fails when skills reports success without the selected Skill", async () => {
   await assert.rejects(
     () => installer.install(["--agent", "codex"], {
-      packageVersion: "1.2.3",
+    packageVersion: "1.2.3",
+      bundledSkillPath: bundledSkillSource,
       runCommand(command, args) {
         if (command === "npx" && args.includes("ls")) return { stdout: "[]" };
         return { stdout: "" };

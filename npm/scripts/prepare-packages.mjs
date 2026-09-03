@@ -34,6 +34,7 @@ const checksumsFile = path.join(assetsDir, "checksums.txt");
 const licenseFile = path.join(repoRoot, "LICENSE");
 const launcherFile = path.join(npmRoot, "launcher", "loomloom.cjs");
 const installerFile = path.join(npmRoot, "launcher", "installer.cjs");
+const skillSourceDir = path.join(repoRoot, "agent-guidance", "loomloom");
 
 function readChecksums(file) {
   const checksums = new Map();
@@ -98,6 +99,45 @@ function extractBinary(platform, archive, destination) {
 
 function copyCommonFiles(packageDir) {
   fs.copyFileSync(licenseFile, path.join(packageDir, "LICENSE"));
+}
+
+function relativeSkillFiles(directory, base = directory) {
+  const entries = fs.readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name));
+  const files = [];
+  for (const entry of entries) {
+    const file = path.join(directory, entry.name);
+    const relative = path.relative(base, file).replaceAll(path.sep, "/");
+    if (entry.isSymbolicLink()) {
+      throw new Error(`Skill source must not contain symlinks: ${relative}`);
+    }
+    if (entry.isDirectory()) {
+      files.push(...relativeSkillFiles(file, base));
+      continue;
+    }
+    if (!entry.isFile()) {
+      throw new Error(`Skill source contains unsupported entry: ${relative}`);
+    }
+    files.push(relative);
+  }
+  return files;
+}
+
+function copyBundledSkill(packageDir) {
+  if (!fs.existsSync(path.join(skillSourceDir, "SKILL.md"))) {
+    throw new Error("repository LoomLoom Skill source is missing SKILL.md");
+  }
+  const target = path.join(packageDir, "skill", "loomloom");
+  fs.cpSync(skillSourceDir, target, { recursive: true, dereference: false });
+  const files = relativeSkillFiles(target).map((file) => ({
+    path: file,
+    sha256: sha256(path.join(target, file)),
+  }));
+  writeJSON(path.join(packageDir, "skill-manifest.json"), {
+    releaseTag: args.tag,
+    version,
+    source: "agent-guidance/loomloom",
+    files,
+  });
 }
 
 function platformReadme(platform) {
@@ -190,6 +230,7 @@ fs.mkdirSync(path.join(mainPackageDir, "bin"), { recursive: true });
 fs.copyFileSync(launcherFile, path.join(mainPackageDir, "bin", "loomloom.cjs"));
 fs.copyFileSync(installerFile, path.join(mainPackageDir, "bin", "installer.cjs"));
 fs.chmodSync(path.join(mainPackageDir, "bin", "loomloom.cjs"), 0o755);
+copyBundledSkill(mainPackageDir);
 writeJSON(path.join(mainPackageDir, "platforms.json"), {
   releaseTag: args.tag,
   version,
@@ -203,7 +244,7 @@ writeJSON(path.join(mainPackageDir, "package.json"), {
   repository,
   bin: { loomloom: "bin/loomloom.cjs" },
   engines: { node: ">=18" },
-  files: ["bin", "platforms.json", "README.md", "LICENSE"],
+  files: ["bin", "skill", "skill-manifest.json", "platforms.json", "README.md", "LICENSE"],
   optionalDependencies: Object.fromEntries(
     platforms.map((platform) => [platform.package, version]),
   ),

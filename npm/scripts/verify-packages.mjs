@@ -29,7 +29,11 @@ const expectedRepository = JSON.stringify(repository);
 
 function expectedFiles(record) {
   if (record.role === "main") {
-    return new Set(["LICENSE", "README.md", "bin/installer.cjs", "bin/loomloom.cjs", "package.json", "platforms.json"]);
+    const manifest = JSON.parse(fs.readFileSync(path.join(packagesDir, record.directory, "skill-manifest.json"), "utf8"));
+    return new Set([
+      "LICENSE", "README.md", "bin/installer.cjs", "bin/loomloom.cjs", "package.json", "platforms.json", "skill-manifest.json",
+      ...manifest.files.map((file) => `skill/loomloom/${file.path}`),
+    ]);
   }
   const platform = platforms.find((candidate) => `${candidate.os}-${candidate.cpu}` === record.platform);
   if (!platform) {
@@ -86,6 +90,21 @@ function verifyMainPackage(record, packageDir, packageJSON, platformMetadata) {
     const metadata = platformMetadata.get(platform.package);
     if (!selected || !metadata || selected.binarySHA256 !== metadata.binarySHA256) {
       throw new Error(`main package SHA-256 is not frozen for ${key}`);
+    }
+  }
+  const skillManifest = JSON.parse(fs.readFileSync(path.join(packageDir, "skill-manifest.json"), "utf8"));
+  if (skillManifest.releaseTag !== manifest.releaseTag || skillManifest.version !== record.version || skillManifest.source !== "agent-guidance/loomloom") {
+    throw new Error("bundled Skill manifest must identify the matching release");
+  }
+  if (!Array.isArray(skillManifest.files) || skillManifest.files.length === 0 || !skillManifest.files.some((file) => file.path === "SKILL.md")) {
+    throw new Error("bundled Skill manifest must contain SKILL.md");
+  }
+  for (const file of skillManifest.files) {
+    if (!file || typeof file.path !== "string" || !/^[0-9a-f]{64}$/.test(file.sha256) || file.path.startsWith("/") || file.path.includes("..")) {
+      throw new Error("bundled Skill manifest contains an invalid file entry");
+    }
+    if (sha256(path.join(packageDir, "skill", "loomloom", file.path)) !== file.sha256) {
+      throw new Error(`bundled Skill checksum mismatch: ${file.path}`);
     }
   }
 }
