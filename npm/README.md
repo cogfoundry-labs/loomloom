@@ -43,7 +43,9 @@ The command publishes all six platform packages before the main package. It
 always passes `--access public`; platform packages receive dist-tag
 `npm-bootstrap`, while only `@cogfoundry/loomloom` receives `beta`. Existing
 name/version pairs are skipped only when both registry integrity values match
-the locally packed immutable tarball.
+the locally packed immutable tarball. After a new publish, it reads Registry
+metadata through a fresh npm cache until the expected integrity appears; tune
+the bounded wait with `--readback-attempts` and `--readback-interval-ms`.
 
 The first version requires a logged-in `@cogfoundry` maintainer with 2FA.
 After all seven packages exist, configure the Trusted Publisher for every
@@ -55,4 +57,7 @@ package with:
 - Allowed action: `npm publish`
 
 Only then may the `publish` action of the workflow be used. The workflow uses
-GitHub-hosted runners, Node 24, npm 11.19.1, and OIDC. It never moves `latest`.
+GitHub-hosted runners, Node 24, npm 11.19.1, and OIDC. The npm Registry may
+automatically create `latest` for a brand-new package even when publication
+uses another dist-tag; Beta documentation must therefore use `@beta` until a
+stable release deliberately takes ownership of `latest`.
