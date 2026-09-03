@@ -54,6 +54,7 @@ package with:
 - GitHub organization: `cogfoundry-labs`
 - Repository: `loomloom`
 - Workflow: `npm-release.yml`
+- Environment: `npm-release`
 - Allowed action: `npm publish`
 
 Only then may the `publish` action of the workflow be used. The workflow uses
