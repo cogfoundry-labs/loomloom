@@ -110,7 +110,7 @@ jobs:
       - package
       - local_registry
     runs-on: ubuntu-latest
-    environment: npm-beta
+    environment: npm-release
     permissions:
       contents: read
       id-token: write
