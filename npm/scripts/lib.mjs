@@ -81,12 +81,16 @@ export function parseArgs(argv, defaults = {}) {
   return result;
 }
 
-export function betaVersion(tag) {
-  const match = /^v(\d+\.\d+\.\d+-beta\.\d+)$/.exec(tag);
-  if (!match) {
-    throw new Error(`unsupported npm release tag ${tag}; expected vX.Y.Z-beta.N`);
+export function releaseVersion(tag) {
+  const beta = /^v(\d+\.\d+\.\d+-beta\.\d+)$/.exec(tag);
+  if (beta) {
+    return { version: beta[1], channel: "beta", mainDistTag: "beta" };
   }
-  return match[1];
+  const stable = /^v(\d+\.\d+\.\d+)$/.exec(tag);
+  if (stable) {
+    return { version: stable[1], channel: "stable", mainDistTag: "latest" };
+  }
+  throw new Error(`unsupported npm release tag ${tag}; expected vX.Y.Z or vX.Y.Z-beta.N`);
 }
 
 export function sha256(file) {

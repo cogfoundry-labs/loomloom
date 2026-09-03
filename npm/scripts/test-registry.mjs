@@ -140,6 +140,10 @@ try {
   if (manifest.packages.slice(0, -1).some((record) => record.role !== "platform")) {
     throw new Error("all platform packages must precede the main package");
   }
+  const mainPackage = manifest.packages.at(-1);
+  const mainSpecifier = mainPackage.publishTag === "latest"
+    ? "@cogfoundry/loomloom"
+    : `@cogfoundry/loomloom@${mainPackage.publishTag}`;
 
   const port = await freePort();
   const registry = `http://127.0.0.1:${port}`;
@@ -238,7 +242,7 @@ try {
     ...npmCommandArgs,
     "install",
     "--global",
-    "@cogfoundry/loomloom@beta",
+    mainSpecifier,
     "--registry",
     registry,
     "--prefix",
@@ -262,7 +266,7 @@ try {
     "--yes",
     "--registry",
     registry,
-    "--package=@cogfoundry/loomloom@beta",
+    `--package=${mainSpecifier}`,
     "--",
     "loomloom",
     "--help",
@@ -272,7 +276,7 @@ try {
     "--yes",
     "--registry",
     registry,
-    "@cogfoundry/loomloom@beta",
+    mainSpecifier,
     "--version",
   ]);
 
@@ -280,7 +284,7 @@ try {
   run(npmCommand, [
     ...npmCommandArgs,
     "install",
-    "@cogfoundry/loomloom@beta",
+    mainSpecifier,
     "--registry",
     registry,
     "--prefix",
