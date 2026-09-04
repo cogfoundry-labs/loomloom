@@ -73,6 +73,17 @@ Agent reports the `loomloom` Skill before succeeding. In an interactive
 terminal, omit `--agent` to enter an Agent id when prompted. In CI or an Agent
 session, `--agent` is required.
 
+For an npm setup previously completed for one Agent, update the CLI and that
+matching copied Skill together:
+
+```bash
+loomloom update --agent codex
+```
+
+This command only manages Agents recorded by the npm setup command. It does
+not take over a Homebrew, shell, or PowerShell installation, and it never
+guesses an Agent Skill directory.
+
 The shell and PowerShell installers below remain supported for environments
 that require an explicit complete `--skill-dir` / `-SkillDir`.
 
