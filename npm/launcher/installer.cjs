@@ -2,12 +2,14 @@
 
 const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const readline = require("node:readline/promises");
 
 const PACKAGE_NAME = "@cogfoundry/loomloom";
 const SKILL_NAME = "loomloom";
 const BUNDLED_SKILL_PATH = path.join(__dirname, "..", "skill", SKILL_NAME);
+const RECEIPT_FILE = "skill-sync.json";
 
 function parseInstallArgs(argv) {
   const result = { agent: "", yes: false };
@@ -41,6 +43,30 @@ function bundledSkillPath(source = BUNDLED_SKILL_PATH) {
 
 function globalPackageSpec(version) {
   return `${PACKAGE_NAME}@${version}`;
+}
+
+function configDirectory(env = process.env, home = os.homedir()) {
+  if (process.platform === "win32") return env.APPDATA || path.join(home, "AppData", "Roaming");
+  if (process.platform === "darwin") return path.join(home, "Library", "Application Support");
+  return env.XDG_CONFIG_HOME || path.join(home, ".config");
+}
+
+function receiptPath(env = process.env, home = os.homedir()) {
+  return path.join(configDirectory(env, home), "loomloom", RECEIPT_FILE);
+}
+
+function loadReceipts(options = {}) {
+  try { return JSON.parse(fs.readFileSync(options.path ?? receiptPath(options.env, options.home), "utf8")); } catch { return { version: 1, agents: {} }; }
+}
+
+function saveReceipt(agent, packageVersion, options = {}) {
+  const file = options.path ?? receiptPath(options.env, options.home);
+  const receipts = loadReceipts({ path: file });
+  receipts.version = 1;
+  receipts.agents ??= {};
+  receipts.agents[agent] = { package: PACKAGE_NAME, package_version: packageVersion, synced_at: new Date().toISOString() };
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(file, `${JSON.stringify(receipts, null, 2)}\n`, { mode: 0o600 });
 }
 
 function skillsAddArgs(source, agent) {
@@ -114,6 +140,7 @@ async function install(argv, options = {}) {
     if (!skillInstalled(listed.stdout)) {
       throw new Error(`skills manager did not report ${SKILL_NAME} for agent ${agent}`);
     }
+    saveReceipt(agent, version, options);
   } catch (error) {
     throw new Error(
       `CLI ${version} is installed, but the ${SKILL_NAME} Skill was not installed for ${agent}. ` +
@@ -126,6 +153,17 @@ async function install(argv, options = {}) {
   return { agent, source, version };
 }
 
+async function update(argv, options = {}) {
+  const parsed = parseInstallArgs(argv);
+  const agent = parsed.agent || await (options.promptForAgent ?? promptForAgent)();
+  const receipts = loadReceipts(options);
+  if (receipts.agents?.[agent]?.package !== PACKAGE_NAME) {
+    throw new Error(`no npm-managed LoomLoom Skill receipt for ${agent}; run npx ${PACKAGE_NAME}@latest install --agent ${agent} --yes first`);
+  }
+  const execute = options.runCommand ?? runCommand;
+  execute("npx", ["--yes", `${PACKAGE_NAME}@latest`, "install", "--agent", agent, "--yes"]);
+}
+
 module.exports = {
   PACKAGE_NAME,
   SKILL_NAME,
@@ -133,6 +171,10 @@ module.exports = {
   bundledSkillPath,
   globalPackageSpec,
   install,
+  update,
+  loadReceipts,
+  receiptPath,
+  saveReceipt,
   parseInstallArgs,
   retryCommand,
   skillInstalled,

@@ -119,6 +119,9 @@ async function run(args = process.argv.slice(2), options = {}) {
   if (args[0] === "install") {
     return installer.install(args.slice(1), options);
   }
+  if (args[0] === "update") {
+    return installer.update(args.slice(1), options);
+  }
   const manifest = loadManifest();
   const selected = selectPlatform(manifest);
   const binary = locateBinary(selected);

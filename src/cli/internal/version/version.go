@@ -87,18 +87,10 @@ func ReleaseChannel(raw string) string {
 	}
 }
 
-// resolveLatestVersion finds the latest stable release tag. It prefers the git
-// protocol (git ls-remote), which is not subject to the GitHub REST API rate
-// limit, and falls back to the REST API when git is unavailable. An explicit
-// release-API override env var forces the REST API path.
+// resolveLatestVersion uses the npm latest dist-tag, matching ordinary CLI
+// update notices and the npm distribution entry point.
 func resolveLatestVersion(ctx context.Context) (string, error) {
-	if releaseAPIOverride() != "" {
-		return fetchLatestVersion(ctx, releaseAPIURL())
-	}
-	if tag, err := fetchLatestVersionViaGit(ctx); err == nil && tag != "" {
-		return tag, nil
-	}
-	return fetchLatestVersion(ctx, releaseAPIURL())
+	return fetchLatestNPMVersion(ctx)
 }
 
 // fetchLatestVersionViaGit lists tags via `git ls-remote` and returns the

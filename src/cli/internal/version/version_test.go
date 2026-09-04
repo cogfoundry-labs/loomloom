@@ -58,8 +58,10 @@ func TestReleaseChannel(t *testing.T) {
 
 func TestCheckLatest(t *testing.T) {
 	origVersion := Version
+	origLatestNPMURL := latestNPMURL
 	t.Cleanup(func() {
 		Version = origVersion
+		latestNPMURL = origLatestNPMURL
 		_ = os.Unsetenv("LOOMLOOM_CLI_RELEASE_API")
 		_ = os.Unsetenv("BATCHJOB_CLI_RELEASE_API")
 	})
@@ -67,10 +69,10 @@ func TestCheckLatest(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"tag_name":"v0.1.5"}`))
+		_, _ = w.Write([]byte(`{"version":"0.1.5"}`))
 	}))
 	defer server.Close()
-	_ = os.Setenv("LOOMLOOM_CLI_RELEASE_API", server.URL)
+	latestNPMURL = server.URL
 
 	status, err := CheckLatest(context.Background())
 	if err != nil {
@@ -79,7 +81,7 @@ func TestCheckLatest(t *testing.T) {
 	if status.CurrentVersion != "v0.1.4" {
 		t.Fatalf("CurrentVersion=%q", status.CurrentVersion)
 	}
-	if status.LatestVersion != "v0.1.5" {
+	if status.LatestVersion != "0.1.5" {
 		t.Fatalf("LatestVersion=%q", status.LatestVersion)
 	}
 	if status.CurrentChannel != "stable" {

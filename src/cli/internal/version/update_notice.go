@@ -23,6 +23,14 @@ type updateCheckCache struct {
 	Source        string    `json:"source"`
 }
 
+type skillSyncReceipt struct {
+	Version int `json:"version"`
+	Agents map[string]struct {
+		Package string `json:"package"`
+		PackageVersion string `json:"package_version"`
+	} `json:"agents"`
+}
+
 // CachedStableUpdateNotice reads only local state, so it is safe on every
 // command path. The cache is a rate limiter, not a release source of truth.
 func CachedStableUpdateNotice() string {
@@ -35,6 +43,25 @@ func CachedStableUpdateNotice() string {
 		return ""
 	}
 	return updateNotice(Version, cache.LatestVersion)
+}
+
+// CachedSkillSyncNotice only reads the npm installer receipt. It never scans
+// Agent directories or downloads Skill content during normal command use.
+func CachedSkillSyncNotice() string {
+	if updateCheckDisabled() || ReleaseChannel(Version) != "stable" {
+		return ""
+	}
+	dir, err := os.UserConfigDir()
+	if err != nil { return "" }
+	data, err := os.ReadFile(filepath.Join(dir, "loomloom", "skill-sync.json"))
+	if err != nil { return "" }
+	var receipt skillSyncReceipt
+	if json.Unmarshal(data, &receipt) != nil { return "" }
+	for agent, entry := range receipt.Agents {
+		if entry.Package != "@cogfoundry/loomloom" || compareVersions(entry.PackageVersion, Version) >= 0 { continue }
+		return fmt.Sprintf("LoomLoom Skill for %s is older than CLI %s. Run: loomloom update --agent %s", agent, Version, agent)
+	}
+	return ""
 }
 
 // RefreshStableUpdateCache refreshes stale stable-release state. Call it in a

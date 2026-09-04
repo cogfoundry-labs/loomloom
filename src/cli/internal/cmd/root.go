@@ -117,6 +117,9 @@ func writeStableUpdateNotice(cmd *cobra.Command, opts *rootOptions) {
 	if notice := checkStableUpdateNotice(); notice != "" {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "notice: %s\n", notice)
 	}
+	if notice := version.CachedSkillSyncNotice(); notice != "" {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "notice: %s\n", notice)
+	}
 	go refreshStableUpdateCache(cmd.Context())
 }
 
