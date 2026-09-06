@@ -1,43 +1,150 @@
 # Image Lab
 
-**One prompt. Several strong possibilities. Pick the image you want.**
-See the price. Approve once. Generate in parallel.
+**What if you didn't have to pick an image model?**
 
-_Powered by CogFoundry's model gateway._
+You bring a prompt. Image Lab classifies what kind of image it is, works out which of 7 models actually fit that brief, shows you the estimated total, and — once you approve — generates several alternatives across those models in parallel. You see what it really cost, then choose the image you want from a gallery it builds for you.
+
+Built as a Claude Code skill on top of [loomloom](https://github.com/cogfoundry-labs/loomloom) — but loomloom is optional here. v0.1 is plain parallel calls to a model gateway; loomloom only enters at v0.4, when the work becomes a real pipeline. If you just want several strong alternatives of one prompt, you don't need loomloom at all.
+
+> "Pick an image, not a model."
+
+## See it in action
+
+One real run, start to finish — a One Piece-style 30-second storyboard sheet, eight ways.
+
+<!-- GitHub renders <video> inline only from its own user-attachments CDN. To get that:
+     drag case-studies/zoro-robin-storyboard/assets/zoro-robin-showcase.mp4 into a PR/issue
+     comment and replace the src below with the github.com/user-attachments/assets/<id> URL. -->
+<div align="center">
+  <video src="https://github.com/cogfoundry-labs/loomloom/raw/main/examples/community/image-lab/case-studies/zoro-robin-storyboard/assets/zoro-robin-showcase.mp4" width="100%" controls></video>
+</div>
+
+▶ [**Watch the showcase video**](case-studies/zoro-robin-storyboard/assets/zoro-robin-showcase.mp4) (9:16, ~14 s) — rendered straight from the case study's own images.
+
+> **Zoro & Robin storyboard** — one brief classified as `infographic / diagram`, `count 8` → **GPT Image 2 ×3 + Nano Banana Pro ×3 + Nano Banana 2 ×2**. Eight complete storyboard sheets, three models, **$0.5547** total. → [Full case study](https://maxaibuilds.github.io/zoro-robin-storyboard/)
+
+The case study shows everything the run actually produced — every alternative, the model behind each one, the size each ran at, the per-image and total cost, and the exact prompt. Nothing staged, nothing a screenshot.
+
+## Why I built this
+
+I'm not a prompt engineer and I don't have a favourite image model. I kept doing the same thing anyway: pick whichever model I used last, run it four times, squint at the results, run it four more. Trying a *different* model meant another tab, another mental model of its quirks, another guess at what it would cost — so I mostly didn't.
+
+That turned into a question I wanted an answer to:
+
+> **If a good image is often just one model away, why is trying several so much friction?**
+
+Image Lab is my attempt at removing that friction without hiding the cost. It doesn't write your prompt and it doesn't tell you which image is best — it spreads your prompt across the models that fit the brief, makes you approve one number, and hands you the choices.
+
+I didn't invent a model-ranking system. The scoring is deliberately dumb and auditable — a weighted dot product you can read in about forty lines — precisely because I'm not the person who should be secretly deciding which model wins.
+
+## Try it yourself
+
+You don't need to understand the workflow before trying it.
+
+**1. Install**
+
+```bash
+npx skills add cogfoundry-labs/loomloom --skill image-lab -a claude-code -g -y
+```
+
+No `git clone`, no `cd`.
+
+**2. Give Claude a prompt**
 
 ```
-7 image models  ·  estimate before you spend  ·  live progress  ·  actual cost after
+generate that with Image Lab
 ```
 
-Image Lab helps you **pick an image, not pick a model**. You bring a prompt; its
-Model Advisor spreads your requested number of alternatives across the models
-that best fit the brief, shows you the estimated total, and — once you approve —
-runs them all in parallel. You see what it actually cost, then choose your
-favourite.
+with a prompt already in the conversation, or spell it out:
 
-It is **not** a model benchmark. Different models and different random seeds
-make the outputs unsuitable for a fair comparison. It gives you *choices*.
+```
+8 options of this with Image Lab —
+"isometric 3D illustration of a developer workflow, soft studio lighting, muted palette, 16:9"
+```
 
-## What it does
+or force a head-to-head:
 
-You bring a prompt — from
-[`ai-image-prompts-skill`](https://github.com/YouMind-OpenLab/ai-image-prompts-skill),
-any other prompt skill, or your own. Image Lab:
+```
+with Image Lab, compare Nano Banana Pro and GPT Image 2 on this
+```
 
-1. **PLAN** — classifies the creative intent, then a deterministic scorer builds
-   an *allocation*: which models, how many alternatives each, at what size
-2. **QUOTE** — the estimated total (printed by the same step)
+It triggers **only** when you name Image Lab — never on a bare "generate an image" — so it stays out of the way of native image generation and other image skills.
+
+**What you'll get**
+
+Image Lab will:
+
+1. **PLAN** — classify the creative intent, then a deterministic scorer picks which models fit and how many alternatives each gets
+2. **QUOTE** — the estimated total, printed by the same step
 3. **APPROVE** — one yes/no. Nothing is spent before this. It is the only gate.
-4. **GENERATE** — the whole allocation as independent gateway tasks, in parallel.
-   It runs in the background and reports "N/8 done" as each lands, so a long run
-   still shows motion
-5. **RESULTS** — every image, the actual cost, **and** a shareable **exploration
-   page** built automatically: one brief, every alternative, a click-to-compare
-   gallery. You pick your winner from the page. Nothing is spent to build it.
+4. **GENERATE** — the whole allocation as independent gateway tasks, in parallel, in the background, reporting `N/8 done` as each lands
+5. **RESULTS** — every image, the real cost, **and** a shareable exploration page built automatically — one brief, every alternative, a click-to-compare gallery you pick your winner from
 
-## Your exploration budget
+You don't tell Claude how to do any of these steps. You make the one decision that spends money, and the one that picks the image.
 
-`count` is the number of alternatives you want — **1, 2, 4, or 8**, default **4**.
+**Nothing else to install first.** `scripts/image.py` checks the loomloom CLI, your token, and your balance at PLAN and stops with the single fix if anything's missing — someone who provides a prompt and stops at APPROVE never has to set anything up.
+
+Want the source? `image-lab` lives inside the `loomloom` repo as a community example, not its own standalone repo:
+
+```bash
+git clone https://github.com/cogfoundry-labs/loomloom
+cd loomloom/examples/community/image-lab
+```
+
+## Pick an image, not a model
+
+Most "generate a few options" experiments look like this:
+
+```
+prompt
+  ↓
+pick one model
+  ↓
+generate ×4
+  ↓
+pick one
+```
+
+Image Lab takes a different path:
+
+```
+prompt
+  ↓
+Model Advisor  →  which models fit this brief, how many each
+  ↓
+estimate  →  you approve one number
+  ↓
+generate in parallel, across models
+  ↓
+gallery  →  you pick the image
+```
+
+It is **not** a model benchmark. Different models, different seeds, different sizes — the outputs are an unfair comparison on purpose. What you get is *more chances to find a great image, from genuinely different models*, for a cost you saw before you spent it.
+
+## What actually happens
+
+```
+prompt
+   │
+   ▼
+PLAN  →  QUOTE
+   │
+   ▼
+APPROVE ──▶ THE ONE GATE — the wallet boundary
+   │
+   ▼
+GENERATE  (N tasks across 1–3 models, in parallel)
+   │
+   ▼
+RESULTS  →  exploration page (built automatically, spends nothing)
+   │
+   ▼
+you pick your image
+```
+
+One gate, not zero — and it's the one that matters, the point where money gets spent. Picking a favourite at RESULTS is just conversation; the run is already done.
+
+`count` is your exploration budget — **1, 2, 4, or 8**, default **4**:
 
 | count | meaning | typical allocation |
 |---:|---|---|
@@ -46,59 +153,40 @@ any other prompt skill, or your own. Image Lab:
 | **4** | **standard exploration** | **top 2 models, two each** |
 | 8 | deep exploration | top **3** models — A ×3 + B ×3 + C ×2 |
 
-The allocation is deterministic — the same intent + count always plans the same
-mix — while the images themselves stay stochastic. When only one model genuinely
-fits the brief, the whole budget goes to it. `count = 8` is the one level that
-also widens the model spread (a broader net for a deep dive); how the budget is
-split is an internal Advisor policy and may evolve without changing what `count`
-means — it is always a number of images, never "top-N models".
+Say it naturally — *"just one"*, *"give me a couple"*, *"explore this"*, *"make 8"*. There is no slider. The allocation is deterministic; the images stay stochastic.
 
-Say it naturally: *"just one"*, *"give me a couple"*, *"explore this"*,
-*"make 8"*. There is no slider.
+## How model selection works
 
-## Try it
+Two files, deliberately separate:
 
-```bash
-npx skills add cogfoundry-labs/loomloom --skill image-lab -a claude-code -g -y
-```
+- **`references/generation-policy.md`** — for each creative intent, a set of per-dimension requirement weights (`photorealism`, `typography`, `composition_control`, `speed`, each `low`/`medium`/`high`). **No model names.** This is Image Lab's *taste*, and it's meant to be hand-edited.
+- **`references/model-catalog.yaml`** — each model scored `-1`…`2` on the same dimensions, plus its measured rate and size minimum. A temporary adapter: it exists only until the gateway ships a model endpoint.
 
-Then, with a prompt in hand:
+`scripts/image.py` then, per run:
 
-```
-generate that with Image Lab
-```
+1. **disqualifies** any model that is weak (`-1`) at a `high` requirement
+2. ranks the rest by **suitability** — the weighted dot product (cost is *not* in it)
+3. picks **A** = top suitability (exact ties broken by lower cost)
+4. picks **B** = the next-best surviving model — the runner-up, honestly labelled
+5. at `count = 8`, picks **C** = the third-best surviving model, for a wider net
+6. splits the `count`: `1 → A`, `2 / 4 → A + B`, `8 → A ×3 + B ×3 + C ×2`
 
-or
+Every candidate is priced **at the size it would actually run** — Seedream's forced upsize and GPT Image 2's size-dependent rate both count. `image.py resolve --explain` prints the whole score table, so *"why these models?"* always has a printable answer.
 
-```
-8 options of this with Image Lab —
-"isometric 3D illustration of a developer workflow, soft studio lighting, muted palette, 16:9"
-```
+## The exploration page
 
-or force the models:
+RESULTS always runs `scripts/build-exploration-page.py` — it costs nothing, and it's what you pick your favourite from. It turns the run into a self-contained static folder:
 
 ```
-with Image Lab, compare Nano Banana Pro and GPT Image 2 on this
+<slug>/
+  index.html        an image-selection gallery: framed hero + thumbnail strip + lightbox
+  exploration.json  the data model (a future PDF / social-card renderer reads this)
+  assets/…          the images
 ```
 
-It triggers **only** when you name Image Lab — never on a bare "generate an
-image" — so it stays out of the way of native image generation and other image
-skills.
+An **image-selection gallery, not a benchmark report**: a topbar with a Share cluster (`Copy link` + one-click `X` / `LinkedIn`); a hero with an *"AI-generated · not a benchmark"* badge and a model legend; a thumbnail strip badged by **letter** (`A · GPT Image 2` — candidates, not steps); a click-to-compare hero with an `N / 8` counter and a per-alternative deep link (`…/index.html#E` opens straight to candidate E); a minimal full-screen lightbox; then **The run** (a facts grid), the full **Prompt** with a 3-step *"how to use this"*, **How this was made** (every model + tool, linked, with the real cost), and a **CTA**. Open Graph tags make a pasted link unfurl with the image.
 
-## Prerequisites
-
-The loomloom CLI, a selected server, a token
-(`LOOMLOOM_TOKEN_COGFOUNDRY` or `loomloom login`), and a positive balance. The
-gateway API uses the **same token and the same balance** as the loomloom CLI.
-`scripts/image.py` checks all of this at PLAN and stops with the one fix if
-anything is missing — a user who stops at APPROVE never has to set it up.
-
-## The one gate
-
-Only **APPROVE** is a formal gate — the wallet boundary. One request can spend
-across two models, so the approval screen shows the exact mix and per-model
-subtotals. Picking a favourite at RESULTS is just conversation; the run is
-already done.
+It's in [`redesign-lab`](../redesign-lab)'s case-study house style — same token block, same Arial-Black headings and IBM Plex Mono labels, same hard edges. GitHub-Pages-ready, or published as a one-file artifact for a live URL. Curated ones live in [`case-studies/`](./case-studies/); some also carry a short 9:16 video, rendered from a [Remotion](https://remotion.dev) project alongside them.
 
 ## What's in this folder
 
@@ -107,114 +195,76 @@ already done.
 | `SKILL.md` | Entry point — trigger, contract, the five steps |
 | `docs/design-spec.md` | Why it's shaped this way — the Advisor, the two layers, the roadmap |
 | `pipelines/generate.yaml` | The stage manifest the agent follows |
-| `references/generation-policy.md` | **Durable:** creative intent → capability requirements + preferred sizes. Hand-editable — bring your own taste. |
-| `references/model-catalog.yaml` | **Temporary adapter:** model ids, per-dimension scores, measured rates, size minimums. `TODO`: replace with a gateway endpoint when one exists. |
-| `scripts/image.py` | `resolve` / `run` — generation; standard-library Python, no SDK |
-| `scripts/build-exploration-page.py` | turns a run into a shareable static folder (brief + alternatives + pick); no spend |
-| `test-fixtures/sample-prompts.json` | Prompts + expected intent/allocation, for exercising PLAN without spend |
-| `case-studies/<slug>/` | Curated, committed exploration pages from real runs — self-contained, GitHub-Pages-ready. See `case-studies/README.md`. |
+| `references/generation-policy.md` | **Durable:** creative intent → capability requirements + sizes. Hand-editable — bring your own taste. |
+| `references/model-catalog.yaml` | **Temporary adapter:** model ids, per-dimension scores, measured rates. `TODO`: replace with a gateway endpoint. |
+| `scripts/image.py` | `resolve` / `run` — the whole generation engine; standard-library Python, no SDK |
+| `scripts/build-exploration-page.py` | turns a run into a shareable static folder; no spend |
+| `test-fixtures/sample-prompts.json` | prompts + expected intent/allocation, for exercising PLAN without spend |
+| `case-studies/<slug>/` | curated, committed exploration pages from real runs — self-contained, GitHub-Pages-ready |
 | `showcase/` | **v0.4** — Image Lab as a real loomloom workflow (not wired into v0.1) |
 
-## How model selection works
+## Bring your own taste
 
-`generation-policy.md` gives each creative intent a set of per-dimension
-requirement weights (`photorealism`, `typography`, `composition_control`,
-`speed` — `low`/`medium`/`high` → `0`/`1`/`2`). `model-catalog.yaml`
-scores each model `-1`…`2` on the same dimensions. `image.py`:
-
-1. **disqualifies** any model that is weak (`-1`) at a `high` requirement;
-2. ranks the rest by **suitability** — the weighted dot product;
-3. picks **A** = the top-suitability model (exact ties broken by lower cost);
-4. picks **B** = the next-best surviving model — the runner-up, the "also worth
-   trying" pick (A takes the whole budget only when it's the sole survivor);
-5. at `count = 8` only, picks **C** = the third-best surviving model for a wider
-   net;
-6. splits the `count`: `1 → A`, `2 / 4 → A + B`, `8 → A ×3 + B ×3 + C ×2`.
-
-Each model is priced **at the size it would actually run** (Seedream's forced
-upsize and GPT Image 2's size-dependent rate both count). Rates in
-`model-catalog.yaml` were measured against the live gateway on 2026-09-06
-and are a pre-flight guess of the `cost` the gateway reports back — RESULTS
-always shows the real charge.
-
-It is deterministic — the same intent + count always plans the same mix — and
-`image.py resolve --explain` prints the full table.
-
-## The exploration page
-
-RESULTS always runs `scripts/build-exploration-page.py --from ./out` (it costs
-nothing, and you pick your favourite from it), turning `./out/run.json` + the
-images into a self-contained static folder:
+This is the part I'd most like people to push on. Image Lab separates the *workflow* (classify, allocate, gate, generate, gallery) from the *taste* (what each kind of image needs, which dimensions matter). The workflow doesn't know or care what's in `generation-policy.md`:
 
 ```
-out/<slug>/
-  index.html          an image-selection gallery: hero + thumbnail strip, lightbox
-  assets/alternative-01.png …
-  exploration.json    the data model (a future PDF / social-card renderer reads this)
+Image Lab  +  your generation policy  →  your model choices, your exploration
 ```
 
-It's an **image-selection gallery, not a benchmark report** — a topbar with a
-**Share** cluster (`Copy link` + one-click `X` / `LinkedIn`); a hero with an
-*"AI-generated · not a benchmark"* badge, the tagline, and a **model legend**
-(`GPT Image 2 ×3` chips, each linked to its model page); then *"Pick your image"*
-— a framed hero and a thumbnail strip badged by **letter** (`A · GPT Image 2`,
-not `01` — candidates, not steps). Click a thumbnail → the hero + a
-`model · size · cost · time` line swap, with an `N / 8` counter and a *"Copy link
-to alternative N"* button (a shared `…/index.html#E` opens straight to candidate
-E). Click the hero → a minimal full-screen lightbox (`← →`, `Esc`, `Copy link`,
-`Open raw ↗`). Below: **The run** (a facts grid), the full **Prompt** (reusable,
-with Copy + a 3-step *"how to use this"*), **How this was made** (every model +
-tool, linked, with the real cost), a **Coming soon** note, and a **CTA** to
-install Image Lab. Open Graph tags make a pasted link unfurl with the image.
+You don't have to agree with the default weights. Add an intent, re-weight `typography` for posters, decide that `speed` matters more than the catalog assumes — same gate, same gallery, same case-study output. The `model-catalog.yaml` scores are just as editable; they're a stopgap until the gateway can answer *"which models, and how much"* itself.
 
-Every section shares one shape — mono eyebrow, Arial-Black headline, one lead
-line, then the body — in `redesign-lab`'s case-study house style (same token
-block, two-tier 1200/820 width, hairline grids). No cost — the images already
-exist. GitHub-Pages-ready (`--canonical-url` sets the deploy URL); the skill
-also publishes the one-file `index.inline.html` as an artifact so you have a
-live URL to pick from.
+## Where loomloom fits
 
-## Roadmap — primitive → workflow
+v0.1 doesn't touch loomloom's compiler or runtime. "Several alternatives of one prompt" is N calls with no dependencies between them, so it uses the gateway directly:
 
-| Version | Adds | Execution layer |
+```
+PLAN → QUOTE → APPROVE → GENERATE → RESULTS → exploration page
+```
+
+That's the whole skill today, for the cost of the images. loomloom arrives at **v0.4**, when the work becomes a dependency-aware pipeline — tidy → generate ×N → judge — with one run record:
+
+| Version | Adds | Layer |
 |---|---|---|
-| **v0.1 (this)** | any prompt → 1/2/4/8 alternatives across the best-fit models → estimate → approve → gallery → **shareable exploration page**; 7 models | gateway API |
-| v0.2 — Retry + mix control | retry failed branches; tune the allocation ("more of A", pin a third model) | gateway API |
-| v0.3 — Judge | an LLM ranks the alternatives — the first step dependency | gateway + local LLM |
-| **v0.4 — Workflow** | tidy → generate → judge as one loomloom TemplateSpec, with a run record | **loomloom** |
-| v0.5 — Reference + Edit | reference image in; generate → edit chain | |
-| v0.6 — Batch | a file of prompts → a gallery per row | loomloom workbook |
+| **v0.1 (this)** | any prompt → 1/2/4/8 alternatives across best-fit models → estimate → approve → gallery → shareable page; 7 models | gateway |
+| v0.2 | retry failed branches; natural-language allocation tuning | gateway |
+| v0.3 | an LLM judge that ranks the alternatives (the first step dependency) | gateway + local LLM |
+| **v0.4** | tidy → generate ×N → judge as one loomloom TemplateSpec, with a run record | **loomloom** |
+| v0.5–v0.6 | reference image + edit chain; batch a file of prompts | loomloom |
 
-Gateway = execution primitive. loomloom = workflow orchestration. Image Lab
-starts at the primitive because "several alternatives of one prompt" is several
-independent calls, and *graduates* into a loomloom workflow as the work gains
-structure. See `showcase/README.md`.
+Gateway = execution primitive. loomloom = workflow orchestration. Image Lab starts at the primitive and *graduates*. See [`showcase/README.md`](./showcase/README.md).
 
 ## What this is — and isn't
 
-**It is:** a standalone skill that turns any image prompt into a parallel,
-cost-gated set of alternatives across the best models for the brief; a loomloom
-community example that graduates into a loomloom workflow.
+**It is:** a real Claude Code skill you can install today; a way to try several image models on one brief without pricing anxiety; a pluggable generation policy; a working example of a loomloom primitive that graduates into a loomloom workflow.
 
-**It isn't:** a prompt writer (bring your own), an image editor, a model
-benchmark, or a replacement for native image generation when you want one quick
-image. It makes you approve a cost on purpose.
+**It isn't:** a prompt writer (bring your own), an image editor, a model benchmark or leaderboard, or a replacement for native image generation when you just want one quick picture. It makes you approve a cost on purpose.
 
-## Help us test this
+## Help me test this
 
-Once it runs against your prompts, feedback wanted:
+Once it's run against your prompts, I want to know:
 
-- Is the one cost gate in the right place? Does the allocation feel right, or do
-  you keep overriding it?
-- Does the PLAN + "why" give you enough to approve confidently?
+- Is the one cost gate in the right place? Does the allocation feel right, or do you keep overriding it?
+- Does the PLAN + "why" line give you enough to approve confidently?
 - What creative intent is missing from `generation-policy.md`?
 - Where should it stop and ask, and where should it just run?
 
-## Credits & licence
+And if the whole shape seems wrong to you, I'd like to hear that too. Open an issue, or find me in [Show and tell](https://github.com/orgs/cogfoundry-labs/discussions/categories/show-and-tell).
 
-Apache-2.0, like the rest of loomloom. Pairs naturally with
-[`ai-image-prompts-skill`](https://github.com/YouMind-OpenLab/ai-image-prompts-skill)
-(YouMind, MIT) for the prompt, used unmodified. Intent-based model selection is
-inspired by `runcomfy-com/skills` (MIT); the exploration page follows
-`redesign-lab`'s case-study house style. `references/model-catalog.yaml`
-is our own stopgap until the gateway ships a model endpoint.
+## Built on open-source work, with real thanks
+
+- **The prompt** — [`ai-image-prompts-skill`](https://github.com/YouMind-OpenLab/ai-image-prompts-skill) (YouMind, MIT). Image Lab consumes a finished prompt; this pairs with it, used unmodified, and its curated 10,000+ prompts are a good place to start.
+- **The idea** — intent-based model selection is inspired by `runcomfy-com/skills` (MIT).
+- **The models and the real cost** — [CogFoundry's model gateway](https://cogfoundry.ai): Google's Nano Banana family, OpenAI's GPT Image 2, ByteDance's Seedream family, and the authoritative per-image `cost` that RESULTS reports back.
+- **The look** — the exploration page follows [`redesign-lab`](../redesign-lab)'s case-study house style; the showcase video is [Remotion](https://remotion.dev).
+
+Thank you to every one of these projects and their maintainers. If you maintain one and want something changed about how it's credited or used here, open an issue and I'll fix it.
+
+## Next step
+
+If people find this genuinely useful, the thing I want to build next is a place where the generation policy, the model catalog, and eventually the judge are all things other people contribute and compare — so instead of one opinionated model picker, there's a workflow where different taste can be swapped in and argued about. That only makes sense to build if this first version holds up, which is what I'm trying to find out.
+
+---
+
+Apache-2.0, like the rest of loomloom.
+
+[→ Try it yourself](#try-it-yourself) · [→ Case study](https://maxaibuilds.github.io/zoro-robin-storyboard/) · [→ Technical spec](docs/design-spec.md)
