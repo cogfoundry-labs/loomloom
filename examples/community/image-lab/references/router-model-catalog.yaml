@@ -1,0 +1,95 @@
+# ROUTER MODEL CATALOG — TEMPORARY ADAPTER
+#
+# TODO: delete this file and read the catalog from the router when CogFoundry
+#       ships a model / capability / pricing endpoint, e.g.
+#         GET /api/v1/models?modality=image
+#         GET /api/v1/capabilities
+#       image.py isolates this behind one function (load_model_catalog());
+#       swapping the source is a one-function change.
+#
+# It exists only because /api/v1/models currently returns just the chat/LLM
+# models and there is no pricing endpoint. This is NOT part of Image Lab's
+# design — it is a hand-maintained shim.
+#
+# rates: measured 2026-09-06 by submitting one real task per (model, size) and
+#        confirming the charge against `loomloom balance`. The router's
+#        data.cost field is authoritative and matched the balance delta every
+#        time; these numbers are only a *pre-flight guess* of it.
+#
+#   - Google + OpenAI bill per image. Only openai/gpt-image-2 changes price
+#     with output size, so it carries a `pricing:` tier list; every other model
+#     is flat (`usd_per_image`).
+#   - Seedream rates are measured at the forced >= 3.69 MP size (Image Lab
+#     always upsizes to clear their floor), so they already reflect as-used
+#     cost.
+#   - google/gemini-3.1-flash-image billed 0.0 on 2026-09-06 (free launch
+#     preview). Its usd_per_image is a deliberate over-estimate, not 0 — see
+#     the note on that model below.
+#
+# scores: -1 weak | 0 neutral | 1 good | 2 strong, per dimension.
+# dimensions are the fixed vocabulary shared with generation-policy.md:
+#   photorealism | typography | composition_control | speed
+# scores are approximate by nature; a wrong score only changes which model
+# wins, and the user sees the winner + its "why" before approving.
+#
+# url: the model's CogFoundry page — shown as a link on the exploration page.
+
+models:
+
+  google/gemini-2.5-flash-image:
+    label: Nano Banana
+    url: https://cogfoundry.ai/en/models/media/185/
+    scores: { photorealism: 0, typography: -1, composition_control: 1, speed: 2 }
+    usd_per_image: 0.0032         # measured, flat across sizes
+    size_min_px: 1048576         # 1024x1024 accepted
+
+  google/gemini-3.1-flash-image:
+    label: Nano Banana 2
+    url: https://cogfoundry.ai/en/models/media/283/
+    scores: { photorealism: 1, typography: 0, composition_control: 1, speed: 2 }
+    # Billed $0.00 on 2026-09-06 (router data.cost = 0, balance unchanged) —
+    # a launch free preview, not a permanent price. This 0.006 is a deliberate
+    # OVER-estimate (~2x its sibling gemini-2.5-flash-image's measured router
+    # rate) so the cost gate never approves "$0" and then charges real money
+    # when billing resumes. RESULTS still shows the true $0.00. Re-measure and
+    # correct this once the model starts billing.
+    usd_per_image: 0.006
+    size_min_px: 1048576
+
+  google/gemini-3-pro-image:
+    label: Nano Banana Pro
+    url: https://cogfoundry.ai/en/models/media/241/
+    scores: { photorealism: 1, typography: 1, composition_control: 2, speed: 0 }
+    usd_per_image: 0.0134        # measured, flat across sizes
+    size_min_px: 1048576
+
+  openai/gpt-image-2:
+    label: GPT Image 2
+    url: https://cogfoundry.ai/en/models/media/314/
+    scores: { photorealism: -1, typography: 2, composition_control: 2, speed: 0 }
+    size_min_px: 1048576
+    usd_per_image: 0.0059        # <= ~1.2 MP; see pricing tiers below
+    pricing:                      # measured: price rises sharply with size
+      - { up_to_px: 1200000, usd: 0.0059 }   # ~1024x1024
+      - { up_to_px: 99999999, usd: 0.042 }   # ~1024x1536 / 1536x1024 and up
+
+  bytedance/doubao-seedream-5-0-pro:
+    label: Seedream 5.0 Pro
+    url: https://cogfoundry.ai/en/models/media/352/
+    scores: { photorealism: 2, typography: 0, composition_control: 1, speed: 0 }
+    usd_per_image: 0.1015        # measured at forced >= 3.69 MP
+    size_min_px: 3686400         # rejects sizes below ~1920x1920
+
+  bytedance/doubao-seedream-5-0-lite:
+    label: Seedream 5.0 Lite
+    url: https://cogfoundry.ai/en/models/media/281/
+    scores: { photorealism: 2, typography: -1, composition_control: 1, speed: 1 }
+    usd_per_image: 0.0371        # measured at forced >= 3.69 MP
+    size_min_px: 3686400
+
+  bytedance/doubao-seedream-4.5:
+    label: Seedream 4.5
+    url: https://cogfoundry.ai/en/models/media/248/
+    scores: { photorealism: 1, typography: -1, composition_control: 1, speed: 1 }
+    usd_per_image: 0.0422        # measured at forced >= 3.69 MP
+    size_min_px: 3686400
