@@ -9,6 +9,8 @@ case-studies/<slug>/
   index.html          the exploration page (styles + gallery/lightbox script inline)
   exploration.json    the data model — a future PDF / social-card renderer reads this
   assets/alternative-01.jpg …   the generated images, JPEG q95, full resolution
+  assets/<slug>-showcase.mp4    (optional) a short showcase clip
+  video/                        (optional) the Remotion project that renders it
 ```
 
 These are **not** produced by the skill on every run — the skill publishes each
@@ -43,8 +45,21 @@ Any static host. The pages use **relative** asset paths and relative
 unfurl, rebuild with `--canonical-url <the deploy URL>` so `og:image` is
 absolute.
 
+## Showcase video (optional)
+
+A case study may also carry a short 9:16 clip in `assets/<slug>-showcase.mp4`,
+rendered from a [Remotion](https://remotion.dev) project in `video/`. It reads
+the case study's own JPEGs (via `Config.setPublicDir("../assets")` — no copies),
+so `video/` is just source (~250 KB). See `<slug>/video/README.md`.
+
+```bash
+cd <slug>/video && npm i
+npx remotion studio                                    # edit live
+npx remotion render ImageLabShowcase out/x.mp4 --crf=28 # ~5-6 MB
+```
+
 ## Index
 
-| Slug | Brief | Run |
-|---|---|---|
-| [`zoro-robin-storyboard`](./zoro-robin-storyboard/) | A 30-second One Piece-style storyboard sheet (Zoro × Robin) | `infographic / diagram`, count 8 → GPT Image 2 ×3 + Nano Banana Pro ×3 + Nano Banana 2 ×2, $0.5547 |
+| Slug | Brief | Run | Video |
+|---|---|---|---|
+| [`zoro-robin-storyboard`](./zoro-robin-storyboard/) | A 30-second One Piece-style storyboard sheet (Zoro × Robin) | `infographic / diagram`, count 8 → GPT Image 2 ×3 + Nano Banana Pro ×3 + Nano Banana 2 ×2, $0.5547 | ✅ 9:16, ~14 s |
