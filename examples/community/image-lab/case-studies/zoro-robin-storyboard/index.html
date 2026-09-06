@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zoro &amp; Robin storyboard</title>
+<meta name="description" content="One brief. Three models. Eight ways to see a Zoro x Robin storyboard.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Zoro &amp; Robin storyboard">
+<meta property="og:description" content="One brief. Three models. Eight ways to see a Zoro x Robin storyboard.">
+<meta property="og:image" content="assets/alternative-01.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Zoro &amp; Robin storyboard">
+<meta name="twitter:description" content="One brief. Three models. Eight ways to see a Zoro x Robin storyboard.">
+<meta name="twitter:image" content="assets/alternative-01.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23007a5c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    --bg:#f4f4f0; --surface:#ffffff; --ink:#0b0b0b; --muted:#4a4a46; --faint:#68675e;
+    --accent:#007a5c; --accent-fill:#00fdbc; --on-accent-fill:#062017;
+    --rule:#d8d6ce; --rule-strong:#0b0b0b; --shadow:0 1px 3px rgba(11,11,11,.09);
+    --prose:820px;
+    --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans:Arial, "Helvetica Neue", Helvetica, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#15150f; --surface:#1d1d16; --ink:#f2f1ea; --muted:#b3b0a5; --faint:#726f63;
+      --accent:#00fdbc; --accent-fill:#00fdbc; --on-accent-fill:#062017;
+      --rule:#33322a; --rule-strong:#f2f1ea; --shadow:0 1px 3px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#15150f; --surface:#1d1d16; --ink:#f2f1ea; --muted:#b3b0a5; --faint:#726f63;
+    --accent:#00fdbc; --accent-fill:#00fdbc; --on-accent-fill:#062017;
+    --rule:#33322a; --rule-strong:#f2f1ea; --shadow:0 1px 3px rgba(0,0,0,.45);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--serif); font-size: 18px; line-height: 1.6; overflow-x: hidden;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  .col { max-width: var(--prose); margin-left: auto; margin-right: auto; }
+  html:not(.js) .js-only,
+  html:not(.js) .hero-open,
+  html:not(.js) .hero-nav { display: none !important; }
+
+  /* ---- shared buttons ---- */
+  .btn-ghost {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; cursor: pointer; background: none; text-decoration: none;
+    border: 1px solid var(--rule-strong); color: var(--ink); padding: 7px 13px;
+  }
+  .btn-ghost:hover { background: var(--ink); color: var(--bg); }
+  .btn-ghost:active { transform: translateY(1px); }
+  .btn-ghost:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-solid {
+    font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+    background: var(--ink); color: var(--bg); border: 0; cursor: pointer; text-decoration: none;
+    box-shadow: var(--shadow);
+  }
+  .btn-solid:hover { background: var(--accent); color: var(--on-accent-fill); }
+  .btn-solid:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---- topbar ---- */
+  .topbar { border-bottom: 2px solid var(--rule-strong); }
+  .topbar-in {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding-top: 14px; padding-bottom: 14px;
+  }
+  .wordmark {
+    font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent); flex-shrink: 0;
+  }
+  .share { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .share-lbl {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--faint); margin-right: 2px;
+  }
+  @media (max-width: 560px) { .share-lbl { display: none; } }
+
+  /* ---- header ---- */
+  header { border-bottom: 2px solid var(--rule-strong); padding: 56px 0 44px; }
+  .hero-eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin: 0 0 18px;
+  }
+  .hero-badge {
+    display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; background: var(--accent-fill); color: var(--on-accent-fill);
+    padding: 4px 10px; margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--sans); font-weight: 900; text-transform: uppercase;
+    font-size: clamp(2rem, 6vw, 3.1rem); line-height: 1.03; letter-spacing: -.02em;
+    margin: 0 0 20px; text-wrap: balance;
+  }
+  .summary { font-size: 1.22rem; line-height: 1.5; max-width: 34ch; margin: 0 0 4px; color: var(--ink); }
+  .legend { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .legend li {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    border: 1px solid var(--rule); padding: 5px 10px; display: flex; gap: 7px; align-items: baseline;
+  }
+  .legend .lm { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--accent); }
+  .legend .x { color: var(--accent); font-weight: 700; }
+  .stats {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--faint); margin: 18px 0 0;
+  }
+
+  section { padding: 52px 0; border-bottom: 2px solid var(--rule); }
+  section:last-of-type { border-bottom: none; }
+  .section-label {
+    display: block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px;
+  }
+  h2 {
+    font-family: var(--sans); font-weight: 900; text-transform: uppercase;
+    font-size: 1.7rem; line-height: 1.08; letter-spacing: -.01em; margin: 0 0 20px;
+  }
+  .lead {
+    font-size: 1.05rem; line-height: 1.55; color: var(--muted);
+    margin: 0 0 26px; max-width: 60ch;
+  }
+
+  /* ---- gallery ---- */
+  .hero-frame {
+    position: relative; border: 2px solid var(--rule-strong); background: var(--surface);
+  }
+  .hero-frame a { display: block; cursor: zoom-in; }
+  .hero-frame img {
+    width: 100%; height: auto; max-height: 78vh; object-fit: contain; display: block;
+  }
+  .hero-open {
+    position: absolute; top: 0; right: 0; z-index: 2; display: block;
+    font-size: 10px; padding: 7px 11px;
+  }
+  .hero-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+    width: 40px; height: 60px; border: 0; cursor: pointer; padding: 0;
+    background: var(--ink); color: var(--bg); font-size: 20px; line-height: 1;
+    opacity: 0; transition: opacity .12s;
+  }
+  .hero-frame:hover .hero-nav { opacity: .9; }
+  .hero-nav:focus-visible { opacity: 1; outline: 2px solid var(--accent-fill); }
+  .hero-nav.prev { left: 0; }
+  .hero-nav.next { right: 0; }
+  .hero-nav[disabled] { display: none; }
+  .gallery-meta {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .02em; text-transform: uppercase;
+    color: var(--faint); margin: 14px 0 0;
+  }
+  .gallery-meta .model { color: var(--ink); font-weight: 700; }
+  .gallery-meta a.model { text-decoration: none; border-bottom: 1px solid var(--accent); }
+  .gallery-meta .chose { color: var(--accent); font-weight: 700; margin-right: .5rem; }
+  .gallery-hint {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--faint); margin: 8px 0 0; display: flex; justify-content: space-between; gap: 14px;
+  }
+  .gallery-hint .pos { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .link-btn { margin: 14px 0 0; }
+
+  .gallery-thumbs { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .thumb {
+    position: relative; flex: 1 1 150px; max-width: 220px;
+    padding: 0; border: 1px solid var(--rule); background: var(--surface); cursor: pointer;
+    display: flex; flex-direction: column; text-align: left;
+    transition: box-shadow .1s, border-color .1s;
+  }
+  .thumb .shot { position: relative; aspect-ratio: 3 / 2; }
+  .thumb .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb:hover { border-color: var(--muted); }
+  .thumb.active { border-color: var(--rule-strong); box-shadow: 0 0 0 2px var(--accent-fill); }
+  .thumb-cap {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--ink); border-top: 1px solid var(--rule);
+    padding: 4px 7px; display: flex; gap: 5px; align-items: baseline;
+  }
+  .thumb-cap .ltr { color: var(--accent); font-size: 11px; }
+  .thumb-cap .ltr::after { content: " \00b7"; color: var(--faint); }
+  .thumb-cap .m { font-weight: 400; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .thumb.active .thumb-cap { background: var(--accent-fill); border-top-color: var(--accent-fill); }
+  .thumb.active .thumb-cap .ltr, .thumb.active .thumb-cap .m { color: var(--on-accent-fill); }
+  .thumb-badge {
+    position: absolute; right: 0; top: 0; width: 18px; height: 18px;
+    background: var(--accent-fill); color: var(--on-accent-fill);
+    font-size: .72rem; display: grid; place-items: center;
+  }
+  .gallery-note { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); margin-top: 16px; }
+  @media (max-width: 640px) {
+    .gallery-thumbs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; }
+    .thumb { flex: 0 0 64%; max-width: none; }
+  }
+
+  /* ---- lightbox (a deliberate single-look full-screen viewer) ---- */
+  .lightbox {
+    position: fixed; inset: 0; z-index: 50; background: rgba(8, 8, 6, .93);
+    display: flex; align-items: center; justify-content: center; padding: 5vmin;
+  }
+  .lightbox[hidden] { display: none; }
+  .lb-figure { margin: 0; max-width: 100%; max-height: 100%; display: flex; flex-direction: column; gap: 12px; }
+  .lb-figure img {
+    max-width: 100%; max-height: 82vh; object-fit: contain; display: block; margin: 0 auto;
+    border: 1px solid rgba(255, 255, 255, .16);
+  }
+  .lb-bar {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+    color: #d8d6ce; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .lb-bar .model { color: #fff; font-weight: 700; }
+  .lb-bar a, .lb-bar a.model { color: var(--accent-fill); border: 0; text-decoration: none; }
+  .lb-right { display: flex; gap: 16px; align-items: baseline; font-variant-numeric: tabular-nums; }
+  .lb-linkbtn {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    background: none; border: 0; color: var(--accent-fill); cursor: pointer; padding: 0;
+  }
+  .lb-close, .lb-nav {
+    position: absolute; background: rgba(255, 255, 255, .12); color: #fff; border: 0; cursor: pointer;
+    font-family: var(--mono); line-height: 1;
+  }
+  .lb-close { top: 3vmin; right: 3vmin; width: 40px; height: 40px; font-size: 22px; }
+  .lb-nav { top: 50%; transform: translateY(-50%); width: 44px; height: 64px; font-size: 22px; }
+  .lb-nav.prev { left: 3vmin; }
+  .lb-nav.next { right: 3vmin; }
+  .lb-nav[disabled] { opacity: .3; cursor: default; }
+  .lb-close:hover, .lb-nav:not([disabled]):hover { background: var(--accent); color: var(--on-accent-fill); }
+  .lb-close:focus-visible, .lb-nav:focus-visible { outline: 2px solid var(--accent-fill); }
+
+  /* ---- run facts (hairline grid) ---- */
+  .facts {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule);
+  }
+  .fact { background: var(--surface); padding: 14px 16px; }
+  .fact-label {
+    display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--faint); margin-bottom: 6px;
+  }
+  .fact p { margin: 0; font-size: 13px; color: var(--muted); font-family: var(--mono); line-height: 1.5; word-break: break-word; }
+  .fact-aside { color: var(--faint); }
+  @media (max-width: 640px) { .facts { grid-template-columns: 1fr; } }
+
+  /* ---- prompt ---- */
+  .prompt-core {
+    margin: 0; background: var(--surface); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent); padding: 20px 24px;
+    font-family: var(--serif); font-style: italic; font-size: 1.05rem; line-height: 1.6;
+    color: var(--ink); white-space: pre-wrap; word-break: break-word;
+  }
+  .prompt-trigger {
+    font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--faint); margin: 14px 0 0;
+  }
+  button.copy { margin-top: 18px; }
+  .how { counter-reset: how; list-style: none; margin: 24px 0 0; padding: 0; }
+  .how li {
+    counter-increment: how; display: flex; gap: 14px; padding: 11px 0;
+    border-top: 1px solid var(--rule); font-size: 15px; color: var(--ink); line-height: 1.5;
+  }
+  .how li:first-child { border-top: none; padding-top: 0; }
+  .how li::before {
+    content: counter(how); flex-shrink: 0; font-family: var(--mono); font-weight: 700;
+    font-size: 12px; color: var(--accent); padding-top: 2px;
+  }
+
+  /* ---- credits ---- */
+  .tool-list { list-style: none; margin: 0; padding: 0; }
+  .tool-list li { padding: 12px 0; border-top: 1px solid var(--rule); }
+  .tool-list li:first-child { border-top: none; padding-top: 0; }
+  .tool-list .tname { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+  .tool-list .tn { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--accent); }
+  .tool-list .trole { display: block; font-size: 14px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .tool-list code, .cta-cmd code {
+    font-family: var(--mono); font-size: 12px; background: var(--surface);
+    border: 1px solid var(--rule); padding: 0 4px;
+  }
+
+  /* ---- coming soon: uses only the shared .lead ---- */
+
+  /* ---- final CTA ---- */
+  .final-cta .col { text-align: center; }
+  .final-cta .lead { margin-left: auto; margin-right: auto; max-width: 46ch; }
+  .cta-cmd { max-width: 660px; margin: 0 auto 24px; }
+  .cta-cmd code { display: block; padding: 11px 14px; overflow-x: auto; text-align: left; }
+  .final-cta .btn { display: inline-block; font-size: 12px; padding: 13px 26px; }
+
+  footer {
+    padding: 30px 0 46px; font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--faint); text-align: center;
+  }
+  footer a { color: var(--faint); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<script>document.documentElement.className += " js";</script>
+</head>
+<body>
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <span class="wordmark">Image Lab</span>
+    <div class="share js-only">
+      <span class="share-lbl">Share</span>
+      <button type="button" class="btn-ghost" id="copy-page" aria-label="Copy link to this page">Copy link</button>
+      <a class="btn-ghost" id="share-x" target="_blank" rel="noopener" aria-label="Share on X">X</a>
+      <a class="btn-ghost" id="share-li" target="_blank" rel="noopener" aria-label="Share on LinkedIn">LinkedIn</a>
+    </div>
+  </div>
+</div>
+<header>
+  <div class="wrap">
+    <p class="hero-eyebrow">infographic / diagram</p>
+<p class="hero-badge">AI-generated &middot; not a benchmark</p>
+    <h1>Zoro &amp; Robin storyboard</h1>
+    <p class="summary">One brief. Three models. Eight ways to see a Zoro x Robin storyboard.</p>
+    <ul class="legend" aria-label="models in this run"><li><a class="lm" href="https://cogfoundry.ai/en/models/media/314/" target="_blank" rel="noopener">GPT Image 2</a><span class="x">×3</span></li><li><a class="lm" href="https://cogfoundry.ai/en/models/media/241/" target="_blank" rel="noopener">Nano Banana Pro</a><span class="x">×3</span></li><li><a class="lm" href="https://cogfoundry.ai/en/models/media/283/" target="_blank" rel="noopener">Nano Banana 2</a><span class="x">×2</span></li></ul>
+    <p class="stats">8 candidates &middot; 3 models &middot; $0.5547 total</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="gallery">
+    <span class="section-label">Gallery</span>
+    <h2>Pick your image</h2>
+    <p class="lead">Compare the 8 alternatives below &mdash; each a candidate, not a step. Select one to inspect it full size.</p>
+    <div class="gallery-main">
+      <div class="hero-frame">
+        <button type="button" class="hero-nav prev js-only" id="hero-prev" aria-label="Previous alternative">&#8592;</button>
+        <button type="button" class="hero-nav next js-only" id="hero-next" aria-label="Next alternative">&#8594;</button>
+        <button type="button" class="hero-open btn-solid js-only" id="hero-open" aria-label="Open full size">&#8599; Open full size</button>
+        <a id="hero-link" href="assets/alternative-01.jpg" target="_blank" rel="noopener"><img id="hero-img" src="assets/alternative-01.jpg" alt="Alternative A"></a>
+      </div>
+      <p class="gallery-meta" id="hero-meta">Alternative A &middot; <a class="model" href="https://cogfoundry.ai/en/models/media/314/" target="_blank" rel="noopener">GPT Image 2</a> &middot; 1536×1024 &middot; $0.1696 &middot; 130s</p>
+      <p class="gallery-hint">
+        <span>Click image to open full size<span class="js-only"> &middot; &#8592; &#8594; to browse</span></span>
+      <span class="pos" id="hero-pos">1 / 8</span>
+      </p>
+      <button type="button" class="link-btn btn-ghost js-only" id="copy-alt-link">Copy link to alternative A</button>
+    </div>
+    <div class="gallery-thumbs" aria-label="alternatives">
+      <button type="button" class="thumb active" aria-current="true" aria-label="Show alternative A — GPT Image 2" data-asset="assets/alternative-01.jpg" data-label="A" data-index="1" data-model="GPT Image 2" data-model-url="https://cogfoundry.ai/en/models/media/314/" data-size="1536x1024" data-asked="1536x1024" data-cost="$0.1696" data-seconds="130" data-selected=""><span class="shot"><img src="assets/alternative-01.jpg" alt="Alternative A" loading="lazy"></span><span class="thumb-cap"><span class="ltr">A</span><span class="m">GPT Image 2</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative B — GPT Image 2" data-asset="assets/alternative-02.jpg" data-label="B" data-index="2" data-model="GPT Image 2" data-model-url="https://cogfoundry.ai/en/models/media/314/" data-size="1536x1024" data-asked="1536x1024" data-cost="$0.1696" data-seconds="115" data-selected=""><span class="shot"><img src="assets/alternative-02.jpg" alt="Alternative B" loading="lazy"></span><span class="thumb-cap"><span class="ltr">B</span><span class="m">GPT Image 2</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative C — GPT Image 2" data-asset="assets/alternative-03.jpg" data-label="C" data-index="3" data-model="GPT Image 2" data-model-url="https://cogfoundry.ai/en/models/media/314/" data-size="1536x1024" data-asked="1536x1024" data-cost="$0.1696" data-seconds="129" data-selected=""><span class="shot"><img src="assets/alternative-03.jpg" alt="Alternative C" loading="lazy"></span><span class="thumb-cap"><span class="ltr">C</span><span class="m">GPT Image 2</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative D — Nano Banana Pro" data-asset="assets/alternative-04.jpg" data-label="D" data-index="4" data-model="Nano Banana Pro" data-model-url="https://cogfoundry.ai/en/models/media/241/" data-size="1376x768" data-asked="1536x1024" data-cost="$0.0153" data-seconds="32" data-selected=""><span class="shot"><img src="assets/alternative-04.jpg" alt="Alternative D" loading="lazy"></span><span class="thumb-cap"><span class="ltr">D</span><span class="m">Nano Banana Pro</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative E — Nano Banana Pro" data-asset="assets/alternative-05.jpg" data-label="E" data-index="5" data-model="Nano Banana Pro" data-model-url="https://cogfoundry.ai/en/models/media/241/" data-size="1376x768" data-asked="1536x1024" data-cost="$0.0153" data-seconds="32" data-selected=""><span class="shot"><img src="assets/alternative-05.jpg" alt="Alternative E" loading="lazy"></span><span class="thumb-cap"><span class="ltr">E</span><span class="m">Nano Banana Pro</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative F — Nano Banana Pro" data-asset="assets/alternative-06.jpg" data-label="F" data-index="6" data-model="Nano Banana Pro" data-model-url="https://cogfoundry.ai/en/models/media/241/" data-size="1376x768" data-asked="1536x1024" data-cost="$0.0153" data-seconds="30" data-selected=""><span class="shot"><img src="assets/alternative-06.jpg" alt="Alternative F" loading="lazy"></span><span class="thumb-cap"><span class="ltr">F</span><span class="m">Nano Banana Pro</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative G — Nano Banana 2" data-asset="assets/alternative-07.jpg" data-label="G" data-index="7" data-model="Nano Banana 2" data-model-url="https://cogfoundry.ai/en/models/media/283/" data-size="1376x768" data-asked="1536x1024" data-cost="$0.0000" data-seconds="12" data-selected=""><span class="shot"><img src="assets/alternative-07.jpg" alt="Alternative G" loading="lazy"></span><span class="thumb-cap"><span class="ltr">G</span><span class="m">Nano Banana 2</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative H — Nano Banana 2" data-asset="assets/alternative-08.jpg" data-label="H" data-index="8" data-model="Nano Banana 2" data-model-url="https://cogfoundry.ai/en/models/media/283/" data-size="1376x768" data-asked="1536x1024" data-cost="$0.0000" data-seconds="12" data-selected=""><span class="shot"><img src="assets/alternative-08.jpg" alt="Alternative H" loading="lazy"></span><span class="thumb-cap"><span class="ltr">H</span><span class="m">Nano Banana 2</span></span></button>
+    </div>
+    
+    <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Full size image">
+      <button type="button" class="lb-close" id="lb-close" aria-label="Close (Esc)">&times;</button>
+      <button type="button" class="lb-nav prev" id="lb-prev" aria-label="Previous alternative">&#8592;</button>
+      <button type="button" class="lb-nav next" id="lb-next" aria-label="Next alternative">&#8594;</button>
+      <figure class="lb-figure">
+        <img id="lb-img" src="assets/alternative-01.jpg" alt="">
+        <figcaption class="lb-bar">
+          <span id="lb-meta"></span>
+          <span class="lb-right"><span id="lb-pos"></span><button type="button" class="lb-linkbtn" id="lb-copy-link">Copy link</button><a id="lb-raw" href="assets/alternative-01.jpg" target="_blank" rel="noopener">Open raw &#8599;</a></span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="run-facts">
+    <div class="col">
+    <span class="section-label">Details</span>
+    <h2>The run</h2>
+    <p class="lead">What Image Lab planned, and what it actually cost.</p>
+      <div class="facts"><div class="fact"><span class="fact-label">Intent</span><p>infographic / diagram</p></div><div class="fact"><span class="fact-label">Models</span><p>3 &mdash; GPT Image 2, Nano Banana Pro, Nano Banana 2</p></div><div class="fact"><span class="fact-label">Candidates</span><p>8 generated</p></div><div class="fact"><span class="fact-label">Requested size</span><p>1536×1024</p></div><div class="fact"><span class="fact-label">Actual cost</span><p>$0.5547 <span class="fact-aside">(est. ~$0.1782)</span></p></div><div class="fact"><span class="fact-label">Generated</span><p>2026-09-06</p></div></div>
+    </div>
+  </section>
+
+  <section class="prompt">
+    <div class="col">
+    <span class="section-label">Reuse</span>
+    <h2>The prompt</h2>
+    <p class="lead">The exact brief this run used. Copy it, or adapt it.</p>
+      <blockquote class="prompt-core">Goal: Create an information-dense anime storyboard / image-generation sheet for a 30-second One Piece-style scene titled ワンピース　30秒用 絵コンテ「ゾロとロビンの静かな会話」, showing a quiet emotional conversation between Zoro and Robin. Canvas: Landscape 16:9 white storyboard page with thin black borders, clean grid lines, and Japanese typography. Add a small top-right note reading &quot;尺：30秒　解像度：16:9&quot;. Use the look of a production storyboard sheet: crisp black frame boxes, white caption bands under each frame, and anime screenshots inside the boxes. Layout: exactly 10 numbered storyboard panels plus 2 text note boxes. Panels 1-4 across the top row, panels 5-8 across the middle row, panel 9 at bottom left, panel 10 wide at bottom center, and two note boxes on the bottom right. Each panel: a circled number, a time range, a cinematic anime still, and a Japanese caption below it. Panels: 1. &quot;① 0:00-0:03&quot; Wide night shot, blue tones: Zoro and Robin sit apart among ancient stone ruins and broken columns. Caption: ロビン「…また迷ってるの？」  2. &quot;② 0:03-0:06&quot; Close-up of Zoro facing forward, green hair, stern expression, one eye closed, earrings, dark green robe. Caption: ゾロ「…別に」  3. &quot;③ 0:06-0:10&quot; Close-up of Robin resting her cheek on her hand, long black hair, gentle knowing smile, purple outfit, stone wall. Caption: ロビン「強いからって、全部ひとりで背負わなくていいのよ」  4. &quot;④ 0:10-0:13&quot; Side profile of Zoro in warm low light against stone ruins, serious. Caption: ゾロ「背負うつもりはねぇ」  5. &quot;⑤ 0:13-0:16&quot; Close-up of Robin smiling softly, wind in her hair, cloudy sky. Caption: ロビン「じゃあ…信じてるのね、仲間を」  6. &quot;⑥ 0:16-0:19&quot; Side close-up of Zoro looking down with a small smile, leaves blowing, daylight. Caption: ゾロ「ああ。てめェがいるからな」  7. &quot;⑦ 0:19-0:23&quot; Medium two-shot, bright daylight: Robin and Zoro by a stone balcony railing, blue sky, drifting leaves. Caption: ロビン「フフ…心強いわ」  8. &quot;⑧ 0:23-0:26&quot; Close-up of Zoro grinning confidently, one eye narrowed, gold earrings, green hair, wind-blown leaves. Caption: ゾロ「当たり前だ」  9. &quot;⑨ 0:26-0:28&quot; Close-up of Robin, eyes closed, serene smile, pink flower petals drifting. Caption: ロビン「ありがとう、ゾロ」  10. &quot;⑩ 0:28-0:30&quot; Wide sunset shot from behind: Robin and Zoro at a balcony overlooking the ocean, purple-orange sky. Caption: （無言で、同じ未来を見つめる二人）  Note boxes (bottom right, exactly 2): Box 1 title 演出メモ, bullets: 全体のトーン：静かで信頼感のある会話劇 / BGM：しっとりとしたピアノメインの感動系 / SE：風の音、波の音を控えめに / セリフは間を大切に、表情の「間」で魅せる, final line: ラストカットは余韻を大切に. Box 2 title キャラクター設定: ゾロ：クールだが仲間想い、言葉は少ないが真っ直ぐ / ロビン：落ち着いていて優しい、仲間を信じて支える強さ. Visual style: high-quality hand-drawn Japanese TV anime aesthetic, clean cel shading, expressive faces, cinematic lighting, blue night ruins to bright sky to warm sunset. Zoro: short green hair, three gold earrings, a scarred closed eye, muscular build, dark green clothing. Robin: long black hair, elegant features, calm eyes, purple patterned top. Constraints: all visible text in Japanese as specified, precise readable grid, exactly 10 panels, exactly 2 note boxes, no watermarks, no logos, no photorealism.</blockquote>
+      <p class="prompt-trigger">&rarr; use Image Lab</p>
+      <button class="copy btn-ghost" data-target="copy-src">Copy prompt</button>
+      <ol class="how">
+        <li>Copy the prompt above.</li>
+        <li>Paste it into any agent that has the Image Lab skill &mdash; or install it below.</li>
+        <li>Run it as-is, or swap the subject, style, or details to make it yours.</li>
+      </ol>
+      <span id="copy-src" hidden>Goal: Create an information-dense anime storyboard / image-generation sheet for a 30-second One Piece-style scene titled ワンピース　30秒用 絵コンテ「ゾロとロビンの静かな会話」, showing a quiet emotional conversation between Zoro and Robin. Canvas: Landscape 16:9 white storyboard page with thin black borders, clean grid lines, and Japanese typography. Add a small top-right note reading &quot;尺：30秒　解像度：16:9&quot;. Use the look of a production storyboard sheet: crisp black frame boxes, white caption bands under each frame, and anime screenshots inside the boxes. Layout: exactly 10 numbered storyboard panels plus 2 text note boxes. Panels 1-4 across the top row, panels 5-8 across the middle row, panel 9 at bottom left, panel 10 wide at bottom center, and two note boxes on the bottom right. Each panel: a circled number, a time range, a cinematic anime still, and a Japanese caption below it. Panels: 1. &quot;① 0:00-0:03&quot; Wide night shot, blue tones: Zoro and Robin sit apart among ancient stone ruins and broken columns. Caption: ロビン「…また迷ってるの？」  2. &quot;② 0:03-0:06&quot; Close-up of Zoro facing forward, green hair, stern expression, one eye closed, earrings, dark green robe. Caption: ゾロ「…別に」  3. &quot;③ 0:06-0:10&quot; Close-up of Robin resting her cheek on her hand, long black hair, gentle knowing smile, purple outfit, stone wall. Caption: ロビン「強いからって、全部ひとりで背負わなくていいのよ」  4. &quot;④ 0:10-0:13&quot; Side profile of Zoro in warm low light against stone ruins, serious. Caption: ゾロ「背負うつもりはねぇ」  5. &quot;⑤ 0:13-0:16&quot; Close-up of Robin smiling softly, wind in her hair, cloudy sky. Caption: ロビン「じゃあ…信じてるのね、仲間を」  6. &quot;⑥ 0:16-0:19&quot; Side close-up of Zoro looking down with a small smile, leaves blowing, daylight. Caption: ゾロ「ああ。てめェがいるからな」  7. &quot;⑦ 0:19-0:23&quot; Medium two-shot, bright daylight: Robin and Zoro by a stone balcony railing, blue sky, drifting leaves. Caption: ロビン「フフ…心強いわ」  8. &quot;⑧ 0:23-0:26&quot; Close-up of Zoro grinning confidently, one eye narrowed, gold earrings, green hair, wind-blown leaves. Caption: ゾロ「当たり前だ」  9. &quot;⑨ 0:26-0:28&quot; Close-up of Robin, eyes closed, serene smile, pink flower petals drifting. Caption: ロビン「ありがとう、ゾロ」  10. &quot;⑩ 0:28-0:30&quot; Wide sunset shot from behind: Robin and Zoro at a balcony overlooking the ocean, purple-orange sky. Caption: （無言で、同じ未来を見つめる二人）  Note boxes (bottom right, exactly 2): Box 1 title 演出メモ, bullets: 全体のトーン：静かで信頼感のある会話劇 / BGM：しっとりとしたピアノメインの感動系 / SE：風の音、波の音を控えめに / セリフは間を大切に、表情の「間」で魅せる, final line: ラストカットは余韻を大切に. Box 2 title キャラクター設定: ゾロ：クールだが仲間想い、言葉は少ないが真っ直ぐ / ロビン：落ち着いていて優しい、仲間を信じて支える強さ. Visual style: high-quality hand-drawn Japanese TV anime aesthetic, clean cel shading, expressive faces, cinematic lighting, blue night ruins to bright sky to warm sunset. Zoro: short green hair, three gold earrings, a scarred closed eye, muscular build, dark green clothing. Robin: long black hair, elegant features, calm eyes, purple patterned top. Constraints: all visible text in Japanese as specified, precise readable grid, exactly 10 panels, exactly 2 note boxes, no watermarks, no logos, no photorealism.
+
+use Image Lab</span>
+    </div>
+  </section>
+
+  <section class="credits">
+    <div class="col">
+    <span class="section-label">Provenance</span>
+    <h2>How this was made</h2>
+    <p class="lead">Image Lab is not a benchmark &mdash; different models and seeds make these an unfair comparison. It turns one brief into strong choices. Everything below did real, billed work in this run.</p>
+      <ul class="tool-list"><li><span class="tname"><a class="tn" href="https://cogfoundry.ai" target="_blank" rel="noopener">CogFoundry model gateway</a></span><span class="trole">Ran every generation in this run through <code>POST /api/v1/tasks/generations</code> and reported the real per-image cost. Run total: $0.5547.</span></li><li><span class="tname"><a class="tn" href="https://cogfoundry.ai/en/models/media/314/" target="_blank" rel="noopener">GPT Image 2</a></span><span class="trole">3 alternatives (A, B, C).</span></li><li><span class="tname"><a class="tn" href="https://cogfoundry.ai/en/models/media/241/" target="_blank" rel="noopener">Nano Banana Pro</a></span><span class="trole">3 alternatives (D, E, F).</span></li><li><span class="tname"><a class="tn" href="https://cogfoundry.ai/en/models/media/283/" target="_blank" rel="noopener">Nano Banana 2</a></span><span class="trole">2 alternatives (G, H).</span></li><li><span class="tname"><a class="tn" href="https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/image-lab" target="_blank" rel="noopener">Image Lab</a></span><span class="trole">A loomloom community example &mdash; the skill that classified the brief, chose the model allocation, gated the cost, and rendered this page.</span></li></ul>
+    </div>
+  </section>
+
+  <section class="coming-soon">
+    <div class="col">
+    <span class="section-label">Roadmap</span>
+    <h2>From image exploration to AI work.</h2>
+    <p class="lead">loomloom will bring agentic workflows to Image Lab &mdash; turning a single prompt into an iterative process of generation, evaluation, selection, and refinement.</p>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div class="col">
+    <span class="section-label">Your turn</span>
+    <h2>Bring your own prompt</h2>
+    <p class="lead">Install Image Lab, give it any image prompt, and run cost-gated exploration across the best-fit models.</p>
+      <div class="cta-cmd"><code>npx skills add cogfoundry-labs/loomloom --skill image-lab -a claude-code -g -y</code></div>
+      <a class="btn btn-solid" href="https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/image-lab" target="_blank" rel="noopener">See Image Lab on GitHub</a>
+    </div>
+  </section>
+
+  <footer>
+    Generated with CogFoundry&#x27;s model gateway &middot; <a href="https://cogfoundry.ai" target="_blank" rel="noopener">cogfoundry.ai</a> &middot; 2026-09-06
+  </footer>
+</main>
+<script>
+  (function () {
+    var thumbs = Array.prototype.slice.call(document.querySelectorAll(".thumb"));
+    var hero = document.getElementById("hero-img");
+    var link = document.getElementById("hero-link");
+    var meta = document.getElementById("hero-meta");
+    var posEl = document.getElementById("hero-pos");
+    if (!hero || !thumbs.length) return;
+    var MUL = "\u00d7";
+    function esc(s) {
+      return String(s).replace(/[&<>"]/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+      });
+    }
+    // rebuildMeta() — keep the shape in sync with _meta_html() in the builder
+    function rebuildMeta(d) {
+      var size = d.size.replace("x", MUL);
+      if (d.asked && d.asked !== d.size) size += " (asked " + d.asked.replace("x", MUL) + ")";
+      var secs = d.seconds ? " \u00b7 " + esc(d.seconds) + "s" : "";
+      var model = d.modelUrl
+        ? '<a class="model" href="' + esc(d.modelUrl) + '" target="_blank" rel="noopener">' + esc(d.model) + "</a>"
+        : '<span class="model">' + esc(d.model) + "</span>";
+      var chose = d.selected ? '<span class="chose">the creator\u2019s pick</span> ' : "";
+      return chose + "Alternative " + esc(d.label) + " \u00b7 " + model
+        + " \u00b7 " + esc(size) + " \u00b7 " + esc(d.cost) + secs;
+    }
+
+    var lb = document.getElementById("lightbox");
+    var lbImg = document.getElementById("lb-img");
+    var lbMeta = document.getElementById("lb-meta");
+    var lbPos = document.getElementById("lb-pos");
+    var lbRaw = document.getElementById("lb-raw");
+    var heroPrev = document.getElementById("hero-prev");
+    var heroNext = document.getElementById("hero-next");
+    var lbPrev = document.getElementById("lb-prev");
+    var lbNext = document.getElementById("lb-next");
+    var altLinkBtn = document.getElementById("copy-alt-link");
+    var lbCopyLink = document.getElementById("lb-copy-link");
+    var cur = 0, lastFocus = null;
+
+    function baseHref() { return location.href.split("#")[0]; }
+    function shareUrl() { return baseHref() + "#" + thumbs[cur].dataset.label; }
+    function flash(btn, msg) {
+      try { if (navigator.clipboard) navigator.clipboard.writeText(msg); } catch (e) {}
+      var o = btn.getAttribute("data-label-text") || btn.textContent;
+      btn.textContent = "Copied"; setTimeout(function () { btn.textContent = o; }, 1400);
+    }
+    function updateNav() {
+      [heroPrev, lbPrev].forEach(function (b) { if (b) b.disabled = cur <= 0; });
+      [heroNext, lbNext].forEach(function (b) { if (b) b.disabled = cur >= thumbs.length - 1; });
+    }
+    function fillLB(d) {
+      if (!lb) return;
+      lbImg.src = d.asset;
+      lbImg.alt = "Alternative " + d.label;
+      lbMeta.innerHTML = rebuildMeta(d);
+      lbPos.textContent = (cur + 1) + " / " + thumbs.length;
+      lbRaw.href = d.asset;
+    }
+    function show(t, keepHash) {
+      var i = thumbs.indexOf(t);
+      if (i < 0) return;
+      cur = i;
+      thumbs.forEach(function (x) {
+        var on = x === t;
+        x.classList.toggle("active", on);
+        if (on) x.setAttribute("aria-current", "true"); else x.removeAttribute("aria-current");
+      });
+      var d = t.dataset;
+      hero.src = d.asset;
+      hero.alt = "Alternative " + d.label;
+      if (link) link.href = d.asset;
+      meta.innerHTML = rebuildMeta(d);
+      if (posEl) posEl.textContent = (i + 1) + " / " + thumbs.length;
+      if (altLinkBtn) {
+        altLinkBtn.textContent = "Copy link to alternative " + d.label;
+        altLinkBtn.setAttribute("data-label-text", altLinkBtn.textContent);
+      }
+      if (lb && !lb.hidden) fillLB(d);
+      updateNav();
+      if (!keepHash) { try { history.replaceState(null, "", "#" + d.label); } catch (e) {} }
+    }
+    function step(dir) {
+      var i = cur + dir;
+      if (i >= 0 && i < thumbs.length) show(thumbs[i]);
+    }
+    function openLB() {
+      if (!lb) return;
+      lastFocus = document.activeElement;
+      fillLB(thumbs[cur].dataset);
+      lb.hidden = false;
+      document.body.style.overflow = "hidden";
+      updateNav();
+      document.getElementById("lb-close").focus();
+    }
+    function closeLB() {
+      if (!lb || lb.hidden) return;
+      lb.hidden = true;
+      document.body.style.overflow = "";
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    thumbs.forEach(function (t) { t.addEventListener("click", function () { show(t); }); });
+    if (heroPrev) heroPrev.addEventListener("click", function () { step(-1); });
+    if (heroNext) heroNext.addEventListener("click", function () { step(1); });
+    var openBtn = document.getElementById("hero-open");
+    if (openBtn) openBtn.addEventListener("click", openLB);
+    if (link) link.addEventListener("click", function (e) {
+      if (lb) { e.preventDefault(); openLB(); }
+    });
+    if (lbPrev) lbPrev.addEventListener("click", function () { step(-1); });
+    if (lbNext) lbNext.addEventListener("click", function () { step(1); });
+    var lbClose = document.getElementById("lb-close");
+    if (lbClose) lbClose.addEventListener("click", closeLB);
+    if (lb) lb.addEventListener("click", function (e) { if (e.target === lb) closeLB(); });
+    if (altLinkBtn) altLinkBtn.addEventListener("click", function () { flash(altLinkBtn, shareUrl()); });
+    if (lbCopyLink) lbCopyLink.addEventListener("click", function () { flash(lbCopyLink, shareUrl()); });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { closeLB(); return; }
+      if (e.key === "ArrowRight") step(1);
+      else if (e.key === "ArrowLeft") step(-1);
+    });
+
+    function selectFromHash(keepHash) {
+      var w = decodeURIComponent(location.hash.replace(/^#/, "")).toUpperCase();
+      if (!w) return;
+      var t = thumbs.filter(function (x) { return x.dataset.label.toUpperCase() === w; })[0];
+      if (t) show(t, keepHash);
+    }
+    cur = Math.max(0, thumbs.findIndex(function (x) { return x.classList.contains("active"); }));
+    selectFromHash(true);
+    window.addEventListener("hashchange", function () { selectFromHash(true); });
+    updateNav();
+  })();
+
+  (function () {
+    var canon = document.querySelector('link[rel="canonical"]');
+    var pageUrl = canon ? canon.href : location.href.split("#")[0];
+    function meta(p) { var m = document.querySelector('meta[property="' + p + '"], meta[name="' + p + '"]'); return m ? m.content : ""; }
+    var shareText = (meta("og:title") || document.title)
+      + (meta("og:description") ? " \u2014 " + meta("og:description") : "");
+    var x = document.getElementById("share-x");
+    var li = document.getElementById("share-li");
+    if (x) x.href = "https://twitter.com/intent/tweet?text="
+      + encodeURIComponent(shareText) + "&url=" + encodeURIComponent(pageUrl);
+    if (li) li.href = "https://www.linkedin.com/sharing/share-offsite/?url="
+      + encodeURIComponent(pageUrl);
+    var cp = document.getElementById("copy-page");
+    if (cp) cp.addEventListener("click", function () {
+      try { if (navigator.clipboard) navigator.clipboard.writeText(pageUrl); } catch (e) {}
+      var o = cp.textContent; cp.textContent = "Copied";
+      setTimeout(function () { cp.textContent = o; }, 1400);
+    });
+  })();
+
+  document.querySelectorAll("button.copy").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var el = document.getElementById(b.dataset.target);
+      navigator.clipboard.writeText(el ? el.textContent : "").then(function () {
+        var old = b.textContent; b.textContent = "Copied";
+        setTimeout(function () { b.textContent = old; }, 1400);
+      });
+    });
+  });
+</script>
+</body>
+</html>
