@@ -2,16 +2,16 @@
 
 *One prompt → several strong image alternatives, spread across the models that
 best fit the brief, behind a single cost gate. A loomloom community example
-that starts at the router primitive and graduates into a loomloom workflow.*
+that starts at the gateway primitive and graduates into a loomloom workflow.*
 
 > "See the price. Approve once. Get several strong possibilities in parallel.
 > Pick the image you want."
 
-**Status**: v0.1 implemented and verified against the live CogFoundry router —
+**Status**: v0.1 implemented and verified against the live CogFoundry gateway —
 `resolve` (plan + quote), `run` (the approved multi-model allocation), and
 `build-exploration-page.py` (a shareable static gallery, no spend). Standard
 library only, no SDK. **loomloom's role in v0.1**: none — the parallelism is N
-independent router tasks; loomloom orchestration is the v0.4 `showcase/` story.
+independent gateway tasks; loomloom orchestration is the v0.4 `showcase/` story.
 
 ---
 
@@ -48,7 +48,7 @@ PLAN  ->  QUOTE  ->  APPROVE  ->  GENERATE  ->  RESULTS
 | | v0.1 | else |
 |---|:---:|---|
 | Any prompt → 1 / 2 / 4 / 8 parallel alternatives | ✅ | |
-| Multi-model allocation (A alone, or A + a competitive B) | ✅ | |
+| Multi-model allocation — A + B at count 2 / 4, A + B + C at count 8 (A alone only when it's the sole survivor) | ✅ | |
 | 7 image models; deterministic scorer picks; user overrides by name | ✅ | |
 | Per-model valid `size`; estimated total before spend; actual cost after | ✅ | |
 | Live per-branch progress; failed branch reported (not charged) | ✅ | |
@@ -61,11 +61,13 @@ PLAN  ->  QUOTE  ->  APPROVE  ->  GENERATE  ->  RESULTS
 | Writing or rewriting the prompt | ❌ | never — bring your own |
 
 **Cost note.** `count = 4` → A ×2 + B ×2 generally costs about **twice** what one
-model ×4 would, because A and B are rarely the same price. This is accepted for
-v0.1: the value is *more chances to find a great image, from genuinely different
+model ×4 would, because A and B are rarely the same price; `count = 8` →
+A ×3 + B ×3 + C ×2 adds a third model's rate on top. This is accepted for v0.1:
+the value is *more chances to find a great image, from genuinely different
 models*, the estimated total is shown before approval, and the user can override
 to a single model. A run is cents, not dollars, for every intent except the
-deliberately-expensive single-model ones (infographic → GPT Image 2 ×4 ≈ $0.17).
+typography-heavy ones where A is GPT Image 2 (infographic / poster at count 8
+≈ $0.18–$0.37).
 
 ---
 
@@ -76,7 +78,7 @@ CogFoundry offers image generation at two levels, on the **same
 
 | layer | what it is | Image Lab uses it |
 |---|---|---|
-| **Router API** — `POST /api/v1/tasks/generations` | the **execution primitive**: submit one task, poll it, get an image + a `cost` | v0.1–v0.2 — N independent tasks across ≤ 2 models need no orchestration |
+| **Gateway API** — `POST /api/v1/tasks/generations` | the **execution primitive**: submit one task, poll it, get an image + a `cost` | v0.1–v0.2 — N independent tasks across ≤ 2 models need no orchestration |
 | **loomloom** — TemplateSpec + runtime | **workflow orchestration**: a dependency-aware, metered DAG with one run record and a reusable, packageable spec | v0.4 — when the work becomes a real pipeline |
 
 The task in v0.1 — several alternatives of one prompt, split across at most two
@@ -84,9 +86,9 @@ models — is N calls with **no dependencies between them**, so it uses the
 primitive directly. Each later version adds structure until the work is a DAG
 that only loomloom can express (tidy → generate ×N → judge, §5).
 
-Why the router and not loomloom for v0.1:
+Why the gateway and not loomloom for v0.1:
 
-| | loomloom TemplateSpec | router API |
+| | loomloom TemplateSpec | gateway API |
 |---|---|---|
 | image models available today | 1 (`gemini-2.5-flash-image`) | **7** |
 | measured cost / image | $0.04–$0.30 | **$0.003–$0.10** |
@@ -103,14 +105,14 @@ redesign-lab convention); it is not executed by loomloom.
 
 | User step | Internal work |
 |---|---|
-| **PLAN** | agent captures the prompt, classifies it to one intent, maps the user's words to `count` → `image.py resolve` (reads the reference files, scores the models, allocates the count across the best-fit models, picks a valid `size` per model; runs `loomloom doctor` / `balance`; **no router call**) |
+| **PLAN** | agent captures the prompt, classifies it to one intent, maps the user's words to `count` → `image.py resolve` (reads the reference files, scores the models, allocates the count across the best-fit models, picks a valid `size` per model; runs `loomloom doctor` / `balance`; **no gateway call**) |
 | **QUOTE** | the same `resolve` call prints per-model subtotals + estimated total + a preflight balance check (surfaced only if short) |
 | **APPROVE** | one `AskUserQuestion` — Generate / Adjust / Stop — naming the actual model mix + total. **The only gate; one approval = one wallet boundary.** |
-| **GENERATE** | `image.py run --alloc … --confirm` — submit the whole allocation as N router tasks, poll each (~3 s), redraw the live tree, download each image, verify it is a PNG |
-| **RESULTS** | agent sends each image as a labelled card, presents `label · model · time · cost · size` + actual-vs-estimate; user names a favourite (conversation, not a gate) |
+| **GENERATE** | `image.py run --alloc … --progress-file … --confirm` — submit the whole allocation as N gateway tasks, poll each (~3 s), download each image, verify it is a PNG. **Runs in the background**: it rewrites `progress.json` as each branch lands, and the agent posts a short "N/total done" update every ~30–60 s so the user is never left staring at nothing |
+| **RESULTS** | agent sends each image as a labelled card, presents `label · model · time · cost · size` + actual-vs-estimate, **then builds the exploration page** and asks the user to pick their favourite from it (conversation, not a gate) |
 
 "QUOTE" is a user-facing label — internally it is an *estimated total*
-(`Σ price(model, size) × n`); the router has no quote endpoint. Balance is a
+(`Σ price(model, size) × n`); the gateway has no quote endpoint. Balance is a
 preflight check, not an authorization: `resolve` reports `sufficient: false` and
 the agent stops before APPROVE; otherwise the gate stays uncluttered.
 
@@ -146,12 +148,13 @@ prompt text
    ▼
 image.py (deterministic):
    generation-policy.md      → the intent's per-dimension requirement weights
-   router-model-catalog.yaml → each model's per-dimension score + rate
+   model-catalog.yaml → each model's per-dimension score + rate
    1. disqualify a model weak (−1) at any HIGH (weight 2) requirement
    2. suitability(model) = Σ weight_d · score_d          — the single ranking number
    3. A = highest suitability   (exact ties → lower cost)
-   4. B = best OTHER model within QUALITY_TOLERANCE (1 pt) of A, or none
-   5. allocate `count` across A (+ B)
+   4. B = the next-best surviving model ("also worth trying")
+   5. C = the third-best surviving model — used only to widen count 8
+   6. allocate `count`: 1 → A · 2/4 → A + B · 8 → A + B + C
    ▼
 plan: an allocation [{model, size, n, subtotal}] + estimated total + a "why" line
 ```
@@ -169,24 +172,32 @@ has a printable answer (`image.py resolve --explain`).
 - A `high` requirement + a `−1` model = disqualified.
 - **A** = highest suitability; cost breaks only *exact* ties, so a free/cheap
   model never wins on price alone.
-- **B** = the best *other* model within `QUALITY_TOLERANCE` (1 pt) of A — the
-  "also worth trying" pick — or none, and then the whole `count` goes to A.
+- **B** = the **next-best surviving model** — presented honestly as the runner-up
+  ("also worth trying"), not claimed to be A's equal. There is no suitability
+  floor on B: `count ≥ 2` means *at least two models* in v0.1.
+- **C** = the **third-best surviving model**, brought in only at `count = 8`
+  ("deep exploration") — a wider net when the user has asked for the most
+  chances. `count = 4` deliberately stays on two models; C is the one place
+  where a bigger `count` also means a broader model spread.
+- A takes the whole budget only when it is the **sole** surviving model, or the
+  user forced one model.
 
 ### Allocation policy (v0.1 — fixed)
 
-| count | A + B present | A only |
+| count | A + B (+ C) — surviving models | A only (A is the sole survivor / user forced one) |
 |---:|---|---|
 | 1 | A ×1 | A ×1 |
 | 2 | A ×1 + B ×1 | A ×2 |
 | 4 | A ×2 + B ×2 | A ×4 |
-| 8 | A ×4 + B ×4 | A ×8 |
+| 8 | A ×3 + B ×3 + C ×2  (A ×4 + B ×4 if only two survive) | A ×8 |
 
 The split is **internal** — `count` means "alternatives I want", not "top-N
-models". A future Advisor could do `8 → A×3 + B×3 + C×2` without changing the
-`count` contract. User override (`--models "id[,id[,id]]"`) forces the set and
-splits `count` evenly across it; the Advisor never silently replaces a named
-model. Naming more models than `count` drops the surplus and reports
-`dropped_models`.
+models". `count = 8` widening to three models is a UX call ("deep exploration
+should also mean a broader net"), not a change to the contract; a future Advisor
+could tune the `8 → 3+3+2` shape freely. User override
+(`--models "id[,id[,id]]"`) forces the set and splits `count` evenly across it
+(front-loaded); the Advisor never silently replaces a named model. Naming more
+models than `count` drops the surplus and reports `dropped_models`.
 
 ### Worked allocations (count = 4, current catalog — deterministic)
 
@@ -194,13 +205,21 @@ model. Naming more models than `count` drops the surplus and reports
 |---|---|---:|
 | illustration / concept art | Nano Banana ×2 + Nano Banana 2 ×2 | $0.018 |
 | launch / announcement image | Nano Banana Pro ×2 + Nano Banana 2 ×2 | $0.039 |
-| social post | Nano Banana 2 ×4 *(A only — nothing else within 1 pt)* | $0.024 |
+| social post | Nano Banana 2 ×2 + Nano Banana ×2 | $0.018 |
 | poster / flyer | Nano Banana Pro ×2 + GPT Image 2 ×2 | $0.111 |
-| infographic / diagram | GPT Image 2 ×4 *(A only — leads by > 1 pt)* | $0.168 |
+| infographic / diagram | GPT Image 2 ×2 + Nano Banana Pro ×2 | $0.111 |
 | product / e-commerce shot | Seedream 5.0 Lite ×2 + Nano Banana 2 ×2 | $0.086 |
 
-`test-fixtures/sample-prompts.json` pins the expected allocation for four of
-these against the current reference files — run `resolve` on each and diff.
+Every intent lands on two models at count 4 with the current 7-model catalog —
+none has a sole survivor. At **count 8** each of these widens to three, e.g.
+infographic → GPT Image 2 ×3 + Nano Banana Pro ×3 + Nano Banana 2 ×2 (~$0.18),
+poster → Nano Banana Pro ×3 + GPT Image 2 ×3 + Seedream 5.0 Pro ×2 (~$0.37).
+`image.py resolve --explain` shows the full score table and why A / B / C were
+picked.
+
+`test-fixtures/sample-prompts.json` pins `expected_allocation_4` and
+`expected_allocation_8` for four of these against the current reference files —
+run `resolve` at each count and diff.
 
 ### When a model is unavailable — "plan changed", not "fallback"
 
@@ -213,7 +232,7 @@ because the plan changed. A *later* model failing to submit marks those branches
 
 ### Picking a `size`
 
-`preferred_sizes` are literal `WxH` strings — the router's actual parameter.
+`preferred_sizes` are literal `WxH` strings — the gateway's actual parameter.
 The Advisor takes the first entry that clears the chosen model's `size_min_px`;
 if none do, it upsizes to the smallest valid dimensions at that aspect ratio.
 **Size feeds pricing**: each candidate is costed at the size it would actually
@@ -235,17 +254,17 @@ model catalog moves. Dimensions (v0.1): `photorealism`, `typography`,
 `composition_control`, `speed` — a fixed vocabulary shared with the catalog's
 `scores` block.
 
-### `references/router-model-catalog.yaml` — temporary adapter
+### `references/model-catalog.yaml` — temporary adapter
 
-Exists **only because the router API has no model-list or pricing endpoint**.
+Exists **only because the gateway API has no model-list or pricing endpoint**.
 It is not part of Image Lab's design — it is a hand-maintained shim, isolated
 behind `load_model_catalog()`. Its header carries a `TODO` to delete it when the
-router ships `GET /api/v1/models?modality=image`. Per model: `label`, `url` (the
+gateway ships `GET /api/v1/models?modality=image`. Per model: `label`, `url` (the
 CogFoundry page), `scores` (−1…2 per dimension), `usd_per_image` (+ optional
 size-tiered `pricing`), `size_min_px`.
 
 Rates were measured 2026-09-06 by submitting one real task per (model, size) and
-confirming the charge against `loomloom balance` — the router's `data.cost`
+confirming the charge against `loomloom balance` — the gateway's `data.cost`
 matched the delta every time. They are a **pre-flight guess** of that
 authoritative number; a wrong rate only skews the estimate, and RESULTS shows
 the real charge.
@@ -257,41 +276,102 @@ the real charge.
 `run` writes `<out>/run.json` — the record: `prompt`, `intent`, `actual_usd`,
 `estimated_usd`, `out_dir`, and `alternatives[]` (`index`/`of`, `label`,
 `model` + `model_label` + `model_url`, `requested_size`, `actual_size` from the
-PNG header, `cost_usd`, `seconds` from the router's `finish_time − start_time`
+PNG header, `cost_usd`, `seconds` from the gateway's `finish_time − start_time`
 epochs, `status`, `file` — a **basename**, no absolute paths, `note`), plus
 derived `by_model` / `images` / `failed` / `incomplete` views.
 
-On request, `build-exploration-page.py --from <out> --title … --subject …
---invocation … [--selected <label>]` turns that into a **self-contained static
+RESULTS **always** runs `build-exploration-page.py --from <out> --title …
+--subject … --invocation … [--canonical-url …] [--selected <label>]` — it is
+never a "do you want a page?" offer, because it costs nothing and the user picks
+their favourite *from* the page. It turns the run into a **self-contained static
 folder** (`<out>/<slug>/index.html` + `assets/alternative-NN.png` +
-`exploration.json`). **Nothing is spent** — a render step, not a gate. It
-follows redesign-lab's build → render seam: `exploration.json` is the data model
-a future PDF / social-card renderer reads; the HTML ships **real separate asset
-files** (a multi-MB base64 blob breaks browser rendering).
+`exploration.json`), following redesign-lab's build → render seam:
+`exploration.json` is the data model a future PDF / social-card renderer reads;
+the folder ships **real separate asset files**. `--inline` additionally emits
+`index.inline.html` — the same page with the PNGs as base64 data URIs (stdlib
+`base64`, no recompression) — which the agent publishes as an artifact so the
+user has a live URL to choose from; if the run's PNGs push that past the 16 MB
+artifact ceiling the agent recompresses them to JPEG first. `--canonical-url` is
+the URL the folder will live at — it makes `og:image` absolute and the topbar
+"Copy link" copy that URL (omitted for the artifact flow, where `location.href`
+suffices). `--selected` is omitted on the first build and added on a rebuild
+once the user names a pick.
 
 The page is an **image-selection gallery, not a case-study report**, in
-redesign-lab's house style (serif body, uppercase-Arial headings, IBM Plex Mono
-labels, hard edges, the loomloom green accent, 3-state dark mode, fonts from
-Google Fonts with real fallbacks):
+redesign-lab's house style — the *same token block* as
+`maxaibuilds.github.io/aider-redesign` (`--bg #f4f4f0` / `--ink #0b0b0b` /
+`--accent #007a5c` / `--rule #d8d6ce` / `--shadow`, Source Serif 4 body, Arial-
+Black uppercase headings, IBM Plex Mono labels, 3-state dark mode, Google Fonts
+with real fallbacks). Layout:
 
-- **Header → Gallery → Prompt → footer.** The gallery is one component: a framed
-  hero + a thumbnail strip + a live meta line. Click a thumbnail → the hero and
-  a `Alternative N · model (link) · size (asked …) · cost · time` line swap
-  (~50 lines of inline vanilla JS; with JS off every thumbnail is a real `<img>`
-  linking to its full file).
-- Initial hero = the `--selected` image, else alternative 01. The creator's pick
-  carries a permanent ✓ badge and a *"the creator's pick"* prefix on the meta
-  only while it is the hero — never "Best", never a score.
+- **topbar → header → Gallery → Details → Reuse → Provenance → Roadmap → CTA →
+  footer.** Page column 1200 px; every prose section wraps head + body in `.col`
+  (820 px) so they align to one left edge — the gallery is the only full-width
+  section. **Every section has one shape**: mono eyebrow (`.section-label`),
+  Arial-Black `h2`, one `.lead` line, then the body. One ghost-button style
+  (`.btn-ghost`) and one solid-button style (`.btn-solid`) across the whole page.
+- **topbar**: wordmark + a **Share** cluster — `Copy link` (copies `link[rel=
+  canonical]` if `--canonical-url` was given, else `location.href`) plus
+  one-click `X` and `LinkedIn` `<a>`s whose hrefs are built on load from that
+  URL + the OG `title`/`description`.
+- **header**: an `AI-generated · not a benchmark` badge, the intent as the
+  eyebrow, the title, the tagline, a **model legend** (`GPT Image 2 ×3` mono
+  chips, each linked to its cogfoundry.ai page — the analog of the case study's
+  hero colour swatches), the stats line.
+- **Pick your image**: section label + a one-line lead ("… each a candidate, not
+  a step"). A framed hero, a **letter-badged** thumbnail strip (`A · GPT Image
+  2`, not `01` — numbers read as *steps* over storyboard art), a live
+  `Alternative N · model (link) · size (asked …) · cost · time` line, a hint row
+  (`click to open full size · ← → to browse`), an `N / 8` counter, and a **"Copy
+  link to alternative N"** button.
+- Click a thumbnail → hero + meta swap and the URL hash becomes `#N`. Click the
+  hero (or the corner **"↗ Open full size"** button) → a **minimal full-screen
+  lightbox**: the image, `Alternative N · model`, `N / 8`, `← →`, `Esc`, `Copy
+  link`, and an **"Open raw ↗"** escape hatch (the artifact sandbox blocks
+  downloads, so the raw-file link is how a viewer saves an image). Hero edges
+  carry subtle prev/next arrows.
+- **Per-alternative deep link.** The page reads `location.hash` on load *and*
+  `hashchange`, selecting that alternative — so a shared `…/index.html#E` lands
+  on candidate E, not the menu. `history.replaceState` keeps the hash current as
+  the user browses (wrapped in try/catch for the sandbox).
+- **The run**: a hairline facts grid (`gap:1px; background:var(--rule)`, cells
+  `var(--surface)` — the case study's "this is data" texture) — intent · models ·
+  candidates · requested size · actual cost (+ the estimate, small) · date.
+- **Reuse / The prompt**: the exact `run.json` prompt in full, italic serif — the
+  reusable artifact — with a *"→ use Image Lab"* trigger, a Copy button (full
+  invocation), and a 3-step **"how to use this"** list (copy → paste into an
+  agent that has the skill / install it → run as-is or swap details to make it
+  yours) — the actionable framing learned from YouMind's prompt pages.
+- **How this was made**: a `.tool-list` — the gateway (with the run's real total),
+  every model used (linked, with its alternative labels), and Image Lab itself
+  (repo link). Radical credit transparency, straight from the case study.
+- **Coming soon**: one paragraph — *"From image exploration to AI work"* —
+  pointing at the v0.4 loomloom agentic workflow (generate → evaluate → select →
+  refine). Static copy, no per-run data.
+- **CTA**: *"Bring your own prompt"* + the `npx skills add …` line + a GitHub
+  button — a shared page converts into a new user instead of dead-ending.
+- **Open Graph / Twitter-card meta** (`og:image` = the selected or first asset;
+  absolute when `--canonical-url` is set) so a pasted link unfurls with the
+  image, and the topbar `X` / `LinkedIn` share links have something to carry.
+  Stripped from `index.inline.html` (scrapers ignore `data:` URIs).
+- ~180 lines of inline vanilla JS, no library. With JS off the hero is still a
+  plain link to the full-resolution file; everything else (thumbnail strip,
+  lightbox, Share cluster) is progressive enhancement. `rebuildMeta()` in the
+  script mirrors `_meta_html()`.
+- Initial hero = the `#hash` alternative, else `--selected`, else the first. The
+  creator's pick carries a permanent ✓ badge and a *"the creator's pick"* prefix
+  on the meta only while it is the hero — never "Best", never a score.
 - Failed branches are omitted from the gallery with one line beneath
   (*"2 of 4 generated — alternatives C, D did not (…)"*).
-- Tagline composed from the run's real numbers: *"One brief. N models. M ways to
-  see {subject}."* Stats line: *"M candidates · N models · $Y total"* (the actual
-  charge; the estimate lives in the conversation RESULTS, not on the page).
-- The **Prompt** section shows the exact `run.json` prompt in full, in italic
-  serif — the reusable artifact — with a *"→ use Image Lab"* trigger line below.
-  The Copy button puts the full invocation on the clipboard.
-- Footer: *"Generated with CogFoundry's model router · cogfoundry.ai"* — never
-  the token.
+- Tagline + stats composed from the run's real numbers (the actual charge; the
+  estimate lives in the conversation RESULTS and the facts grid, not the hero).
+- Footer: one mono line — *"Generated with CogFoundry's model gateway ·
+  cogfoundry.ai · <date>"* — never the token.
+
+What it deliberately does **not** take from the case study: the scrollytelling
+depth, the multi-chapter narrative, the before/after compare widget, per-chapter
+`embed/*.html` files. Image Lab's page is a *tool* (pick an image), kept
+interaction-first and scannable.
 
 Robustness (from a pre-PR code review): a moved `<out>/` still renders (basename
 fallback); assets are re-verified before the page states a count; `--selected`
@@ -299,7 +379,7 @@ on a failed branch → no Selected section, never a broken `<img>`.
 
 ---
 
-## 7. Verified router-API facts (2026-09-06)
+## 7. Verified gateway-API facts (2026-09-06)
 
 - **Endpoint**: `POST https://router.cogfoundry.ai/api/v1/tasks/generations`
   (async) → `GET .../{request_id}` (poll). Statuses
@@ -355,27 +435,35 @@ examples/community/image-lab/
   README.md  SKILL.md  .gitignore
   pipelines/generate.yaml
   references/generation-policy.md        # DURABLE
-  references/router-model-catalog.yaml   # TEMPORARY ADAPTER
+  references/model-catalog.yaml          # TEMPORARY ADAPTER
   scripts/image.py                       # resolve | run
   scripts/build-exploration-page.py      # run.json → shareable folder (no spend)
   test-fixtures/sample-prompts.json
+  case-studies/<slug>/                   # curated, committed exploration pages (see below)
   showcase/                              # v0.4 stub — Image Lab AS a loomloom workflow
 ```
 
-No dependencies. Generated pages (`out/`) are **gitignored** — no case studies
-are committed.
+No runtime dependencies (`scripts/` is standard-library only). **`out/` is
+scratch and gitignored** — every skill run publishes its page as a private
+artifact, not a commit. **`case-studies/<slug>/` is a curated, committed
+showcase** — a maintainer picking one run worth keeping and committing its
+self-contained folder (`index.html` + `exploration.json` + `assets/` packed to
+JPEG q95, full resolution, ~3–4 MB), exactly the way `redesign-lab/case-studies/`
+works, so it can be hosted as a small standalone site. `case-studies/pack.py`
+(a Pillow-based maintainer tool, not part of the runtime) does the packing. See
+`case-studies/README.md`.
 
 | Version | Adds | Layer |
 |---|---|---|
-| **v0.1** | 1/2/4/8 alternatives across best-fit models → quote → one approval → gallery → shareable page; 7 models | router API |
-| v0.2 | retry failed branches; natural-language allocation tuning | router API |
-| v0.3 | an LLM judge that ranks the alternatives (first step dependency) | router + local LLM |
+| **v0.1** | 1/2/4/8 alternatives across best-fit models → quote → one approval → gallery → shareable page; 7 models | gateway API |
+| v0.2 | retry failed branches; natural-language allocation tuning | gateway API |
+| v0.3 | an LLM judge that ranks the alternatives (first step dependency) | gateway + local LLM |
 | **v0.4** | tidy → generate ×N → judge as one loomloom TemplateSpec, with a run record | **loomloom** |
 | v0.5–v0.6 | reference image + edit chain; batch a file of prompts | loomloom |
 
 ### `showcase/` (v0.4)
 
-Where Image Lab *is* a loomloom workflow. The pitch: *the router can fan out N
+Where Image Lab *is* a loomloom workflow. The pitch: *the gateway can fan out N
 calls; it cannot run tidy → generate → judge as one dependency-aware metered job
 with a single run record.* `variants-4.spec.json` (already
 `loomloom template-spec check` → valid) is the seed — four `image-generate`
@@ -383,7 +471,7 @@ branches; the `stp_tidy` / `stp_judge` steps and the wiring are the v0.4 build.
 
 ---
 
-## Appendix — router API reference
+## Appendix — gateway API reference
 
 ```bash
 TOK=$LOOMLOOM_TOKEN_COGFOUNDRY
@@ -408,5 +496,5 @@ curl -s https://router.cogfoundry.ai/api/v1/tasks/generations/$REQUEST_ID \
   selection.
 - `examples/community/redesign-lab` — structural precedent: manifest stages, one
   gate that matters, a clearly-scoped paid step, the exploration-page house style.
-- CogFoundry router API — not publicly documented; behaviour here is from direct
+- CogFoundry gateway API — not publicly documented; behaviour here is from direct
   verification on 2026-09-06.

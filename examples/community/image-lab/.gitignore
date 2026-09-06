@@ -1,3 +1,10 @@
 __pycache__/
 *.pyc
+
+# scratch output of every `image.py run` / `build-exploration-page.py` — the
+# skill publishes each run as a private artifact, it is never committed.
 out/
+
+# curated case studies ARE committed (case-studies/<slug>/), but never the
+# multi-MB single-file build meant only for artifact publishing.
+case-studies/*/index.inline.html

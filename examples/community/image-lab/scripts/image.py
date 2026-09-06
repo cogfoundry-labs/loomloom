@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Image Lab — the one script behind the skill (v0.1, router API).
+"""Image Lab — the one script behind the skill (v0.1, gateway API).
 
 Image Lab helps you PICK AN IMAGE, not pick a model. `count` is the number of
 image alternatives you want; the Model Advisor decides how that budget is spread
@@ -11,15 +11,17 @@ Subcommands
         deterministically score the models and return the ALLOCATION: which
         models, how many each, at what size, and the estimated total. `--models`
         forces a specific model or head-to-head (the user override). `--explain`
-        prints the score table on stderr. Never calls the router.
+        prints the score table on stderr. Never calls the gateway.
 
   run --alloc "id:n:WxH,id:n:WxH" --prompt TEXT [--intent LABEL]
-      [--out DIR] --confirm
-        Submit the approved allocation to the router in parallel, poll each
+      [--out DIR] [--progress-file PATH] --confirm
+        Submit the approved allocation to the gateway in parallel, poll each
         branch, redraw the live tree, download each image, print actual cost
         grouped by model, and write <out>/run.json (the record the exploration
         page is built from). Refuses without --confirm. If the first model is
         unavailable it stops before any spend and prints a replacement (exit 3).
+        --progress-file PATH gets a small JSON snapshot rewritten as each branch
+        lands, so the skill can background this call and report live progress.
 
 Then, on request, `scripts/build-exploration-page.py --from <out>` turns that
 run into a shareable static folder. No gate — nothing is spent.
@@ -43,8 +45,8 @@ import urllib.request
 from pathlib import Path
 
 REFS = Path(__file__).resolve().parent.parent / "references"
-ROUTER = "https://router.cogfoundry.ai/api/v1"
-# Cloudflare in front of the router blocks the default Python-urllib User-Agent
+GATEWAY = "https://router.cogfoundry.ai/api/v1"  # CogFoundry model gateway
+# Cloudflare in front of the gateway blocks the default Python-urllib User-Agent
 # (HTTP 403, "error code: 1010"). Any non-default UA passes.
 USER_AGENT = "image-lab/0.1 (+https://github.com/cogfoundry-labs/loomloom)"
 DIMENSIONS = ["photorealism", "typography", "composition_control", "speed"]
@@ -138,13 +140,13 @@ def token() -> str:
 
 
 # --------------------------------------------------------------------------- #
-# router HTTP
+# gateway HTTP
 # --------------------------------------------------------------------------- #
 def _req(method: str, path: str, tok: str, body: dict | None = None) -> tuple[int, dict, str]:
     """Returns (status, json_or_empty, error_str). error_str is '' on success."""
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(
-        f"{ROUTER}{path}", data=data, method=method,
+        f"{GATEWAY}{path}", data=data, method=method,
         headers={"Authorization": f"Bearer {tok}", "Content-Type": "application/json",
                  "User-Agent": USER_AGENT},
     )
@@ -167,7 +169,7 @@ def _download(url: str, dest: Path) -> None:
         shutil.copyfileobj(resp, f)
     with open(dest, "rb") as f:
         if f.read(8) != b"\x89PNG\r\n\x1a\n":
-            raise OSError("downloaded file is not a PNG (router may have returned an error body)")
+            raise OSError("downloaded file is not a PNG (gateway may have returned an error body)")
 
 
 # --------------------------------------------------------------------------- #
@@ -219,12 +221,12 @@ def _parse_intents(block: str) -> list[dict]:
 
 
 def load_model_catalog() -> dict:
-    """THE ONE PLACE that knows the catalog is a file. Swap this when the router
-    ships a model endpoint (see the TODO in router-model-catalog.yaml)."""
-    text = (REFS / "router-model-catalog.yaml").read_text(encoding="utf-8")
+    """THE ONE PLACE that knows the catalog is a file. Swap this when the gateway
+    ships a model endpoint (see the TODO in model-catalog.yaml)."""
+    text = (REFS / "model-catalog.yaml").read_text(encoding="utf-8")
     m = re.search(r"^models:\s*\n(.*)", text, re.S | re.M)
     if not m:
-        die("router-model-catalog.yaml: no `models:` block")
+        die("model-catalog.yaml: no `models:` block")
     out: dict = {}
     cur = None
     for raw in m.group(1).splitlines():
@@ -274,7 +276,7 @@ def load_model_catalog() -> dict:
             entry["pricing"] = [(10 ** 12, float(entry["usd_per_image"]))]
         entry["pricing"].sort()
     if not out:
-        die("router-model-catalog.yaml: no models parsed")
+        die("model-catalog.yaml: no models parsed")
     return out
 
 
@@ -291,13 +293,14 @@ def model_price(entry: dict, px: int) -> float:
 #   1. disqualify a model that is weak (-1) at any HIGH requirement
 #   2. rank the rest by SUITABILITY = weighted dot product of the brief's
 #      requirement weights and the model's per-dimension scores
-#   3. cost is only a tie-break (exact-quality ties, and the "also worth
-#      trying" set for the second model)
-#   4. allocate the alternatives budget: A gets it all unless a genuinely
-#      competitive second model B exists (within QUALITY_TOLERANCE of A) —
-#      then split it A / B
+#   3. cost is only a tie-break (exact-suitability ties)
+#   4. allocate the alternatives budget (count >= 2): A = best fit, B = the
+#      next-best surviving model ("also worth trying"). A takes the whole budget
+#      only when it is the sole surviving model, or the user forced one model.
+#   5. count == 8 ("deep exploration") widens to a THIRD surviving model C when
+#      one exists: A x3 + B x3 + C x2. `count` still means "alternatives", not
+#      "top-N models" — 1 / 2 / 4 are unchanged.
 # --------------------------------------------------------------------------- #
-QUALITY_TOLERANCE = 1
 
 
 def score_models(requirements: dict, preferred_sizes: list[str], catalog: dict) -> list[dict]:
@@ -332,18 +335,28 @@ def _primary(ranked: list[dict]) -> dict:
 
 
 def _secondary(ranked: list[dict], primary: dict) -> dict | None:
-    """B = the best OTHER model that is genuinely competitive for this brief
-    (within QUALITY_TOLERANCE of A). None if nothing else clears the bar."""
+    """B = the next-best surviving model — the "also worth trying" pick. None
+    only when A is the sole survivor (every other model disqualified)."""
     pool = [r for r in ranked if not r["disqualified"]] or ranked
-    cand = [r for r in pool if r["model"] != primary["model"]
-            and r["quality"] >= primary["quality"] - QUALITY_TOLERANCE]
+    cand = [r for r in pool if r["model"] != primary["model"]]
+    if not cand:
+        return None
+    return min(cand, key=lambda r: (-r["quality"], r["usd_per_image"], r["cost_rank"]))
+
+
+def _tertiary(ranked: list[dict], *taken: dict) -> dict | None:
+    """C = the third-best surviving model — only used to widen count == 8."""
+    pool = [r for r in ranked if not r["disqualified"]] or ranked
+    seen = {t["model"] for t in taken}
+    cand = [r for r in pool if r["model"] not in seen]
     if not cand:
         return None
     return min(cand, key=lambda r: (-r["quality"], r["usd_per_image"], r["cost_rank"]))
 
 
 def _split(count: int, k: int) -> list[int]:
-    """count alternatives across k models, as even as possible, front-loaded."""
+    """count alternatives across k models, as even as possible, front-loaded.
+    8 across 3 -> [3, 3, 2]; 4 across 2 -> [2, 2]; 4 across 3 -> [2, 1, 1]."""
     base, extra = divmod(count, k)
     return [base + (1 if i < extra else 0) for i in range(k)]
 
@@ -361,7 +374,12 @@ def allocate(ranked: list[dict], count: int, forced: list[dict] | None = None) -
     else:
         a = _primary(ranked)
         b = _secondary(ranked, a)
-        models = [a, b] if b else [a]
+        if not b:
+            models = [a]
+        elif count == 8 and (c := _tertiary(ranked, a, b)):
+            models = [a, b, c]           # deep exploration -> widen to a 3rd model
+        else:
+            models = [a, b]
 
     ns = _split(count, len(models))
     alloc = []
@@ -454,7 +472,13 @@ def _why(intent: dict, alloc: list[dict], ranked: list[dict], catalog: dict,
         return f"no model fully fits {name}; these are the least-bad options"
     if len(labels) == 1:
         return f"{labels[0]} is the best fit for {name}{ruled}"
-    return f"{labels[0]} and {labels[1]} both top the fit for {name}{ruled}"
+    if len(labels) >= 3:
+        return (f"{labels[0]} leads the fit for {name}{ruled}; "
+                f"{labels[1]} and {labels[2]} widen a deep-exploration run")
+    q = {r["model"]: r["quality"] for r in ranked}
+    if q.get(alloc[1]["model"]) == q.get(alloc[0]["model"]):
+        return f"{labels[0]} and {labels[1]} both top the fit for {name}{ruled}"
+    return f"{labels[0]} is the best fit for {name}{ruled}; {labels[1]} is the runner-up"
 
 
 # --------------------------------------------------------------------------- #
@@ -572,10 +596,10 @@ def cmd_run(a) -> None:
     if st == 503 or (first.get("error") or {}).get("code") == "service_unavailable":
         _suggest_replacement(tasks[0]["model"], first, a.intent)  # exits 3
     if err:
-        die(f"router request failed before any spend: {err}")
+        die(f"gateway request failed before any spend: {err}")
     rid0 = (first.get("data") or {}).get("request_id")
     if not rid0:
-        die(f"router rejected the request (HTTP {st}): {json.dumps(first)[:300]}")
+        die(f"gateway rejected the request (HTTP {st}): {json.dumps(first)[:300]}")
     tasks[0]["rid"] = rid0
     tasks[0]["status"] = "SUBMITTING"
     tasks[0]["submitted_at"] = time.time()
@@ -591,10 +615,40 @@ def cmd_run(a) -> None:
             t["done_at"] = t["submitted_at"]
             t["fail_reason"] = e or f"submit rejected: {json.dumps(r)[:120]}"
 
+    prog = Path(a.progress_file).resolve() if a.progress_file else None
+    _write_progress(prog, tasks, "submitted")
+
     est_by_model = {seg["model"]: model_price(cat[seg["model"]], _px(seg["size"])) for seg in alloc}
     expected = sum(est_by_model[t["model"]] for t in tasks)
-    _poll_all(tasks, tok, out_dir)
+    _poll_all(tasks, tok, out_dir, prog)
+    _write_progress(prog, tasks, "done")
     _report(tasks, expected, out_dir, cat, prompt=a.prompt, intent=a.intent)
+
+
+def _write_progress(path: Path | None, tasks: list[dict], phase: str) -> None:
+    """Overwrite `path` with a small JSON snapshot the agent polls while `run`
+    works in the background. Best-effort — a write error never sinks the run."""
+    if not path:
+        return
+    rec = {
+        "phase": phase,                                  # submitted | generating | done
+        "done": sum(t["status"] == "COMPLETED" for t in tasks),
+        "failed": sum(t["status"] == "FAILED" for t in tasks),
+        "total": len(tasks),
+        "actual_usd_so_far": round(sum(t["cost"] for t in tasks), 6),
+        "updated_at": round(time.time(), 1),
+        "branches": [
+            {"label": t["label"], "model_label": t["model_label"],
+             "status": t["status"], "progress": t.get("progress"),
+             "seconds": _elapsed(t), "cost_usd": round(t["cost"], 6)}
+            for t in tasks
+        ],
+    }
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(rec, indent=2), encoding="utf-8")
+    except OSError:
+        pass
 
 
 def _px(size: str) -> int:
@@ -649,7 +703,7 @@ def _suggest_replacement(bad_model: str, resp: dict, intent_label: str | None) -
     sys.exit(3)
 
 
-def _poll_all(tasks: list[dict], tok: str, out_dir: Path) -> None:
+def _poll_all(tasks: list[dict], tok: str, out_dir: Path, progress_file: Path | None = None) -> None:
     deadline = time.time() + POLL_TIMEOUT
     last = ""
     net_fails = 0
@@ -686,6 +740,7 @@ def _poll_all(tasks: list[dict], tok: str, out_dir: Path) -> None:
         frame = _tree(tasks)
         if frame != last:
             print(frame, file=sys.stderr)
+            _write_progress(progress_file, tasks, "generating")
             last = frame
         if all(t["status"] in TERMINAL for t in tasks):
             return
@@ -709,7 +764,7 @@ def _tree(tasks: list[dict]) -> str:
 
 
 def _elapsed(t: dict) -> float | None:
-    """Generation time in seconds. Prefer the router's own start/finish epochs
+    """Generation time in seconds. Prefer the gateway's own start/finish epochs
     (the true model time); fall back to local wall-clock from submit to the
     branch reaching a terminal state (includes queue wait, ~POLL_SECONDS
     granularity)."""
@@ -813,6 +868,9 @@ def main() -> None:
     x.add_argument("--intent", default=None,
                    help="used to score a replacement if the first model is unavailable")
     x.add_argument("--out", default=None)
+    x.add_argument("--progress-file", default=None,
+                   help="poll target: a JSON snapshot rewritten as each branch lands "
+                        "(so the skill can run this in the background and report progress)")
     x.add_argument("--confirm", action="store_true")
 
     a = ap.parse_args()

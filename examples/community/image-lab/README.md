@@ -3,7 +3,7 @@
 **One prompt. Several strong possibilities. Pick the image you want.**
 See the price. Approve once. Generate in parallel.
 
-_Powered by CogFoundry's model router._
+_Powered by CogFoundry's model gateway._
 
 ```
 7 image models  ·  estimate before you spend  ·  live progress  ·  actual cost after
@@ -28,13 +28,12 @@ any other prompt skill, or your own. Image Lab:
    an *allocation*: which models, how many alternatives each, at what size
 2. **QUOTE** — the estimated total (printed by the same step)
 3. **APPROVE** — one yes/no. Nothing is spent before this. It is the only gate.
-4. **GENERATE** — the whole allocation as independent router tasks, in parallel,
-   with a live tree
-5. **RESULTS** — the gallery grouped by model + the actual cost; you pick a winner
-
-Then, optionally, Image Lab builds a **shareable exploration page** — one brief,
-every alternative it produced, the one you chose. A self-contained static folder;
-nothing is spent to make it.
+4. **GENERATE** — the whole allocation as independent gateway tasks, in parallel.
+   It runs in the background and reports "N/8 done" as each lands, so a long run
+   still shows motion
+5. **RESULTS** — every image, the actual cost, **and** a shareable **exploration
+   page** built automatically: one brief, every alternative, a click-to-compare
+   gallery. You pick your winner from the page. Nothing is spent to build it.
 
 ## Your exploration budget
 
@@ -45,12 +44,14 @@ nothing is spent to make it.
 | 1 | just make one | the single best-fit model |
 | 2 | a quick comparison | the top 2 models, one each |
 | **4** | **standard exploration** | **top 2 models, two each** |
-| 8 | deep exploration | top 2 models, four each |
+| 8 | deep exploration | top **3** models — A ×3 + B ×3 + C ×2 |
 
 The allocation is deterministic — the same intent + count always plans the same
 mix — while the images themselves stay stochastic. When only one model genuinely
-fits the brief, the whole budget goes to it. How the budget is split is an
-internal Advisor policy and may evolve without changing what `count` means.
+fits the brief, the whole budget goes to it. `count = 8` is the one level that
+also widens the model spread (a broader net for a deep dive); how the budget is
+split is an internal Advisor policy and may evolve without changing what `count`
+means — it is always a number of images, never "top-N models".
 
 Say it naturally: *"just one"*, *"give me a couple"*, *"explore this"*,
 *"make 8"*. There is no slider.
@@ -88,7 +89,7 @@ skills.
 
 The loomloom CLI, a selected server, a token
 (`LOOMLOOM_TOKEN_COGFOUNDRY` or `loomloom login`), and a positive balance. The
-router API uses the **same token and the same balance** as the loomloom CLI.
+gateway API uses the **same token and the same balance** as the loomloom CLI.
 `scripts/image.py` checks all of this at PLAN and stops with the one fix if
 anything is missing — a user who stops at APPROVE never has to set it up.
 
@@ -107,30 +108,33 @@ already done.
 | `docs/design-spec.md` | Why it's shaped this way — the Advisor, the two layers, the roadmap |
 | `pipelines/generate.yaml` | The stage manifest the agent follows |
 | `references/generation-policy.md` | **Durable:** creative intent → capability requirements + preferred sizes. Hand-editable — bring your own taste. |
-| `references/router-model-catalog.yaml` | **Temporary adapter:** model ids, per-dimension scores, measured rates, size minimums. `TODO`: replace with a router endpoint when one exists. |
+| `references/model-catalog.yaml` | **Temporary adapter:** model ids, per-dimension scores, measured rates, size minimums. `TODO`: replace with a gateway endpoint when one exists. |
 | `scripts/image.py` | `resolve` / `run` — generation; standard-library Python, no SDK |
 | `scripts/build-exploration-page.py` | turns a run into a shareable static folder (brief + alternatives + pick); no spend |
 | `test-fixtures/sample-prompts.json` | Prompts + expected intent/allocation, for exercising PLAN without spend |
+| `case-studies/<slug>/` | Curated, committed exploration pages from real runs — self-contained, GitHub-Pages-ready. See `case-studies/README.md`. |
 | `showcase/` | **v0.4** — Image Lab as a real loomloom workflow (not wired into v0.1) |
 
 ## How model selection works
 
 `generation-policy.md` gives each creative intent a set of per-dimension
 requirement weights (`photorealism`, `typography`, `composition_control`,
-`speed` — `low`/`medium`/`high` → `0`/`1`/`2`). `router-model-catalog.yaml`
+`speed` — `low`/`medium`/`high` → `0`/`1`/`2`). `model-catalog.yaml`
 scores each model `-1`…`2` on the same dimensions. `image.py`:
 
 1. **disqualifies** any model that is weak (`-1`) at a `high` requirement;
 2. ranks the rest by **suitability** — the weighted dot product;
 3. picks **A** = the top-suitability model (exact ties broken by lower cost);
-4. picks **B** = the best *other* model within 1 point of A — the "also worth
-   trying" pick — or none, if nothing else is competitive;
-5. splits the `count` across A (+ B).
+4. picks **B** = the next-best surviving model — the runner-up, the "also worth
+   trying" pick (A takes the whole budget only when it's the sole survivor);
+5. at `count = 8` only, picks **C** = the third-best surviving model for a wider
+   net;
+6. splits the `count`: `1 → A`, `2 / 4 → A + B`, `8 → A ×3 + B ×3 + C ×2`.
 
 Each model is priced **at the size it would actually run** (Seedream's forced
 upsize and GPT Image 2's size-dependent rate both count). Rates in
-`router-model-catalog.yaml` were measured against the live router on 2026-09-06
-and are a pre-flight guess of the `cost` the router reports back — RESULTS
+`model-catalog.yaml` were measured against the live gateway on 2026-09-06
+and are a pre-flight guess of the `cost` the gateway reports back — RESULTS
 always shows the real charge.
 
 It is deterministic — the same intent + count always plans the same mix — and
@@ -138,36 +142,50 @@ It is deterministic — the same intent + count always plans the same mix — an
 
 ## The exploration page
 
-After a run, `scripts/build-exploration-page.py --from ./out` turns
-`./out/run.json` + the images into a self-contained static folder:
+RESULTS always runs `scripts/build-exploration-page.py --from ./out` (it costs
+nothing, and you pick your favourite from it), turning `./out/run.json` + the
+images into a self-contained static folder:
 
 ```
 out/<slug>/
-  index.html          an image-selection gallery: hero + thumbnail strip, live meta
+  index.html          an image-selection gallery: hero + thumbnail strip, lightbox
   assets/alternative-01.png …
   exploration.json    the data model (a future PDF / social-card renderer reads this)
 ```
 
-It's an **image-selection gallery, not a benchmark report** — a big hero image
-with a thumbnail strip; click a thumbnail and the hero + a
-`model · size · cost · time` line swap. The creator's pick (if any) carries a ✓
-badge; it is never called *Best* and never scored. Below the gallery the full
-prompt sits in italic as a reusable artifact, with a Copy button. Styled to
-match `redesign-lab`'s case-study house style. No cost — the images already
-exist. GitHub-Pages-ready, or publish `index.html` as an artifact for a URL.
+It's an **image-selection gallery, not a benchmark report** — a topbar with a
+**Share** cluster (`Copy link` + one-click `X` / `LinkedIn`); a hero with an
+*"AI-generated · not a benchmark"* badge, the tagline, and a **model legend**
+(`GPT Image 2 ×3` chips, each linked to its model page); then *"Pick your image"*
+— a framed hero and a thumbnail strip badged by **letter** (`A · GPT Image 2`,
+not `01` — candidates, not steps). Click a thumbnail → the hero + a
+`model · size · cost · time` line swap, with an `N / 8` counter and a *"Copy link
+to alternative N"* button (a shared `…/index.html#E` opens straight to candidate
+E). Click the hero → a minimal full-screen lightbox (`← →`, `Esc`, `Copy link`,
+`Open raw ↗`). Below: **The run** (a facts grid), the full **Prompt** (reusable,
+with Copy + a 3-step *"how to use this"*), **How this was made** (every model +
+tool, linked, with the real cost), a **Coming soon** note, and a **CTA** to
+install Image Lab. Open Graph tags make a pasted link unfurl with the image.
+
+Every section shares one shape — mono eyebrow, Arial-Black headline, one lead
+line, then the body — in `redesign-lab`'s case-study house style (same token
+block, two-tier 1200/820 width, hairline grids). No cost — the images already
+exist. GitHub-Pages-ready (`--canonical-url` sets the deploy URL); the skill
+also publishes the one-file `index.inline.html` as an artifact so you have a
+live URL to pick from.
 
 ## Roadmap — primitive → workflow
 
 | Version | Adds | Execution layer |
 |---|---|---|
-| **v0.1 (this)** | any prompt → 1/2/4/8 alternatives across the best-fit models → estimate → approve → gallery → **shareable exploration page**; 7 models | router API |
-| v0.2 — Retry + mix control | retry failed branches; tune the allocation ("more of A", pin a third model) | router API |
-| v0.3 — Judge | an LLM ranks the alternatives — the first step dependency | router + local LLM |
+| **v0.1 (this)** | any prompt → 1/2/4/8 alternatives across the best-fit models → estimate → approve → gallery → **shareable exploration page**; 7 models | gateway API |
+| v0.2 — Retry + mix control | retry failed branches; tune the allocation ("more of A", pin a third model) | gateway API |
+| v0.3 — Judge | an LLM ranks the alternatives — the first step dependency | gateway + local LLM |
 | **v0.4 — Workflow** | tidy → generate → judge as one loomloom TemplateSpec, with a run record | **loomloom** |
 | v0.5 — Reference + Edit | reference image in; generate → edit chain | |
 | v0.6 — Batch | a file of prompts → a gallery per row | loomloom workbook |
 
-Router = execution primitive. loomloom = workflow orchestration. Image Lab
+Gateway = execution primitive. loomloom = workflow orchestration. Image Lab
 starts at the primitive because "several alternatives of one prompt" is several
 independent calls, and *graduates* into a loomloom workflow as the work gains
 structure. See `showcase/README.md`.
@@ -198,5 +216,5 @@ Apache-2.0, like the rest of loomloom. Pairs naturally with
 [`ai-image-prompts-skill`](https://github.com/YouMind-OpenLab/ai-image-prompts-skill)
 (YouMind, MIT) for the prompt, used unmodified. Intent-based model selection is
 inspired by `runcomfy-com/skills` (MIT); the exploration page follows
-`redesign-lab`'s case-study house style. `references/router-model-catalog.yaml`
-is our own stopgap until the router ships a model endpoint.
+`redesign-lab`'s case-study house style. `references/model-catalog.yaml`
+is our own stopgap until the gateway ships a model endpoint.

@@ -5,8 +5,8 @@ direct API calls.
 
 ## Why this one needs the compiler
 
-v0.1–v0.3 are N independent router tasks — spread across a couple of models, but
-still independent (plus, in v0.3, one LLM call after them). The router API can
+v0.1–v0.3 are N independent gateway tasks — spread across a couple of models, but
+still independent (plus, in v0.3, one LLM call after them). The gateway API can
 fan out N calls, but it **cannot express a step dependency** — there is no way
 to say "generate only after the prompt is tidied" or "judge only after all the
 images exist" as one metered job.
@@ -42,9 +42,9 @@ v0.1's allocation: two model contracts, two branches each.)
 and `stp_judge` `text-generate` steps and the wiring are the v0.4 build.
 
 `stp_gen_*` binds the `google/gemini-2.5-flash-image` fixed-model contract — the
-one image model loomloom's TemplateSpec catalog exposes today (the router's
+one image model loomloom's TemplateSpec catalog exposes today (the gateway's
 other 6 are not yet wrapped as contracts). So this costs loomloom's
-image-generation rate ($0.04–$0.30/image), not the router rate — which is the
+image-generation rate ($0.04–$0.30/image), not the gateway rate — which is the
 point: you pay for orchestration when the work needs it.
 
 `variants-4.spec.json`'s `subjectRevisionId` points at a **shared** model

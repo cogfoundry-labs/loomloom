@@ -4,7 +4,7 @@ Maps a **creative intent** to **per-dimension requirement weights** and
 **preferred sizes**. No model names. A team edits this to change Image Lab's
 taste; it does not rot when CogFoundry's model catalog moves.
 
-`image.py` scores every model in `router-model-catalog.yaml` against the matched
+`image.py` scores every model in `model-catalog.yaml` against the matched
 intent's weights and picks deterministically (§4 of `docs/design-spec.md`). This
 file is *what the work needs*; the catalog is *which model delivers it*.
 
@@ -13,7 +13,7 @@ file is *what the work needs*; the catalog is *which model delivers it*.
 `photorealism` · `typography` · `composition_control` · `speed`
 
 To add a dimension, add it here **and** to every model's `scores` block in
-`router-model-catalog.yaml` in the same change.
+`model-catalog.yaml` in the same change.
 
 ## Weights
 
@@ -22,7 +22,7 @@ To add a dimension, add it here **and** to every model's `scores` block in
 
 ## Sizes
 
-`preferred_sizes` are literal `WxH` strings — the router's actual `size`
+`preferred_sizes` are literal `WxH` strings — the gateway's actual `size`
 parameter, ordered. `image.py` picks the first entry the chosen model allows
 (its `size_min_px`); if none qualify, it upsizes to the smallest valid
 dimensions at that aspect ratio. There is no "resolution tier"; the plan line

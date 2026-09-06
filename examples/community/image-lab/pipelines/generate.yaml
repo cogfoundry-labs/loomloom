@@ -1,4 +1,4 @@
-# Pipeline: image-lab / generate  (v0.1 — router API)
+# Pipeline: image-lab / generate  (v0.1 — gateway API)
 #
 # Not executable by loomloom. The agent session reads this manifest stage by
 # stage, the same way redesign-lab/pipelines/ works. `scripts/image.py` is the
@@ -8,15 +8,17 @@
 #   PLAN     = capture + classify + resolve  (resolve also prints the QUOTE)
 #   QUOTE    = (part of resolve — the estimated total for the allocation)
 #   APPROVE  = cost-gate   (the one human gate — the wallet boundary)
-#   GENERATE = generate
-#   RESULTS  = present  (+ optional exploration-page — a render step, spends nothing)
+#   GENERATE = generate  (backgrounded; agent polls the progress file)
+#   RESULTS  = present + exploration-page  (the page is always built — a render
+#              step that spends nothing, not an optional offer)
 #
 # Image Lab helps the user PICK AN IMAGE, not pick a model. `count` is the
 # number of alternatives (1 / 2 / 4 / 8, default 4); the Advisor spreads that
-# budget across the best-fit models.
+# budget across the best-fit models — A alone at 1, A + B at 2 / 4, and
+# A + B + C (three models) at 8, the "deep exploration" widen.
 #
 # v0.1 does not use loomloom's compiler/runtime. Parallelism = N independent
-# router tasks (POST xN, poll xN). loomloom orchestration arrives at v0.4
+# gateway tasks (POST xN, poll xN). loomloom orchestration arrives at v0.4
 # (showcase/).
 
 name: image-lab-generate
@@ -42,13 +44,15 @@ stages:
     script: 'python scripts/image.py resolve --intent "<intent_label>" --count <N> --explain [--models "<id>[,<id>]"]'
     note: >
       reads the reference files, runs `loomloom doctor` / `balance`, resolves the
-      token; NO router call. Deterministically scores every model in
-      router-model-catalog.yaml against the intent's weights, then ALLOCATES the
-      count across the best-fit models (A alone, or A + a genuinely competitive
-      B). Returns { allocation, alloc_arg, estimated_usd, sufficient, why } + the
-      score table, and prints the PLAN + QUOTE. `--models` forces a specific
-      model / head-to-head (user override). If it errors or `sufficient` is
-      false, relay the one fix and stop.
+      token; NO gateway call. Deterministically scores every model in
+      model-catalog.yaml against the intent's weights, then ALLOCATES the
+      count across the best-fit models: A alone at count 1; A + the next-best
+      surviving model B at 2 / 4; A + B + a third surviving model C at 8 (the
+      "deep exploration" widen). A alone only when it is the sole survivor or the
+      user forced one model. Returns { allocation, alloc_arg, estimated_usd,
+      sufficient, why } + the score table, and prints the PLAN + QUOTE.
+      `--models` forces a specific model / head-to-head (user override). If it
+      errors or `sufficient` is false, relay the one fix and stop.
     produces: [plan]
 
   - id: cost-gate
@@ -63,17 +67,21 @@ stages:
   - id: generate
     user_step: GENERATE
     engine: local
+    background: true
     script: >
       python scripts/image.py run --alloc "<alloc_arg>" --prompt "<prompt>"
-      --intent "<intent_label>" --out ./out --confirm
+      --intent "<intent_label>" --out ./out --progress-file ./out/progress.json
+      --confirm
     note: >
-      submits the whole approved allocation together (N router tasks across 1-2
-      models), polls each, redraws the live branch tree (model shown per branch),
-      downloads each image, prints actual cost grouped by model. Relay the tree.
-      On exit code 3 (status: model_unavailable) show the "MODEL UNAVAILABLE /
-      suggested replacement" prompt and, on approval, re-resolve with
-      --models "<suggested_model>" then re-approve.
-    produces: ["./out/variant-*.png", actual_usd, by_model]
+      submits the whole approved allocation together (N gateway tasks across 2-3
+      models), polls each, redraws the live branch tree, downloads each image,
+      prints actual cost grouped by model. RUN IN THE BACKGROUND: every ~30-60s
+      the agent reads ./out/progress.json (phase / done / total /
+      actual_usd_so_far / branches[]) and posts a compact "N/total done" update
+      so the user always sees motion. On exit code 3 (status: model_unavailable)
+      show the "MODEL UNAVAILABLE / suggested replacement" prompt and, on
+      approval, re-resolve with --models "<suggested_model>" then re-approve.
+    produces: ["./out/variant-*.png", "./out/progress.json", actual_usd, by_model]
 
   - id: present
     user_step: RESULTS
@@ -82,24 +90,36 @@ stages:
       send EACH image as its own SendUserFile with a caption naming its label +
       model ("A · Nano Banana Pro"); present a RESULTS table label · model ·
       time · cost · size (from run.json alternatives[]), then actual total vs
-      estimate; name any failed/incomplete branch (no retry in v0.1); ask which
-      one the user wants. Not a gate.
+      estimate; name any failed/incomplete branch (no retry in v0.1). Then build
+      the exploration page and ask the user to pick from it. Not a gate.
 
   - id: exploration-page
     user_step: RESULTS
     engine: local
-    optional: true
     script: >
-      python scripts/build-exploration-page.py --from ./out --title "<short title>"
-      --subject "<noun phrase>" --invocation "<user's exact triggering message>"
-      [--selected <label>]
+      python scripts/build-exploration-page.py --from ./out --inline
+      --title "<short title>" --subject "<noun phrase>"
+      --invocation "<user's exact triggering message>"
+      [--canonical-url <deploy URL>]
+      [--selected <label, only on a rebuild after the user picks>]
     note: >
-      OFFER after present ("want a shareable page?"). Reads ./out/run.json + the
-      images, writes a self-contained static folder ./out/<slug>/ (index.html +
-      assets/ + exploration.json). NOTHING IS SPENT — the images already exist,
-      this is a render step, not a gate. Agent writes --title + --subject (page
-      composes "One brief. N models. M ways to see {subject}.") and passes
-      --invocation VERBATIM (shown in the Prompt block for reuse). --selected
-      only if the user actually picked one (marked "Selected", never "best").
-      GitHub-Pages-ready; can also be published as an artifact for a URL.
-    produces: ["./out/<slug>/index.html"]
+      ALWAYS built as part of RESULTS — never "want a page?". Reads
+      ./out/run.json + the images, writes a self-contained static folder
+      ./out/<slug>/ (index.html + assets/ + exploration.json) plus
+      index.inline.html (the images embedded). NOTHING IS SPENT — the images
+      already exist, this is a render step, not a gate. Every section has one
+      shape (mono eyebrow, Arial-Black headline, one lead line, body). The page:
+      topbar with a Share cluster (Copy link + one-click X / LinkedIn); hero
+      with an "AI-generated / not a benchmark" badge, the tagline, and a model
+      legend (chips linked to each model's page); "Pick your image" gallery
+      (letter-badged thumbs + lightbox + an N/8 counter + a per-alternative
+      #hash deep link); a "The run" facts grid; the Prompt (+ a 3-step "how to
+      use this"); a "How this was made" credits list; a "Coming soon" note; a
+      CTA; and Open Graph meta so a pasted link unfurls. Agent writes --title +
+      --subject (page composes "One brief.
+      N models. M ways to see {subject}.") and passes --invocation VERBATIM.
+      --canonical-url = the deploy URL (makes og:image absolute; omit for the
+      artifact flow). Publish index.inline.html as an artifact so the user has a
+      live URL to pick from (if the size line says it is over ~15 MB, recompress
+      the PNGs to JPEG first). Re-run with --selected <label> once they choose.
+    produces: ["./out/<slug>/index.html", "./out/<slug>/index.inline.html"]

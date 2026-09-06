@@ -1,6 +1,6 @@
-# ROUTER MODEL CATALOG — TEMPORARY ADAPTER
+# MODEL CATALOG — TEMPORARY ADAPTER
 #
-# TODO: delete this file and read the catalog from the router when CogFoundry
+# TODO: delete this file and read the catalog from the gateway when CogFoundry
 #       ships a model / capability / pricing endpoint, e.g.
 #         GET /api/v1/models?modality=image
 #         GET /api/v1/capabilities
@@ -12,7 +12,7 @@
 # design — it is a hand-maintained shim.
 #
 # rates: measured 2026-09-06 by submitting one real task per (model, size) and
-#        confirming the charge against `loomloom balance`. The router's
+#        confirming the charge against `loomloom balance`. The gateway's
 #        data.cost field is authoritative and matched the balance delta every
 #        time; these numbers are only a *pre-flight guess* of it.
 #
@@ -47,9 +47,9 @@ models:
     label: Nano Banana 2
     url: https://cogfoundry.ai/en/models/media/283/
     scores: { photorealism: 1, typography: 0, composition_control: 1, speed: 2 }
-    # Billed $0.00 on 2026-09-06 (router data.cost = 0, balance unchanged) —
+    # Billed $0.00 on 2026-09-06 (gateway data.cost = 0, balance unchanged) —
     # a launch free preview, not a permanent price. This 0.006 is a deliberate
-    # OVER-estimate (~2x its sibling gemini-2.5-flash-image's measured router
+    # OVER-estimate (~2x its sibling gemini-2.5-flash-image's measured gateway
     # rate) so the cost gate never approves "$0" and then charges real money
     # when billing resumes. RESULTS still shows the true $0.00. Re-measure and
     # correct this once the model starts billing.
