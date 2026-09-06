@@ -1,0 +1,25 @@
+{
+  "note": "Prompts for exercising PLAN + QUOTE without spend. `expected_intent` is the classification a correct agent makes; `expected_allocation_4` is the ordered list of model ids the deterministic Advisor produces at count=4 against the CURRENT reference files (router-model-catalog.yaml + generation-policy.md). Update `expected_allocation_4` whenever those files change. All prompts are text-to-image only.",
+  "prompts": [
+    {
+      "prompt": "A clean modern product-launch hero image for a SaaS app: a single laptop on a minimalist desk emitting a soft glow, calm and confident mood, generous negative space, muted blue and warm-neutral palette, soft studio light",
+      "expected_intent": "launch / announcement image",
+      "expected_allocation_4": ["google/gemini-3-pro-image", "google/gemini-3.1-flash-image"]
+    },
+    {
+      "prompt": "Event poster for a synthwave concert: bold stacked headline reads exactly \"NIGHT DRIVE\", neon grid horizon, 1980s color palette, high contrast, room for a date line at the bottom",
+      "expected_intent": "poster / flyer",
+      "expected_allocation_4": ["google/gemini-3-pro-image", "openai/gpt-image-2"]
+    },
+    {
+      "prompt": "Isometric 3D illustration of a developer workflow: interconnected floating panels showing code, a pipeline, and a preview window, soft studio lighting, muted palette, gentle shadows, no text",
+      "expected_intent": "illustration / concept art",
+      "expected_allocation_4": ["google/gemini-2.5-flash-image", "google/gemini-3.1-flash-image"]
+    },
+    {
+      "prompt": "E-commerce product shot of a ceramic pour-over coffee dripper on a seamless white background, even soft lighting, sharp focus, true-to-life color, subtle contact shadow",
+      "expected_intent": "product / e-commerce shot",
+      "expected_allocation_4": ["bytedance/doubao-seedream-5-0-lite", "google/gemini-3.1-flash-image"]
+    }
+  ]
+}

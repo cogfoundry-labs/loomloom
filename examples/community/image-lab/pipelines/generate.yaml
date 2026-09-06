@@ -1,0 +1,105 @@
+# Pipeline: image-lab / generate  (v0.1 — router API)
+#
+# Not executable by loomloom. The agent session reads this manifest stage by
+# stage, the same way redesign-lab/pipelines/ works. `scripts/image.py` is the
+# only subprocess.
+#
+# Five user-facing steps:
+#   PLAN     = capture + classify + resolve  (resolve also prints the QUOTE)
+#   QUOTE    = (part of resolve — the estimated total for the allocation)
+#   APPROVE  = cost-gate   (the one human gate — the wallet boundary)
+#   GENERATE = generate
+#   RESULTS  = present  (+ optional exploration-page — a render step, spends nothing)
+#
+# Image Lab helps the user PICK AN IMAGE, not pick a model. `count` is the
+# number of alternatives (1 / 2 / 4 / 8, default 4); the Advisor spreads that
+# budget across the best-fit models.
+#
+# v0.1 does not use loomloom's compiler/runtime. Parallelism = N independent
+# router tasks (POST xN, poll xN). loomloom orchestration arrives at v0.4
+# (showcase/).
+
+name: image-lab-generate
+version: 2
+
+stages:
+  - id: capture
+    user_step: PLAN
+    engine: agent
+    note: "final prompt from context / paste / file. No prompt -> ask. Needs a reference image -> say so and stop (out of scope in v0.1)."
+    produces: [prompt]
+
+  - id: classify
+    user_step: PLAN
+    engine: agent
+    reads: [references/generation-policy.md]
+    note: "pick ONE creative intent label + map the user's words to count (1/2/4/8, default 4). Intent is the only judgement call; the user can correct it."
+    produces: [intent_label, count]
+
+  - id: resolve
+    user_step: PLAN
+    engine: local
+    script: 'python scripts/image.py resolve --intent "<intent_label>" --count <N> --explain [--models "<id>[,<id>]"]'
+    note: >
+      reads the reference files, runs `loomloom doctor` / `balance`, resolves the
+      token; NO router call. Deterministically scores every model in
+      router-model-catalog.yaml against the intent's weights, then ALLOCATES the
+      count across the best-fit models (A alone, or A + a genuinely competitive
+      B). Returns { allocation, alloc_arg, estimated_usd, sufficient, why } + the
+      score table, and prints the PLAN + QUOTE. `--models` forces a specific
+      model / head-to-head (user override). If it errors or `sufficient` is
+      false, relay the one fix and stop.
+    produces: [plan]
+
+  - id: cost-gate
+    user_step: APPROVE
+    type: human
+    mechanism: "AskUserQuestion: Generate <N> / Adjust / Stop — the question names the actual model mix + total"
+    on_approve: continue(generate)
+    on_adjust: return_to(resolve)      # re-plan (intent / models / count) before asking again
+    on_stop: halt                      # nothing spent
+    gate: THIS IS THE ONLY GATE — ONE APPROVAL = ONE WALLET BOUNDARY
+
+  - id: generate
+    user_step: GENERATE
+    engine: local
+    script: >
+      python scripts/image.py run --alloc "<alloc_arg>" --prompt "<prompt>"
+      --intent "<intent_label>" --out ./out --confirm
+    note: >
+      submits the whole approved allocation together (N router tasks across 1-2
+      models), polls each, redraws the live branch tree (model shown per branch),
+      downloads each image, prints actual cost grouped by model. Relay the tree.
+      On exit code 3 (status: model_unavailable) show the "MODEL UNAVAILABLE /
+      suggested replacement" prompt and, on approval, re-resolve with
+      --models "<suggested_model>" then re-approve.
+    produces: ["./out/variant-*.png", actual_usd, by_model]
+
+  - id: present
+    user_step: RESULTS
+    engine: agent
+    note: >
+      send EACH image as its own SendUserFile with a caption naming its label +
+      model ("A · Nano Banana Pro"); present a RESULTS table label · model ·
+      time · cost · size (from run.json alternatives[]), then actual total vs
+      estimate; name any failed/incomplete branch (no retry in v0.1); ask which
+      one the user wants. Not a gate.
+
+  - id: exploration-page
+    user_step: RESULTS
+    engine: local
+    optional: true
+    script: >
+      python scripts/build-exploration-page.py --from ./out --title "<short title>"
+      --subject "<noun phrase>" --invocation "<user's exact triggering message>"
+      [--selected <label>]
+    note: >
+      OFFER after present ("want a shareable page?"). Reads ./out/run.json + the
+      images, writes a self-contained static folder ./out/<slug>/ (index.html +
+      assets/ + exploration.json). NOTHING IS SPENT — the images already exist,
+      this is a render step, not a gate. Agent writes --title + --subject (page
+      composes "One brief. N models. M ways to see {subject}.") and passes
+      --invocation VERBATIM (shown in the Prompt block for reuse). --selected
+      only if the user actually picked one (marked "Selected", never "best").
+      GitHub-Pages-ready; can also be published as an artifact for a URL.
+    produces: ["./out/<slug>/index.html"]
