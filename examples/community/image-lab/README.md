@@ -12,16 +12,11 @@ Built as a Claude Code skill on top of [loomloom](https://github.com/cogfoundry-
 
 One real run, start to finish — a One Piece-style 30-second storyboard sheet, eight ways.
 
-<!-- GitHub renders <video> inline only from its own user-attachments CDN. To get that:
-     drag case-studies/zoro-robin-storyboard/assets/zoro-robin-showcase.mp4 into a PR/issue
-     comment and replace the src below with the github.com/user-attachments/assets/<id> URL. -->
 <div align="center">
-  <video src="https://github.com/cogfoundry-labs/loomloom/raw/main/examples/community/image-lab/case-studies/zoro-robin-storyboard/assets/zoro-robin-showcase.mp4" width="100%" controls></video>
+  <video src="https://github.com/user-attachments/assets/f1d670f1-d122-421b-bfa8-89624cdcce33" width="100%" controls></video>
 </div>
 
-▶ [**Watch the showcase video**](case-studies/zoro-robin-storyboard/assets/zoro-robin-showcase.mp4) (9:16, ~14 s) — rendered straight from the case study's own images.
-
-> **Zoro & Robin storyboard** — one brief classified as `infographic / diagram`, `count 8` → **GPT Image 2 ×3 + Nano Banana Pro ×3 + Nano Banana 2 ×2**. Eight complete storyboard sheets, three models, **$0.5547** total. → [Full case study](https://maxaibuilds.github.io/zoro-robin-storyboard/)
+> **Zoro & Robin storyboard** — one brief classified as `infographic / diagram`, `count 8` → **GPT Image 2 ×3 + Nano Banana Pro ×3 + Nano Banana 2 ×2**. Eight complete storyboard sheets, three models, **$0.5547** total. 9:16, ~14 s, rendered straight from the case study's own images. → [Full case study](https://maxaibuilds.github.io/zoro-robin-storyboard/)
 
 The case study shows everything the run actually produced — every alternative, the model behind each one, the size each ran at, the per-image and total cost, and the exact prompt. Nothing staged, nothing a screenshot.
 
