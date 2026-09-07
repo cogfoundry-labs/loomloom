@@ -104,22 +104,13 @@ stages:
       [--selected <label, only on a rebuild after the user picks>]
     note: >
       ALWAYS built as part of RESULTS — never "want a page?". Reads
-      ./out/run.json + the images, writes a self-contained static folder
-      ./out/<slug>/ (index.html + assets/ + exploration.json) plus
-      index.inline.html (the images embedded). NOTHING IS SPENT — the images
-      already exist, this is a render step, not a gate. Every section has one
-      shape (mono eyebrow, Arial-Black headline, one lead line, body). The page:
-      topbar with a Share cluster (Copy link + one-click X / LinkedIn); hero
-      with an "AI-generated / not a benchmark" badge, the tagline, and a model
-      legend (chips linked to each model's page); "Pick your image" gallery
-      (letter-badged thumbs + lightbox + an N/8 counter + a per-alternative
-      #hash deep link); a "The run" facts grid; the Prompt (+ a 3-step "how to
-      use this"); a "How this was made" credits list; a "Coming soon" note; a
-      CTA; and Open Graph meta so a pasted link unfurls. Agent writes --title +
-      --subject (page composes "One brief.
-      N models. M ways to see {subject}.") and passes --invocation VERBATIM.
-      --canonical-url = the deploy URL (makes og:image absolute; omit for the
-      artifact flow). Publish index.inline.html as an artifact so the user has a
-      live URL to pick from (if the size line says it is over ~15 MB, recompress
-      the PNGs to JPEG first). Re-run with --selected <label> once they choose.
+      ./out/run.json + the images, writes ./out/<slug>/ (index.html + assets/ +
+      exploration.json) plus index.inline.html (the images embedded). NOTHING IS
+      SPENT — a render step, not a gate. Agent writes --title + --subject (page
+      composes "One brief. N models. M ways to see {subject}.") and passes
+      --invocation VERBATIM. --canonical-url = the deploy URL (og:image absolute;
+      omit for the artifact flow). Publish index.inline.html as an artifact so
+      the user has a live URL to pick from (recompress PNGs to JPEG first if the
+      size line says > ~15 MB). Re-run with --selected <label> once they choose.
+      Full flags + page layout: references/exploration-page.md.
     produces: ["./out/<slug>/index.html", "./out/<slug>/index.inline.html"]
