@@ -20,6 +20,8 @@
 
 ## What's new
 
+- 🖼️ [image-lab](examples/community/image-lab/) — a community skill: one image prompt → several alternatives across the best-fit models, behind one cost gate → [See the run](#examples)
+
 - 🎨 [redesign-lab](examples/community/redesign-lab/) — a community skill for exploring and building website redesigns → [See the runs](#examples)
 
 - 🚀 0.3.0 — TemplateSpec v2 is now server-authoritative → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.3.0)
@@ -201,6 +203,14 @@ Organizations that prefer a production-ready implementation can also license the
 </div>
 
 > **tabbyml.com** — consolidated a ~40-token color inventory down to 8 deliberate values, upgraded headline and nav type to a true cross-platform Geist Mono stack (real monospace fallbacks instead of Arial), and squared off previously rounded corners for a sharper, angular finish. → [Full case study](https://maxaibuilds.github.io/tabbyml-redesign/)
+
+[image-lab](examples/community/image-lab/) — a community skill built on loomloom — turns one image prompt into several strong alternatives across the models that best fit the brief, behind a single cost gate, then builds a shareable gallery you pick the winner from. One full run:
+
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/f1d670f1-d122-421b-bfa8-89624cdcce33" width="100%" controls></video>
+</div>
+
+> **Zoro & Robin storyboard** — one brief classified as `infographic / diagram`, `count 8` → GPT Image 2 ×3 + Nano Banana Pro ×3 + Nano Banana 2 ×2. Eight complete storyboard sheets, three models, **$0.5547** total. → [Full case study](https://maxaibuilds.github.io/zoro-robin-storyboard/)
 
 More community examples land as they're built.
 

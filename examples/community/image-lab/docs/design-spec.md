@@ -244,7 +244,7 @@ cost.
 
 ## 5. Reference files
 
-Two files, deliberately separate.
+Two data files, deliberately separate, plus one operational reference.
 
 ### `references/generation-policy.md` — durable
 
@@ -268,6 +268,12 @@ confirming the charge against `loomloom balance` — the gateway's `data.cost`
 matched the delta every time. They are a **pre-flight guess** of that
 authoritative number; a wrong rate only skews the estimate, and RESULTS shows
 the real charge.
+
+### `references/exploration-page.md` — operational
+
+The agent-facing "how to run `build-exploration-page.py`" — every flag, the
+folder it writes, the page's section-by-section layout. §6 below is the *why*;
+that file is the *how*, so `SKILL.md` step 7 can stay short.
 
 ---
 
@@ -434,8 +440,9 @@ the `Authorization` header — never logged, never written to `run.json`.
 examples/community/image-lab/
   README.md  SKILL.md  .gitignore
   pipelines/generate.yaml
-  references/generation-policy.md        # DURABLE
-  references/model-catalog.yaml          # TEMPORARY ADAPTER
+  references/generation-policy.md        # DURABLE  (intent -> weights)
+  references/model-catalog.yaml          # TEMPORARY ADAPTER  (model scores + rates)
+  references/exploration-page.md         # OPERATIONAL  (how to run the page build)
   scripts/image.py                       # resolve | run
   scripts/build-exploration-page.py      # run.json → shareable folder (no spend)
   test-fixtures/sample-prompts.json

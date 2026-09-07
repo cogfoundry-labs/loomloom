@@ -1,16 +1,7 @@
 ---
 name: image-lab
 license: Apache-2.0
-description: >
-  Turn one image prompt into several strong alternatives, generated in parallel
-  through CogFoundry's model gateway — the Advisor spreads the alternatives
-  across the best-fit models for the brief — with an estimated total before any
-  spend and the actual cost shown after. The prompt can come from any
-  prompt-authoring skill (e.g. ai-image-prompts-skill), be pasted, or be in a
-  local file. Use ONLY when the user names Image Lab: "generate that with Image
-  Lab", "make alternatives with Image Lab", "run Image Lab on this prompt", "4
-  options of this with Image Lab". Do NOT use for a bare "generate an image" /
-  "make a picture" — that belongs to native image generation or another skill.
+description: Turn one image prompt into several strong alternatives at once — the Model Advisor spreads them across the 2-3 image models that best fit the brief, shows the estimated total before any spend, generates them in parallel, then builds a shareable gallery you pick the winner from. Use when someone wants several options of one image prompt, wants to try more than one image model without pricing anxiety, wants a cost estimate before generating an image, or wants to compare specific models on a brief. Triggers include "generate that with Image Lab", "8 options of this with Image Lab", "run Image Lab on this prompt", "with Image Lab, compare Nano Banana Pro and GPT Image 2". It needs to be named — a bare "generate an image" belongs to native image generation, not here.
 ---
 
 # Image Lab
@@ -208,63 +199,19 @@ image is `./out/<file>`).
 
 ```
 python scripts/build-exploration-page.py --from ./out --inline \
-  --title "<3-5 word title you propose>" \
-  --subject "<short noun phrase, e.g. Murree x Toronto>" \
+  --title "<3-5 word title>" --subject "<short noun phrase>" \
   --invocation "<the exact message the user sent to trigger Image Lab>" \
-  [--canonical-url <where the folder will live>] [--selected <label>]
+  [--selected <label>]
 ```
 
-It builds a self-contained static folder `./out/<slug>/` (`index.html`, the
-images in `assets/`, `exploration.json`). **Nothing is spent** — the images
-already exist; this is a render step, not a gate. `--inline` also writes
-`./out/<slug>/index.inline.html` — one self-contained file; **publish that** as
-an artifact for the user's live URL. The result's stderr says its size; if it is
-over ~15 MB, recompress the PNGs to JPEG first.
+It writes `./out/<slug>/` (`index.html` + `assets/` + `exploration.json`) and,
+with `--inline`, a one-file `index.inline.html`. **Nothing is spent.** Publish
+`index.inline.html` as an artifact, then hand the user the link and ask them to
+pick their favourite from there. If the stderr size line says > ~15 MB,
+recompress the PNGs to JPEG first. Re-run with `--selected <label>` once they
+choose.
 
-The page (redesign-lab's case-study house style — Source Serif 4 body, Arial-
-Black uppercase headings, IBM Plex Mono labels, hard edges, loomloom green,
-3-state dark mode). **Every section has the same shape**: a mono eyebrow, an
-Arial-Black headline, one lead line, then the body.
-
-- **topbar** — wordmark + a **Share** cluster: `Copy link` + one-click `X` /
-  `LinkedIn` (hrefs built from the canonical URL + the OG tags)
-- **hero** — `AI-generated · not a benchmark` badge, the tagline, a **model
-  legend** (`GPT Image 2 ×3` chips, each linked to its cogfoundry.ai page), the
-  stats line
-- **Gallery / Pick your image** — framed hero + letter-badged thumbnails (`A ·
-  GPT Image 2` — candidates, not steps) + live meta + `N / 8` counter; click a
-  thumbnail to swap, click the hero for a minimal full-screen lightbox (`← →`,
-  `Esc`, `Copy link`, `Open raw ↗`). Each alternative has a **deep link** — the
-  page reads `…/index.html#E` on load and selects alternative E, updates the
-  hash as you browse; a "Copy link to alternative N" button copies it.
-- **Details / The run** — a hairline facts grid (intent · models · candidates ·
-  size · actual cost · date)
-- **Reuse / The prompt** — the exact run prompt in italic + a "→ use Image Lab"
-  trigger + Copy button + a 3-step **"how to use this"** (copy → paste into an
-  agent with the skill → run as-is or swap details to make it yours)
-- **Provenance / How this was made** — every model and tool, linked, with the
-  run's real cost
-- **Roadmap / From image exploration to AI work** — the v0.4 loomloom workflow
-- **Your turn / Bring your own prompt** — a CTA with the `npx skills add …` line
-- Open Graph / Twitter-card meta so a pasted link unfurls with the image
-
-Flags:
-- `--title` — a short name for the exploration.
-- `--subject` — the page composes the tagline *"One brief. N models. M ways to
-  see {subject}."* from the run's real numbers.
-- `--invocation` — the user's actual triggering message, **verbatim**. Shown as-
-  is in the Prompt block; omitted → `<prompt>\n\nuse Image Lab`.
-- `--canonical-url` — the URL the folder will live at (GitHub Pages, etc). Makes
-  `og:image` absolute (so link unfurls work) and the topbar Share cluster point
-  at that URL. Omit for the artifact flow (the artifact URL isn't known until
-  after publish; `location.href` covers it).
-- `--summary` — optional; overrides the auto tagline.
-- `--selected` — omit on the first build (the user hasn't picked yet). When they
-  name a favourite, re-run **with** `--selected <label>`: its thumbnail gets a ✓
-  badge and becomes the initial hero — the creator's pick, never "best".
-- With JS off the hero is still a plain link to the full-resolution file. Give
-  the user the folder path (GitHub-Pages-ready) and publish `index.inline.html`
-  as an artifact so they have a live URL to pick from.
+Full flag list + the page's section-by-section layout: **`references/exploration-page.md`**.
 
 ## Prerequisites
 

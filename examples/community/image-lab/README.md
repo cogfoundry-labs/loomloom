@@ -192,6 +192,7 @@ It's in [`redesign-lab`](../redesign-lab)'s case-study house style — same toke
 | `pipelines/generate.yaml` | The stage manifest the agent follows |
 | `references/generation-policy.md` | **Durable:** creative intent → capability requirements + sizes. Hand-editable — bring your own taste. |
 | `references/model-catalog.yaml` | **Temporary adapter:** model ids, per-dimension scores, measured rates. `TODO`: replace with a gateway endpoint. |
+| `references/exploration-page.md` | how the shareable page is built — every flag + its section-by-section layout |
 | `scripts/image.py` | `resolve` / `run` — the whole generation engine; standard-library Python, no SDK |
 | `scripts/build-exploration-page.py` | turns a run into a shareable static folder; no spend |
 | `test-fixtures/sample-prompts.json` | prompts + expected intent/allocation, for exercising PLAN without spend |
