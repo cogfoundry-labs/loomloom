@@ -183,22 +183,29 @@ For a replaceable-model Step:
    modalities. Choose a `capabilityProfile` match returned by that exact target
    environment. Do not restrict Profile use to text Steps.
 2. Set `executionBinding.kind=capabilityProfile` and use the response's stable
-   `profileId`. Omit `profileRevision`; a dynamic Profile does not accept it.
+   `profileId`. Omit `profileRevision`; a dynamic Profile does not accept it,
+   and normal static-Profile authoring also resolves the current revision.
    Do not require or fabricate a `subjectRevisionId` for a Profile Step.
-3. Build `inputBindings` and downstream `stepOutput` connections from the
-   returned fixed `definition`. Bind Artifact ports as Artifacts and honor MIME
-   and cardinality constraints. Never infer ports from a model name or Provider
-   endpoint.
-4. Keep model choice in the separate `modelSelection` Template Input. For the
-   current TemplateSpec v2 request shape, set `defaultModelId` from
-   `operations.defaultModelId` and verify both `defaultModelAvailable=true` and
-   membership in `eligibleModels` before creation. A blank model cell uses the
-   Profile's current operational default at run time; an explicit value must be
-   in the current eligible set.
-5. If the current default is unavailable, stop and report
-   `profile_default_model_unavailable`; the first release does not silently
-   choose a replacement. If no models are currently eligible, stop and report
-   `profile_has_no_eligible_models`.
+3. Branch on the returned `dynamic` field before reading Profile-specific
+   fields. For `dynamic=true`, build ports from `definition`. For a legacy
+   static Profile (`dynamic` absent or false), build ports from the top-level
+   `inputPorts` and `output`. Missing `operations` or `defaultModelAvailable`
+   on a static Profile is expected and does not mean the Profile is unusable.
+   Bind Artifact ports as Artifacts and honor MIME and cardinality constraints.
+   Never infer ports from a model name or Provider endpoint.
+4. Keep model choice in the separate `modelSelection` rule. For a dynamic
+   Profile, set `defaultModelId` from `operations.defaultModelId` and verify
+   both `defaultModelAvailable=true` and membership in `eligibleModels` before
+   creation. If the dynamic default is unavailable, stop and report
+   `profile_default_model_unavailable`; do not silently choose a replacement.
+5. For a legacy static Profile, choose an explicit `defaultModelId` from its
+   non-empty `eligibleModels` according to the user's model policy. Do not
+   require `operations.defaultModelId` or `defaultModelAvailable`, and do not
+   report `profile_default_model_unavailable` because those fields are absent.
+6. If either Profile kind has no currently eligible models, stop and report
+   `profile_has_no_eligible_models`. A blank model cell uses the selected
+   default at run time; an explicit value must remain in the current eligible
+   set.
 
 Text models remain special only in how their capability facts are certified:
 standard text models do not require one `fixedModelContract` or Certification

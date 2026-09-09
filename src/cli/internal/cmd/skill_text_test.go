@@ -272,6 +272,41 @@ func TestBundledSkillsUseTemplateSpecV2Bindings(t *testing.T) {
 	}
 }
 
+func TestBundledSkillDistinguishesStaticAndDynamicProfileDefaults(t *testing.T) {
+	root := findRepoRoot(t)
+	templateSpec := readCanonicalSkillReference(t, root, "template-spec.md")
+	privateTemplate, err := os.ReadFile(filepath.Join(root, "docs", "reference", "private-template.md"))
+	if err != nil {
+		t.Fatalf("read private template reference: %v", err)
+	}
+
+	for name, text := range map[string]string{
+		"bundled template-spec guidance": templateSpec,
+		"private-template reference":     string(privateTemplate),
+	} {
+		for _, want := range []string{
+			"`dynamic=true`",
+			"legacy static Profile",
+			"`eligibleModels`",
+			"missing `operations`",
+			"`defaultModelAvailable`",
+		} {
+			if !strings.Contains(strings.ToLower(text), strings.ToLower(want)) {
+				t.Fatalf("%s missing %q", name, want)
+			}
+		}
+	}
+	normalizedTemplateSpec := strings.Join(strings.Fields(templateSpec), " ")
+	for _, want := range []string{
+		"Do not require `operations.defaultModelId` or `defaultModelAvailable`",
+		"do not report `profile_default_model_unavailable` because those fields are absent",
+	} {
+		if !strings.Contains(normalizedTemplateSpec, want) {
+			t.Fatalf("%s missing static Profile safeguard %q", canonicalSkillReferencesDir, want)
+		}
+	}
+}
+
 func TestBundledSkillGuidesLegacyTemplateSpecV1Upgrade(t *testing.T) {
 	root := findRepoRoot(t)
 	data, err := os.ReadFile(filepath.Join(root, "agent-guidance", "loomloom", "SKILL.md"))
