@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -29,6 +30,8 @@ func newMarketCmd(opts *rootOptions) *cobra.Command {
 		Short: "LoomLoom Market SkillBot commands",
 	}
 	cmd.AddCommand(
+		newMarketBundleCmd(opts),
+		newMarketSubscribeCmd(opts),
 		newMarketListCmd(opts),
 		newMarketShowCmd(opts),
 		newMarketQuoteCmd(opts),
@@ -167,6 +170,7 @@ func newMarketShowCmd(opts *rootOptions) *cobra.Command {
 
 func newMarketQuoteCmd(opts *rootOptions) *cobra.Command {
 	var inputFile string
+	var paymentPreference string
 	cmd := &cobra.Command{
 		Use:   "quote <listing-id>",
 		Short: "Quote a Market SkillBot run from public input rows",
@@ -187,7 +191,10 @@ func newMarketQuoteCmd(opts *rootOptions) *cobra.Command {
 
 			var resp map[string]any
 			path := "/marketListings/" + url.PathEscape(listingID) + ":quote"
-			if err := httpClient.PostProductJSON(ctx, path, marketQuotePayload(input), &resp); err != nil {
+			if err := validateMarketPaymentPreference(paymentPreference); err != nil {
+				return err
+			}
+			if err := httpClient.PostProductJSON(ctx, path, marketQuotePayload(input, paymentPreference), &resp); err != nil {
 				return err
 			}
 			if err := maybeMapInsufficientBalanceError(opts, resp); err != nil {
@@ -200,20 +207,25 @@ func newMarketQuoteCmd(opts *rootOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&inputFile, "input-file", "", "JSON file with inputRows; prompts for one row when omitted")
+	cmd.Flags().StringVar(&paymentPreference, "payment", "", "Payment preference: pay_per_use or subscription")
 	return cmd
 }
 
 func newMarketRunCmd(opts *rootOptions) *cobra.Command {
 	var (
-		inputFile       string
-		clientRequestID string
-		confirm         bool
+		inputFile         string
+		clientRequestID   string
+		paymentPreference string
+		confirm           bool
 	)
 	cmd := &cobra.Command{
 		Use:   "run <listing-id>",
 		Short: "Quote and execute a Market SkillBot from public input rows",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateMarketPaymentPreference(paymentPreference); err != nil {
+				return err
+			}
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
 				return err
@@ -222,14 +234,73 @@ func newMarketRunCmd(opts *rootOptions) *cobra.Command {
 			defer cancel()
 
 			listingID := strings.TrimSpace(args[0])
-			input, err := prepareMarketInputPayload(ctx, cmd, httpClient, listingID, inputFile)
+			var requestID string
+			var loadedInput *marketInputPayload
+			if confirm {
+				if value := strings.TrimSpace(clientRequestID); value != "" {
+					requestID = value
+					printGeneratedClientRequestID(cmd, requestID, false)
+					lookup, found, lookupErr := lookupMarketTransaction(ctx, httpClient, requestID)
+					if lookupErr != nil {
+						return lookupErr
+					}
+					if found && lookup.RecoveryAction == "none" {
+						return resumeOrPrintMarketJSONExecution(ctx, cmd, opts, httpClient, listingID, marketInputPayload{}, requestID, lookup)
+					}
+					if found {
+						input, loadErr := loadOrPrepareMarketInputForRecovery(ctx, cmd, httpClient, listingID, inputFile)
+						if loadErr != nil {
+							return loadErr
+						}
+						return resumeOrPrintMarketJSONExecution(ctx, cmd, opts, httpClient, listingID, input, requestID, lookup)
+					}
+				}
+				if requestID == "" && strings.TrimSpace(inputFile) != "" {
+					input, loadErr := loadMarketInputPayload(inputFile)
+					if loadErr != nil {
+						return loadErr
+					}
+					loadedInput = &input
+					var generatedRequestID bool
+					requestID, generatedRequestID, err = effectiveMarketClientRequestID("", input.ClientRequestID, listingID, input)
+					if err != nil {
+						return err
+					}
+					printGeneratedClientRequestID(cmd, requestID, generatedRequestID)
+					lookup, found, lookupErr := lookupMarketTransaction(ctx, httpClient, requestID)
+					if lookupErr != nil {
+						return lookupErr
+					}
+					if found {
+						return resumeOrPrintMarketJSONExecution(ctx, cmd, opts, httpClient, listingID, input, requestID, lookup)
+					}
+				}
+			}
+
+			input, err := prepareMarketInputPayloadWithLoaded(ctx, cmd, httpClient, listingID, inputFile, loadedInput)
 			if err != nil {
 				return err
 			}
 
+			if confirm && requestID == "" {
+				var generatedRequestID bool
+				requestID, generatedRequestID, err = effectiveMarketClientRequestID("", input.ClientRequestID, listingID, input)
+				if err != nil {
+					return err
+				}
+				printGeneratedClientRequestID(cmd, requestID, generatedRequestID)
+				lookup, found, lookupErr := lookupMarketTransaction(ctx, httpClient, requestID)
+				if lookupErr != nil {
+					return lookupErr
+				}
+				if found {
+					return resumeOrPrintMarketJSONExecution(ctx, cmd, opts, httpClient, listingID, input, requestID, lookup)
+				}
+			}
+
 			var quoteResp map[string]any
 			quotePath := "/marketListings/" + url.PathEscape(listingID) + ":quote"
-			if err := httpClient.PostProductJSON(ctx, quotePath, marketQuotePayload(input), &quoteResp); err != nil {
+			if err := httpClient.PostProductJSON(ctx, quotePath, marketQuotePayload(input, paymentPreference), &quoteResp); err != nil {
 				return err
 			}
 			if err := maybeMapInsufficientBalanceError(opts, quoteResp); err != nil {
@@ -251,16 +322,13 @@ func newMarketRunCmd(opts *rootOptions) *cobra.Command {
 				_, err := fmt.Fprintln(cmd.ErrOrStderr(), "execution not submitted; pass --confirm to execute")
 				return err
 			}
-
-			requestID, generatedRequestID, err := effectiveMarketClientRequestID(clientRequestID, input.ClientRequestID, listingID, input)
-			if err != nil {
-				return err
+			if mapBoolValue(quoteResp, "requiresPaymentChoice") {
+				return errors.New("payment choice required; use --payment pay_per_use, or purchase a listed subscription bundle first")
 			}
-			printGeneratedClientRequestID(cmd, requestID, generatedRequestID)
 
 			var resp map[string]any
 			executePath := "/marketListings/" + url.PathEscape(listingID) + ":execute"
-			if err := httpClient.PostProductJSON(ctx, executePath, marketExecutePayload(input, requestID), &resp); err != nil {
+			if err := httpClient.PostProductJSON(ctx, executePath, marketExecutePayload(input, requestID, paymentPreference, quoteResp), &resp); err != nil {
 				return err
 			}
 			opts.debugf(
@@ -277,6 +345,7 @@ func newMarketRunCmd(opts *rootOptions) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&inputFile, "input-file", "", "JSON file with inputRows; prompts for one row when omitted")
 	cmd.Flags().StringVar(&clientRequestID, "client-request-id", "", "Stable idempotency key for retrying the same confirmed execution")
+	cmd.Flags().StringVar(&paymentPreference, "payment", "", "Payment preference: pay_per_use or subscription")
 	cmd.Flags().BoolVar(&confirm, "confirm", false, "Confirm execution after the quote")
 	return cmd
 }
@@ -382,12 +451,18 @@ func newMarketWorkbookValidateCmd(opts *rootOptions) *cobra.Command {
 
 func newMarketWorkbookQuoteCmd(opts *rootOptions) *cobra.Command {
 	var workbookPath string
+	var paymentPreference string
 	cmd := &cobra.Command{
 		Use:   "quote <listing-id>",
 		Short: "Quote a filled Market SkillBot workbook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			resp, err := postMarketWorkbookMap(cmd.Context(), opts, strings.TrimSpace(args[0]), workbookPath, ":quoteWorkbook", nil)
+			if err := validateMarketPaymentPreference(paymentPreference); err != nil {
+				return err
+			}
+			resp, err := postMarketWorkbookMap(cmd.Context(), opts, strings.TrimSpace(args[0]), workbookPath, ":quoteWorkbook", map[string]any{
+				"paymentPreference": strings.TrimSpace(paymentPreference),
+			})
 			if err != nil {
 				return err
 			}
@@ -401,23 +476,51 @@ func newMarketWorkbookQuoteCmd(opts *rootOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&workbookPath, "file", "f", "", "Filled .xlsx workbook path")
+	cmd.Flags().StringVar(&paymentPreference, "payment", "", "Payment preference: pay_per_use or subscription")
 	_ = cmd.MarkFlagRequired("file")
 	return cmd
 }
 
 func newMarketWorkbookRunCmd(opts *rootOptions) *cobra.Command {
 	var (
-		workbookPath    string
-		clientRequestID string
-		confirm         bool
+		workbookPath      string
+		clientRequestID   string
+		paymentPreference string
+		confirm           bool
 	)
 	cmd := &cobra.Command{
 		Use:   "run <listing-id>",
 		Short: "Quote and execute a Market SkillBot workbook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateMarketPaymentPreference(paymentPreference); err != nil {
+				return err
+			}
 			listingID := strings.TrimSpace(args[0])
-			quoteResp, err := postMarketWorkbookMap(cmd.Context(), opts, listingID, workbookPath, ":quoteWorkbook", nil)
+			requestID := ""
+			if confirm {
+				var err error
+				var generatedRequestID bool
+				requestID, generatedRequestID, err = effectiveMarketWorkbookClientRequestID(clientRequestID, listingID, workbookPath)
+				if err != nil {
+					return err
+				}
+				printGeneratedClientRequestID(cmd, requestID, generatedRequestID)
+				httpClient, clientErr := newHTTPClient(opts)
+				if clientErr != nil {
+					return clientErr
+				}
+				lookup, found, lookupErr := lookupMarketTransaction(cmd.Context(), httpClient, requestID)
+				if lookupErr != nil {
+					return lookupErr
+				}
+				if found {
+					return resumeOrPrintMarketWorkbookExecution(cmd.Context(), cmd, opts, listingID, workbookPath, requestID, lookup)
+				}
+			}
+			quoteResp, err := postMarketWorkbookMap(cmd.Context(), opts, listingID, workbookPath, ":quoteWorkbook", map[string]any{
+				"paymentPreference": strings.TrimSpace(paymentPreference),
+			})
 			if err != nil {
 				return err
 			}
@@ -440,15 +543,16 @@ func newMarketWorkbookRunCmd(opts *rootOptions) *cobra.Command {
 				_, err := fmt.Fprintln(cmd.ErrOrStderr(), "execution not submitted; pass --confirm to execute")
 				return err
 			}
-
-			requestID, generatedRequestID, err := effectiveMarketWorkbookClientRequestID(clientRequestID, listingID, workbookPath)
-			if err != nil {
-				return err
+			if mapBoolValue(quoteResp, "requiresPaymentChoice") {
+				return errors.New("payment choice required; use --payment pay_per_use, or purchase a listed subscription bundle first")
 			}
-			printGeneratedClientRequestID(cmd, requestID, generatedRequestID)
 			resp, err := postMarketWorkbookMap(cmd.Context(), opts, listingID, workbookPath, ":executeWorkbook", map[string]any{
-				"confirm":         true,
-				"clientRequestId": requestID,
+				"confirm":                  true,
+				"clientRequestId":          requestID,
+				"paymentPreference":        strings.TrimSpace(paymentPreference),
+				"expectedListingVersionId": stringMapValue(quoteResp, "listingVersionId"),
+				"expectedPaymentMode":      stringMapValue(quoteResp, "effectivePaymentMode"),
+				"maxCreatorFee":            quoteResp["effectiveCreatorFee"],
 			})
 			if err != nil {
 				return err
@@ -467,12 +571,24 @@ func newMarketWorkbookRunCmd(opts *rootOptions) *cobra.Command {
 	}
 	cmd.Flags().StringVarP(&workbookPath, "file", "f", "", "Filled .xlsx workbook path")
 	cmd.Flags().StringVar(&clientRequestID, "client-request-id", "", "Stable idempotency key for retrying the same confirmed workbook execution")
+	cmd.Flags().StringVar(&paymentPreference, "payment", "", "Payment preference: pay_per_use or subscription")
 	cmd.Flags().BoolVar(&confirm, "confirm", false, "Confirm execution after the quote")
 	_ = cmd.MarkFlagRequired("file")
 	return cmd
 }
 
 func prepareMarketInputPayload(ctx context.Context, cmd *cobra.Command, httpClient *client.Client, listingID string, inputFile string) (marketInputPayload, error) {
+	return prepareMarketInputPayloadWithLoaded(ctx, cmd, httpClient, listingID, inputFile, nil)
+}
+
+func prepareMarketInputPayloadWithLoaded(
+	ctx context.Context,
+	cmd *cobra.Command,
+	httpClient *client.Client,
+	listingID string,
+	inputFile string,
+	loadedInput *marketInputPayload,
+) (marketInputPayload, error) {
 	var listing marketListingPublicResponse
 	path := "/marketListings/" + url.PathEscape(listingID)
 	if err := httpClient.GetProductJSON(ctx, path, &listing); err != nil {
@@ -487,7 +603,9 @@ func prepareMarketInputPayload(ctx context.Context, cmd *cobra.Command, httpClie
 	}
 
 	var input marketInputPayload
-	if strings.TrimSpace(inputFile) == "" {
+	if loadedInput != nil {
+		input = *loadedInput
+	} else if strings.TrimSpace(inputFile) == "" {
 		rows, err := promptMarketInputRows(cmd.InOrStdin(), cmd.ErrOrStderr(), schema)
 		if err != nil {
 			return marketInputPayload{}, err
@@ -516,6 +634,19 @@ func prepareMarketInputPayload(ctx context.Context, cmd *cobra.Command, httpClie
 	}
 	input.InputRows = rows
 	return input, nil
+}
+
+func loadOrPrepareMarketInputForRecovery(
+	ctx context.Context,
+	cmd *cobra.Command,
+	httpClient *client.Client,
+	listingID string,
+	inputFile string,
+) (marketInputPayload, error) {
+	if strings.TrimSpace(inputFile) != "" {
+		return loadMarketInputPayload(inputFile)
+	}
+	return prepareMarketInputPayload(ctx, cmd, httpClient, listingID, inputFile)
 }
 
 func decodeJSONValue[T any](value any) (T, error) {
@@ -807,18 +938,144 @@ func stableMarketClientRequestID(seed any) (string, error) {
 	return "loomloom-cli-market-" + fmt.Sprintf("%x", sum[:16]), nil
 }
 
-func marketQuotePayload(input marketInputPayload) map[string]any {
+func marketQuotePayload(input marketInputPayload, paymentPreference string) map[string]any {
 	// The Listing GET is not a version lock, so quote/execute send only inputRows.
-	return map[string]any{
+	payload := map[string]any{
 		"inputRows": input.InputRows,
+	}
+	if value := strings.TrimSpace(paymentPreference); value != "" {
+		payload["paymentPreference"] = value
+	}
+	return payload
+}
+
+func marketExecutePayload(input marketInputPayload, clientRequestID string, paymentPreference string, quote map[string]any) map[string]any {
+	payload := marketQuotePayload(input, paymentPreference)
+	payload["confirm"] = true
+	payload["clientRequestId"] = clientRequestID
+	if value := stringMapValue(quote, "listingVersionId"); value != "-" && value != "" {
+		payload["expectedListingVersionId"] = value
+	}
+	if value := stringMapValue(quote, "effectivePaymentMode"); value != "-" && value != "" {
+		payload["expectedPaymentMode"] = value
+	}
+	if value, ok := quote["effectiveCreatorFee"]; ok && value != nil {
+		payload["maxCreatorFee"] = value
+	}
+	return payload
+}
+
+type marketTransactionLookup struct {
+	Transaction    map[string]any `json:"transaction"`
+	RecoveryAction string         `json:"recoveryAction"`
+}
+
+func lookupMarketTransaction(ctx context.Context, httpClient *client.Client, clientRequestID string) (marketTransactionLookup, bool, error) {
+	query := url.Values{"clientRequestId": []string{strings.TrimSpace(clientRequestID)}}
+	var result marketTransactionLookup
+	err := httpClient.GetProductJSONWithQuery(ctx, "/marketTransactions:lookup", query, &result)
+	if err == nil {
+		if len(result.Transaction) == 0 {
+			return marketTransactionLookup{}, false, errors.New("market transaction lookup returned an empty transaction")
+		}
+		return result, true, nil
+	}
+	var requestErr client.RequestError
+	if errors.As(err, &requestErr) && requestErr.StatusCode == http.StatusNotFound {
+		return marketTransactionLookup{}, false, nil
+	}
+	return marketTransactionLookup{}, false, err
+}
+
+func resumeOrPrintMarketJSONExecution(
+	ctx context.Context,
+	cmd *cobra.Command,
+	opts *rootOptions,
+	httpClient *client.Client,
+	listingID string,
+	input marketInputPayload,
+	clientRequestID string,
+	lookup marketTransactionLookup,
+) error {
+	if err := validateMarketLookupListing(listingID, lookup); err != nil {
+		return err
+	}
+	if lookup.RecoveryAction == "none" {
+		return printMarketCommandResponse(cmd, opts, lookup.Transaction)
+	}
+	if lookup.RecoveryAction != "resubmit_original_input" {
+		return fmt.Errorf("unsupported market recovery action %q", lookup.RecoveryAction)
+	}
+	payload := marketQuotePayload(input, "")
+	payload["confirm"] = true
+	payload["clientRequestId"] = clientRequestID
+	payload["listingVersionId"] = stringMapValue(lookup.Transaction, "listingVersionId")
+	var response map[string]any
+	path := "/marketListings/" + url.PathEscape(listingID) + ":execute"
+	if err := httpClient.PostProductJSON(ctx, path, payload, &response); err != nil {
+		return err
+	}
+	return printMarketCommandResponse(cmd, opts, response)
+}
+
+func resumeOrPrintMarketWorkbookExecution(
+	ctx context.Context,
+	cmd *cobra.Command,
+	opts *rootOptions,
+	listingID string,
+	workbookPath string,
+	clientRequestID string,
+	lookup marketTransactionLookup,
+) error {
+	if err := validateMarketLookupListing(listingID, lookup); err != nil {
+		return err
+	}
+	if lookup.RecoveryAction == "none" {
+		return printMarketCommandResponse(cmd, opts, lookup.Transaction)
+	}
+	if lookup.RecoveryAction != "resubmit_original_input" {
+		return fmt.Errorf("unsupported market recovery action %q", lookup.RecoveryAction)
+	}
+	response, err := postMarketWorkbookMap(ctx, opts, listingID, workbookPath, ":executeWorkbook", map[string]any{
+		"confirm": true, "clientRequestId": clientRequestID,
+		"listingVersionId": stringMapValue(lookup.Transaction, "listingVersionId"),
+	})
+	if err != nil {
+		return err
+	}
+	return printMarketCommandResponse(cmd, opts, response)
+}
+
+func validateMarketLookupListing(listingID string, lookup marketTransactionLookup) error {
+	frozenListingID := stringMapValue(lookup.Transaction, "listingId")
+	if frozenListingID == "-" || strings.TrimSpace(frozenListingID) == "" {
+		return errors.New("market transaction lookup did not return listingId")
+	}
+	if strings.TrimSpace(frozenListingID) != strings.TrimSpace(listingID) {
+		return fmt.Errorf("clientRequestId belongs to listing %q, not %q", frozenListingID, listingID)
+	}
+	return nil
+}
+
+func printMarketCommandResponse(cmd *cobra.Command, opts *rootOptions, response map[string]any) error {
+	if opts.output == "json" {
+		return writeIndentedJSON(cmd.OutOrStdout(), response)
+	}
+	return printMarketExecution(cmd.OutOrStdout(), response)
+}
+
+func validateMarketPaymentPreference(value string) error {
+	switch strings.TrimSpace(value) {
+	case "", "pay_per_use", "subscription":
+		return nil
+	default:
+		return errors.New("--payment must be pay_per_use or subscription")
 	}
 }
 
-func marketExecutePayload(input marketInputPayload, clientRequestID string) map[string]any {
-	payload := marketQuotePayload(input)
-	payload["confirm"] = true
-	payload["clientRequestId"] = clientRequestID
-	return payload
+func mapBoolValue(values map[string]any, key string) bool {
+	value, _ := values[key].(bool)
+	return value
 }
 
 func postMarketWorkbookMap(ctx context.Context, opts *rootOptions, listingID string, workbookPath string, action string, extra map[string]any) (map[string]any, error) {
@@ -982,7 +1239,7 @@ func printMarketQuote(w io.Writer, resp map[string]any) error {
 		currency = ""
 	}
 	tw := newTabWriter(w)
-	for _, key := range []string{"quoteId", "listingVersionId", "currency"} {
+	for _, key := range []string{"quoteId", "listingVersionId", "currency", "effectivePaymentMode", "entitlementExpiresAt"} {
 		if err := printStringMapField(tw, resp, key); err != nil {
 			return err
 		}
@@ -1000,6 +1257,14 @@ func printMarketQuote(w io.Writer, resp map[string]any) error {
 	}
 	if err := printMoneyMapField(tw, resp, "estimated_payable", "estimatedBuyerPayable", "estimatedBuyerPayableT", currency); err != nil {
 		return err
+	}
+	if err := printMoneyMapField(tw, resp, "effective_creator_fee", "effectiveCreatorFee", "", currency); err != nil {
+		return err
+	}
+	if value, ok := resp["requiresPaymentChoice"]; ok && value != nil {
+		if _, err := fmt.Fprintf(tw, "requiresPaymentChoice\t%s\n", displayJSONValue(value)); err != nil {
+			return err
+		}
 	}
 	return tw.Flush()
 }

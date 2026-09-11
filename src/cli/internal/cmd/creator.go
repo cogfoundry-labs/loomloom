@@ -45,6 +45,7 @@ func newCreatorCmd(opts *rootOptions) *cobra.Command {
 		Short: "Creator Market commands",
 	}
 	cmd.AddCommand(
+		newCreatorBundleCmd(opts),
 		newCreatorEarningsCmd(opts),
 		newCreatorTransactionsCmd(opts),
 		newCreatorReviewCmd(opts),
@@ -54,11 +55,16 @@ func newCreatorCmd(opts *rootOptions) *cobra.Command {
 
 func newCreatorEarningsCmd(opts *rootOptions) *cobra.Command {
 	var limit int
+	var source, subscriptionID, pageToken, currency string
 
 	cmd := &cobra.Command{
 		Use:   "earnings",
 		Short: "List creator Market earnings",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			source = strings.TrimSpace(source)
+			if source != "pay-per-use" && source != "subscription" {
+				return fmt.Errorf("--source must be pay-per-use or subscription")
+			}
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
 				return err
@@ -70,24 +76,46 @@ func newCreatorEarningsCmd(opts *rootOptions) *cobra.Command {
 			if limit > 0 {
 				query.Set("pageSize", fmt.Sprintf("%d", limit))
 			}
+			path := "/creators/me/earnings"
+			if source == "subscription" {
+				path = "/creators/me/subscriptionEarnings"
+				if value := strings.TrimSpace(subscriptionID); value != "" {
+					query.Set("subscriptionId", value)
+				}
+				if value := strings.TrimSpace(pageToken); value != "" {
+					query.Set("pageToken", value)
+				}
+				if value := strings.TrimSpace(currency); value != "" {
+					query.Set("currency", value)
+				}
+			}
 
 			var resp map[string]any
-			if err := httpClient.GetProductJSONWithQuery(ctx, "/creators/me/earnings", query, &resp); err != nil {
+			if err := httpClient.GetProductJSONWithQuery(ctx, path, query, &resp); err != nil {
 				return err
 			}
 			return writeIndentedJSON(cmd.OutOrStdout(), resp)
 		},
 	}
 	cmd.Flags().IntVar(&limit, "limit", 100, "Maximum number of earning records")
+	cmd.Flags().StringVar(&source, "source", "pay-per-use", "Earning source: pay-per-use|subscription")
+	cmd.Flags().StringVar(&subscriptionID, "subscription-id", "", "Filter subscription earnings by subscription ID")
+	cmd.Flags().StringVar(&pageToken, "page-token", "", "Opaque subscription earnings page token")
+	cmd.Flags().StringVar(&currency, "currency", "", "Settlement currency for subscription earnings")
 	return cmd
 }
 
 func newCreatorTransactionsCmd(opts *rootOptions) *cobra.Command {
 	var pageSize int
+	var source, subscriptionID, period, pageToken, currency string
 	cmd := &cobra.Command{
 		Use:   "transactions",
 		Short: "List creator Market transactions",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			source = strings.TrimSpace(source)
+			if source != "pay-per-use" && source != "subscription" {
+				return fmt.Errorf("--source must be pay-per-use or subscription")
+			}
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
 				return err
@@ -99,10 +127,22 @@ func newCreatorTransactionsCmd(opts *rootOptions) *cobra.Command {
 			if pageSize > 0 {
 				query.Set("pageSize", fmt.Sprintf("%d", pageSize))
 			}
+			path := "/creators/me/marketTransactions"
+			if source == "subscription" {
+				path = "/creators/me/subscriptionIncomeEntries"
+				for key, value := range map[string]string{"subscriptionId": subscriptionID, "period": period, "pageToken": pageToken, "currency": currency} {
+					if value = strings.TrimSpace(value); value != "" {
+						query.Set(key, value)
+					}
+				}
+			}
 
 			var raw map[string]any
-			if err := httpClient.GetProductJSONWithQuery(ctx, "/creators/me/marketTransactions", query, &raw); err != nil {
+			if err := httpClient.GetProductJSONWithQuery(ctx, path, query, &raw); err != nil {
 				return err
+			}
+			if source == "subscription" {
+				return writeIndentedJSON(cmd.OutOrStdout(), raw)
 			}
 			if opts.output == "json" {
 				return writeIndentedJSON(cmd.OutOrStdout(), raw)
@@ -115,6 +155,11 @@ func newCreatorTransactionsCmd(opts *rootOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().IntVar(&pageSize, "page-size", 0, "Page size")
+	cmd.Flags().StringVar(&source, "source", "pay-per-use", "Transaction source: pay-per-use|subscription")
+	cmd.Flags().StringVar(&subscriptionID, "subscription-id", "", "Filter subscription transactions by subscription ID")
+	cmd.Flags().StringVar(&period, "period", "", "Filter subscription transactions by accounting period")
+	cmd.Flags().StringVar(&pageToken, "page-token", "", "Opaque subscription transactions page token")
+	cmd.Flags().StringVar(&currency, "currency", "", "Settlement currency for subscription transactions")
 	return cmd
 }
 
