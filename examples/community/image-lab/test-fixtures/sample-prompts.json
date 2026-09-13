@@ -1,29 +1,29 @@
 {
-  "note": "Prompts for exercising PLAN + QUOTE without spend. `expected_intent` is the classification a correct agent makes; `expected_allocation_4` / `expected_allocation_8` are the ordered lists of model ids the deterministic Advisor produces at count=4 and count=8 against the CURRENT reference files (model-catalog.yaml + generation-policy.md). count=4 stays on two models (A + B); count=8 widens to a third surviving model C. Update both whenever those files change. All prompts are text-to-image only.",
+  "note": "Prompts for exercising PLAN + QUOTE without spend. `expected_intent` is the classification a correct agent makes; `expected_allocation_4` / `expected_allocation_8` are the ordered lists of model ids the deterministic Advisor produces at count=4 and count=8 against the CURRENT reference files (model-catalog.yaml + generation-policy.md + arena-scores.yaml). count=4 stays on two models (A + B); count=8 widens to a third surviving model C, subject to the provider-diversity guardrail in _secondary()/_tertiary(). Update all three whenever those files change — re-run `plan_for()` for the affected intent(s) and take its real `allocation`, never hand-guess. All prompts are text-to-image only.",
   "prompts": [
     {
       "prompt": "A clean modern product-launch hero image for a SaaS app: a single laptop on a minimalist desk emitting a soft glow, calm and confident mood, generous negative space, muted blue and warm-neutral palette, soft studio light",
       "expected_intent": "launch / announcement image",
-      "expected_allocation_4": ["google/gemini-3-pro-image", "google/gemini-3.1-flash-image"],
-      "expected_allocation_8": ["google/gemini-3-pro-image", "google/gemini-3.1-flash-image", "bytedance/doubao-seedream-5-0-lite"]
+      "expected_allocation_4": ["openai/gpt-image-2.5-sunburst", "openai/gpt-image-2.5-flare"],
+      "expected_allocation_8": ["openai/gpt-image-2.5-sunburst", "openai/gpt-image-2.5-flare", "openai/gpt-image-2"]
     },
     {
       "prompt": "Event poster for a synthwave concert: bold stacked headline reads exactly \"NIGHT DRIVE\", neon grid horizon, 1980s color palette, high contrast, room for a date line at the bottom",
       "expected_intent": "poster / flyer",
-      "expected_allocation_4": ["google/gemini-3-pro-image", "openai/gpt-image-2"],
-      "expected_allocation_8": ["google/gemini-3-pro-image", "openai/gpt-image-2", "bytedance/doubao-seedream-5-0-pro"]
+      "expected_allocation_4": ["openai/gpt-image-2.5-sunburst", "google/gemini-3.1-flash-image"],
+      "expected_allocation_8": ["openai/gpt-image-2.5-sunburst", "google/gemini-3.1-flash-image", "openai/gpt-image-2.5-flare"]
     },
     {
       "prompt": "Isometric 3D illustration of a developer workflow: interconnected floating panels showing code, a pipeline, and a preview window, soft studio lighting, muted palette, gentle shadows, no text",
-      "expected_intent": "illustration / concept art",
-      "expected_allocation_4": ["google/gemini-2.5-flash-image", "google/gemini-3.1-flash-image"],
-      "expected_allocation_8": ["google/gemini-2.5-flash-image", "google/gemini-3.1-flash-image", "google/gemini-3-pro-image"]
+      "expected_intent": "3D render / isometric illustration",
+      "expected_allocation_4": ["openai/gpt-image-2.5-sunburst", "openai/gpt-image-2.5-flare"],
+      "expected_allocation_8": ["openai/gpt-image-2.5-sunburst", "openai/gpt-image-2.5-flare", "bytedance/doubao-seedream-5-0-pro"]
     },
     {
       "prompt": "E-commerce product shot of a ceramic pour-over coffee dripper on a seamless white background, even soft lighting, sharp focus, true-to-life color, subtle contact shadow",
       "expected_intent": "product / e-commerce shot",
-      "expected_allocation_4": ["bytedance/doubao-seedream-5-0-lite", "google/gemini-3.1-flash-image"],
-      "expected_allocation_8": ["bytedance/doubao-seedream-5-0-lite", "google/gemini-3.1-flash-image", "google/gemini-3-pro-image"]
+      "expected_allocation_4": ["openai/gpt-image-2.5-sunburst", "google/gemini-3.1-flash-image"],
+      "expected_allocation_8": ["openai/gpt-image-2.5-sunburst", "google/gemini-3.1-flash-image", "openai/gpt-image-2"]
     }
   ]
 }

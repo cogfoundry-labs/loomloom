@@ -3,7 +3,7 @@
 
 `build-exploration-page.py` is standard-library only, so it emits the run's
 original PNGs. Before a case study is committed, run this once to swap them for
-web-weight JPEG and rewrite every reference (index.html + exploration.json).
+web-weight JPEG and rewrite every reference (index.html + case-study-data.json).
 
     python case-studies/pack.py case-studies/<slug>
 
@@ -36,7 +36,9 @@ def main() -> None:
     folder = Path(sys.argv[1]).resolve()
     assets = folder / "assets"
     index = folder / "index.html"
-    data = folder / "exploration.json"
+    data = folder / "case-study-data.json"
+    if not data.exists():
+        data = folder / "exploration.json"  # older, pre-session case studies
     if not (assets.is_dir() and index.exists()):
         sys.exit(f"{folder} is not a built case-study folder (need assets/ + index.html)")
 

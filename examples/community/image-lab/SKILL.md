@@ -33,8 +33,10 @@ PLAN  ->  QUOTE  ->  APPROVE  ->  GENERATE  ->  RESULTS
   a short "N/total done" update every ~30–60s so the user is never staring at
   nothing.
 - **RESULTS** — every image, the actual cost, **and** a shareable exploration
-  page built automatically. The user picks a favourite from the page (just
-  conversation, not a gate).
+  page built automatically. Then ask: pick a favourite, adjust the prompt and
+  generate another round, or stop. Adjusting loops back to PLAN — it is a
+  brand-new spend, so it goes through its own QUOTE → APPROVE, never skipping
+  the gate just because "it's the same session."
 
 The exploration page (step 7) is a self-contained static folder of the brief +
 every alternative + the pick. It spends nothing, so it is always built — never
@@ -83,7 +85,8 @@ Pick the single best match from this list (from `references/generation-policy.md
 
 `launch / announcement image` · `profile / avatar` · `social post` ·
 `blog hero / article cover` · `poster / flyer` · `infographic / diagram` ·
-`illustration / concept art` · `product / e-commerce shot` · `generic`
+`illustration / concept art` · `3D render / isometric illustration` ·
+`product / e-commerce shot` · `generic`
 
 Use `generic` only if nothing else fits. This is your one judgement call — the
 user can correct it ("no, treat it as a poster").
@@ -93,12 +96,15 @@ user can correct it ("no, treat it as a poster").
 Run (one call does both):
 
 ```
-python scripts/image.py resolve --intent "<intent label>" --count <N> --explain
+python scripts/image.py resolve --intent "<intent label>" --count <N> --out ./out --explain
 ```
 
 Add `--models "<id>[,<id>]"` **only** if the user named specific models
 ("use GPT Image 2", "compare Nano Banana Pro and Seedream"). The Advisor never
-silently replaces a model the user asked for.
+silently replaces a model the user asked for. `--out` names the **session**
+(`./out` unless the user asked for somewhere else) — pass the same value
+you'll give `run` at step 5; resolve only ever reads it (to preview the round
+number and cumulative spend), never writes there.
 
 At `count 8` the allocation normally spans **three** models (A ×3 + B ×3 + C ×2)
 — the "deep exploration" widen. That is expected, not a bug; `count` is still a
@@ -108,7 +114,18 @@ It checks readiness, resolves the token, and returns `plan` with:
 
 - `allocation` — a list of `{ model, label, size, usd_per_image, n, subtotal_usd }`
 - `alloc_arg` — the exact string to hand to `run` at step 5 (copy it verbatim)
+- `fingerprint` — a sha256 of `alloc_arg`; the exact value `run --confirm` must
+  be given at step 5. Not a bare yes/no flag — it binds the approval to this
+  specific allocation, so `run` refuses if the `--alloc` it's given doesn't
+  match what `--confirm` was issued for (e.g. a stale value from an earlier
+  turn, or a plan that changed after Adjust). Also note: the fingerprint binds
+  the allocation, not the prompt — a prompt-only edit still needs a fresh
+  `resolve` call (see step 8).
 - `estimated_usd` — the total; `sufficient` — whether the balance covers it
+- `out_dir` — this round's actual folder (`<out>/round-N`, auto-numbered) — a
+  preview only, nothing exists there yet
+- `round` / `session_cumulative_usd` — which round this would be and how much
+  the session has spent so far (0 / round 1 the first time)
 - `why` — one line explaining the model choice
 - the full score table on stderr (from `--explain`)
 
@@ -116,10 +133,13 @@ If it errors (loomloom not ready, no token), relay the one fix and stop. If
 `sufficient` is false, say the balance is short and stop — do not reach APPROVE.
 
 Present the PLAN as the script prints it — each model, its count, its size, its
-subtotal — then the `why` line and the estimated total. The estimate is a
-pre-flight guess of the gateway's own `cost`; the actual can be lower (e.g.
-`gemini-3.1-flash-image` currently bills $0 under a launch preview but is quoted
-conservatively so the gate stays honest). RESULTS shows the real charge.
+subtotal — then the `why` line, the output path, and the estimated total. From
+round 2 onward it also prints a one-line reminder ("this is round N of this
+session — $X spent across it so far"); include it, it helps the user decide
+whether to keep iterating. The estimate is a pre-flight guess of the gateway's
+own `cost`; the actual can be lower (e.g. `gemini-3.1-flash-image` currently
+bills $0 under a launch preview but is quoted conservatively so the gate stays
+honest). RESULTS shows the real charge.
 
 ### 4. approve  (APPROVE)
 
@@ -135,16 +155,23 @@ Image 2 ×2, ~$0.11?").
 
 ### 5. generate  (GENERATE)
 
+`--out` names the **session** (default `./out`), not this round's own folder —
+`run` auto-detects the round number from `<out>/session.json` and writes this
+round's images/record to `<out>/round-N/`, never overwriting an earlier round.
 Run it **in the background** with a progress file:
 
 ```
 python scripts/image.py run --alloc "<alloc_arg from step 3>" \
   --prompt "<final prompt>" --intent "<intent label>" --out ./out \
-  --progress-file ./out/progress.json --confirm
+  --progress-file "<out_dir from step 3>/progress.json" \
+  --confirm "<fingerprint from step 3>"
 ```
 
-While it runs, every ~30–60s read `./out/progress.json` and post a compact
-update — do not leave the user with no signal for minutes:
+`<out_dir from step 3>` is `resolve`'s own preview of this round's folder
+(`./out/round-1`, `./out/round-2`, …) — round-scoped, not the session root, so
+a new round's progress file is never mistaken for an earlier round's stale
+`done` state. While it runs, every ~30–60s read `<out_dir>/progress.json` and
+post a compact update — do not leave the user with no signal for minutes:
 
 ```
 GENERATING 8 · 3 models
@@ -157,8 +184,10 @@ GENERATING 8 · 3 models
 `progress.json` fields: `phase` (`submitted` → `generating` → `done`), `done`,
 `failed`, `total`, `actual_usd_so_far`, and `branches[]`
 (`label`, `model_label`, `status`, `seconds`, `cost_usd`). When `phase` is
-`done`, read the run record from stdout / `./out/run.json` and go to RESULTS.
-Each branch downloads to `./out/variant-a.png` …
+`done`, read the run record from stdout and go to RESULTS. The record's own
+`out_dir` field names this round's actual folder (`./out/round-1` the first
+time, `./out/round-2` after one Adjust-the-prompt loop, etc.) — use that value
+rather than assuming `./out`; each branch downloads to `<out_dir>/variant-a.png` …
 
 **If it exits with `status: model_unavailable`** (exit code 3): the first model
 was rejected by the gateway. It prints a `suggested_model` / `suggested_size`.
@@ -177,39 +206,90 @@ approval is correct.
 
 ### 6. results  (RESULTS)
 
-`run` prints the run record (JSON) to stdout and writes it to `./out/run.json`.
-`alternatives[]` carries each branch's `label`, `model_label`, `seconds`
-(generation time), `cost_usd`, and `actual_size`; `file` is a basename (the
-image is `./out/<file>`).
+`run` prints the run record (JSON) to stdout and writes it to
+`<out_dir>/run.json` (see step 5 — `<out_dir>` is this round's own folder, not
+necessarily `./out` itself). `alternatives[]` carries each branch's `label`,
+`model_label`, `seconds` (generation time), `cost_usd`, and `actual_size`;
+`file` is a basename (the image is `<out_dir>/<file>`). The record also
+carries `round` and `session_cumulative_usd` — from round 2 onward, `run`
+prints a one-line reminder to stderr ("this is round N of this session —
+$X spent across it so far"); relay it, it is not an error.
 
 - **Send each image as its own `SendUserFile` call** with a caption that names
   its label and model — e.g. `A · Nano Banana Pro`, `C · GPT Image 2` — so the
-  user can tell which is which. The files are `./out/variant-a.png` …
+  user can tell which is which. The files are `<out_dir>/variant-a.png` …
 - Present a RESULTS table with columns **label · model · time · cost · size**
   (from `alternatives[]`), then `Actual total: $X.XXXX (estimated ~$Y.YYYY)`.
 - If a branch failed or is incomplete, name it plainly — no retry in v0.1; the
   user still picks from what succeeded.
-- Then **build the exploration page (step 7)** and hand the user the link,
-  asking them to pick their favourite from there. Do not ask first — the page
-  costs nothing. Picking is ordinary conversation, not a gate.
+- Then **build/update the case-study page (step 7)** and hand the user the link.
+- Finally, ask what's next (step 8): pick a favourite, adjust the prompt and
+  do another round, or stop. Do not ask before building the page — the page
+  costs nothing and picking is ordinary conversation, not a gate.
 
-### 7. shareable page  (part of RESULTS — always built, no gate)
+### 7. case-study page  (part of RESULTS — always built, no gate)
 
-`run` wrote `./out/run.json`. Build the page:
+One page per **session**, at a **fixed address that never moves**, no matter
+how many rounds pile up — `<out>/<slug>/index.html`, where `<slug>` is set
+once from the *first* round's `--title` and never recalculated afterward, even
+if a later round's title changes. Build/rebuild it every round:
 
 ```
-python scripts/build-exploration-page.py --from ./out --inline \
-  --title "<3-5 word title>" --subject "<short noun phrase>" \
+python scripts/build-exploration-page.py --session ./out --inline \
+  --title "<3-5 word title for THIS round>" --subject "<short noun phrase>" \
   --invocation "<the exact message the user sent to trigger Image Lab>" \
   [--selected <label>]
 ```
 
-It writes `./out/<slug>/` (`index.html` + `assets/` + `exploration.json`) and,
-with `--inline`, a one-file `index.inline.html`. **Nothing is spent.** Publish
-`index.inline.html` as an artifact, then hand the user the link and ask them to
-pick their favourite from there. If the stderr size line says > ~15 MB,
-recompress the PNGs to JPEG first. Re-run with `--selected <label>` once they
-choose.
+`--session` is the session root (same value as `run`'s `--out`), not this
+round's own folder — the script finds the latest round in `<out>/session.json`
+on its own; pass `--round N` only to explicitly target an earlier round (e.g.
+recording a `--selected` pick made from an older round's view). Every round
+you've ever built this for gets embedded in the page, defaulting to showing
+the **latest** round; a nav strip directly above the Gallery section (`← VIEW
+ROUND N` … `ROUND N / M` … `VIEW ROUND N →`) lets the viewer switch to any
+adjacent round **in place**, on the same URL, wrapping at both ends — it only
+appears once a second round exists. Do not pass `--from` or `--compare` —
+those no longer exist; `--session` replaces both.
+
+It writes `<slug>/` (`index.html` + `assets/` + `case-study-data.json`) and,
+with `--inline`, a one-file `index.inline.html` holding every round's images.
+**Nothing is spent.** Publish `index.inline.html` as an artifact, then hand
+the user the link. If the stderr size line says > ~15 MB, recompress the PNGs
+to JPEG first. Re-run with `--selected <label>` once they choose.
+
+### 8. adjust and regenerate  (optional, after RESULTS)
+
+After presenting RESULTS + the page link, ask (`AskUserQuestion`):
+
+- **Pick a favourite** — done; no further action
+- **Adjust the prompt and generate another round** — go back to step 1 with a
+  new or edited prompt. Reuse the same `--intent`/`--count`/`--out` from the
+  last round as defaults unless the user also wants to change those; a
+  genuinely different subject deserves a fresh `--out` (a new session, a new
+  case-study address), not another round of this one — see the classification
+  rule below
+- **Stop** — done; no further action
+
+Adjusting is **not a shortcut** — it re-enters PLAN → QUOTE → APPROVE →
+GENERATE in full. A prompt-only edit still needs a fresh `resolve` call: the
+`--confirm` fingerprint binds the model/size allocation, not the prompt text,
+so there is no way to reuse an old fingerprint for a new prompt, even if the
+allocation happens to come out identical. Passing the same `--out` is what
+keeps this a new *round* of the same session instead of a disconnected run —
+`run` handles the round numbering and non-overwriting automatically; you don't
+compute a round number or folder name yourself.
+
+**New round vs. new run — both conditions must hold for "new round":**
+1. The new prompt is a similar continuation of the last one (same subject),
+   not a different subject, **and**
+2. The user isn't asking to change the model mix.
+
+If both hold: same `--out`, same case-study address, another round. If the
+subject is clearly different: new `--out`, new session, starts at round 1
+with its own new case-study address. If the subject is a continuation but the
+user *also* asks to change models — that's outside these two rules; ask the
+user directly which they mean rather than guessing.
 
 Full flag list + the page's section-by-section layout: **`references/exploration-page.md`**.
 
