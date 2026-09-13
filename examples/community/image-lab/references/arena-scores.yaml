@@ -1,0 +1,131 @@
+# Raw Arena.ai Text-to-Image Arena data — the ONLY place a model's quality
+# judgment is hand-entered. Nothing here is a derived or hand-computed score:
+# every elo/margin pair below is exactly what arena.ai displayed for that
+# model in that category on snapshot_date. image.py's compute_arena_scores()
+# turns this into per-dimension [-1, 2] scores at load time (see the
+# confidence-interval-aware tiering described in
+# docs/plans/2026-09-13-image-lab-arena-scoring-implementation.md) — nobody
+# should ever hand-type a score into model-catalog.yaml again; re-measuring
+# means re-pulling this file, not editing a score by hand.
+#
+# Source: https://arena.ai/leaderboard/text-to-image/{overall,
+#   commercial-design,3d-modeling,cartoon,photorealistic,art,portraits,
+#   text-rendering} — pulled 2026-09-08, confirmed against a 78-model board.
+#
+# `margin` is arena's displayed "±" next to each Elo rating — confirmed via
+# arena.ai/blog/arena-rank and the lmarena/arena-rank package it describes to
+# be a genuine 95% confidence-interval half-width from a Bradley-Terry model
+# fit to head-to-head votes (originally bootstrap-resampled, now closed-form).
+# ONE THING THIS DOES NOT CONFIRM: whether that single displayed number is an
+# exact symmetric half-width, or a symmetrized simplification of a possibly
+# slightly asymmetric underlying interval. Treated as a roughly-Gaussian 95%
+# half-width for tiering purposes — standard practice for leaderboard-grade
+# analysis, but a disclosed approximation, not a certainty. If this ever gets
+# resolved from primary sources, revisit compute_arena_scores()'s tiering;
+# until then the risk is "a few borderline tier boundaries shift slightly,"
+# not "the whole method is invalid."
+#
+# When re-pulling: update snapshot_date and every elo/margin pair together —
+# they are one leaderboard snapshot, not independently-dated facts.
+snapshot_date: "2026-09-08"
+
+categories:
+  overall: https://arena.ai/leaderboard/text-to-image/overall
+  commercial_design: https://arena.ai/leaderboard/text-to-image/commercial-design
+  three_d_modeling: https://arena.ai/leaderboard/text-to-image/3d-modeling
+  cartoon: https://arena.ai/leaderboard/text-to-image/cartoon
+  photorealistic: https://arena.ai/leaderboard/text-to-image/photorealistic
+  art: https://arena.ai/leaderboard/text-to-image/art
+  portraits: https://arena.ai/leaderboard/text-to-image/portraits
+  text_rendering: https://arena.ai/leaderboard/text-to-image/text-rendering
+
+models:
+  openai/gpt-image-2.5-sunburst:
+    overall: { elo: 1421, margin: 13 }
+    commercial_design: { elo: 1419, margin: 21 }
+    three_d_modeling: { elo: 1405, margin: 42 }
+    cartoon: { elo: 1440, margin: 21 }
+    photorealistic: { elo: 1423, margin: 20 }
+    art: { elo: 1390, margin: 31 }
+    portraits: { elo: 1450, margin: 32 }
+    text_rendering: { elo: 1481, margin: 23 }
+
+  openai/gpt-image-2.5-flare:
+    overall: { elo: 1399, margin: 13 }
+    commercial_design: { elo: 1388, margin: 21 }
+    three_d_modeling: { elo: 1388, margin: 39 }
+    cartoon: { elo: 1428, margin: 21 }
+    photorealistic: { elo: 1406, margin: 22 }
+    art: { elo: 1360, margin: 28 }
+    portraits: { elo: 1456, margin: 35 }
+    text_rendering: { elo: 1434, margin: 22 }
+
+  openai/gpt-image-2:
+    overall: { elo: 1381, margin: 4 }
+    commercial_design: { elo: 1389, margin: 6 }
+    three_d_modeling: { elo: 1361, margin: 9 }
+    cartoon: { elo: 1400, margin: 6 }
+    photorealistic: { elo: 1381, margin: 6 }
+    art: { elo: 1366, margin: 8 }
+    portraits: { elo: 1427, margin: 8 }
+    text_rendering: { elo: 1427, margin: 7 }
+
+  google/gemini-3.1-flash-image:
+    overall: { elo: 1261, margin: 5 }
+    commercial_design: { elo: 1269, margin: 7 }
+    three_d_modeling: { elo: 1254, margin: 10 }
+    cartoon: { elo: 1263, margin: 7 }
+    photorealistic: { elo: 1268, margin: 7 }
+    art: { elo: 1241, margin: 8 }
+    portraits: { elo: 1264, margin: 8 }
+    text_rendering: { elo: 1292, margin: 7 }
+
+  google/gemini-3-pro-image:
+    overall: { elo: 1246, margin: 3 }
+    commercial_design: { elo: 1246, margin: 5 }
+    three_d_modeling: { elo: 1231, margin: 7 }
+    cartoon: { elo: 1242, margin: 5 }
+    photorealistic: { elo: 1260, margin: 5 }
+    art: { elo: 1223, margin: 6 }
+    portraits: { elo: 1257, margin: 6 }
+    text_rendering: { elo: 1270, margin: 5 }
+
+  bytedance/doubao-seedream-5-0-pro:
+    overall: { elo: 1257, margin: 4 }
+    commercial_design: { elo: 1235, margin: 6 }
+    three_d_modeling: { elo: 1252, margin: 9 }
+    cartoon: { elo: 1271, margin: 7 }
+    photorealistic: { elo: 1281, margin: 7 }
+    art: { elo: 1266, margin: 8 }
+    portraits: { elo: 1295, margin: 8 }
+    text_rendering: { elo: 1255, margin: 7 }
+
+  google/gemini-2.5-flash-image:
+    overall: { elo: 1150, margin: 2 }
+    commercial_design: { elo: 1152, margin: 4 }
+    three_d_modeling: { elo: 1142, margin: 5 }
+    cartoon: { elo: 1145, margin: 4 }
+    photorealistic: { elo: 1156, margin: 4 }
+    art: { elo: 1145, margin: 4 }
+    portraits: { elo: 1168, margin: 4 }
+    text_rendering: { elo: 1154, margin: 4 }
+
+  bytedance/doubao-seedream-4.5:
+    overall: { elo: 1147, margin: 3 }
+    commercial_design: { elo: 1142, margin: 4 }
+    three_d_modeling: { elo: 1148, margin: 6 }
+    cartoon: { elo: 1150, margin: 4 }
+    photorealistic: { elo: 1166, margin: 4 }
+    art: { elo: 1155, margin: 5 }
+    portraits: { elo: 1168, margin: 5 }
+    text_rendering: { elo: 1143, margin: 4 }
+
+  bytedance/doubao-seedream-5-0-lite:
+    overall: { elo: 1138, margin: 3 }
+    commercial_design: { elo: 1130, margin: 5 }
+    three_d_modeling: { elo: 1142, margin: 7 }
+    cartoon: { elo: 1142, margin: 5 }
+    photorealistic: { elo: 1155, margin: 5 }
+    art: { elo: 1138, margin: 6 }
+    portraits: { elo: 1154, margin: 6 }
+    text_rendering: { elo: 1134, margin: 5 }

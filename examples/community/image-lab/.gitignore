@@ -8,3 +8,8 @@ out/
 # curated case studies ARE committed (case-studies/<slug>/), but never the
 # multi-MB single-file build meant only for artifact publishing.
 case-studies/*/index.inline.html
+
+# machine-written cache of real per-image prices CogFoundry has actually
+# charged (see image.py's _record_observed_prices) — runtime state, not
+# curated reference data; regenerates harmlessly from scratch if deleted.
+references/price-observations.json

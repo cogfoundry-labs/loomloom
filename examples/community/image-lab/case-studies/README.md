@@ -6,11 +6,11 @@ works). Each folder is self-contained and GitHub-Pages-ready:
 
 ```
 case-studies/<slug>/
-  index.html          the exploration page (styles + gallery/lightbox script inline)
-  exploration.json    the data model — a future PDF / social-card renderer reads this
-  assets/alternative-01.jpg …   the generated images, JPEG q95, full resolution
-  assets/<slug>-showcase.mp4    (optional) a short showcase clip
-  video/                        (optional) the Remotion project that renders it
+  index.html             the case-study page (styles + gallery/lightbox script inline)
+  case-study-data.json   the data model — a future PDF / social-card renderer reads this
+  assets/r1-alternative-01.jpg …   the generated images, JPEG q95, full resolution
+  assets/<slug>-showcase.mp4       (optional) a short showcase clip
+  video/                           (optional) the Remotion project that renders it
 ```
 
 These are **not** produced by the skill on every run — the skill publishes each
@@ -21,7 +21,7 @@ maintainer picking one run worth showing and committing it.
 
 ```bash
 # 1. render the folder (stdlib only — emits the run's original PNGs)
-python ../scripts/build-exploration-page.py --from <the run's --out dir> \
+python ../scripts/build-exploration-page.py --session <the session's --out dir> \
   --out ./<slug> \
   --title "<short title>" --subject "<noun phrase>" \
   --invocation "<the exact message that triggered Image Lab>"
@@ -33,7 +33,7 @@ python pack.py ./<slug>
 `pack.py` swaps every PNG for **progressive JPEG at quality 95** (visually
 lossless for line-art + text; full resolution kept, only downscaled past
 2048 px on the long edge) and rewrites the references in `index.html` +
-`exploration.json`. A full 8-image run lands ~3–4 MB — the same range as
+`case-study-data.json`. A full 8-image run lands ~3–4 MB — the same range as
 `redesign-lab/case-studies/`, versus ~13 MB as PNG. It needs Pillow and is a
 maintainer tool only: nothing under `scripts/` imports it, and the skill runtime
 stays standard-library only.

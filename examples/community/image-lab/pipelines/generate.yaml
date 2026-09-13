@@ -4,18 +4,26 @@
 # stage, the same way redesign-lab/pipelines/ works. `scripts/image.py` is the
 # only subprocess.
 #
-# Five user-facing steps:
+# Five user-facing steps, plus an optional loop back to the top:
 #   PLAN     = capture + classify + resolve  (resolve also prints the QUOTE)
 #   QUOTE    = (part of resolve — the estimated total for the allocation)
 #   APPROVE  = cost-gate   (the one human gate — the wallet boundary)
 #   GENERATE = generate  (backgrounded; agent polls the progress file)
 #   RESULTS  = present + exploration-page  (the page is always built — a render
 #              step that spends nothing, not an optional offer)
+#   (optional) adjust-and-regenerate = return to PLAN with a new/edited prompt
+#              — its own full QUOTE -> APPROVE, never a shortcut. See `adjust`
+#              and `compare-page` below.
 #
 # Image Lab helps the user PICK AN IMAGE, not pick a model. `count` is the
 # number of alternatives (1 / 2 / 4 / 8, default 4); the Advisor spreads that
 # budget across the best-fit models — A alone at 1, A + B at 2 / 4, and
 # A + B + C (three models) at 8, the "deep exploration" widen.
+#
+# `--out` (default ./out) names a creative SESSION, not one run's folder: each
+# `generate` writes to `<out>/round-N/`, N auto-numbered from
+# `<out>/session.json` — so `adjust` can repeat PLAN..RESULTS against the same
+# `--out` without ever overwriting an earlier round's images or run.json.
 #
 # v0.1 does not use loomloom's compiler/runtime. Parallelism = N independent
 # gateway tasks (POST xN, poll xN). loomloom orchestration arrives at v0.4
@@ -41,7 +49,7 @@ stages:
   - id: resolve
     user_step: PLAN
     engine: local
-    script: 'python scripts/image.py resolve --intent "<intent_label>" --count <N> --explain [--models "<id>[,<id>]"]'
+    script: 'python scripts/image.py resolve --intent "<intent_label>" --count <N> --out ./out --explain [--models "<id>[,<id>]"]'
     note: >
       reads the reference files, runs `loomloom doctor` / `balance`, resolves the
       token; NO gateway call. Deterministically scores every model in
@@ -49,8 +57,13 @@ stages:
       count across the best-fit models: A alone at count 1; A + the next-best
       surviving model B at 2 / 4; A + B + a third surviving model C at 8 (the
       "deep exploration" widen). A alone only when it is the sole survivor or the
-      user forced one model. Returns { allocation, alloc_arg, estimated_usd,
-      sufficient, why } + the score table, and prints the PLAN + QUOTE.
+      user forced one model. Returns { allocation, alloc_arg, fingerprint,
+      estimated_usd, sufficient, out_dir, why } + the score table, and prints
+      the PLAN + QUOTE. `fingerprint` is a sha256 of `alloc_arg` — the exact
+      value `--confirm` must be given at step 5; it is not a bare yes/no flag,
+      so an approval can't be replayed against a different allocation than the
+      one shown here. `out_dir` is a preview of where step 5 will write images
+      (pass the same `--out` to both) — nothing is written there by this step.
       `--models` forces a specific model / head-to-head (user override). If it
       errors or `sufficient` is false, relay the one fix and stop.
     produces: [plan]
@@ -70,18 +83,24 @@ stages:
     background: true
     script: >
       python scripts/image.py run --alloc "<alloc_arg>" --prompt "<prompt>"
-      --intent "<intent_label>" --out ./out --progress-file ./out/progress.json
-      --confirm
+      --intent "<intent_label>" --out ./out
+      --progress-file "<out_dir from resolve's plan>/progress.json"
+      --confirm "<fingerprint from resolve's plan>"
     note: >
       submits the whole approved allocation together (N gateway tasks across 2-3
       models), polls each, redraws the live branch tree, downloads each image,
-      prints actual cost grouped by model. RUN IN THE BACKGROUND: every ~30-60s
-      the agent reads ./out/progress.json (phase / done / total /
+      prints actual cost grouped by model. Writes to <out>/round-N/ (N
+      auto-numbered from <out>/session.json — never overwrites an earlier
+      round); the printed run record's own `out_dir` field names this round's
+      real folder, and `round` / `session_cumulative_usd` say which round this
+      was and the running total — from round 2 onward relay the one-line
+      reminder `run` prints to stderr. RUN IN THE BACKGROUND: every ~30-60s
+      the agent reads <out>/round-N/progress.json (phase / done / total /
       actual_usd_so_far / branches[]) and posts a compact "N/total done" update
       so the user always sees motion. On exit code 3 (status: model_unavailable)
       show the "MODEL UNAVAILABLE / suggested replacement" prompt and, on
       approval, re-resolve with --models "<suggested_model>" then re-approve.
-    produces: ["./out/variant-*.png", "./out/progress.json", actual_usd, by_model]
+    produces: ["<out_dir>/variant-*.png", "<out_dir>/progress.json", actual_usd, by_model, round, session_cumulative_usd]
 
   - id: present
     user_step: RESULTS
@@ -90,27 +109,64 @@ stages:
       send EACH image as its own SendUserFile with a caption naming its label +
       model ("A · Nano Banana Pro"); present a RESULTS table label · model ·
       time · cost · size (from run.json alternatives[]), then actual total vs
-      estimate; name any failed/incomplete branch (no retry in v0.1). Then build
-      the exploration page and ask the user to pick from it. Not a gate.
+      estimate; name any failed/incomplete branch (no retry in v0.1). Then
+      build/update the case-study page (see `case-study-page`) and ask the
+      user what's next: pick a favourite / adjust and regenerate (see
+      `adjust`) / stop. Not a gate.
 
-  - id: exploration-page
+  - id: case-study-page
     user_step: RESULTS
     engine: local
     script: >
-      python scripts/build-exploration-page.py --from ./out --inline
-      --title "<short title>" --subject "<noun phrase>"
+      python scripts/build-exploration-page.py --session ./out --inline
+      --title "<short title for THIS round>" --subject "<noun phrase>"
       --invocation "<user's exact triggering message>"
       [--canonical-url <deploy URL>]
       [--selected <label, only on a rebuild after the user picks>]
     note: >
-      ALWAYS built as part of RESULTS — never "want a page?". Reads
-      ./out/run.json + the images, writes ./out/<slug>/ (index.html + assets/ +
-      exploration.json) plus index.inline.html (the images embedded). NOTHING IS
-      SPENT — a render step, not a gate. Agent writes --title + --subject (page
-      composes "One brief. N models. M ways to see {subject}.") and passes
-      --invocation VERBATIM. --canonical-url = the deploy URL (og:image absolute;
-      omit for the artifact flow). Publish index.inline.html as an artifact so
-      the user has a live URL to pick from (recompress PNGs to JPEG first if the
-      size line says > ~15 MB). Re-run with --selected <label> once they choose.
-      Full flags + page layout: references/exploration-page.md.
-    produces: ["./out/<slug>/index.html", "./out/<slug>/index.inline.html"]
+      ALWAYS built/rebuilt as part of RESULTS — never "want a page?". One page
+      per SESSION at a FIXED address that never moves: <out>/<slug>/index.html,
+      where <slug> is set once from the first round's --title and never
+      recalculated by a later round's --title, however many rounds pile up.
+      --session is the session root (./out, same value as generate's --out),
+      NOT this round's own folder — the script finds the latest round in
+      <out>/session.json itself; pass --round N only to target an explicit
+      earlier round. Every round ever built here is embedded in the page,
+      defaulting to showing the latest one; once a second round exists, a nav
+      strip above the Gallery section ("<- VIEW ROUND N / ROUND N OF M / VIEW
+      ROUND N ->") switches to any adjacent round in place, same URL, no
+      reload, wrapping at both ends. NOTHING IS SPENT — a
+      render step, not a gate. Agent writes --title + --subject per round
+      (page composes "One brief. N models. M ways to see {subject}." for
+      whichever round is shown) and passes --invocation VERBATIM.
+      --canonical-url = the deploy URL (og:image absolute; omit for the
+      artifact flow). Publish index.inline.html as an artifact so the user has
+      a live URL (recompress PNGs to JPEG first if the size line says > ~15
+      MB). Re-run with --selected <label> once they choose. Full flags + page
+      layout: references/exploration-page.md.
+    produces: ["<slug>/index.html", "<slug>/index.inline.html"]
+
+  - id: adjust
+    user_step: RESULTS
+    type: human
+    mechanism: "AskUserQuestion: Pick a favourite / Adjust the prompt and regenerate / Stop"
+    on_pick: halt                          # ordinary conversation, not a gate
+    on_adjust: return_to(capture)          # new/edited prompt; reuse last intent/count/--out as defaults
+    on_stop: halt
+    note: >
+      Adjusting is a full new lap of PLAN -> QUOTE -> APPROVE -> GENERATE, never
+      a shortcut — a prompt-only edit still needs a fresh `resolve` call, since
+      --confirm's fingerprint binds the model/size allocation, not the prompt
+      text. Pass the SAME --out so this becomes another round of the same
+      session (auto-numbered, never overwrites, same case-study address) —
+      give a brand-new --out only when the user has actually moved on to a
+      different subject (a new session, a new case-study address, starts at
+      round 1). This is the only place count>=2 rounds becomes possible — one
+      AskUserQuestion is still one wallet boundary, per round, no exceptions.
+
+      NEW ROUND vs NEW RUN — both must hold for "new round": (1) the new
+      prompt is a similar continuation of the last one, not a different
+      subject, AND (2) the user isn't asking to change the model mix. If the
+      subject is a continuation but the user also wants different models,
+      that's outside these two rules — ask the user directly rather than
+      guess.

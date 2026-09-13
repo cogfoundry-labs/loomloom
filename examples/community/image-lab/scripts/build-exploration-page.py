@@ -1,51 +1,67 @@
 #!/usr/bin/env python3
-"""build-exploration-page.py — turn one Image Lab run into a shareable page.
+"""build-exploration-page.py — turn an Image Lab session into one shareable
+case-study page that grows as the session grows.
 
-Every `image.py run` writes `<out>/run.json`. This script reads that record and
-builds a self-contained static folder:
+`image.py run` writes `<out>/round-N/run.json` per round and appends a ledger
+entry to `<out>/session.json`. This script reads both and builds ONE
+self-contained static folder per session, at a FIXED address that is set once
+(from the first round's --title) and never moves on later rounds:
 
     <out>/<slug>/
         index.html            # the page (styles + a small gallery script inline)
-        exploration.json      # the data model — a future PDF / social-card renderer reads THIS
-        assets/alternative-01.png ...
+        case-study-data.json  # the data model — a future PDF / social-card renderer reads THIS
+        assets/r<N>-alternative-01.png ...   # every published round's images
 
 **No gate. Nothing is spent** — the images already exist. This is a render step.
 
-The page is an **image-selection gallery**, not a case-study report, in
+The page is an **image-selection gallery**, not a benchmark report, in
 redesign-lab's house style (Source Serif 4 body, Arial-Black uppercase headings,
 IBM Plex Mono labels, hard edges, the loomloom green accent, 3-state dark mode).
-Every section has the same shape: a mono eyebrow, an Arial-Black headline, one
-lead line, then the body.
+It defaults to showing the LATEST round; once a second round has ever been
+published to this page, a nav strip directly above the Gallery section
+("<- VIEW ROUND N / ROUND N of M / VIEW ROUND N ->") switches to any adjacent
+round in place (same URL, no reload), wrapping at both ends — see
+render_session()/PAGE's `#round-head`/`#round-body` containers, `_round_nav_html()`,
+and the embedded `ROUNDS` JS array. It lives at the point of use, not in the
+topbar with the Share buttons, and each side names the specific round it goes
+to rather than a generic icon — an earlier icon-only topbar button tested as
+easy to miss and not obviously interactive. Every section has the same shape:
+a mono eyebrow, an Arial-Black headline, one lead line, then the body.
 
-  topbar (Share: Copy link · X · LinkedIn)
-  ->  hero (badge · tagline · model legend · stats)
+  topbar (Share: Copy link · X · LinkedIn — session-level, fixed)
+  ->  hero (badge · tagline · model legend · stats)  — swappable per round
+  ->  round nav (once round 2+ exists) — swappable per round
   ->  Gallery / Pick your image (framed hero + letter-badged thumbnails + lightbox)
   ->  Details / The run (a hairline facts grid)
   ->  Reuse / The prompt (the brief + a 3-step "how to use this")
   ->  Provenance / How this was made (every model + tool, linked, with the cost)
-  ->  Roadmap / From image exploration to AI work
-  ->  Your turn / Bring your own prompt (CTA)  ->  footer
+  ->  Roadmap / From image exploration to AI work            — session-level, fixed
+  ->  Your turn / Bring your own prompt (CTA)  ->  footer     — session-level, fixed
 
 Share affordances: the topbar Share cluster (Copy link + one-click X / LinkedIn,
-hrefs filled from the canonical URL + OG tags); a per-alternative deep link
-(`…/index.html#E` selects alternative E on load and as you browse); Open Graph /
-Twitter-card meta so a pasted link unfurls with the image.
+hrefs filled from the canonical URL + OG tags, describing whichever round was
+latest at build time); a per-alternative deep link (`…/index.html#E` selects
+alternative E within the currently-shown round); Open Graph / Twitter-card
+meta so a pasted link unfurls with the image.
 
 Usage
-    python scripts/build-exploration-page.py --from ./out \
+    python scripts/build-exploration-page.py --session ./out \
         --title "Murree Meets Toronto" \
         --subject "Murree x Toronto" \
         --invocation "<the exact message the user sent to trigger Image Lab>" \
-        [--summary "<override the auto tagline>"] \
-        [--selected C] [--slug custom-slug] [--out ./out/<slug>] \
-        [--canonical-url https://you.github.io/run/] [--inline]
+        [--round N] [--summary "<override the auto tagline>"] \
+        [--selected C] [--slug custom-slug — only takes on the first round] \
+        [--out ./out/<slug>] \
+        [--canonical-url https://you.github.io/case-study/] [--inline]
 
---canonical-url is where the folder will actually live; it makes og:image an
-absolute URL (so link unfurls work) and the topbar "Copy link" copy that URL.
---inline also writes index.inline.html — the same page with the PNGs embedded as
-base64 data URIs, i.e. one self-contained file to publish as an artifact. No
-recompression (stdlib only); if the run's PNGs push it past the 16 MB artifact
-limit, recompress them to JPEG before publishing.
+`--session` is the session root (image.py run's `--out`), not any one round's
+own folder; the script finds the latest round in `<session>/session.json` on
+its own. --canonical-url is where the folder will actually live; it makes
+og:image an absolute URL (so link unfurls work) and the topbar "Copy link"
+copy that URL. --inline also writes index.inline.html — the same page with
+every round's PNGs embedded as base64 data URIs, i.e. one self-contained file
+to publish as an artifact. No recompression (stdlib only); if the images push
+it past the 16 MB artifact limit, recompress them to JPEG before publishing.
 
 Standard library only.
 """
@@ -113,7 +129,7 @@ def _prompt_parts(prompt: str, invocation: str) -> tuple[str, str, str]:
 # data model  (the seam — render() is the only thing that reads this)
 # --------------------------------------------------------------------------- #
 def assemble(run: dict, title: str, subject: str, summary: str | None,
-             invocation: str | None, selected_label: str | None) -> dict:
+             invocation: str | None, selected_label: str | None, asset_prefix: str = "") -> dict:
     alts_in = run.get("alternatives") or []
     if not alts_in:
         die("run.json has no `alternatives` — is this from a current image.py run?")
@@ -145,7 +161,7 @@ def assemble(run: dict, title: str, subject: str, summary: str | None,
         ok = a["status"] == "COMPLETED" and a.get("file")
         alternatives.append({
             "index": a["index"], "of": a["of"], "label": a["label"],
-            "asset": f"assets/alternative-{a['index']:02d}.png" if ok else None,
+            "asset": f"assets/{asset_prefix}alternative-{a['index']:02d}.png" if ok else None,
             "source_file": a.get("file"),
             "model_label": a["model_label"],
             "model_url": a.get("model_url") or None,
@@ -558,7 +574,12 @@ def _locate(source_file: str, from_dir: Path) -> Path | None:
     return None
 
 
-def render(data: dict, from_dir: Path, out_dir: Path, canonical: str | None = None) -> None:
+def _finalize_round(data: dict, from_dir: Path, out_dir: Path) -> str | None:
+    """Copies this round's images into out_dir/assets (already asset_prefix-scoped
+    by assemble()), recomputes the stats/selection fields that depend on which
+    images actually made it to disk, and returns the OG-image asset path (or
+    None). Mutates `data` in place — one round's worth of what `render()` used
+    to do inline before this page had to support more than one round."""
     assets = out_dir / "assets"
     assets.mkdir(parents=True, exist_ok=True)
     for a in data["alternatives"]:
@@ -594,33 +615,101 @@ def render(data: dict, from_dir: Path, out_dir: Path, canonical: str | None = No
         og_asset = data["selected"]["asset"]
     elif shown:
         og_asset = shown[0]["asset"]
+    return og_asset
 
+
+def _round_nav_html(order: list[int], idx: int) -> str:
+    """A prev/current/next strip — sits just above the Gallery section, inside
+    the swappable round content (so its own numbers/targets always match
+    whichever round is currently shown). Empty when there's only one round —
+    nothing to navigate between yet. Wraps at both ends (round 1's "prev" is
+    the last round, and vice versa) rather than disabling a button; each side
+    names the SPECIFIC round it goes to, not a generic "switch", and carries
+    that round's index directly in data-round-index so the click handler
+    doesn't need to recompute wraparound arithmetic itself."""
+    n = len(order)
+    if n <= 1:
+        return ""
+    prev_i, next_i = (idx - 1) % n, (idx + 1) % n
+    return (
+        '  <nav class="round-nav" aria-label="Switch which round is shown">\n'
+        f'    <button type="button" class="round-nav-btn prev" id="round-prev" '
+        f'data-round-index="{prev_i}">&#8592; VIEW ROUND {order[prev_i]}</button>\n'
+        f'    <span class="round-nav-label">ROUND {order[idx]} / {n}</span>\n'
+        f'    <button type="button" class="round-nav-btn next" id="round-next" '
+        f'data-round-index="{next_i}">VIEW ROUND {order[next_i]} &#8594;</button>\n'
+        '  </nav>'
+    )
+
+
+def _round_head_body(data: dict) -> tuple[str, str]:
+    """The part of the page that's specific to ONE round: everything currently
+    inside <header> below the topbar, plus everything in <main> above the
+    session-level coming_soon/cta/footer. Built from the exact same section
+    functions a single-round page always used — nothing about their output
+    changes; only how many times they're called does. The round-nav strip (if
+    any) is prepended by the caller, which has the cross-round context
+    (ordering, current index) this function doesn't."""
+    shown = [a for a in data["alternatives"] if a["asset"]]
     badge = ('<p class="hero-badge">AI-generated &middot; not a benchmark</p>\n'
              if shown else "")
-    attr = data["attribution"]
+    head_html = (
+        f'<p class="hero-eyebrow">{html.escape(data["kicker"])}</p>\n'
+        f'{badge}    <h1>{html.escape(data["title"])}</h1>\n'
+        f'    <p class="summary">{html.escape(data["summary"])}</p>\n'
+        f'{_legend(data)}    <p class="stats">{_stat_line(data["stats"])}</p>'
+    )
+    body_html = (
+        f'{_gallery(data)}\n\n{_run_facts(data)}\n\n'
+        f'{_prompt_section(data)}\n\n{_credits(data)}'
+    )
+    return head_html, body_html
+
+
+def render_session(rounds_data: list[tuple[int, dict]], session_root: Path, out_dir: Path,
+                    canonical: str | None = None) -> None:
+    """rounds_data: [(round_number, data), ...] in ascending round order — every
+    round that has ever been published to this page, each already run through
+    assemble() with THAT round's own title/subject/etc. Builds one page whose
+    initial (server-rendered, no-JS-safe) state is the LATEST round, with every
+    other round embedded as data for the round-nav strip to swap in
+    client-side — no reload, no rebuild needed just to look at an earlier round.
+    """
+    assets_dir = out_dir / "assets"
+    order = [n for n, _ in rounds_data]
+    rounds_json = []
+    latest_data, latest_og_asset = None, None
+    for i, (round_no, data) in enumerate(rounds_data):
+        from_dir = session_root / f"round-{round_no}"
+        og_asset = _finalize_round(data, from_dir, out_dir)
+        head_html, body_html = _round_head_body(data)
+        body_html = f'{_round_nav_html(order, i)}\n\n{body_html}'.strip()
+        rounds_json.append({"round": round_no, "title": data["title"],
+                             "head": head_html, "body": body_html})
+        latest_data, latest_og_asset = data, og_asset
+
+    attr = latest_data["attribution"]
+    rounds_js = json.dumps(rounds_json).replace("</script>", "<\\/script>")
     page = PAGE.format(
-        title=html.escape(data["title"]),
-        eyebrow=html.escape(data["kicker"]),
-        badge=badge,
-        legend=_legend(data),
-        og_tags=_og_tags(data, canonical, og_asset),
-        summary=html.escape(data["summary"]),
-        stat_line=_stat_line(data["stats"]),
-        gallery=_gallery(data),
-        run_facts=_run_facts(data),
-        prompt_section=_prompt_section(data),
-        credits=_credits(data),
+        title=html.escape(latest_data["title"]),
+        og_tags=_og_tags(latest_data, canonical, latest_og_asset),
+        round_head=rounds_json[-1]["head"],
+        round_body=rounds_json[-1]["body"],
+        rounds_json=rounds_js,
         coming_soon=_coming_soon(),
         cta=_cta(),
         attr_text=html.escape(attr["text"]),
         attr_url=html.escape(attr["url"]),
-        generated_on=data["generated_on"],
+        generated_on=latest_data["generated_on"],
     )
     (out_dir / "index.html").write_text(page, encoding="utf-8")
-    slim = {k: v for k, v in data.items() if k not in ("alternatives", "summary_is_auto")}
-    slim["alternatives"] = [{k: v for k, v in a.items() if k != "source_file"}
-                            for a in data["alternatives"]]
-    (out_dir / "exploration.json").write_text(json.dumps(slim, indent=2), encoding="utf-8")
+    slim = [
+        {k: v for k, v in d.items() if k not in ("alternatives", "summary_is_auto")}
+        | {"round": n, "alternatives": [{k: v for k, v in a.items() if k != "source_file"}
+                                         for a in d["alternatives"]]}
+        for n, d in rounds_data
+    ]
+    (out_dir / "case-study-data.json").write_text(json.dumps(slim, indent=2), encoding="utf-8")
 
 
 # --------------------------------------------------------------------------- #
@@ -752,9 +841,33 @@ PAGE = """<!doctype html>
     margin: 0 0 26px; max-width: 60ch;
   }}
 
+  /* ---- round-nav: sits just above Gallery, inside the swappable round
+     content, so its own round numbers always match what's shown ---- */
+  .round-nav {{
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 22px 0; margin-bottom: 30px; border-bottom: 2px solid var(--rule-strong);
+  }}
+  .round-nav-btn {{
+    font-family: var(--mono); font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; background: none; border: 0; cursor: pointer; color: var(--ink);
+    padding: 4px 0;
+  }}
+  .round-nav-btn:hover {{ color: var(--accent); }}
+  .round-nav-btn:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
+  .round-nav-label {{
+    font-family: var(--mono); font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--accent); white-space: nowrap;
+  }}
+  @media (max-width: 560px) {{
+    .round-nav {{ flex-wrap: wrap; justify-content: center; text-align: center; }}
+    .round-nav-label {{ order: -1; flex-basis: 100%; margin-bottom: 6px; }}
+  }}
+
   /* ---- gallery ---- */
   .hero-frame {{
-    position: relative; border: 2px solid var(--rule-strong); background: var(--surface);
+    /* fixed medium-dark grey, not the --surface variable, so it stays dark
+       in both site themes */
+    position: relative; border: 2px solid var(--rule-strong); background: #58584f;
   }}
   .hero-frame a {{ display: block; cursor: zoom-in; }}
   .hero-frame img {{
@@ -767,7 +880,7 @@ PAGE = """<!doctype html>
   .hero-nav {{
     position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
     width: 40px; height: 60px; border: 0; cursor: pointer; padding: 0;
-    background: var(--ink); color: var(--bg); font-size: 20px; line-height: 1;
+    background: var(--ink); color: var(--accent-fill); font-size: 20px; line-height: 1;
     opacity: 0; transition: opacity .12s;
   }}
   .hero-frame:hover .hero-nav {{ opacity: .9; }}
@@ -935,22 +1048,15 @@ PAGE = """<!doctype html>
   </div>
 </div>
 <header>
-  <div class="wrap">
-    <p class="hero-eyebrow">{eyebrow}</p>
-{badge}    <h1>{title}</h1>
-    <p class="summary">{summary}</p>
-{legend}    <p class="stats">{stat_line}</p>
+  <div class="wrap" id="round-head">
+{round_head}
   </div>
 </header>
 
 <main class="wrap">
-{gallery}
-
-{run_facts}
-
-{prompt_section}
-
-{credits}
+  <div id="round-body">
+{round_body}
+  </div>
 
 {coming_soon}
 
@@ -961,8 +1067,8 @@ PAGE = """<!doctype html>
   </footer>
 </main>
 <script>
-  (function () {{
-    var thumbs = Array.prototype.slice.call(document.querySelectorAll(".thumb"));
+  function initGallery() {{
+    var thumbs = Array.prototype.slice.call(document.querySelectorAll("#round-body .thumb"));
     var hero = document.getElementById("hero-img");
     var link = document.getElementById("hero-link");
     var meta = document.getElementById("hero-meta");
@@ -1078,11 +1184,11 @@ PAGE = """<!doctype html>
     if (altLinkBtn) altLinkBtn.addEventListener("click", function () {{ flash(altLinkBtn, shareUrl()); }});
     if (lbCopyLink) lbCopyLink.addEventListener("click", function () {{ flash(lbCopyLink, shareUrl()); }});
 
-    document.addEventListener("keydown", function (e) {{
+    handleKey = function (e) {{
       if (e.key === "Escape") {{ closeLB(); return; }}
       if (e.key === "ArrowRight") step(1);
       else if (e.key === "ArrowLeft") step(-1);
-    }});
+    }};
 
     function selectFromHash(keepHash) {{
       var w = decodeURIComponent(location.hash.replace(/^#/, "")).toUpperCase();
@@ -1092,9 +1198,29 @@ PAGE = """<!doctype html>
     }}
     cur = Math.max(0, thumbs.findIndex(function (x) {{ return x.classList.contains("active"); }}));
     selectFromHash(true);
-    window.addEventListener("hashchange", function () {{ selectFromHash(true); }});
+    handleHashChange = function () {{ selectFromHash(true); }};
     updateNav();
-  }})();
+  }}
+
+  function initPromptCopy() {{
+    document.querySelectorAll("#round-body button.copy").forEach(function (b) {{
+      b.addEventListener("click", function () {{
+        var el = document.getElementById(b.dataset.target);
+        navigator.clipboard.writeText(el ? el.textContent : "").then(function () {{
+          var old = b.textContent; b.textContent = "Copied";
+          setTimeout(function () {{ b.textContent = old; }}, 1400);
+        }});
+      }});
+    }});
+  }}
+
+  // handleKey/handleHashChange are reassigned by initGallery() on every round
+  // switch; registered once here (not inside initGallery) so switching rounds
+  // never stacks up duplicate document/window-level listeners.
+  var handleKey = function () {{}};
+  var handleHashChange = function () {{}};
+  document.addEventListener("keydown", function (e) {{ handleKey(e); }});
+  window.addEventListener("hashchange", function () {{ handleHashChange(); }});
 
   (function () {{
     var canon = document.querySelector('link[rel="canonical"]');
@@ -1116,26 +1242,77 @@ PAGE = """<!doctype html>
     }});
   }})();
 
-  document.querySelectorAll("button.copy").forEach(function (b) {{
-    b.addEventListener("click", function () {{
-      var el = document.getElementById(b.dataset.target);
-      navigator.clipboard.writeText(el ? el.textContent : "").then(function () {{
-        var old = b.textContent; b.textContent = "Copied";
-        setTimeout(function () {{ b.textContent = old; }}, 1400);
+  var ROUNDS = {rounds_json};
+  function initRoundNav() {{
+    var prevBtn = document.getElementById("round-prev");
+    var nextBtn = document.getElementById("round-next");
+    [prevBtn, nextBtn].forEach(function (b) {{
+      if (!b) return;
+      b.addEventListener("click", function () {{
+        renderRound(parseInt(b.dataset.roundIndex, 10));
       }});
     }});
-  }});
+  }}
+  function renderRound(i) {{
+    var r = ROUNDS[i];
+    document.getElementById("round-head").innerHTML = r.head;
+    document.getElementById("round-body").innerHTML = r.body;
+    document.title = r.title;
+    try {{ history.replaceState(null, "", location.pathname + location.search); }} catch (e) {{}}
+    initGallery();
+    initPromptCopy();
+    initRoundNav();
+    document.getElementById("round-body").scrollIntoView({{ block: "start", behavior: "smooth" }});
+  }}
+
+  initGallery();
+  initPromptCopy();
+  initRoundNav();
 </script>
 </body>
 </html>
 """
 
 
+
+
+CASE_STUDY_FILE = "case-study.json"
+
+
+def _load_case_study(session_root: Path) -> dict:
+    """{"slug": str|None, "rounds": {"<N>": {title, subject, summary,
+    invocation, selected}}} — this page-builder's own persistent record,
+    separate from image.py's session.json (which knows nothing about titles
+    or page display concerns). Missing/corrupt reads as fresh — the manifest
+    is a convenience record, not load-bearing for correctness."""
+    p = session_root / CASE_STUDY_FILE
+    if not p.exists():
+        return {"slug": None, "rounds": {}}
+    try:
+        m = json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {"slug": None, "rounds": {}}
+    m.setdefault("slug", None)
+    m.setdefault("rounds", {})
+    return m
+
+
+def _save_case_study(session_root: Path, manifest: dict) -> None:
+    (session_root / CASE_STUDY_FILE).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="build-exploration-page.py")
-    ap.add_argument("--from", dest="frm", required=True,
-                    help="the run's --out directory (must contain run.json)")
-    ap.add_argument("--title", required=True, help="3-5 word title for the exploration")
+    ap.add_argument("--session", default=None, required=True,
+                    help="the session root (image.py's --out) — contains session.json and "
+                         "round-N/ folders. The case-study page always lives at a fixed "
+                         "<session>/<slug>/ address, set once from the first round's --title "
+                         "and never moved by a later round, regardless of how many rounds exist.")
+    ap.add_argument("--round", type=int, default=None,
+                    help="which round this --title/--subject/etc describe (default: the latest "
+                         "round recorded in <session>/session.json — the normal case, since this "
+                         "is meant to be called right after that round's `image.py run` finishes)")
+    ap.add_argument("--title", required=True, help="3-5 word title for this round")
     ap.add_argument("--subject", required=True,
                     help='short noun phrase for the tagline, e.g. "Murree x Toronto"')
     ap.add_argument("--invocation", default=None,
@@ -1143,8 +1320,11 @@ def main() -> None:
     ap.add_argument("--summary", default=None,
                     help="override the auto tagline (One brief. N models. M ways to see ...)")
     ap.add_argument("--selected", default=None, help="branch label of the creator's pick (A, B, ...)")
-    ap.add_argument("--slug", default=None, help="override the URL slug (default: from --title)")
-    ap.add_argument("--out", default=None, help="output folder (default: <from>/<slug>)")
+    ap.add_argument("--slug", default=None,
+                    help="URL slug — only takes effect on the FIRST round ever published for this "
+                         "session (default: derived from that round's --title); ignored with a "
+                         "note on later rounds, since the address must never move")
+    ap.add_argument("--out", default=None, help="output folder (default: <session>/<slug>)")
     ap.add_argument("--canonical-url", dest="canonical_url", default=None,
                     help="absolute URL the folder will live at — makes og:image absolute "
                          "(link unfurls) and the topbar Copy-link copy that URL")
@@ -1153,27 +1333,75 @@ def main() -> None:
                          "data URIs — one self-contained file to publish as an artifact")
     a = ap.parse_args()
 
-    from_dir = Path(a.frm).resolve()
-    run_path = from_dir / "run.json"
-    if not run_path.exists():
-        die(f"{run_path} not found — run `image.py run --out {a.frm} ...` first")
+    session_root = Path(a.session).resolve()
+    session_path = session_root / "session.json"
+    if not session_path.exists():
+        die(f"{session_path} not found — run `image.py run --out {a.session} ...` at least once first")
     try:
-        run = json.loads(run_path.read_text(encoding="utf-8"))
+        session = json.loads(session_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as e:
-        die(f"could not read {run_path}: {e}")
+        die(f"could not read {session_path}: {e}")
+    known_rounds = {r["round"]: r for r in session.get("rounds", [])}
+    if not known_rounds:
+        die(f"{session_path} has no recorded rounds")
 
-    data = assemble(run, a.title, a.subject, a.summary, a.invocation, a.selected)
-    if a.slug:
-        data["slug"] = slugify(a.slug)
-    out_dir = Path(a.out).resolve() if a.out else from_dir / data["slug"]
-    render(data, from_dir, out_dir, a.canonical_url)
+    target_round = a.round if a.round is not None else max(known_rounds)
+    if target_round not in known_rounds:
+        die(f"round {target_round} is not in {session_path} — known rounds: {sorted(known_rounds)}")
+
+    manifest = _load_case_study(session_root)
+    if manifest["slug"] is None:
+        manifest["slug"] = slugify(a.slug or a.title)
+    elif a.slug and slugify(a.slug) != manifest["slug"]:
+        print(f"note: this session's page address is fixed at '{manifest['slug']}' "
+              f"(set on its first round) — ignoring --slug {a.slug!r}", file=sys.stderr)
+    slug = manifest["slug"]
+
+    manifest["rounds"][str(target_round)] = {
+        "title": a.title, "subject": a.subject, "summary": a.summary,
+        "invocation": a.invocation, "selected": a.selected,
+    }
+    _save_case_study(session_root, manifest)
+
+    for rn in sorted(known_rounds):
+        if str(rn) not in manifest["rounds"]:
+            # A round session.json knows about but this script was never run
+            # for — it silently never appears on the page. Loud here beats a
+            # user wondering why an earlier round vanished from the case study.
+            print(f"warning: round {rn} is recorded in {session_path} but was "
+                  f"never published to the case-study page — it will not appear",
+                  file=sys.stderr)
+
+    rounds_data = []
+    for round_no in sorted(int(k) for k in manifest["rounds"] if int(k) in known_rounds):
+        round_meta = manifest["rounds"][str(round_no)]
+        run_path = session_root / f"round-{round_no}" / "run.json"
+        if not run_path.exists():
+            print(f"warning: {run_path} not found — skipping round {round_no}", file=sys.stderr)
+            continue
+        try:
+            run = json.loads(run_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"warning: could not read {run_path}: {e} — skipping round {round_no}",
+                  file=sys.stderr)
+            continue
+        data = assemble(run, round_meta["title"], round_meta["subject"], round_meta["summary"],
+                         round_meta["invocation"], round_meta["selected"], asset_prefix=f"r{round_no}-")
+        rounds_data.append((round_no, data))
+    if not rounds_data:
+        die("no round with a readable run.json was found for this case-study page")
+
+    out_dir = Path(a.out).resolve() if a.out else session_root / slug
+    render_session(rounds_data, session_root, out_dir, a.canonical_url)
 
     inline_path = _write_inline(out_dir) if a.inline else None
 
-    made = data["stats"]["generated"]
-    print(f"exploration page: {out_dir / 'index.html'}", file=sys.stderr)
-    print(f"  {made} image(s), {data['stats']['models']} model(s)"
-          + (f", selected {data['selected']['label']}" if data["selected"] else ""),
+    latest_round, latest_data = rounds_data[-1]
+    made = latest_data["stats"]["generated"]
+    print(f"case-study page: {out_dir / 'index.html'}", file=sys.stderr)
+    print(f"  round {latest_round} of {len(rounds_data)} shown by default &mdash; "
+          f"{made} image(s), {latest_data['stats']['models']} model(s)"
+          + (f", selected {latest_data['selected']['label']}" if latest_data["selected"] else ""),
           file=sys.stderr)
     if inline_path:
         mb = inline_path.stat().st_size / 1_000_000
@@ -1184,9 +1412,11 @@ def main() -> None:
         "out_dir": str(out_dir),
         "index_html": str(out_dir / "index.html"),
         "inline_html": str(inline_path) if inline_path else None,
-        "slug": data["slug"],
+        "slug": slug,
+        "rounds_shown": [n for n, _ in rounds_data],
+        "latest_round": latest_round,
         "images": made,
-        "selected": data["selected"]["label"] if data["selected"] else None,
+        "selected": latest_data["selected"]["label"] if latest_data["selected"] else None,
     }, indent=2))
 
 
