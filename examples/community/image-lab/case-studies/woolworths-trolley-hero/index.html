@@ -1,0 +1,1359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Woolworths Editorial Catalogue</title>
+<meta name="description" content="One brief. Three models. Eight ways to see a Woolworths trolley hero shot with an asymmetric editorial catalogue system.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Woolworths Editorial Catalogue">
+<meta property="og:description" content="One brief. Three models. Eight ways to see a Woolworths trolley hero shot with an asymmetric editorial catalogue system.">
+<meta property="og:image" content="assets/r3-alternative-01.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Woolworths Editorial Catalogue">
+<meta name="twitter:description" content="One brief. Three models. Eight ways to see a Woolworths trolley hero shot with an asymmetric editorial catalogue system.">
+<meta name="twitter:image" content="assets/r3-alternative-01.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23007a5c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    --bg:#f4f4f0; --surface:#ffffff; --ink:#0b0b0b; --muted:#4a4a46; --faint:#68675e;
+    --accent:#007a5c; --accent-fill:#00fdbc; --on-accent-fill:#062017;
+    --rule:#d8d6ce; --rule-strong:#0b0b0b; --shadow:0 1px 3px rgba(11,11,11,.09);
+    --prose:820px;
+    --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans:Arial, "Helvetica Neue", Helvetica, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#15150f; --surface:#1d1d16; --ink:#f2f1ea; --muted:#b3b0a5; --faint:#726f63;
+      --accent:#00fdbc; --accent-fill:#00fdbc; --on-accent-fill:#062017;
+      --rule:#33322a; --rule-strong:#f2f1ea; --shadow:0 1px 3px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#15150f; --surface:#1d1d16; --ink:#f2f1ea; --muted:#b3b0a5; --faint:#726f63;
+    --accent:#00fdbc; --accent-fill:#00fdbc; --on-accent-fill:#062017;
+    --rule:#33322a; --rule-strong:#f2f1ea; --shadow:0 1px 3px rgba(0,0,0,.45);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--serif); font-size: 18px; line-height: 1.6; overflow-x: hidden;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  .col { max-width: var(--prose); margin-left: auto; margin-right: auto; }
+  html:not(.js) .js-only,
+  html:not(.js) .hero-open,
+  html:not(.js) .hero-nav { display: none !important; }
+
+  /* ---- shared buttons ---- */
+  .btn-ghost {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; cursor: pointer; background: none; text-decoration: none;
+    border: 1px solid var(--rule-strong); color: var(--ink); padding: 7px 13px;
+  }
+  .btn-ghost:hover { background: var(--ink); color: var(--bg); }
+  .btn-ghost:active { transform: translateY(1px); }
+  .btn-ghost:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-solid {
+    font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+    background: var(--ink); color: var(--bg); border: 0; cursor: pointer; text-decoration: none;
+    box-shadow: var(--shadow);
+  }
+  .btn-solid:hover { background: var(--accent); color: var(--on-accent-fill); }
+  .btn-solid:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---- topbar ---- */
+  .topbar { border-bottom: 2px solid var(--rule-strong); }
+  .topbar-in {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding-top: 14px; padding-bottom: 14px;
+  }
+  .wordmark {
+    font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent); flex-shrink: 0;
+  }
+  .share { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .share-lbl {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--faint); margin-right: 2px;
+  }
+  @media (max-width: 560px) { .share-lbl { display: none; } }
+
+  /* ---- header ---- */
+  header { border-bottom: 2px solid var(--rule-strong); padding: 56px 0 44px; }
+  .hero-eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin: 0 0 18px;
+  }
+  .hero-badge {
+    display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; background: var(--accent-fill); color: var(--on-accent-fill);
+    padding: 4px 10px; margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--sans); font-weight: 900; text-transform: uppercase;
+    font-size: clamp(2rem, 6vw, 3.1rem); line-height: 1.03; letter-spacing: -.02em;
+    margin: 0 0 20px; text-wrap: balance;
+  }
+  .summary { font-size: 1.22rem; line-height: 1.5; max-width: 34ch; margin: 0 0 4px; color: var(--ink); }
+  .legend { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .legend li {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    border: 1px solid var(--rule); padding: 5px 10px; display: flex; gap: 7px; align-items: baseline;
+  }
+  .legend .lm { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--accent); }
+  .legend .x { color: var(--accent); font-weight: 700; }
+  .stats {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--faint); margin: 18px 0 0;
+  }
+
+  section { padding: 52px 0; border-bottom: 2px solid var(--rule); }
+  section:last-of-type { border-bottom: none; }
+  .section-label {
+    display: block; font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px;
+  }
+  h2 {
+    font-family: var(--sans); font-weight: 900; text-transform: uppercase;
+    font-size: 1.7rem; line-height: 1.08; letter-spacing: -.01em; margin: 0 0 20px;
+  }
+  .lead {
+    font-size: 1.05rem; line-height: 1.55; color: var(--muted);
+    margin: 0 0 26px; max-width: 60ch;
+  }
+
+  /* ---- round-nav: sits just above Gallery, inside the swappable round
+     content, so its own round numbers always match what's shown ---- */
+  .round-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 22px 0; margin-bottom: 30px; border-bottom: 2px solid var(--rule-strong);
+  }
+  .round-nav-btn {
+    font-family: var(--mono); font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; background: none; border: 0; cursor: pointer; color: var(--ink);
+    padding: 4px 0;
+  }
+  .round-nav-btn:hover { color: var(--accent); }
+  .round-nav-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .round-nav-label {
+    font-family: var(--mono); font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--accent); white-space: nowrap;
+  }
+  @media (max-width: 560px) {
+    .round-nav { flex-wrap: wrap; justify-content: center; text-align: center; }
+    .round-nav-label { order: -1; flex-basis: 100%; margin-bottom: 6px; }
+  }
+
+  /* ---- gallery ---- */
+  .hero-frame {
+    /* fixed medium-dark grey, not the --surface variable, so it stays dark
+       in both site themes */
+    position: relative; border: 2px solid var(--rule-strong); background: #58584f;
+  }
+  .hero-frame a { display: block; cursor: zoom-in; }
+  .hero-frame img {
+    width: 100%; height: auto; max-height: 78vh; object-fit: contain; display: block;
+  }
+  .hero-open {
+    position: absolute; top: 0; right: 0; z-index: 2; display: block;
+    font-size: 10px; padding: 7px 11px;
+  }
+  .hero-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+    width: 40px; height: 60px; border: 0; cursor: pointer; padding: 0;
+    background: var(--ink); color: var(--accent-fill); font-size: 20px; line-height: 1;
+    opacity: 0; transition: opacity .12s;
+  }
+  .hero-frame:hover .hero-nav { opacity: .9; }
+  .hero-nav:focus-visible { opacity: 1; outline: 2px solid var(--accent-fill); }
+  .hero-nav.prev { left: 0; }
+  .hero-nav.next { right: 0; }
+  .hero-nav[disabled] { display: none; }
+  .gallery-meta {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .02em; text-transform: uppercase;
+    color: var(--faint); margin: 14px 0 0;
+  }
+  .gallery-meta .model { color: var(--ink); font-weight: 700; }
+  .gallery-meta a.model { text-decoration: none; border-bottom: 1px solid var(--accent); }
+  .gallery-meta .chose { color: var(--accent); font-weight: 700; margin-right: .5rem; }
+  .gallery-hint {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--faint); margin: 8px 0 0; display: flex; justify-content: space-between; gap: 14px;
+  }
+  .gallery-hint .pos { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .link-btn { margin: 14px 0 0; }
+
+  .gallery-thumbs { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .thumb {
+    position: relative; flex: 1 1 150px; max-width: 220px;
+    padding: 0; border: 1px solid var(--rule); background: var(--surface); cursor: pointer;
+    display: flex; flex-direction: column; text-align: left;
+    transition: box-shadow .1s, border-color .1s;
+  }
+  .thumb .shot { position: relative; aspect-ratio: 3 / 2; }
+  .thumb .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb:hover { border-color: var(--muted); }
+  .thumb.active { border-color: var(--rule-strong); box-shadow: 0 0 0 2px var(--accent-fill); }
+  .thumb-cap {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--ink); border-top: 1px solid var(--rule);
+    padding: 4px 7px; display: flex; gap: 5px; align-items: baseline;
+  }
+  .thumb-cap .ltr { color: var(--accent); font-size: 11px; }
+  .thumb-cap .ltr::after { content: " \00b7"; color: var(--faint); }
+  .thumb-cap .m { font-weight: 400; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .thumb.active .thumb-cap { background: var(--accent-fill); border-top-color: var(--accent-fill); }
+  .thumb.active .thumb-cap .ltr, .thumb.active .thumb-cap .m { color: var(--on-accent-fill); }
+  .thumb-badge {
+    position: absolute; right: 0; top: 0; width: 18px; height: 18px;
+    background: var(--accent-fill); color: var(--on-accent-fill);
+    font-size: .72rem; display: grid; place-items: center;
+  }
+  .gallery-note { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); margin-top: 16px; }
+  @media (max-width: 640px) {
+    .gallery-thumbs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; }
+    .thumb { flex: 0 0 64%; max-width: none; }
+  }
+
+  /* ---- lightbox (a deliberate single-look full-screen viewer) ---- */
+  .lightbox {
+    position: fixed; inset: 0; z-index: 50; background: rgba(8, 8, 6, .93);
+    display: flex; align-items: center; justify-content: center; padding: 5vmin;
+  }
+  .lightbox[hidden] { display: none; }
+  .lb-figure { margin: 0; max-width: 100%; max-height: 100%; display: flex; flex-direction: column; gap: 12px; }
+  .lb-figure img {
+    max-width: 100%; max-height: 82vh; object-fit: contain; display: block; margin: 0 auto;
+    border: 1px solid rgba(255, 255, 255, .16);
+  }
+  .lb-bar {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+    color: #d8d6ce; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .lb-bar .model { color: #fff; font-weight: 700; }
+  .lb-bar a, .lb-bar a.model { color: var(--accent-fill); border: 0; text-decoration: none; }
+  .lb-right { display: flex; gap: 16px; align-items: baseline; font-variant-numeric: tabular-nums; }
+  .lb-linkbtn {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    background: none; border: 0; color: var(--accent-fill); cursor: pointer; padding: 0;
+  }
+  .lb-close, .lb-nav {
+    position: absolute; background: rgba(255, 255, 255, .12); color: #fff; border: 0; cursor: pointer;
+    font-family: var(--mono); line-height: 1;
+  }
+  .lb-close { top: 3vmin; right: 3vmin; width: 40px; height: 40px; font-size: 22px; }
+  .lb-nav { top: 50%; transform: translateY(-50%); width: 44px; height: 64px; font-size: 22px; }
+  .lb-nav.prev { left: 3vmin; }
+  .lb-nav.next { right: 3vmin; }
+  .lb-nav[disabled] { opacity: .3; cursor: default; }
+  .lb-close:hover, .lb-nav:not([disabled]):hover { background: var(--accent); color: var(--on-accent-fill); }
+  .lb-close:focus-visible, .lb-nav:focus-visible { outline: 2px solid var(--accent-fill); }
+
+  /* ---- run facts (hairline grid) ---- */
+  .facts {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule);
+  }
+  .fact { background: var(--surface); padding: 14px 16px; }
+  .fact-label {
+    display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--faint); margin-bottom: 6px;
+  }
+  .fact p { margin: 0; font-size: 13px; color: var(--muted); font-family: var(--mono); line-height: 1.5; word-break: break-word; }
+  .fact-aside { color: var(--faint); }
+  @media (max-width: 640px) { .facts { grid-template-columns: 1fr; } }
+
+  /* ---- prompt ---- */
+  .prompt-core {
+    margin: 0; background: var(--surface); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent); padding: 20px 24px;
+    font-family: var(--serif); font-style: italic; font-size: 1.05rem; line-height: 1.6;
+    color: var(--ink); white-space: pre-wrap; word-break: break-word;
+  }
+  .prompt-trigger {
+    font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--faint); margin: 14px 0 0;
+  }
+  button.copy { margin-top: 18px; }
+  .how { counter-reset: how; list-style: none; margin: 24px 0 0; padding: 0; }
+  .how li {
+    counter-increment: how; display: flex; gap: 14px; padding: 11px 0;
+    border-top: 1px solid var(--rule); font-size: 15px; color: var(--ink); line-height: 1.5;
+  }
+  .how li:first-child { border-top: none; padding-top: 0; }
+  .how li::before {
+    content: counter(how); flex-shrink: 0; font-family: var(--mono); font-weight: 700;
+    font-size: 12px; color: var(--accent); padding-top: 2px;
+  }
+
+  /* ---- credits ---- */
+  .tool-list { list-style: none; margin: 0; padding: 0; }
+  .tool-list li { padding: 12px 0; border-top: 1px solid var(--rule); }
+  .tool-list li:first-child { border-top: none; padding-top: 0; }
+  .tool-list .tname { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+  .tool-list .tn { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--accent); }
+  .tool-list .trole { display: block; font-size: 14px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .tool-list code, .cta-cmd code {
+    font-family: var(--mono); font-size: 12px; background: var(--surface);
+    border: 1px solid var(--rule); padding: 0 4px;
+  }
+
+  /* ---- coming soon: uses only the shared .lead ---- */
+
+  /* ---- final CTA ---- */
+  .final-cta .col { text-align: center; }
+  .final-cta .lead { margin-left: auto; margin-right: auto; max-width: 46ch; }
+  .cta-cmd { max-width: 660px; margin: 0 auto 24px; }
+  .cta-cmd code { display: block; padding: 11px 14px; overflow-x: auto; text-align: left; }
+  .final-cta .btn { display: inline-block; font-size: 12px; padding: 13px 26px; }
+
+  footer {
+    padding: 30px 0 46px; font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--faint); text-align: center;
+  }
+  footer a { color: var(--faint); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<script>document.documentElement.className += " js";</script>
+</head>
+<body>
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <span class="wordmark">Image Lab</span>
+    <div class="share js-only">
+      <span class="share-lbl">Share</span>
+      <button type="button" class="btn-ghost" id="copy-page" aria-label="Copy link to this page">Copy link</button>
+      <a class="btn-ghost" id="share-x" target="_blank" rel="noopener" aria-label="Share on X">X</a>
+      <a class="btn-ghost" id="share-li" target="_blank" rel="noopener" aria-label="Share on LinkedIn">LinkedIn</a>
+    </div>
+  </div>
+</div>
+<header>
+  <div class="wrap" id="round-head">
+<p class="hero-eyebrow">launch / announcement image</p>
+<p class="hero-badge">AI-generated &middot; not a benchmark</p>
+    <h1>Woolworths Editorial Catalogue</h1>
+    <p class="summary">One brief. Three models. Eight ways to see a Woolworths trolley hero shot with an asymmetric editorial catalogue system.</p>
+    <ul class="legend" aria-label="models in this run"><li><a class="lm" href="https://cogfoundry.ai/en/models/media/360/" target="_blank" rel="noopener">GPT Image 2.5 Sunburst</a><span class="x">×3</span></li><li><a class="lm" href="https://cogfoundry.ai/en/models/media/361/" target="_blank" rel="noopener">GPT Image 2.5 Flare</a><span class="x">×3</span></li><li><a class="lm" href="https://cogfoundry.ai/en/models/media/314/" target="_blank" rel="noopener">GPT Image 2</a><span class="x">×2</span></li></ul>
+    <p class="stats">8 candidates &middot; 3 models &middot; $0.3600 total</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="round-body">
+<nav class="round-nav" aria-label="Switch which round is shown">
+    <button type="button" class="round-nav-btn prev" id="round-prev" data-round-index="1">&#8592; VIEW ROUND 2</button>
+    <span class="round-nav-label">ROUND 3 / 3</span>
+    <button type="button" class="round-nav-btn next" id="round-next" data-round-index="0">VIEW ROUND 1 &#8594;</button>
+  </nav>
+
+  <section class="gallery">
+    <span class="section-label">Gallery</span>
+    <h2>Pick your image</h2>
+    <p class="lead">Compare the 8 alternatives below &mdash; each a candidate, not a step. Select one to inspect it full size.</p>
+    <div class="gallery-main">
+      <div class="hero-frame">
+        <button type="button" class="hero-nav prev js-only" id="hero-prev" aria-label="Previous alternative">&#8592;</button>
+        <button type="button" class="hero-nav next js-only" id="hero-next" aria-label="Next alternative">&#8594;</button>
+        <button type="button" class="hero-open btn-solid js-only" id="hero-open" aria-label="Open full size">&#8599; Open full size</button>
+        <a id="hero-link" href="assets/r3-alternative-01.jpg" target="_blank" rel="noopener"><img id="hero-img" src="assets/r3-alternative-01.jpg" alt="Alternative A"></a>
+      </div>
+      <p class="gallery-meta" id="hero-meta">Alternative A &middot; <a class="model" href="https://cogfoundry.ai/en/models/media/360/" target="_blank" rel="noopener">GPT Image 2.5 Sunburst</a> &middot; 1122×1402 (asked default) &middot; $0.0600 &middot; 58s</p>
+      <p class="gallery-hint">
+        <span>Click image to open full size<span class="js-only"> &middot; &#8592; &#8594; to browse</span></span>
+      <span class="pos" id="hero-pos">1 / 8</span>
+      </p>
+      <button type="button" class="link-btn btn-ghost js-only" id="copy-alt-link">Copy link to alternative A</button>
+    </div>
+    <div class="gallery-thumbs" aria-label="alternatives">
+      <button type="button" class="thumb active" aria-current="true" aria-label="Show alternative A — GPT Image 2.5 Sunburst" data-asset="assets/r3-alternative-01.jpg" data-label="A" data-index="1" data-model="GPT Image 2.5 Sunburst" data-model-url="https://cogfoundry.ai/en/models/media/360/" data-size="1122x1402" data-asked="default" data-cost="$0.0600" data-seconds="58" data-selected=""><span class="shot"><img src="assets/r3-alternative-01.jpg" alt="Alternative A" loading="lazy"></span><span class="thumb-cap"><span class="ltr">A</span><span class="m">GPT Image 2.5 Sunburst</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative B — GPT Image 2.5 Sunburst" data-asset="assets/r3-alternative-02.jpg" data-label="B" data-index="2" data-model="GPT Image 2.5 Sunburst" data-model-url="https://cogfoundry.ai/en/models/media/360/" data-size="1122x1402" data-asked="default" data-cost="$0.0600" data-seconds="62" data-selected=""><span class="shot"><img src="assets/r3-alternative-02.jpg" alt="Alternative B" loading="lazy"></span><span class="thumb-cap"><span class="ltr">B</span><span class="m">GPT Image 2.5 Sunburst</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative C — GPT Image 2.5 Sunburst" data-asset="assets/r3-alternative-03.jpg" data-label="C" data-index="3" data-model="GPT Image 2.5 Sunburst" data-model-url="https://cogfoundry.ai/en/models/media/360/" data-size="1122x1402" data-asked="default" data-cost="$0.0600" data-seconds="56" data-selected=""><span class="shot"><img src="assets/r3-alternative-03.jpg" alt="Alternative C" loading="lazy"></span><span class="thumb-cap"><span class="ltr">C</span><span class="m">GPT Image 2.5 Sunburst</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative D — GPT Image 2.5 Flare" data-asset="assets/r3-alternative-04.jpg" data-label="D" data-index="4" data-model="GPT Image 2.5 Flare" data-model-url="https://cogfoundry.ai/en/models/media/361/" data-size="1122x1402" data-asked="default" data-cost="$0.0600" data-seconds="29" data-selected=""><span class="shot"><img src="assets/r3-alternative-04.jpg" alt="Alternative D" loading="lazy"></span><span class="thumb-cap"><span class="ltr">D</span><span class="m">GPT Image 2.5 Flare</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative E — GPT Image 2.5 Flare" data-asset="assets/r3-alternative-05.jpg" data-label="E" data-index="5" data-model="GPT Image 2.5 Flare" data-model-url="https://cogfoundry.ai/en/models/media/361/" data-size="1122x1402" data-asked="default" data-cost="$0.0600" data-seconds="30" data-selected=""><span class="shot"><img src="assets/r3-alternative-05.jpg" alt="Alternative E" loading="lazy"></span><span class="thumb-cap"><span class="ltr">E</span><span class="m">GPT Image 2.5 Flare</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative F — GPT Image 2.5 Flare" data-asset="assets/r3-alternative-06.jpg" data-label="F" data-index="6" data-model="GPT Image 2.5 Flare" data-model-url="https://cogfoundry.ai/en/models/media/361/" data-size="1122x1402" data-asked="default" data-cost="$0.0600" data-seconds="31" data-selected=""><span class="shot"><img src="assets/r3-alternative-06.jpg" alt="Alternative F" loading="lazy"></span><span class="thumb-cap"><span class="ltr">F</span><span class="m">GPT Image 2.5 Flare</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative G — GPT Image 2" data-asset="assets/r3-alternative-07.jpg" data-label="G" data-index="7" data-model="GPT Image 2" data-model-url="https://cogfoundry.ai/en/models/media/314/" data-size="1024x1536" data-asked="1024x1536" data-cost="$0.0000" data-seconds="55" data-selected=""><span class="shot"><img src="assets/r3-alternative-07.jpg" alt="Alternative G" loading="lazy"></span><span class="thumb-cap"><span class="ltr">G</span><span class="m">GPT Image 2</span></span></button>
+      <button type="button" class="thumb" aria-label="Show alternative H — GPT Image 2" data-asset="assets/r3-alternative-08.jpg" data-label="H" data-index="8" data-model="GPT Image 2" data-model-url="https://cogfoundry.ai/en/models/media/314/" data-size="1024x1536" data-asked="1024x1536" data-cost="$0.0000" data-seconds="56" data-selected=""><span class="shot"><img src="assets/r3-alternative-08.jpg" alt="Alternative H" loading="lazy"></span><span class="thumb-cap"><span class="ltr">H</span><span class="m">GPT Image 2</span></span></button>
+    </div>
+    
+    <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Full size image">
+      <button type="button" class="lb-close" id="lb-close" aria-label="Close (Esc)">&times;</button>
+      <button type="button" class="lb-nav prev" id="lb-prev" aria-label="Previous alternative">&#8592;</button>
+      <button type="button" class="lb-nav next" id="lb-next" aria-label="Next alternative">&#8594;</button>
+      <figure class="lb-figure">
+        <img id="lb-img" src="assets/r3-alternative-01.jpg" alt="">
+        <figcaption class="lb-bar">
+          <span id="lb-meta"></span>
+          <span class="lb-right"><span id="lb-pos"></span><button type="button" class="lb-linkbtn" id="lb-copy-link">Copy link</button><a id="lb-raw" href="assets/r3-alternative-01.jpg" target="_blank" rel="noopener">Open raw &#8599;</a></span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="run-facts">
+    <div class="col">
+    <span class="section-label">Details</span>
+    <h2>The run</h2>
+    <p class="lead">What Image Lab planned, and what it actually cost.</p>
+      <div class="facts"><div class="fact"><span class="fact-label">Intent</span><p>launch / announcement image</p></div><div class="fact"><span class="fact-label">Models</span><p>3 &mdash; GPT Image 2.5 Sunburst, GPT Image 2.5 Flare, GPT Image 2</p></div><div class="fact"><span class="fact-label">Candidates</span><p>8 generated</p></div><div class="fact"><span class="fact-label">Requested size</span><p>default / 1024×1536</p></div><div class="fact"><span class="fact-label">Actual cost</span><p>$0.3600 <span class="fact-aside">(est. ~$0.1254)</span></p></div><div class="fact"><span class="fact-label">Generated</span><p>2026-09-14</p></div></div>
+    </div>
+  </section>
+
+  <section class="prompt">
+    <div class="col">
+    <span class="section-label">Reuse</span>
+    <h2>The prompt</h2>
+    <p class="lead">The exact brief this run used. Copy it, or adapt it.</p>
+      <blockquote class="prompt-core">IMAGE 01 — THE LIFESTYLE
+Editorial Catalogue · 4:5 Vertical
+
+Everything through PHOTOGRAPHIC CHARACTER stays essentially the same as the successful Pure Hero Photography prompt.
+
+CREATIVE CONCEPT
+Create a premium hero photograph for a Woolworths campaign that applies the visual discipline, composition, material sophistication, and photographic quality of a world-class automotive advertising campaign to an authentic Australian supermarket shopping experience.
+The concept is simple:
+Treat the everyday Woolworths shopping trolley like a luxury automobile hero object.
+The result should feel like a genuinely commissioned premium advertising photograph — not a supermarket advertisement, not stock photography, and not an AI-generated fantasy environment.
+The supermarket remains recognizably real and Australian. The photography and art direction are elevated, not the retail environment itself.
+HERO STORY
+A stylish young Australian woman naturally pushes a classic Woolworths shopping trolley through a contemporary Woolworths supermarket.
+A young man walks naturally beside her, slightly behind.
+They are shopping rather than posing.
+Neither looks at the camera.
+Their interaction should feel spontaneous and observed — a believable moment from modern Australian everyday life.
+The trolley is the visual hero.
+It should receive the same compositional importance, physical presence and photographic attention that a premium automobile would receive in a luxury automotive campaign.
+The trolley contains a believable weekly shop:
+
+* fresh Australian fruit and vegetables
+* fresh bread or bakery products
+* premium pantry groceries
+* herbs or a small bunch of flowers
+* a small selection of everyday household products
+
+Every object must have believable scale, weight, material, contact and physical placement inside the trolley.
+ENVIRONMENT
+A real, contemporary Australian Woolworths supermarket.
+The store should feel clean, well-designed and visually considered without becoming a luxury mall or futuristic retail environment.
+Include:
+
+* believable supermarket aisle proportions
+* realistic shelving
+* authentic retail fixtures
+* strong fresh-food presence
+* realistic product density
+* contemporary ceiling architecture
+* subtle Woolworths-green wayfinding and signage
+* polished but believable flooring
+* natural depth extending far into the store
+
+The environment must remain recognizably Woolworths and recognizably Australian.
+Do not beautify the supermarket into an unrealistic luxury environment.
+COMPOSITION
+FORMAT: 4:5 vertical.
+Think like a premium automotive campaign photograph.
+Foreground
+The shopping trolley dominates the lower foreground.
+It should feel substantial, beautifully constructed and unusually important within the frame.
+Shoot it with enough perspective and physical presence to make the viewer instinctively treat it as the hero object.
+Midground
+The woman is the primary human subject, naturally connected to the trolley.
+The man is secondary and slightly behind her.
+Background
+Long retail perspective with shelves, fresh-food displays and a small number of distant shoppers.
+Use strong architectural and aisle lines to create depth and guide the eye toward the subjects.
+Composition should have clear visual hierarchy:
+trolley → woman → companion → retail environment
+CAMERA
+Full-frame commercial photography.
+Approximately 32–35mm full-frame equivalent.
+Low-to-medium camera height.
+Strong natural perspective with no fisheye distortion.
+The camera should feel physically present in the aisle rather than mounted at an unnatural height.
+Moderate depth of field:
+
+* trolley and hero subjects highly resolved
+* surrounding environment clearly recognizable
+* background gradually softer but never artificially blurred
+
+The image must retain the spatial depth of a real photograph.
+LIGHTING
+Premium architectural commercial lighting.
+Combine warm supermarket illumination with subtle cooler ambient light.
+Use controlled highlights across:
+
+* metal trolley
+* polished floor
+* glass
+* packaging
+* architectural surfaces
+
+Woolworths green should produce subtle, physically believable reflections where appropriate.
+Shadows should be natural and dimensional.
+Skin should retain realistic texture.
+Clothing should show believable fabric structure.
+Metal should have physically accurate reflections.
+Floor reflections should be subtle, imperfect and photographic.
+No artificial glow.
+No exaggerated cinematic effects.
+COLOUR
+Contemporary premium editorial colour grading.
+Natural Australian daylight-balanced colour with restrained warmth.
+Fresh produce should provide natural colour variation.
+Woolworths Green is the signature accent, appearing selectively through authentic environmental details such as signage, trolley elements and small architectural or merchandising accents.
+Green must be relatively rare.
+It should function like the signature colour of a premium automotive brand:
+recognizable, restrained and intentional.
+Do not make the entire environment green.
+HUMAN REALISM
+The people must look like real contemporary Australians photographed in an actual supermarket.
+Natural posture.
+Natural walking movement.
+Natural interaction with the trolley.
+Natural facial expressions.
+No influencer posing.
+No model-like exaggerated expressions.
+No direct eye contact with camera.
+No staged advertising smiles.
+Hands, fingers, arms, clothing and body proportions must be anatomically correct.
+The people should feel like participants in a real moment, not actors deliberately posing for an advertisement.
+PHOTOGRAPHIC CHARACTER
+The final image should feel like it was photographed by a world-class commercial photographer for a major Australian brand campaign.
+Reference the discipline and precision of premium automotive advertising photography, combined with contemporary Australian lifestyle editorial photography.
+Prioritize:
+
+* photographic realism
+* precise composition
+* authentic materials
+* controlled perspective
+* natural human behaviour
+* sophisticated colour
+* believable retail architecture
+* subtle visual storytelling
+
+The photograph should feel expensive because of art direction and photographic precision, not because it contains excessive luxury styling.
+
+EDITORIAL CATALOGUE DESIGN SYSTEM
+
+The photograph must now function as a premium retail catalogue cover, not simply a photograph with text placed above it.
+
+Create a sophisticated, asymmetric editorial graphic system inspired by the design discipline of premium automotive catalogues and contemporary high-end retail campaigns.
+
+The graphic system should feel designed into the photograph.
+
+It should not look like text was added afterward.
+
+DESIGN CHARACTER
+
+Think:
+
+premium automotive catalogue × contemporary Australian retail editorial × refined Swiss-inspired grid
+
+Use:
+
+strong asymmetry
+confident typography
+precise alignment
+generous negative space
+thin technical rules
+small catalogue identifiers
+restrained brand elements
+carefully distributed graphic anchors
+
+The design should feel expensive, confident and intentional, not decorative.
+
+PRIMARY HEADLINE
+
+Use:
+
+FRESH. EVERY DAY.
+
+The headline should be bold, confident and editorial, not thin or delicate.
+
+Prefer a stacked 2–3 line treatment, for example:
+
+FRESH.
+EVERY
+DAY.
+
+or an equivalent strong composition.
+
+Use a clean contemporary sans-serif with strong geometric or condensed characteristics.
+
+The headline should be substantially more visually assertive than the supporting text, while still occupying a relatively modest portion of the overall photograph.
+
+Prefer left alignment.
+
+Do not center the headline across the page.
+
+Do not stretch the text horizontally.
+
+Do not use oversized fashion-magazine typography.
+
+CATALOGUE IDENTIFIER
+
+Include:
+
+01 / THE LIFESTYLE
+
+Treat this as an independent catalogue navigation element rather than simply a subtitle.
+
+It may appear near the top edge or aligned with the main typographic grid.
+
+Use small uppercase typography with generous tracking.
+
+It should be clearly visible but subordinate to the headline.
+
+SUPPORTING COPY
+
+Include one short supporting statement:
+
+Fresh food. Quality. Everyday Australian life.
+
+Place it close to the main headline as a compact editorial copy block.
+
+Use substantially smaller typography.
+
+Keep line length short.
+
+Do not create a paragraph.
+
+BRAND / VALUE BLOCK
+
+Introduce a small secondary Woolworths brand-value block in a separate area of the composition.
+
+Possible content:
+
+FRESH FOOD
+QUALITY
+EVERYDAY VALUE
+
+Keep this extremely restrained.
+
+It should function like a small information block in a premium catalogue rather than advertising copy.
+
+Position it independently from the main headline, preferably toward the upper-right or another natural negative-space area.
+
+DISTRIBUTED GRAPHIC SYSTEM
+
+Do not place all typography at the top.
+
+Use the entire 4:5 frame as a structured editorial grid.
+
+Graphic elements may appear in:
+
+upper-left
+upper-center
+upper-right
+lower-left
+lower-right
+
+depending on available negative space.
+
+Use only a few elements.
+
+Possible elements include:
+
+thin horizontal rules
+very thin vertical rules
+small corner brackets
+tiny catalogue numbering
+subtle registration-style marks
+small Woolworths brand symbols
+
+These elements should create visual tension and structure, not decoration.
+
+BRAND SIGNATURE
+
+Include a small, accurate Woolworths brand signature.
+
+Prefer a natural position near the upper-left or upper-right portion of the composition.
+
+The brand signature should be clearly identifiable but never dominate the headline or photograph.
+
+Woolworths Green should remain the primary brand accent.
+
+Do not introduce additional strong colours merely for graphic decoration.
+
+GRAPHIC / PHOTOGRAPH RELATIONSHIP
+
+Typography should interact with the architecture and negative space of the photograph.
+
+Where possible:
+
+align text with architectural lines
+use shelf or ceiling geometry as compositional guides
+allow graphic rules to echo perspective lines
+place text in naturally quieter areas
+never cover important facial features
+never obscure the trolley
+never obscure important products
+
+The graphic system should feel as though the photographer and graphic designer designed the composition together before the photograph was made.
+
+TYPOGRAPHIC HIERARCHY
+
+The hierarchy should be:
+
+1. Hero photograph
+
+2. Trolley + human story
+
+3. Primary headline
+
+4. Woolworths brand
+
+5. Catalogue identifier
+
+6. Supporting/value information
+
+7. Technical graphic details
+
+The photograph must remain dominant.
+
+The typography should make the photograph feel more like a campaign, not compete with it.
+
+IMPORTANT — DESIGN DIRECTION
+
+The result should feel closer to a real premium retail catalogue cover than to a conventional supermarket advertisement.
+
+Avoid:
+
+centered headline
+thin luxury-magazine typography
+large empty banner at the top
+text confined entirely to the top edge
+generic corporate presentation
+excessive copy
+poster-like advertising
+fashion-magazine clichés
+
+Instead use:
+
+bold editorial typography + asymmetric composition + restrained information blocks + distributed graphic anchors.
+
+FINAL DESIGN TEST
+
+At thumbnail size, the image should still immediately read as:
+
+a premium Woolworths campaign photograph.
+
+At larger size, the viewer should discover:
+
+the catalogue system → headline → brand → information details.
+
+The graphic design must reward closer inspection without overwhelming the photograph.
+
+ABSOLUTELY AVOID
+Avoid generic stock-photo supermarket scenes, staged advertising poses, people looking at camera, exaggerated smiles, perfectly symmetrical aisles, unrealistic supermarket architecture, luxury-mall aesthetics, futuristic retail design, excessive green, excessive bokeh, fisheye distortion, extreme wide-angle distortion, artificial glow, excessive lens flare, fake HDR, oversaturation, plastic skin, CGI-looking materials, impossible trolley geometry, floating objects, duplicated products, duplicated people, distorted hands, malformed bodies, warped shelving, nonsensical packaging, fake or distorted branding, and visible generative artifacts.
+Do not make the image look like an AI concept render.
+Do not turn the supermarket into a futuristic or luxury environment.
+Do not make the trolley physically impossible.
+
+FINAL OUTPUT
+4:5 vertical. Photorealistic premium commercial photography combined with a sophisticated asymmetric editorial catalogue system. One coherent photographic world, one hero story, one hero trolley, one unmistakably Woolworths identity, and a confident but restrained graphic language.</blockquote>
+      <p class="prompt-trigger">&rarr; use Image Lab</p>
+      <button class="copy btn-ghost" data-target="copy-src">Copy prompt</button>
+      <ol class="how">
+        <li>Copy the prompt above.</li>
+        <li>Paste it into any agent that has the Image Lab skill &mdash; or install it below.</li>
+        <li>Run it as-is, or swap the subject, style, or details to make it yours.</li>
+      </ol>
+      <span id="copy-src" hidden>IMAGE 01 — THE LIFESTYLE
+Editorial Catalogue · 4:5 Vertical
+
+Everything through PHOTOGRAPHIC CHARACTER stays essentially the same as the successful Pure Hero Photography prompt.
+
+CREATIVE CONCEPT
+Create a premium hero photograph for a Woolworths campaign that applies the visual discipline, composition, material sophistication, and photographic quality of a world-class automotive advertising campaign to an authentic Australian supermarket shopping experience.
+The concept is simple:
+Treat the everyday Woolworths shopping trolley like a luxury automobile hero object.
+The result should feel like a genuinely commissioned premium advertising photograph — not a supermarket advertisement, not stock photography, and not an AI-generated fantasy environment.
+The supermarket remains recognizably real and Australian. The photography and art direction are elevated, not the retail environment itself.
+HERO STORY
+A stylish young Australian woman naturally pushes a classic Woolworths shopping trolley through a contemporary Woolworths supermarket.
+A young man walks naturally beside her, slightly behind.
+They are shopping rather than posing.
+Neither looks at the camera.
+Their interaction should feel spontaneous and observed — a believable moment from modern Australian everyday life.
+The trolley is the visual hero.
+It should receive the same compositional importance, physical presence and photographic attention that a premium automobile would receive in a luxury automotive campaign.
+The trolley contains a believable weekly shop:
+
+* fresh Australian fruit and vegetables
+* fresh bread or bakery products
+* premium pantry groceries
+* herbs or a small bunch of flowers
+* a small selection of everyday household products
+
+Every object must have believable scale, weight, material, contact and physical placement inside the trolley.
+ENVIRONMENT
+A real, contemporary Australian Woolworths supermarket.
+The store should feel clean, well-designed and visually considered without becoming a luxury mall or futuristic retail environment.
+Include:
+
+* believable supermarket aisle proportions
+* realistic shelving
+* authentic retail fixtures
+* strong fresh-food presence
+* realistic product density
+* contemporary ceiling architecture
+* subtle Woolworths-green wayfinding and signage
+* polished but believable flooring
+* natural depth extending far into the store
+
+The environment must remain recognizably Woolworths and recognizably Australian.
+Do not beautify the supermarket into an unrealistic luxury environment.
+COMPOSITION
+FORMAT: 4:5 vertical.
+Think like a premium automotive campaign photograph.
+Foreground
+The shopping trolley dominates the lower foreground.
+It should feel substantial, beautifully constructed and unusually important within the frame.
+Shoot it with enough perspective and physical presence to make the viewer instinctively treat it as the hero object.
+Midground
+The woman is the primary human subject, naturally connected to the trolley.
+The man is secondary and slightly behind her.
+Background
+Long retail perspective with shelves, fresh-food displays and a small number of distant shoppers.
+Use strong architectural and aisle lines to create depth and guide the eye toward the subjects.
+Composition should have clear visual hierarchy:
+trolley → woman → companion → retail environment
+CAMERA
+Full-frame commercial photography.
+Approximately 32–35mm full-frame equivalent.
+Low-to-medium camera height.
+Strong natural perspective with no fisheye distortion.
+The camera should feel physically present in the aisle rather than mounted at an unnatural height.
+Moderate depth of field:
+
+* trolley and hero subjects highly resolved
+* surrounding environment clearly recognizable
+* background gradually softer but never artificially blurred
+
+The image must retain the spatial depth of a real photograph.
+LIGHTING
+Premium architectural commercial lighting.
+Combine warm supermarket illumination with subtle cooler ambient light.
+Use controlled highlights across:
+
+* metal trolley
+* polished floor
+* glass
+* packaging
+* architectural surfaces
+
+Woolworths green should produce subtle, physically believable reflections where appropriate.
+Shadows should be natural and dimensional.
+Skin should retain realistic texture.
+Clothing should show believable fabric structure.
+Metal should have physically accurate reflections.
+Floor reflections should be subtle, imperfect and photographic.
+No artificial glow.
+No exaggerated cinematic effects.
+COLOUR
+Contemporary premium editorial colour grading.
+Natural Australian daylight-balanced colour with restrained warmth.
+Fresh produce should provide natural colour variation.
+Woolworths Green is the signature accent, appearing selectively through authentic environmental details such as signage, trolley elements and small architectural or merchandising accents.
+Green must be relatively rare.
+It should function like the signature colour of a premium automotive brand:
+recognizable, restrained and intentional.
+Do not make the entire environment green.
+HUMAN REALISM
+The people must look like real contemporary Australians photographed in an actual supermarket.
+Natural posture.
+Natural walking movement.
+Natural interaction with the trolley.
+Natural facial expressions.
+No influencer posing.
+No model-like exaggerated expressions.
+No direct eye contact with camera.
+No staged advertising smiles.
+Hands, fingers, arms, clothing and body proportions must be anatomically correct.
+The people should feel like participants in a real moment, not actors deliberately posing for an advertisement.
+PHOTOGRAPHIC CHARACTER
+The final image should feel like it was photographed by a world-class commercial photographer for a major Australian brand campaign.
+Reference the discipline and precision of premium automotive advertising photography, combined with contemporary Australian lifestyle editorial photography.
+Prioritize:
+
+* photographic realism
+* precise composition
+* authentic materials
+* controlled perspective
+* natural human behaviour
+* sophisticated colour
+* believable retail architecture
+* subtle visual storytelling
+
+The photograph should feel expensive because of art direction and photographic precision, not because it contains excessive luxury styling.
+
+EDITORIAL CATALOGUE DESIGN SYSTEM
+
+The photograph must now function as a premium retail catalogue cover, not simply a photograph with text placed above it.
+
+Create a sophisticated, asymmetric editorial graphic system inspired by the design discipline of premium automotive catalogues and contemporary high-end retail campaigns.
+
+The graphic system should feel designed into the photograph.
+
+It should not look like text was added afterward.
+
+DESIGN CHARACTER
+
+Think:
+
+premium automotive catalogue × contemporary Australian retail editorial × refined Swiss-inspired grid
+
+Use:
+
+strong asymmetry
+confident typography
+precise alignment
+generous negative space
+thin technical rules
+small catalogue identifiers
+restrained brand elements
+carefully distributed graphic anchors
+
+The design should feel expensive, confident and intentional, not decorative.
+
+PRIMARY HEADLINE
+
+Use:
+
+FRESH. EVERY DAY.
+
+The headline should be bold, confident and editorial, not thin or delicate.
+
+Prefer a stacked 2–3 line treatment, for example:
+
+FRESH.
+EVERY
+DAY.
+
+or an equivalent strong composition.
+
+Use a clean contemporary sans-serif with strong geometric or condensed characteristics.
+
+The headline should be substantially more visually assertive than the supporting text, while still occupying a relatively modest portion of the overall photograph.
+
+Prefer left alignment.
+
+Do not center the headline across the page.
+
+Do not stretch the text horizontally.
+
+Do not use oversized fashion-magazine typography.
+
+CATALOGUE IDENTIFIER
+
+Include:
+
+01 / THE LIFESTYLE
+
+Treat this as an independent catalogue navigation element rather than simply a subtitle.
+
+It may appear near the top edge or aligned with the main typographic grid.
+
+Use small uppercase typography with generous tracking.
+
+It should be clearly visible but subordinate to the headline.
+
+SUPPORTING COPY
+
+Include one short supporting statement:
+
+Fresh food. Quality. Everyday Australian life.
+
+Place it close to the main headline as a compact editorial copy block.
+
+Use substantially smaller typography.
+
+Keep line length short.
+
+Do not create a paragraph.
+
+BRAND / VALUE BLOCK
+
+Introduce a small secondary Woolworths brand-value block in a separate area of the composition.
+
+Possible content:
+
+FRESH FOOD
+QUALITY
+EVERYDAY VALUE
+
+Keep this extremely restrained.
+
+It should function like a small information block in a premium catalogue rather than advertising copy.
+
+Position it independently from the main headline, preferably toward the upper-right or another natural negative-space area.
+
+DISTRIBUTED GRAPHIC SYSTEM
+
+Do not place all typography at the top.
+
+Use the entire 4:5 frame as a structured editorial grid.
+
+Graphic elements may appear in:
+
+upper-left
+upper-center
+upper-right
+lower-left
+lower-right
+
+depending on available negative space.
+
+Use only a few elements.
+
+Possible elements include:
+
+thin horizontal rules
+very thin vertical rules
+small corner brackets
+tiny catalogue numbering
+subtle registration-style marks
+small Woolworths brand symbols
+
+These elements should create visual tension and structure, not decoration.
+
+BRAND SIGNATURE
+
+Include a small, accurate Woolworths brand signature.
+
+Prefer a natural position near the upper-left or upper-right portion of the composition.
+
+The brand signature should be clearly identifiable but never dominate the headline or photograph.
+
+Woolworths Green should remain the primary brand accent.
+
+Do not introduce additional strong colours merely for graphic decoration.
+
+GRAPHIC / PHOTOGRAPH RELATIONSHIP
+
+Typography should interact with the architecture and negative space of the photograph.
+
+Where possible:
+
+align text with architectural lines
+use shelf or ceiling geometry as compositional guides
+allow graphic rules to echo perspective lines
+place text in naturally quieter areas
+never cover important facial features
+never obscure the trolley
+never obscure important products
+
+The graphic system should feel as though the photographer and graphic designer designed the composition together before the photograph was made.
+
+TYPOGRAPHIC HIERARCHY
+
+The hierarchy should be:
+
+1. Hero photograph
+
+2. Trolley + human story
+
+3. Primary headline
+
+4. Woolworths brand
+
+5. Catalogue identifier
+
+6. Supporting/value information
+
+7. Technical graphic details
+
+The photograph must remain dominant.
+
+The typography should make the photograph feel more like a campaign, not compete with it.
+
+IMPORTANT — DESIGN DIRECTION
+
+The result should feel closer to a real premium retail catalogue cover than to a conventional supermarket advertisement.
+
+Avoid:
+
+centered headline
+thin luxury-magazine typography
+large empty banner at the top
+text confined entirely to the top edge
+generic corporate presentation
+excessive copy
+poster-like advertising
+fashion-magazine clichés
+
+Instead use:
+
+bold editorial typography + asymmetric composition + restrained information blocks + distributed graphic anchors.
+
+FINAL DESIGN TEST
+
+At thumbnail size, the image should still immediately read as:
+
+a premium Woolworths campaign photograph.
+
+At larger size, the viewer should discover:
+
+the catalogue system → headline → brand → information details.
+
+The graphic design must reward closer inspection without overwhelming the photograph.
+
+ABSOLUTELY AVOID
+Avoid generic stock-photo supermarket scenes, staged advertising poses, people looking at camera, exaggerated smiles, perfectly symmetrical aisles, unrealistic supermarket architecture, luxury-mall aesthetics, futuristic retail design, excessive green, excessive bokeh, fisheye distortion, extreme wide-angle distortion, artificial glow, excessive lens flare, fake HDR, oversaturation, plastic skin, CGI-looking materials, impossible trolley geometry, floating objects, duplicated products, duplicated people, distorted hands, malformed bodies, warped shelving, nonsensical packaging, fake or distorted branding, and visible generative artifacts.
+Do not make the image look like an AI concept render.
+Do not turn the supermarket into a futuristic or luxury environment.
+Do not make the trolley physically impossible.
+
+FINAL OUTPUT
+4:5 vertical. Photorealistic premium commercial photography combined with a sophisticated asymmetric editorial catalogue system. One coherent photographic world, one hero story, one hero trolley, one unmistakably Woolworths identity, and a confident but restrained graphic language.
+
+use Image Lab</span>
+    </div>
+  </section>
+
+  <section class="credits">
+    <div class="col">
+    <span class="section-label">Provenance</span>
+    <h2>How this was made</h2>
+    <p class="lead">Image Lab is not a benchmark &mdash; different models and seeds make these an unfair comparison. It turns one brief into strong choices. Everything below did real, billed work in this run.</p>
+      <ul class="tool-list"><li><span class="tname"><a class="tn" href="https://cogfoundry.ai" target="_blank" rel="noopener">CogFoundry model gateway</a></span><span class="trole">Ran every generation in this run through <code>POST /api/v1/tasks/generations</code> and reported the real per-image cost. Run total: $0.3600.</span></li><li><span class="tname"><a class="tn" href="https://cogfoundry.ai/en/models/media/360/" target="_blank" rel="noopener">GPT Image 2.5 Sunburst</a></span><span class="trole">3 alternatives (A, B, C).</span></li><li><span class="tname"><a class="tn" href="https://cogfoundry.ai/en/models/media/361/" target="_blank" rel="noopener">GPT Image 2.5 Flare</a></span><span class="trole">3 alternatives (D, E, F).</span></li><li><span class="tname"><a class="tn" href="https://cogfoundry.ai/en/models/media/314/" target="_blank" rel="noopener">GPT Image 2</a></span><span class="trole">2 alternatives (G, H).</span></li><li><span class="tname"><a class="tn" href="https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/image-lab" target="_blank" rel="noopener">Image Lab</a></span><span class="trole">A loomloom community example &mdash; the skill that classified the brief, chose the model allocation, gated the cost, and rendered this page.</span></li></ul>
+    </div>
+  </section>
+  </div>
+
+  <section class="coming-soon">
+    <div class="col">
+    <span class="section-label">Roadmap</span>
+    <h2>From image exploration to AI work.</h2>
+    <p class="lead">loomloom will bring agentic workflows to Image Lab &mdash; turning a single prompt into an iterative process of generation, evaluation, selection, and refinement.</p>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div class="col">
+    <span class="section-label">Your turn</span>
+    <h2>Bring your own prompt</h2>
+    <p class="lead">Install Image Lab, give it any image prompt, and run cost-gated exploration across the best-fit models.</p>
+      <div class="cta-cmd"><code>npx skills add cogfoundry-labs/loomloom --skill image-lab -a claude-code -g -y</code></div>
+      <a class="btn btn-solid" href="https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/image-lab" target="_blank" rel="noopener">See Image Lab on GitHub</a>
+    </div>
+  </section>
+
+  <footer>
+    Generated with CogFoundry&#x27;s model gateway &middot; <a href="https://cogfoundry.ai" target="_blank" rel="noopener">cogfoundry.ai</a> &middot; 2026-09-14
+  </footer>
+</main>
+<script>
+  function initGallery() {
+    var thumbs = Array.prototype.slice.call(document.querySelectorAll("#round-body .thumb"));
+    var hero = document.getElementById("hero-img");
+    var link = document.getElementById("hero-link");
+    var meta = document.getElementById("hero-meta");
+    var posEl = document.getElementById("hero-pos");
+    if (!hero || !thumbs.length) return;
+    var MUL = "\u00d7";
+    function esc(s) {
+      return String(s).replace(/[&<>"]/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+      });
+    }
+    // rebuildMeta() — keep the shape in sync with _meta_html() in the builder
+    function rebuildMeta(d) {
+      var size = d.size.replace("x", MUL);
+      if (d.asked && d.asked !== d.size) size += " (asked " + d.asked.replace("x", MUL) + ")";
+      var secs = d.seconds ? " \u00b7 " + esc(d.seconds) + "s" : "";
+      var model = d.modelUrl
+        ? '<a class="model" href="' + esc(d.modelUrl) + '" target="_blank" rel="noopener">' + esc(d.model) + "</a>"
+        : '<span class="model">' + esc(d.model) + "</span>";
+      var chose = d.selected ? '<span class="chose">the creator\u2019s pick</span> ' : "";
+      return chose + "Alternative " + esc(d.label) + " \u00b7 " + model
+        + " \u00b7 " + esc(size) + " \u00b7 " + esc(d.cost) + secs;
+    }
+
+    var lb = document.getElementById("lightbox");
+    var lbImg = document.getElementById("lb-img");
+    var lbMeta = document.getElementById("lb-meta");
+    var lbPos = document.getElementById("lb-pos");
+    var lbRaw = document.getElementById("lb-raw");
+    var heroPrev = document.getElementById("hero-prev");
+    var heroNext = document.getElementById("hero-next");
+    var lbPrev = document.getElementById("lb-prev");
+    var lbNext = document.getElementById("lb-next");
+    var altLinkBtn = document.getElementById("copy-alt-link");
+    var lbCopyLink = document.getElementById("lb-copy-link");
+    var cur = 0, lastFocus = null;
+
+    function baseHref() { return location.href.split("#")[0]; }
+    function shareUrl() { return baseHref() + "#" + thumbs[cur].dataset.label; }
+    function flash(btn, msg) {
+      try { if (navigator.clipboard) navigator.clipboard.writeText(msg); } catch (e) {}
+      var o = btn.getAttribute("data-label-text") || btn.textContent;
+      btn.textContent = "Copied"; setTimeout(function () { btn.textContent = o; }, 1400);
+    }
+    function updateNav() {
+      [heroPrev, lbPrev].forEach(function (b) { if (b) b.disabled = cur <= 0; });
+      [heroNext, lbNext].forEach(function (b) { if (b) b.disabled = cur >= thumbs.length - 1; });
+    }
+    function fillLB(d) {
+      if (!lb) return;
+      lbImg.src = d.asset;
+      lbImg.alt = "Alternative " + d.label;
+      lbMeta.innerHTML = rebuildMeta(d);
+      lbPos.textContent = (cur + 1) + " / " + thumbs.length;
+      lbRaw.href = d.asset;
+    }
+    function show(t, keepHash) {
+      var i = thumbs.indexOf(t);
+      if (i < 0) return;
+      cur = i;
+      thumbs.forEach(function (x) {
+        var on = x === t;
+        x.classList.toggle("active", on);
+        if (on) x.setAttribute("aria-current", "true"); else x.removeAttribute("aria-current");
+      });
+      var d = t.dataset;
+      hero.src = d.asset;
+      hero.alt = "Alternative " + d.label;
+      if (link) link.href = d.asset;
+      meta.innerHTML = rebuildMeta(d);
+      if (posEl) posEl.textContent = (i + 1) + " / " + thumbs.length;
+      if (altLinkBtn) {
+        altLinkBtn.textContent = "Copy link to alternative " + d.label;
+        altLinkBtn.setAttribute("data-label-text", altLinkBtn.textContent);
+      }
+      if (lb && !lb.hidden) fillLB(d);
+      updateNav();
+      if (!keepHash) { try { history.replaceState(null, "", "#" + d.label); } catch (e) {} }
+    }
+    function step(dir) {
+      var i = cur + dir;
+      if (i >= 0 && i < thumbs.length) show(thumbs[i]);
+    }
+    function openLB() {
+      if (!lb) return;
+      lastFocus = document.activeElement;
+      fillLB(thumbs[cur].dataset);
+      lb.hidden = false;
+      document.body.style.overflow = "hidden";
+      updateNav();
+      document.getElementById("lb-close").focus();
+    }
+    function closeLB() {
+      if (!lb || lb.hidden) return;
+      lb.hidden = true;
+      document.body.style.overflow = "";
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    thumbs.forEach(function (t) { t.addEventListener("click", function () { show(t); }); });
+    if (heroPrev) heroPrev.addEventListener("click", function () { step(-1); });
+    if (heroNext) heroNext.addEventListener("click", function () { step(1); });
+    var openBtn = document.getElementById("hero-open");
+    if (openBtn) openBtn.addEventListener("click", openLB);
+    if (link) link.addEventListener("click", function (e) {
+      if (lb) { e.preventDefault(); openLB(); }
+    });
+    if (lbPrev) lbPrev.addEventListener("click", function () { step(-1); });
+    if (lbNext) lbNext.addEventListener("click", function () { step(1); });
+    var lbClose = document.getElementById("lb-close");
+    if (lbClose) lbClose.addEventListener("click", closeLB);
+    if (lb) lb.addEventListener("click", function (e) { if (e.target === lb) closeLB(); });
+    if (altLinkBtn) altLinkBtn.addEventListener("click", function () { flash(altLinkBtn, shareUrl()); });
+    if (lbCopyLink) lbCopyLink.addEventListener("click", function () { flash(lbCopyLink, shareUrl()); });
+
+    handleKey = function (e) {
+      if (e.key === "Escape") { closeLB(); return; }
+      if (e.key === "ArrowRight") step(1);
+      else if (e.key === "ArrowLeft") step(-1);
+    };
+
+    function selectFromHash(keepHash) {
+      var w = decodeURIComponent(location.hash.replace(/^#/, "")).toUpperCase();
+      if (!w) return;
+      var t = thumbs.filter(function (x) { return x.dataset.label.toUpperCase() === w; })[0];
+      if (t) show(t, keepHash);
+    }
+    cur = Math.max(0, thumbs.findIndex(function (x) { return x.classList.contains("active"); }));
+    selectFromHash(true);
+    handleHashChange = function () { selectFromHash(true); };
+    updateNav();
+  }
+
+  function initPromptCopy() {
+    document.querySelectorAll("#round-body button.copy").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var el = document.getElementById(b.dataset.target);
+        navigator.clipboard.writeText(el ? el.textContent : "").then(function () {
+          var old = b.textContent; b.textContent = "Copied";
+          setTimeout(function () { b.textContent = old; }, 1400);
+        });
+      });
+    });
+  }
+
+  // handleKey/handleHashChange are reassigned by initGallery() on every round
+  // switch; registered once here (not inside initGallery) so switching rounds
+  // never stacks up duplicate document/window-level listeners.
+  var handleKey = function () {};
+  var handleHashChange = function () {};
+  document.addEventListener("keydown", function (e) { handleKey(e); });
+  window.addEventListener("hashchange", function () { handleHashChange(); });
+
+  (function () {
+    var canon = document.querySelector('link[rel="canonical"]');
+    var pageUrl = canon ? canon.href : location.href.split("#")[0];
+    function meta(p) { var m = document.querySelector('meta[property="' + p + '"], meta[name="' + p + '"]'); return m ? m.content : ""; }
+    var shareText = (meta("og:title") || document.title)
+      + (meta("og:description") ? " \u2014 " + meta("og:description") : "");
+    var x = document.getElementById("share-x");
+    var li = document.getElementById("share-li");
+    if (x) x.href = "https://twitter.com/intent/tweet?text="
+      + encodeURIComponent(shareText) + "&url=" + encodeURIComponent(pageUrl);
+    if (li) li.href = "https://www.linkedin.com/sharing/share-offsite/?url="
+      + encodeURIComponent(pageUrl);
+    var cp = document.getElementById("copy-page");
+    if (cp) cp.addEventListener("click", function () {
+      try { if (navigator.clipboard) navigator.clipboard.writeText(pageUrl); } catch (e) {}
+      var o = cp.textContent; cp.textContent = "Copied";
+      setTimeout(function () { cp.textContent = o; }, 1400);
+    });
+  })();
+
+  var ROUNDS = [{"round": 1, "title": "Woolworths Trolley Hero", "head": "<p class=\"hero-eyebrow\">launch / announcement image</p>\n<p class=\"hero-badge\">AI-generated &middot; not a benchmark</p>\n    <h1>Woolworths Trolley Hero</h1>\n    <p class=\"summary\">One brief. Three models. Eight ways to see a Woolworths trolley, treated like a hero automobile.</p>\n    <ul class=\"legend\" aria-label=\"models in this run\"><li><a class=\"lm\" href=\"https://cogfoundry.ai/en/models/media/360/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Sunburst</a><span class=\"x\">\u00d73</span></li><li><a class=\"lm\" href=\"https://cogfoundry.ai/en/models/media/361/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Flare</a><span class=\"x\">\u00d73</span></li><li><a class=\"lm\" href=\"https://cogfoundry.ai/en/models/media/314/\" target=\"_blank\" rel=\"noopener\">GPT Image 2</a><span class=\"x\">\u00d72</span></li></ul>\n    <p class=\"stats\">8 candidates &middot; 3 models &middot; $0.3384 total</p>", "body": "<nav class=\"round-nav\" aria-label=\"Switch which round is shown\">\n    <button type=\"button\" class=\"round-nav-btn prev\" id=\"round-prev\" data-round-index=\"2\">&#8592; VIEW ROUND 3</button>\n    <span class=\"round-nav-label\">ROUND 1 / 3</span>\n    <button type=\"button\" class=\"round-nav-btn next\" id=\"round-next\" data-round-index=\"1\">VIEW ROUND 2 &#8594;</button>\n  </nav>\n\n  <section class=\"gallery\">\n    <span class=\"section-label\">Gallery</span>\n    <h2>Pick your image</h2>\n    <p class=\"lead\">Compare the 8 alternatives below &mdash; each a candidate, not a step. Select one to inspect it full size.</p>\n    <div class=\"gallery-main\">\n      <div class=\"hero-frame\">\n        <button type=\"button\" class=\"hero-nav prev js-only\" id=\"hero-prev\" aria-label=\"Previous alternative\">&#8592;</button>\n        <button type=\"button\" class=\"hero-nav next js-only\" id=\"hero-next\" aria-label=\"Next alternative\">&#8594;</button>\n        <button type=\"button\" class=\"hero-open btn-solid js-only\" id=\"hero-open\" aria-label=\"Open full size\">&#8599; Open full size</button>\n        <a id=\"hero-link\" href=\"assets/r1-alternative-01.jpg\" target=\"_blank\" rel=\"noopener\"><img id=\"hero-img\" src=\"assets/r1-alternative-01.jpg\" alt=\"Alternative A\"></a>\n      </div>\n      <p class=\"gallery-meta\" id=\"hero-meta\">Alternative A &middot; <a class=\"model\" href=\"https://cogfoundry.ai/en/models/media/360/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Sunburst</a> &middot; 1122\u00d71402 (asked default) &middot; $0.0564 &middot; 71s</p>\n      <p class=\"gallery-hint\">\n        <span>Click image to open full size<span class=\"js-only\"> &middot; &#8592; &#8594; to browse</span></span>\n      <span class=\"pos\" id=\"hero-pos\">1 / 8</span>\n      </p>\n      <button type=\"button\" class=\"link-btn btn-ghost js-only\" id=\"copy-alt-link\">Copy link to alternative A</button>\n    </div>\n    <div class=\"gallery-thumbs\" aria-label=\"alternatives\">\n      <button type=\"button\" class=\"thumb active\" aria-current=\"true\" aria-label=\"Show alternative A \u2014 GPT Image 2.5 Sunburst\" data-asset=\"assets/r1-alternative-01.jpg\" data-label=\"A\" data-index=\"1\" data-model=\"GPT Image 2.5 Sunburst\" data-model-url=\"https://cogfoundry.ai/en/models/media/360/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0564\" data-seconds=\"71\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r1-alternative-01.jpg\" alt=\"Alternative A\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">A</span><span class=\"m\">GPT Image 2.5 Sunburst</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative B \u2014 GPT Image 2.5 Sunburst\" data-asset=\"assets/r1-alternative-02.jpg\" data-label=\"B\" data-index=\"2\" data-model=\"GPT Image 2.5 Sunburst\" data-model-url=\"https://cogfoundry.ai/en/models/media/360/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0564\" data-seconds=\"189\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r1-alternative-02.jpg\" alt=\"Alternative B\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">B</span><span class=\"m\">GPT Image 2.5 Sunburst</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative C \u2014 GPT Image 2.5 Sunburst\" data-asset=\"assets/r1-alternative-03.jpg\" data-label=\"C\" data-index=\"3\" data-model=\"GPT Image 2.5 Sunburst\" data-model-url=\"https://cogfoundry.ai/en/models/media/360/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0564\" data-seconds=\"81\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r1-alternative-03.jpg\" alt=\"Alternative C\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">C</span><span class=\"m\">GPT Image 2.5 Sunburst</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative D \u2014 GPT Image 2.5 Flare\" data-asset=\"assets/r1-alternative-04.jpg\" data-label=\"D\" data-index=\"4\" data-model=\"GPT Image 2.5 Flare\" data-model-url=\"https://cogfoundry.ai/en/models/media/361/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0564\" data-seconds=\"378\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r1-alternative-04.jpg\" alt=\"Alternative D\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">D</span><span class=\"m\">GPT Image 2.5 Flare</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative E \u2014 GPT Image 2.5 Flare\" data-asset=\"assets/r1-alternative-05.jpg\" data-label=\"E\" data-index=\"5\" data-model=\"GPT Image 2.5 Flare\" data-model-url=\"https://cogfoundry.ai/en/models/media/361/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0564\" data-seconds=\"379\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r1-alternative-05.jpg\" alt=\"Alternative E\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">E</span><span class=\"m\">GPT Image 2.5 Flare</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative F \u2014 GPT Image 2.5 Flare\" data-asset=\"assets/r1-alternative-06.jpg\" data-label=\"F\" data-index=\"6\" data-model=\"GPT Image 2.5 Flare\" data-model-url=\"https://cogfoundry.ai/en/models/media/361/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0564\" data-seconds=\"183\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r1-alternative-06.jpg\" alt=\"Alternative F\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">F</span><span class=\"m\">GPT Image 2.5 Flare</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative G \u2014 GPT Image 2\" data-asset=\"assets/r1-alternative-07.jpg\" data-label=\"G\" data-index=\"7\" data-model=\"GPT Image 2\" data-model-url=\"https://cogfoundry.ai/en/models/media/314/\" data-size=\"1024x1536\" data-asked=\"1024x1536\" data-cost=\"$0.0000\" data-seconds=\"51\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r1-alternative-07.jpg\" alt=\"Alternative G\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">G</span><span class=\"m\">GPT Image 2</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative H \u2014 GPT Image 2\" data-asset=\"assets/r1-alternative-08.jpg\" data-label=\"H\" data-index=\"8\" data-model=\"GPT Image 2\" data-model-url=\"https://cogfoundry.ai/en/models/media/314/\" data-size=\"1024x1536\" data-asked=\"1024x1536\" data-cost=\"$0.0000\" data-seconds=\"56\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r1-alternative-08.jpg\" alt=\"Alternative H\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">H</span><span class=\"m\">GPT Image 2</span></span></button>\n    </div>\n    \n    <div class=\"lightbox\" id=\"lightbox\" hidden role=\"dialog\" aria-modal=\"true\" aria-label=\"Full size image\">\n      <button type=\"button\" class=\"lb-close\" id=\"lb-close\" aria-label=\"Close (Esc)\">&times;</button>\n      <button type=\"button\" class=\"lb-nav prev\" id=\"lb-prev\" aria-label=\"Previous alternative\">&#8592;</button>\n      <button type=\"button\" class=\"lb-nav next\" id=\"lb-next\" aria-label=\"Next alternative\">&#8594;</button>\n      <figure class=\"lb-figure\">\n        <img id=\"lb-img\" src=\"assets/r1-alternative-01.jpg\" alt=\"\">\n        <figcaption class=\"lb-bar\">\n          <span id=\"lb-meta\"></span>\n          <span class=\"lb-right\"><span id=\"lb-pos\"></span><button type=\"button\" class=\"lb-linkbtn\" id=\"lb-copy-link\">Copy link</button><a id=\"lb-raw\" href=\"assets/r1-alternative-01.jpg\" target=\"_blank\" rel=\"noopener\">Open raw &#8599;</a></span>\n        </figcaption>\n      </figure>\n    </div>\n  </section>\n\n  <section class=\"run-facts\">\n    <div class=\"col\">\n    <span class=\"section-label\">Details</span>\n    <h2>The run</h2>\n    <p class=\"lead\">What Image Lab planned, and what it actually cost.</p>\n      <div class=\"facts\"><div class=\"fact\"><span class=\"fact-label\">Intent</span><p>launch / announcement image</p></div><div class=\"fact\"><span class=\"fact-label\">Models</span><p>3 &mdash; GPT Image 2.5 Sunburst, GPT Image 2.5 Flare, GPT Image 2</p></div><div class=\"fact\"><span class=\"fact-label\">Candidates</span><p>8 generated</p></div><div class=\"fact\"><span class=\"fact-label\">Requested size</span><p>default / 1024\u00d71536</p></div><div class=\"fact\"><span class=\"fact-label\">Actual cost</span><p>$0.3384 <span class=\"fact-aside\">(est. ~$0.1254)</span></p></div><div class=\"fact\"><span class=\"fact-label\">Generated</span><p>2026-09-14</p></div></div>\n    </div>\n  </section>\n\n  <section class=\"prompt\">\n    <div class=\"col\">\n    <span class=\"section-label\">Reuse</span>\n    <h2>The prompt</h2>\n    <p class=\"lead\">The exact brief this run used. Copy it, or adapt it.</p>\n      <blockquote class=\"prompt-core\">IMAGE 01 \u2014 THE LIFESTYLE\nPure Hero Photography \u00b7 4:5 Vertical\nCREATIVE CONCEPT\nCreate a premium hero photograph for a Woolworths campaign that applies the visual discipline, composition, material sophistication, and photographic quality of a world-class automotive advertising campaign to an authentic Australian supermarket shopping experience.\nThe concept is simple:\nTreat the everyday Woolworths shopping trolley like a luxury automobile hero object.\nThe result should feel like a genuinely commissioned premium advertising photograph \u2014 not a supermarket advertisement, not stock photography, and not an AI-generated fantasy environment.\nThe supermarket remains recognizably real and Australian. The photography and art direction are elevated, not the retail environment itself.\nHERO STORY\nA stylish young Australian woman naturally pushes a classic Woolworths shopping trolley through a contemporary Woolworths supermarket.\nA young man walks naturally beside her, slightly behind.\nThey are shopping rather than posing.\nNeither looks at the camera.\nTheir interaction should feel spontaneous and observed \u2014 a believable moment from modern Australian everyday life.\nThe trolley is the visual hero.\nIt should receive the same compositional importance, physical presence and photographic attention that a premium automobile would receive in a luxury automotive campaign.\nThe trolley contains a believable weekly shop:\n\n* fresh Australian fruit and vegetables\n* fresh bread or bakery products\n* premium pantry groceries\n* herbs or a small bunch of flowers\n* a small selection of everyday household products\n\nEvery object must have believable scale, weight, material, contact and physical placement inside the trolley.\nENVIRONMENT\nA real, contemporary Australian Woolworths supermarket.\nThe store should feel clean, well-designed and visually considered without becoming a luxury mall or futuristic retail environment.\nInclude:\n\n* believable supermarket aisle proportions\n* realistic shelving\n* authentic retail fixtures\n* strong fresh-food presence\n* realistic product density\n* contemporary ceiling architecture\n* subtle Woolworths-green wayfinding and signage\n* polished but believable flooring\n* natural depth extending far into the store\n\nThe environment must remain recognizably Woolworths and recognizably Australian.\nDo not beautify the supermarket into an unrealistic luxury environment.\nCOMPOSITION\nFORMAT: 4:5 vertical.\nThink like a premium automotive campaign photograph.\nForeground\nThe shopping trolley dominates the lower foreground.\nIt should feel substantial, beautifully constructed and unusually important within the frame.\nShoot it with enough perspective and physical presence to make the viewer instinctively treat it as the hero object.\nMidground\nThe woman is the primary human subject, naturally connected to the trolley.\nThe man is secondary and slightly behind her.\nBackground\nLong retail perspective with shelves, fresh-food displays and a small number of distant shoppers.\nUse strong architectural and aisle lines to create depth and guide the eye toward the subjects.\nComposition should have clear visual hierarchy:\ntrolley \u2192 woman \u2192 companion \u2192 retail environment\nLeave some clean visual breathing room toward the upper portion of the frame.\nCAMERA\nFull-frame commercial photography.\nApproximately 32\u201335mm full-frame equivalent.\nLow-to-medium camera height.\nStrong natural perspective with no fisheye distortion.\nThe camera should feel physically present in the aisle rather than mounted at an unnatural height.\nModerate depth of field:\n\n* trolley and hero subjects highly resolved\n* surrounding environment clearly recognizable\n* background gradually softer but never artificially blurred\n\nThe image must retain the spatial depth of a real photograph.\nLIGHTING\nPremium architectural commercial lighting.\nCombine warm supermarket illumination with subtle cooler ambient light.\nUse controlled highlights across:\n\n* metal trolley\n* polished floor\n* glass\n* packaging\n* architectural surfaces\n\nWoolworths green should produce subtle, physically believable reflections where appropriate.\nShadows should be natural and dimensional.\nSkin should retain realistic texture.\nClothing should show believable fabric structure.\nMetal should have physically accurate reflections.\nFloor reflections should be subtle, imperfect and photographic.\nNo artificial glow.\nNo exaggerated cinematic effects.\nCOLOUR\nContemporary premium editorial colour grading.\nNatural Australian daylight-balanced colour with restrained warmth.\nFresh produce should provide natural colour variation.\nWoolworths Green is the signature accent, appearing selectively through authentic environmental details such as signage, trolley elements and small architectural or merchandising accents.\nGreen must be relatively rare.\nIt should function like the signature colour of a premium automotive brand:\nrecognizable, restrained and intentional.\nDo not make the entire environment green.\nBRAND INTEGRATION\nThe image should unmistakably feel like Woolworths without becoming a logo advertisement.\nUse authentic Woolworths branding only where it naturally belongs within the environment.\nA small, subtle Woolworths brand signature may appear in an appropriate unobtrusive location.\nIf a Woolworths logo is visible, preserve its recognizable proportions and appearance.\nBranding is secondary to the photograph.\nDo not cover the image with logos, slogans or promotional messaging.\nHUMAN REALISM\nThe people must look like real contemporary Australians photographed in an actual supermarket.\nNatural posture.\nNatural walking movement.\nNatural interaction with the trolley.\nNatural facial expressions.\nNo influencer posing.\nNo model-like exaggerated expressions.\nNo direct eye contact with camera.\nNo staged advertising smiles.\nHands, fingers, arms, clothing and body proportions must be anatomically correct.\nThe people should feel like participants in a real moment, not actors deliberately posing for an advertisement.\nPHOTOGRAPHIC CHARACTER\nThe final image should feel like it was photographed by a world-class commercial photographer for a major Australian brand campaign.\nReference the discipline and precision of premium automotive advertising photography, combined with contemporary Australian lifestyle editorial photography.\nPrioritize:\n\n* photographic realism\n* precise composition\n* authentic materials\n* controlled perspective\n* natural human behaviour\n* sophisticated colour\n* believable retail architecture\n* subtle visual storytelling\n\nThe photograph should feel expensive because of art direction and photographic precision, not because it contains excessive luxury styling.\nABSOLUTELY AVOID\nAvoid generic stock-photo supermarket scenes, staged advertising poses, people looking at camera, exaggerated smiles, perfectly symmetrical aisles, unrealistic supermarket architecture, luxury-mall aesthetics, futuristic retail design, excessive green, excessive bokeh, fisheye distortion, extreme wide-angle distortion, artificial glow, excessive lens flare, fake HDR, oversaturation, plastic skin, CGI-looking materials, impossible trolley geometry, floating objects, duplicated products, duplicated people, distorted hands, malformed bodies, warped shelving, nonsensical packaging, fake or distorted branding, and visible generative artifacts.\nDo not make the image look like an AI concept render.\nDo not turn the supermarket into a futuristic or luxury environment.\nDo not make the trolley physically impossible.\nDo not make the image resemble a conventional supermarket advertisement.\nPRIORITY HIERARCHY\nWhen instructions compete, prioritize them in this order:\n1. Photographic realism\n2. Hero composition \u2014 trolley + woman\n3. Natural human behaviour\n4. Premium automotive-level art direction\n5. Authentic Australian Woolworths environment\n6. Sophisticated lighting and materials\n7. Restrained Woolworths brand integration\nThe photograph itself is the hero.\nNo headline.\nNo large typography.\nNo editorial layout.\nNo multi-panel treatment.\nNo promotional copy.\nNo graphic design overlay.\nOnly a small, subtle Woolworths brand signature and minimal catalogue identification if naturally appropriate.\nFINAL OUTPUT\n4:5 vertical\nUltra-high-resolution photorealistic commercial photography.\nOne coherent photographic world.\nOne hero story.\nOne hero trolley.\nOne unmistakably Woolworths environment.\nThe final result should be believable as a real premium Woolworths campaign photograph photographed in Australia.</blockquote>\n      <p class=\"prompt-trigger\">&rarr; use Image Lab</p>\n      <button class=\"copy btn-ghost\" data-target=\"copy-src\">Copy prompt</button>\n      <ol class=\"how\">\n        <li>Copy the prompt above.</li>\n        <li>Paste it into any agent that has the Image Lab skill &mdash; or install it below.</li>\n        <li>Run it as-is, or swap the subject, style, or details to make it yours.</li>\n      </ol>\n      <span id=\"copy-src\" hidden>IMAGE 01 \u2014 THE LIFESTYLE\nPure Hero Photography \u00b7 4:5 Vertical\nCREATIVE CONCEPT\nCreate a premium hero photograph for a Woolworths campaign that applies the visual discipline, composition, material sophistication, and photographic quality of a world-class automotive advertising campaign to an authentic Australian supermarket shopping experience.\nThe concept is simple:\nTreat the everyday Woolworths shopping trolley like a luxury automobile hero object.\nThe result should feel like a genuinely commissioned premium advertising photograph \u2014 not a supermarket advertisement, not stock photography, and not an AI-generated fantasy environment.\nThe supermarket remains recognizably real and Australian. The photography and art direction are elevated, not the retail environment itself.\nHERO STORY\nA stylish young Australian woman naturally pushes a classic Woolworths shopping trolley through a contemporary Woolworths supermarket.\nA young man walks naturally beside her, slightly behind.\nThey are shopping rather than posing.\nNeither looks at the camera.\nTheir interaction should feel spontaneous and observed \u2014 a believable moment from modern Australian everyday life.\nThe trolley is the visual hero.\nIt should receive the same compositional importance, physical presence and photographic attention that a premium automobile would receive in a luxury automotive campaign.\nThe trolley contains a believable weekly shop:\n\n* fresh Australian fruit and vegetables\n* fresh bread or bakery products\n* premium pantry groceries\n* herbs or a small bunch of flowers\n* a small selection of everyday household products\n\nEvery object must have believable scale, weight, material, contact and physical placement inside the trolley.\nENVIRONMENT\nA real, contemporary Australian Woolworths supermarket.\nThe store should feel clean, well-designed and visually considered without becoming a luxury mall or futuristic retail environment.\nInclude:\n\n* believable supermarket aisle proportions\n* realistic shelving\n* authentic retail fixtures\n* strong fresh-food presence\n* realistic product density\n* contemporary ceiling architecture\n* subtle Woolworths-green wayfinding and signage\n* polished but believable flooring\n* natural depth extending far into the store\n\nThe environment must remain recognizably Woolworths and recognizably Australian.\nDo not beautify the supermarket into an unrealistic luxury environment.\nCOMPOSITION\nFORMAT: 4:5 vertical.\nThink like a premium automotive campaign photograph.\nForeground\nThe shopping trolley dominates the lower foreground.\nIt should feel substantial, beautifully constructed and unusually important within the frame.\nShoot it with enough perspective and physical presence to make the viewer instinctively treat it as the hero object.\nMidground\nThe woman is the primary human subject, naturally connected to the trolley.\nThe man is secondary and slightly behind her.\nBackground\nLong retail perspective with shelves, fresh-food displays and a small number of distant shoppers.\nUse strong architectural and aisle lines to create depth and guide the eye toward the subjects.\nComposition should have clear visual hierarchy:\ntrolley \u2192 woman \u2192 companion \u2192 retail environment\nLeave some clean visual breathing room toward the upper portion of the frame.\nCAMERA\nFull-frame commercial photography.\nApproximately 32\u201335mm full-frame equivalent.\nLow-to-medium camera height.\nStrong natural perspective with no fisheye distortion.\nThe camera should feel physically present in the aisle rather than mounted at an unnatural height.\nModerate depth of field:\n\n* trolley and hero subjects highly resolved\n* surrounding environment clearly recognizable\n* background gradually softer but never artificially blurred\n\nThe image must retain the spatial depth of a real photograph.\nLIGHTING\nPremium architectural commercial lighting.\nCombine warm supermarket illumination with subtle cooler ambient light.\nUse controlled highlights across:\n\n* metal trolley\n* polished floor\n* glass\n* packaging\n* architectural surfaces\n\nWoolworths green should produce subtle, physically believable reflections where appropriate.\nShadows should be natural and dimensional.\nSkin should retain realistic texture.\nClothing should show believable fabric structure.\nMetal should have physically accurate reflections.\nFloor reflections should be subtle, imperfect and photographic.\nNo artificial glow.\nNo exaggerated cinematic effects.\nCOLOUR\nContemporary premium editorial colour grading.\nNatural Australian daylight-balanced colour with restrained warmth.\nFresh produce should provide natural colour variation.\nWoolworths Green is the signature accent, appearing selectively through authentic environmental details such as signage, trolley elements and small architectural or merchandising accents.\nGreen must be relatively rare.\nIt should function like the signature colour of a premium automotive brand:\nrecognizable, restrained and intentional.\nDo not make the entire environment green.\nBRAND INTEGRATION\nThe image should unmistakably feel like Woolworths without becoming a logo advertisement.\nUse authentic Woolworths branding only where it naturally belongs within the environment.\nA small, subtle Woolworths brand signature may appear in an appropriate unobtrusive location.\nIf a Woolworths logo is visible, preserve its recognizable proportions and appearance.\nBranding is secondary to the photograph.\nDo not cover the image with logos, slogans or promotional messaging.\nHUMAN REALISM\nThe people must look like real contemporary Australians photographed in an actual supermarket.\nNatural posture.\nNatural walking movement.\nNatural interaction with the trolley.\nNatural facial expressions.\nNo influencer posing.\nNo model-like exaggerated expressions.\nNo direct eye contact with camera.\nNo staged advertising smiles.\nHands, fingers, arms, clothing and body proportions must be anatomically correct.\nThe people should feel like participants in a real moment, not actors deliberately posing for an advertisement.\nPHOTOGRAPHIC CHARACTER\nThe final image should feel like it was photographed by a world-class commercial photographer for a major Australian brand campaign.\nReference the discipline and precision of premium automotive advertising photography, combined with contemporary Australian lifestyle editorial photography.\nPrioritize:\n\n* photographic realism\n* precise composition\n* authentic materials\n* controlled perspective\n* natural human behaviour\n* sophisticated colour\n* believable retail architecture\n* subtle visual storytelling\n\nThe photograph should feel expensive because of art direction and photographic precision, not because it contains excessive luxury styling.\nABSOLUTELY AVOID\nAvoid generic stock-photo supermarket scenes, staged advertising poses, people looking at camera, exaggerated smiles, perfectly symmetrical aisles, unrealistic supermarket architecture, luxury-mall aesthetics, futuristic retail design, excessive green, excessive bokeh, fisheye distortion, extreme wide-angle distortion, artificial glow, excessive lens flare, fake HDR, oversaturation, plastic skin, CGI-looking materials, impossible trolley geometry, floating objects, duplicated products, duplicated people, distorted hands, malformed bodies, warped shelving, nonsensical packaging, fake or distorted branding, and visible generative artifacts.\nDo not make the image look like an AI concept render.\nDo not turn the supermarket into a futuristic or luxury environment.\nDo not make the trolley physically impossible.\nDo not make the image resemble a conventional supermarket advertisement.\nPRIORITY HIERARCHY\nWhen instructions compete, prioritize them in this order:\n1. Photographic realism\n2. Hero composition \u2014 trolley + woman\n3. Natural human behaviour\n4. Premium automotive-level art direction\n5. Authentic Australian Woolworths environment\n6. Sophisticated lighting and materials\n7. Restrained Woolworths brand integration\nThe photograph itself is the hero.\nNo headline.\nNo large typography.\nNo editorial layout.\nNo multi-panel treatment.\nNo promotional copy.\nNo graphic design overlay.\nOnly a small, subtle Woolworths brand signature and minimal catalogue identification if naturally appropriate.\nFINAL OUTPUT\n4:5 vertical\nUltra-high-resolution photorealistic commercial photography.\nOne coherent photographic world.\nOne hero story.\nOne hero trolley.\nOne unmistakably Woolworths environment.\nThe final result should be believable as a real premium Woolworths campaign photograph photographed in Australia.\n\nuse Image Lab</span>\n    </div>\n  </section>\n\n  <section class=\"credits\">\n    <div class=\"col\">\n    <span class=\"section-label\">Provenance</span>\n    <h2>How this was made</h2>\n    <p class=\"lead\">Image Lab is not a benchmark &mdash; different models and seeds make these an unfair comparison. It turns one brief into strong choices. Everything below did real, billed work in this run.</p>\n      <ul class=\"tool-list\"><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai\" target=\"_blank\" rel=\"noopener\">CogFoundry model gateway</a></span><span class=\"trole\">Ran every generation in this run through <code>POST /api/v1/tasks/generations</code> and reported the real per-image cost. Run total: $0.3384.</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai/en/models/media/360/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Sunburst</a></span><span class=\"trole\">3 alternatives (A, B, C).</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai/en/models/media/361/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Flare</a></span><span class=\"trole\">3 alternatives (D, E, F).</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai/en/models/media/314/\" target=\"_blank\" rel=\"noopener\">GPT Image 2</a></span><span class=\"trole\">2 alternatives (G, H).</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/image-lab\" target=\"_blank\" rel=\"noopener\">Image Lab</a></span><span class=\"trole\">A loomloom community example &mdash; the skill that classified the brief, chose the model allocation, gated the cost, and rendered this page.</span></li></ul>\n    </div>\n  </section>"}, {"round": 2, "title": "Woolworths Catalogue Hero", "head": "<p class=\"hero-eyebrow\">launch / announcement image</p>\n<p class=\"hero-badge\">AI-generated &middot; not a benchmark</p>\n    <h1>Woolworths Catalogue Hero</h1>\n    <p class=\"summary\">One brief. Three models. Eight ways to see a Woolworths trolley hero shot with catalogue typography.</p>\n    <ul class=\"legend\" aria-label=\"models in this run\"><li><a class=\"lm\" href=\"https://cogfoundry.ai/en/models/media/360/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Sunburst</a><span class=\"x\">\u00d73</span></li><li><a class=\"lm\" href=\"https://cogfoundry.ai/en/models/media/361/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Flare</a><span class=\"x\">\u00d73</span></li><li><a class=\"lm\" href=\"https://cogfoundry.ai/en/models/media/314/\" target=\"_blank\" rel=\"noopener\">GPT Image 2</a><span class=\"x\">\u00d72</span></li></ul>\n    <p class=\"stats\">8 candidates &middot; 3 models &middot; $0.3570 total</p>", "body": "<nav class=\"round-nav\" aria-label=\"Switch which round is shown\">\n    <button type=\"button\" class=\"round-nav-btn prev\" id=\"round-prev\" data-round-index=\"0\">&#8592; VIEW ROUND 1</button>\n    <span class=\"round-nav-label\">ROUND 2 / 3</span>\n    <button type=\"button\" class=\"round-nav-btn next\" id=\"round-next\" data-round-index=\"2\">VIEW ROUND 3 &#8594;</button>\n  </nav>\n\n  <section class=\"gallery\">\n    <span class=\"section-label\">Gallery</span>\n    <h2>Pick your image</h2>\n    <p class=\"lead\">Compare the 8 alternatives below &mdash; each a candidate, not a step. Select one to inspect it full size.</p>\n    <div class=\"gallery-main\">\n      <div class=\"hero-frame\">\n        <button type=\"button\" class=\"hero-nav prev js-only\" id=\"hero-prev\" aria-label=\"Previous alternative\">&#8592;</button>\n        <button type=\"button\" class=\"hero-nav next js-only\" id=\"hero-next\" aria-label=\"Next alternative\">&#8594;</button>\n        <button type=\"button\" class=\"hero-open btn-solid js-only\" id=\"hero-open\" aria-label=\"Open full size\">&#8599; Open full size</button>\n        <a id=\"hero-link\" href=\"assets/r2-alternative-01.jpg\" target=\"_blank\" rel=\"noopener\"><img id=\"hero-img\" src=\"assets/r2-alternative-01.jpg\" alt=\"Alternative A\"></a>\n      </div>\n      <p class=\"gallery-meta\" id=\"hero-meta\">Alternative A &middot; <a class=\"model\" href=\"https://cogfoundry.ai/en/models/media/360/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Sunburst</a> &middot; 1122\u00d71402 (asked default) &middot; $0.0595 &middot; 192s</p>\n      <p class=\"gallery-hint\">\n        <span>Click image to open full size<span class=\"js-only\"> &middot; &#8592; &#8594; to browse</span></span>\n      <span class=\"pos\" id=\"hero-pos\">1 / 8</span>\n      </p>\n      <button type=\"button\" class=\"link-btn btn-ghost js-only\" id=\"copy-alt-link\">Copy link to alternative A</button>\n    </div>\n    <div class=\"gallery-thumbs\" aria-label=\"alternatives\">\n      <button type=\"button\" class=\"thumb active\" aria-current=\"true\" aria-label=\"Show alternative A \u2014 GPT Image 2.5 Sunburst\" data-asset=\"assets/r2-alternative-01.jpg\" data-label=\"A\" data-index=\"1\" data-model=\"GPT Image 2.5 Sunburst\" data-model-url=\"https://cogfoundry.ai/en/models/media/360/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0595\" data-seconds=\"192\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r2-alternative-01.jpg\" alt=\"Alternative A\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">A</span><span class=\"m\">GPT Image 2.5 Sunburst</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative B \u2014 GPT Image 2.5 Sunburst\" data-asset=\"assets/r2-alternative-02.jpg\" data-label=\"B\" data-index=\"2\" data-model=\"GPT Image 2.5 Sunburst\" data-model-url=\"https://cogfoundry.ai/en/models/media/360/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0595\" data-seconds=\"233\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r2-alternative-02.jpg\" alt=\"Alternative B\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">B</span><span class=\"m\">GPT Image 2.5 Sunburst</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative C \u2014 GPT Image 2.5 Sunburst\" data-asset=\"assets/r2-alternative-03.jpg\" data-label=\"C\" data-index=\"3\" data-model=\"GPT Image 2.5 Sunburst\" data-model-url=\"https://cogfoundry.ai/en/models/media/360/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0595\" data-seconds=\"56\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r2-alternative-03.jpg\" alt=\"Alternative C\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">C</span><span class=\"m\">GPT Image 2.5 Sunburst</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative D \u2014 GPT Image 2.5 Flare\" data-asset=\"assets/r2-alternative-04.jpg\" data-label=\"D\" data-index=\"4\" data-model=\"GPT Image 2.5 Flare\" data-model-url=\"https://cogfoundry.ai/en/models/media/361/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0595\" data-seconds=\"56\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r2-alternative-04.jpg\" alt=\"Alternative D\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">D</span><span class=\"m\">GPT Image 2.5 Flare</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative E \u2014 GPT Image 2.5 Flare\" data-asset=\"assets/r2-alternative-05.jpg\" data-label=\"E\" data-index=\"5\" data-model=\"GPT Image 2.5 Flare\" data-model-url=\"https://cogfoundry.ai/en/models/media/361/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0595\" data-seconds=\"55\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r2-alternative-05.jpg\" alt=\"Alternative E\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">E</span><span class=\"m\">GPT Image 2.5 Flare</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative F \u2014 GPT Image 2.5 Flare\" data-asset=\"assets/r2-alternative-06.jpg\" data-label=\"F\" data-index=\"6\" data-model=\"GPT Image 2.5 Flare\" data-model-url=\"https://cogfoundry.ai/en/models/media/361/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0595\" data-seconds=\"51\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r2-alternative-06.jpg\" alt=\"Alternative F\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">F</span><span class=\"m\">GPT Image 2.5 Flare</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative G \u2014 GPT Image 2\" data-asset=\"assets/r2-alternative-07.jpg\" data-label=\"G\" data-index=\"7\" data-model=\"GPT Image 2\" data-model-url=\"https://cogfoundry.ai/en/models/media/314/\" data-size=\"1024x1536\" data-asked=\"1024x1536\" data-cost=\"$0.0000\" data-seconds=\"55\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r2-alternative-07.jpg\" alt=\"Alternative G\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">G</span><span class=\"m\">GPT Image 2</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative H \u2014 GPT Image 2\" data-asset=\"assets/r2-alternative-08.jpg\" data-label=\"H\" data-index=\"8\" data-model=\"GPT Image 2\" data-model-url=\"https://cogfoundry.ai/en/models/media/314/\" data-size=\"1024x1536\" data-asked=\"1024x1536\" data-cost=\"$0.0000\" data-seconds=\"56\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r2-alternative-08.jpg\" alt=\"Alternative H\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">H</span><span class=\"m\">GPT Image 2</span></span></button>\n    </div>\n    \n    <div class=\"lightbox\" id=\"lightbox\" hidden role=\"dialog\" aria-modal=\"true\" aria-label=\"Full size image\">\n      <button type=\"button\" class=\"lb-close\" id=\"lb-close\" aria-label=\"Close (Esc)\">&times;</button>\n      <button type=\"button\" class=\"lb-nav prev\" id=\"lb-prev\" aria-label=\"Previous alternative\">&#8592;</button>\n      <button type=\"button\" class=\"lb-nav next\" id=\"lb-next\" aria-label=\"Next alternative\">&#8594;</button>\n      <figure class=\"lb-figure\">\n        <img id=\"lb-img\" src=\"assets/r2-alternative-01.jpg\" alt=\"\">\n        <figcaption class=\"lb-bar\">\n          <span id=\"lb-meta\"></span>\n          <span class=\"lb-right\"><span id=\"lb-pos\"></span><button type=\"button\" class=\"lb-linkbtn\" id=\"lb-copy-link\">Copy link</button><a id=\"lb-raw\" href=\"assets/r2-alternative-01.jpg\" target=\"_blank\" rel=\"noopener\">Open raw &#8599;</a></span>\n        </figcaption>\n      </figure>\n    </div>\n  </section>\n\n  <section class=\"run-facts\">\n    <div class=\"col\">\n    <span class=\"section-label\">Details</span>\n    <h2>The run</h2>\n    <p class=\"lead\">What Image Lab planned, and what it actually cost.</p>\n      <div class=\"facts\"><div class=\"fact\"><span class=\"fact-label\">Intent</span><p>launch / announcement image</p></div><div class=\"fact\"><span class=\"fact-label\">Models</span><p>3 &mdash; GPT Image 2.5 Sunburst, GPT Image 2.5 Flare, GPT Image 2</p></div><div class=\"fact\"><span class=\"fact-label\">Candidates</span><p>8 generated</p></div><div class=\"fact\"><span class=\"fact-label\">Requested size</span><p>default / 1024\u00d71536</p></div><div class=\"fact\"><span class=\"fact-label\">Actual cost</span><p>$0.3570 <span class=\"fact-aside\">(est. ~$0.1254)</span></p></div><div class=\"fact\"><span class=\"fact-label\">Generated</span><p>2026-09-14</p></div></div>\n    </div>\n  </section>\n\n  <section class=\"prompt\">\n    <div class=\"col\">\n    <span class=\"section-label\">Reuse</span>\n    <h2>The prompt</h2>\n    <p class=\"lead\">The exact brief this run used. Copy it, or adapt it.</p>\n      <blockquote class=\"prompt-core\">IMAGE 01 \u2014 THE LIFESTYLE\nEditorial Catalogue \u00b7 4:5 Vertical\nCREATIVE CONCEPT\nCreate a premium editorial catalogue hero image for a Woolworths campaign that applies the visual discipline, composition, material sophistication, and photographic quality of a world-class automotive advertising catalogue to an authentic Australian supermarket shopping experience.\nThe concept is simple:\nTreat the everyday Woolworths shopping trolley like a luxury automobile hero object.\nThe supermarket remains recognizably real and Australian. The photography and art direction are elevated, not the retail environment itself.\nThe result should feel like a genuinely commissioned premium campaign photograph that has been integrated into a sophisticated retail catalogue.\nHERO STORY\nA stylish young Australian woman naturally pushes a classic Woolworths shopping trolley through a contemporary Woolworths supermarket.\nA young man walks naturally beside her, slightly behind.\nThey are shopping rather than posing.\nNeither looks at the camera.\nTheir interaction should feel spontaneous and observed \u2014 a believable moment from modern Australian everyday life.\nThe trolley is the visual hero.\nIt should receive the same compositional importance, physical presence and photographic attention that a premium automobile would receive in a luxury automotive campaign.\nThe trolley contains a believable weekly shop:\n\n* fresh Australian fruit and vegetables\n* fresh bread or bakery products\n* premium pantry groceries\n* herbs or a small bunch of flowers\n* a small selection of everyday household products\n\nEvery object must have believable scale, weight, material, contact and physical placement inside the trolley.\nENVIRONMENT\nA real, contemporary Australian Woolworths supermarket.\nThe store should feel clean, well-designed and visually considered without becoming a luxury mall or futuristic retail environment.\nInclude:\n\n* believable supermarket aisle proportions\n* realistic shelving\n* authentic retail fixtures\n* strong fresh-food presence\n* realistic product density\n* contemporary ceiling architecture\n* subtle Woolworths-green wayfinding and signage\n* polished but believable flooring\n* natural depth extending far into the store\n\nThe environment must remain recognizably Woolworths and recognizably Australian.\nDo not beautify the supermarket into an unrealistic luxury environment.\nCOMPOSITION\nFORMAT: 4:5 vertical.\n\ud83d\udfe2 CHANGE \u2014 CATALOGUE COMPOSITION\nThe image must now behave as a premium retail catalogue cover, while remaining fundamentally a single coherent photograph.\nReserve approximately the upper 15\u201320% of the composition as intentional editorial breathing space.\nThis area should remain visually calm enough to support small typography without competing with the hero photograph.\nThe photography should still dominate approximately 80\u201385% of the visual experience.\nForeground\nThe shopping trolley dominates the lower foreground.\nIt should feel substantial, beautifully constructed and unusually important within the frame.\nShoot it with enough perspective and physical presence to make the viewer instinctively treat it as the hero object.\nMidground\nThe woman is the primary human subject, naturally connected to the trolley.\nThe man is secondary and slightly behind her.\nBackground\nLong retail perspective with shelves, fresh-food displays and a small number of distant shoppers.\nUse strong architectural and aisle lines to create depth and guide the eye toward the subjects.\nComposition should have clear visual hierarchy:\ntrolley \u2192 woman \u2192 companion \u2192 retail environment\n\ud83d\udfe2 CHANGE \u2014 NEGATIVE SPACE\nThe upper portion of the image should contain intentional visual calm, not empty dead space.\nArchitecture, ceiling structure or softly resolved retail background may occupy this area, creating a natural canvas for the catalogue typography.\nDo not artificially blur or flatten the top area.\nCAMERA\nFull-frame commercial photography.\nApproximately 32\u201335mm full-frame equivalent.\nLow-to-medium camera height.\nStrong natural perspective with no fisheye distortion.\nThe camera should feel physically present in the aisle rather than mounted at an unnatural height.\nModerate depth of field:\n\n* trolley and hero subjects highly resolved\n* surrounding environment clearly recognizable\n* background gradually softer but never artificially blurred\n\nThe image must retain the spatial depth of a real photograph.\nLIGHTING\nPremium architectural commercial lighting.\nCombine warm supermarket illumination with subtle cooler ambient light.\nUse controlled highlights across:\n\n* metal trolley\n* polished floor\n* glass\n* packaging\n* architectural surfaces\n\nWoolworths green should produce subtle, physically believable reflections where appropriate.\nShadows should be natural and dimensional.\nSkin should retain realistic texture.\nClothing should show believable fabric structure.\nMetal should have physically accurate reflections.\nFloor reflections should be subtle, imperfect and photographic.\nNo artificial glow.\nNo exaggerated cinematic effects.\nCOLOUR\nContemporary premium editorial colour grading.\nNatural Australian daylight-balanced colour with restrained warmth.\nFresh produce should provide natural colour variation.\nWoolworths Green is the signature accent, appearing selectively through authentic environmental details such as signage, trolley elements and small architectural or merchandising accents.\nGreen must be relatively rare.\nIt should function like the signature colour of a premium automotive brand:\nrecognizable, restrained and intentional.\nDo not make the entire environment green.\nBRAND INTEGRATION\nThe image should unmistakably feel like Woolworths without becoming a logo advertisement.\nUse authentic Woolworths branding only where it naturally belongs within the environment.\n\ud83d\udfe2 CHANGE \u2014 CATALOGUE BRAND SIGNATURE\nInclude a small, precise Woolworths brand signature within the upper editorial breathing area.\nIt should feel like part of a professionally designed catalogue system rather than an advertising logo placed over a photograph.\nKeep it visually small and restrained.\nDo not allow the brand signature to compete with the hero trolley or human story.\nHUMAN REALISM\nThe people must look like real contemporary Australians photographed in an actual supermarket.\nNatural posture.\nNatural walking movement.\nNatural interaction with the trolley.\nNatural facial expressions.\nNo influencer posing.\nNo model-like exaggerated expressions.\nNo direct eye contact with camera.\nNo staged advertising smiles.\nHands, fingers, arms, clothing and body proportions must be anatomically correct.\nThe people should feel like participants in a real moment, not actors deliberately posing for an advertisement.\nPHOTOGRAPHIC CHARACTER\nThe image should feel like it was photographed by a world-class commercial photographer for a major Australian brand campaign.\nReference the discipline and precision of premium automotive catalogue photography, combined with contemporary Australian lifestyle editorial photography.\nPrioritize:\n\n* photographic realism\n* precise composition\n* authentic materials\n* controlled perspective\n* natural human behaviour\n* sophisticated colour\n* believable retail architecture\n* subtle visual storytelling\n\nThe photograph should feel expensive because of art direction and photographic precision, not because it contains excessive luxury styling.\n\ud83d\udfe2 CHANGE \u2014 EDITORIAL TYPOGRAPHY SYSTEM\nTypography is now part of the catalogue art direction.\nIt must feel like a restrained premium editorial design system, integrated naturally into the composition.\nPrimary headline\nUse one short headline:\nFRESH. EVERY DAY.\nSet it in a clean, sophisticated contemporary sans-serif.\nTypography should be:\n\n* small-to-medium scale\n* precise\n* generously spaced\n* restrained\n* highly legible\n* visually subordinate to the photograph\n\nDo not use oversized advertising typography.\nCatalogue identifier\nInclude a small technical catalogue marker:\n01 / THE LIFESTYLE\nThis should be noticeably smaller than the headline.\nIt should feel like a collection identifier rather than a marketing slogan.\nSupporting line\nInclude a very small secondary editorial line:\nQuality. Value. Everyday Australian life.\nKeep this subtle and understated.\n\ud83d\udfe2 CHANGE \u2014 GRAPHIC DETAILS\nOptional extremely subtle catalogue details may include:\n\n* one or two thin technical rules\n* tiny registration-style marks\n* small numerical markers\n* restrained alignment lines\n\nThese elements should create the feeling of a professionally engineered catalogue system.\nThey must remain almost invisible at first glance.\nThe viewer should notice the photograph first and the graphic system second.\n\ud83d\udfe2 CHANGE \u2014 TYPOGRAPHIC HIERARCHY\nThe hierarchy must be:\n1. Hero photograph\n2. Trolley + human story\n3. Woolworths brand signature\n4. FRESH. EVERY DAY.\n5. 01 / THE LIFESTYLE\n6. Supporting editorial metadata\nTypography must never cover:\n\n* faces\n* hands\n* trolley\n* important products\n* key architectural features\n\nThe text should occupy the intentionally reserved editorial breathing area whenever possible.\n\ud83d\udfe2 CHANGE \u2014 TEXT QUALITY\nText must appear clean, correctly spelled and professionally typeset.\nDo not introduce:\n\n* random words\n* pseudo-language\n* distorted letters\n* excessive text\n* fake UI\n* decorative typography\n* unnecessary slogans\n\nIf perfect typography cannot be rendered reliably, reduce the amount of text rather than introducing malformed text.\nABSOLUTELY AVOID\nAvoid generic stock-photo supermarket scenes, staged advertising poses, people looking at camera, exaggerated smiles, perfectly symmetrical aisles, unrealistic supermarket architecture, luxury-mall aesthetics, futuristic retail design, excessive green, excessive bokeh, fisheye distortion, extreme wide-angle distortion, artificial glow, excessive lens flare, fake HDR, oversaturation, plastic skin, CGI-looking materials, impossible trolley geometry, floating objects, duplicated products, duplicated people, distorted hands, malformed bodies, warped shelving, nonsensical packaging, fake or distorted branding, and visible generative artifacts.\nDo not make the supermarket futuristic.\nDo not make the supermarket look like a luxury mall.\nDo not make the trolley physically impossible.\nDo not make the image resemble a conventional discount supermarket advertisement.\n\ud83d\udfe2 CHANGE \u2014 GRAPHIC ANTI-SLOP\nAvoid oversized typography, excessive graphic decoration, poster-like composition, magazine-cover clich\u00e9s, UI overlays, HUD elements, decorative interface graphics, excessive technical markings, or graphics competing with the photograph.\nThe catalogue treatment must feel quiet, expensive and intentional.\nPRIORITY HIERARCHY\n\ud83d\udfe2 CHANGE \u2014 UPDATED PRIORITY\nWhen instructions compete, prioritize them in this order:\n1. Photographic realism\n2. Hero composition \u2014 trolley + woman\n3. Natural human behaviour\n4. Premium automotive-level art direction\n5. Authentic Australian Woolworths environment\n6. Sophisticated lighting and materials\n7. Restrained Woolworths brand integration\n8. Editorial typography and catalogue graphics\nPhotography must always win over graphic design.\nNever weaken the photograph merely to accommodate typography.\nFINAL OUTPUT\n4:5 vertical\nUltra-high-resolution photorealistic commercial photography with restrained premium editorial catalogue design.\nOne coherent photographic world.\nOne hero story.\nOne hero trolley.\nOne unmistakably Woolworths environment.\nOne restrained catalogue identity.\nThe final result should look like a real premium Woolworths catalogue campaign asset, photographed in Australia and art-directed with the visual precision of a world-class automotive campaign.\nPhotography first. Catalogue design second.</blockquote>\n      <p class=\"prompt-trigger\">&rarr; use Image Lab</p>\n      <button class=\"copy btn-ghost\" data-target=\"copy-src\">Copy prompt</button>\n      <ol class=\"how\">\n        <li>Copy the prompt above.</li>\n        <li>Paste it into any agent that has the Image Lab skill &mdash; or install it below.</li>\n        <li>Run it as-is, or swap the subject, style, or details to make it yours.</li>\n      </ol>\n      <span id=\"copy-src\" hidden>IMAGE 01 \u2014 THE LIFESTYLE\nEditorial Catalogue \u00b7 4:5 Vertical\nCREATIVE CONCEPT\nCreate a premium editorial catalogue hero image for a Woolworths campaign that applies the visual discipline, composition, material sophistication, and photographic quality of a world-class automotive advertising catalogue to an authentic Australian supermarket shopping experience.\nThe concept is simple:\nTreat the everyday Woolworths shopping trolley like a luxury automobile hero object.\nThe supermarket remains recognizably real and Australian. The photography and art direction are elevated, not the retail environment itself.\nThe result should feel like a genuinely commissioned premium campaign photograph that has been integrated into a sophisticated retail catalogue.\nHERO STORY\nA stylish young Australian woman naturally pushes a classic Woolworths shopping trolley through a contemporary Woolworths supermarket.\nA young man walks naturally beside her, slightly behind.\nThey are shopping rather than posing.\nNeither looks at the camera.\nTheir interaction should feel spontaneous and observed \u2014 a believable moment from modern Australian everyday life.\nThe trolley is the visual hero.\nIt should receive the same compositional importance, physical presence and photographic attention that a premium automobile would receive in a luxury automotive campaign.\nThe trolley contains a believable weekly shop:\n\n* fresh Australian fruit and vegetables\n* fresh bread or bakery products\n* premium pantry groceries\n* herbs or a small bunch of flowers\n* a small selection of everyday household products\n\nEvery object must have believable scale, weight, material, contact and physical placement inside the trolley.\nENVIRONMENT\nA real, contemporary Australian Woolworths supermarket.\nThe store should feel clean, well-designed and visually considered without becoming a luxury mall or futuristic retail environment.\nInclude:\n\n* believable supermarket aisle proportions\n* realistic shelving\n* authentic retail fixtures\n* strong fresh-food presence\n* realistic product density\n* contemporary ceiling architecture\n* subtle Woolworths-green wayfinding and signage\n* polished but believable flooring\n* natural depth extending far into the store\n\nThe environment must remain recognizably Woolworths and recognizably Australian.\nDo not beautify the supermarket into an unrealistic luxury environment.\nCOMPOSITION\nFORMAT: 4:5 vertical.\n\ud83d\udfe2 CHANGE \u2014 CATALOGUE COMPOSITION\nThe image must now behave as a premium retail catalogue cover, while remaining fundamentally a single coherent photograph.\nReserve approximately the upper 15\u201320% of the composition as intentional editorial breathing space.\nThis area should remain visually calm enough to support small typography without competing with the hero photograph.\nThe photography should still dominate approximately 80\u201385% of the visual experience.\nForeground\nThe shopping trolley dominates the lower foreground.\nIt should feel substantial, beautifully constructed and unusually important within the frame.\nShoot it with enough perspective and physical presence to make the viewer instinctively treat it as the hero object.\nMidground\nThe woman is the primary human subject, naturally connected to the trolley.\nThe man is secondary and slightly behind her.\nBackground\nLong retail perspective with shelves, fresh-food displays and a small number of distant shoppers.\nUse strong architectural and aisle lines to create depth and guide the eye toward the subjects.\nComposition should have clear visual hierarchy:\ntrolley \u2192 woman \u2192 companion \u2192 retail environment\n\ud83d\udfe2 CHANGE \u2014 NEGATIVE SPACE\nThe upper portion of the image should contain intentional visual calm, not empty dead space.\nArchitecture, ceiling structure or softly resolved retail background may occupy this area, creating a natural canvas for the catalogue typography.\nDo not artificially blur or flatten the top area.\nCAMERA\nFull-frame commercial photography.\nApproximately 32\u201335mm full-frame equivalent.\nLow-to-medium camera height.\nStrong natural perspective with no fisheye distortion.\nThe camera should feel physically present in the aisle rather than mounted at an unnatural height.\nModerate depth of field:\n\n* trolley and hero subjects highly resolved\n* surrounding environment clearly recognizable\n* background gradually softer but never artificially blurred\n\nThe image must retain the spatial depth of a real photograph.\nLIGHTING\nPremium architectural commercial lighting.\nCombine warm supermarket illumination with subtle cooler ambient light.\nUse controlled highlights across:\n\n* metal trolley\n* polished floor\n* glass\n* packaging\n* architectural surfaces\n\nWoolworths green should produce subtle, physically believable reflections where appropriate.\nShadows should be natural and dimensional.\nSkin should retain realistic texture.\nClothing should show believable fabric structure.\nMetal should have physically accurate reflections.\nFloor reflections should be subtle, imperfect and photographic.\nNo artificial glow.\nNo exaggerated cinematic effects.\nCOLOUR\nContemporary premium editorial colour grading.\nNatural Australian daylight-balanced colour with restrained warmth.\nFresh produce should provide natural colour variation.\nWoolworths Green is the signature accent, appearing selectively through authentic environmental details such as signage, trolley elements and small architectural or merchandising accents.\nGreen must be relatively rare.\nIt should function like the signature colour of a premium automotive brand:\nrecognizable, restrained and intentional.\nDo not make the entire environment green.\nBRAND INTEGRATION\nThe image should unmistakably feel like Woolworths without becoming a logo advertisement.\nUse authentic Woolworths branding only where it naturally belongs within the environment.\n\ud83d\udfe2 CHANGE \u2014 CATALOGUE BRAND SIGNATURE\nInclude a small, precise Woolworths brand signature within the upper editorial breathing area.\nIt should feel like part of a professionally designed catalogue system rather than an advertising logo placed over a photograph.\nKeep it visually small and restrained.\nDo not allow the brand signature to compete with the hero trolley or human story.\nHUMAN REALISM\nThe people must look like real contemporary Australians photographed in an actual supermarket.\nNatural posture.\nNatural walking movement.\nNatural interaction with the trolley.\nNatural facial expressions.\nNo influencer posing.\nNo model-like exaggerated expressions.\nNo direct eye contact with camera.\nNo staged advertising smiles.\nHands, fingers, arms, clothing and body proportions must be anatomically correct.\nThe people should feel like participants in a real moment, not actors deliberately posing for an advertisement.\nPHOTOGRAPHIC CHARACTER\nThe image should feel like it was photographed by a world-class commercial photographer for a major Australian brand campaign.\nReference the discipline and precision of premium automotive catalogue photography, combined with contemporary Australian lifestyle editorial photography.\nPrioritize:\n\n* photographic realism\n* precise composition\n* authentic materials\n* controlled perspective\n* natural human behaviour\n* sophisticated colour\n* believable retail architecture\n* subtle visual storytelling\n\nThe photograph should feel expensive because of art direction and photographic precision, not because it contains excessive luxury styling.\n\ud83d\udfe2 CHANGE \u2014 EDITORIAL TYPOGRAPHY SYSTEM\nTypography is now part of the catalogue art direction.\nIt must feel like a restrained premium editorial design system, integrated naturally into the composition.\nPrimary headline\nUse one short headline:\nFRESH. EVERY DAY.\nSet it in a clean, sophisticated contemporary sans-serif.\nTypography should be:\n\n* small-to-medium scale\n* precise\n* generously spaced\n* restrained\n* highly legible\n* visually subordinate to the photograph\n\nDo not use oversized advertising typography.\nCatalogue identifier\nInclude a small technical catalogue marker:\n01 / THE LIFESTYLE\nThis should be noticeably smaller than the headline.\nIt should feel like a collection identifier rather than a marketing slogan.\nSupporting line\nInclude a very small secondary editorial line:\nQuality. Value. Everyday Australian life.\nKeep this subtle and understated.\n\ud83d\udfe2 CHANGE \u2014 GRAPHIC DETAILS\nOptional extremely subtle catalogue details may include:\n\n* one or two thin technical rules\n* tiny registration-style marks\n* small numerical markers\n* restrained alignment lines\n\nThese elements should create the feeling of a professionally engineered catalogue system.\nThey must remain almost invisible at first glance.\nThe viewer should notice the photograph first and the graphic system second.\n\ud83d\udfe2 CHANGE \u2014 TYPOGRAPHIC HIERARCHY\nThe hierarchy must be:\n1. Hero photograph\n2. Trolley + human story\n3. Woolworths brand signature\n4. FRESH. EVERY DAY.\n5. 01 / THE LIFESTYLE\n6. Supporting editorial metadata\nTypography must never cover:\n\n* faces\n* hands\n* trolley\n* important products\n* key architectural features\n\nThe text should occupy the intentionally reserved editorial breathing area whenever possible.\n\ud83d\udfe2 CHANGE \u2014 TEXT QUALITY\nText must appear clean, correctly spelled and professionally typeset.\nDo not introduce:\n\n* random words\n* pseudo-language\n* distorted letters\n* excessive text\n* fake UI\n* decorative typography\n* unnecessary slogans\n\nIf perfect typography cannot be rendered reliably, reduce the amount of text rather than introducing malformed text.\nABSOLUTELY AVOID\nAvoid generic stock-photo supermarket scenes, staged advertising poses, people looking at camera, exaggerated smiles, perfectly symmetrical aisles, unrealistic supermarket architecture, luxury-mall aesthetics, futuristic retail design, excessive green, excessive bokeh, fisheye distortion, extreme wide-angle distortion, artificial glow, excessive lens flare, fake HDR, oversaturation, plastic skin, CGI-looking materials, impossible trolley geometry, floating objects, duplicated products, duplicated people, distorted hands, malformed bodies, warped shelving, nonsensical packaging, fake or distorted branding, and visible generative artifacts.\nDo not make the supermarket futuristic.\nDo not make the supermarket look like a luxury mall.\nDo not make the trolley physically impossible.\nDo not make the image resemble a conventional discount supermarket advertisement.\n\ud83d\udfe2 CHANGE \u2014 GRAPHIC ANTI-SLOP\nAvoid oversized typography, excessive graphic decoration, poster-like composition, magazine-cover clich\u00e9s, UI overlays, HUD elements, decorative interface graphics, excessive technical markings, or graphics competing with the photograph.\nThe catalogue treatment must feel quiet, expensive and intentional.\nPRIORITY HIERARCHY\n\ud83d\udfe2 CHANGE \u2014 UPDATED PRIORITY\nWhen instructions compete, prioritize them in this order:\n1. Photographic realism\n2. Hero composition \u2014 trolley + woman\n3. Natural human behaviour\n4. Premium automotive-level art direction\n5. Authentic Australian Woolworths environment\n6. Sophisticated lighting and materials\n7. Restrained Woolworths brand integration\n8. Editorial typography and catalogue graphics\nPhotography must always win over graphic design.\nNever weaken the photograph merely to accommodate typography.\nFINAL OUTPUT\n4:5 vertical\nUltra-high-resolution photorealistic commercial photography with restrained premium editorial catalogue design.\nOne coherent photographic world.\nOne hero story.\nOne hero trolley.\nOne unmistakably Woolworths environment.\nOne restrained catalogue identity.\nThe final result should look like a real premium Woolworths catalogue campaign asset, photographed in Australia and art-directed with the visual precision of a world-class automotive campaign.\nPhotography first. Catalogue design second.\n\nuse Image Lab</span>\n    </div>\n  </section>\n\n  <section class=\"credits\">\n    <div class=\"col\">\n    <span class=\"section-label\">Provenance</span>\n    <h2>How this was made</h2>\n    <p class=\"lead\">Image Lab is not a benchmark &mdash; different models and seeds make these an unfair comparison. It turns one brief into strong choices. Everything below did real, billed work in this run.</p>\n      <ul class=\"tool-list\"><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai\" target=\"_blank\" rel=\"noopener\">CogFoundry model gateway</a></span><span class=\"trole\">Ran every generation in this run through <code>POST /api/v1/tasks/generations</code> and reported the real per-image cost. Run total: $0.3570.</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai/en/models/media/360/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Sunburst</a></span><span class=\"trole\">3 alternatives (A, B, C).</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai/en/models/media/361/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Flare</a></span><span class=\"trole\">3 alternatives (D, E, F).</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai/en/models/media/314/\" target=\"_blank\" rel=\"noopener\">GPT Image 2</a></span><span class=\"trole\">2 alternatives (G, H).</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/image-lab\" target=\"_blank\" rel=\"noopener\">Image Lab</a></span><span class=\"trole\">A loomloom community example &mdash; the skill that classified the brief, chose the model allocation, gated the cost, and rendered this page.</span></li></ul>\n    </div>\n  </section>"}, {"round": 3, "title": "Woolworths Editorial Catalogue", "head": "<p class=\"hero-eyebrow\">launch / announcement image</p>\n<p class=\"hero-badge\">AI-generated &middot; not a benchmark</p>\n    <h1>Woolworths Editorial Catalogue</h1>\n    <p class=\"summary\">One brief. Three models. Eight ways to see a Woolworths trolley hero shot with an asymmetric editorial catalogue system.</p>\n    <ul class=\"legend\" aria-label=\"models in this run\"><li><a class=\"lm\" href=\"https://cogfoundry.ai/en/models/media/360/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Sunburst</a><span class=\"x\">\u00d73</span></li><li><a class=\"lm\" href=\"https://cogfoundry.ai/en/models/media/361/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Flare</a><span class=\"x\">\u00d73</span></li><li><a class=\"lm\" href=\"https://cogfoundry.ai/en/models/media/314/\" target=\"_blank\" rel=\"noopener\">GPT Image 2</a><span class=\"x\">\u00d72</span></li></ul>\n    <p class=\"stats\">8 candidates &middot; 3 models &middot; $0.3600 total</p>", "body": "<nav class=\"round-nav\" aria-label=\"Switch which round is shown\">\n    <button type=\"button\" class=\"round-nav-btn prev\" id=\"round-prev\" data-round-index=\"1\">&#8592; VIEW ROUND 2</button>\n    <span class=\"round-nav-label\">ROUND 3 / 3</span>\n    <button type=\"button\" class=\"round-nav-btn next\" id=\"round-next\" data-round-index=\"0\">VIEW ROUND 1 &#8594;</button>\n  </nav>\n\n  <section class=\"gallery\">\n    <span class=\"section-label\">Gallery</span>\n    <h2>Pick your image</h2>\n    <p class=\"lead\">Compare the 8 alternatives below &mdash; each a candidate, not a step. Select one to inspect it full size.</p>\n    <div class=\"gallery-main\">\n      <div class=\"hero-frame\">\n        <button type=\"button\" class=\"hero-nav prev js-only\" id=\"hero-prev\" aria-label=\"Previous alternative\">&#8592;</button>\n        <button type=\"button\" class=\"hero-nav next js-only\" id=\"hero-next\" aria-label=\"Next alternative\">&#8594;</button>\n        <button type=\"button\" class=\"hero-open btn-solid js-only\" id=\"hero-open\" aria-label=\"Open full size\">&#8599; Open full size</button>\n        <a id=\"hero-link\" href=\"assets/r3-alternative-01.jpg\" target=\"_blank\" rel=\"noopener\"><img id=\"hero-img\" src=\"assets/r3-alternative-01.jpg\" alt=\"Alternative A\"></a>\n      </div>\n      <p class=\"gallery-meta\" id=\"hero-meta\">Alternative A &middot; <a class=\"model\" href=\"https://cogfoundry.ai/en/models/media/360/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Sunburst</a> &middot; 1122\u00d71402 (asked default) &middot; $0.0600 &middot; 58s</p>\n      <p class=\"gallery-hint\">\n        <span>Click image to open full size<span class=\"js-only\"> &middot; &#8592; &#8594; to browse</span></span>\n      <span class=\"pos\" id=\"hero-pos\">1 / 8</span>\n      </p>\n      <button type=\"button\" class=\"link-btn btn-ghost js-only\" id=\"copy-alt-link\">Copy link to alternative A</button>\n    </div>\n    <div class=\"gallery-thumbs\" aria-label=\"alternatives\">\n      <button type=\"button\" class=\"thumb active\" aria-current=\"true\" aria-label=\"Show alternative A \u2014 GPT Image 2.5 Sunburst\" data-asset=\"assets/r3-alternative-01.jpg\" data-label=\"A\" data-index=\"1\" data-model=\"GPT Image 2.5 Sunburst\" data-model-url=\"https://cogfoundry.ai/en/models/media/360/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0600\" data-seconds=\"58\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r3-alternative-01.jpg\" alt=\"Alternative A\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">A</span><span class=\"m\">GPT Image 2.5 Sunburst</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative B \u2014 GPT Image 2.5 Sunburst\" data-asset=\"assets/r3-alternative-02.jpg\" data-label=\"B\" data-index=\"2\" data-model=\"GPT Image 2.5 Sunburst\" data-model-url=\"https://cogfoundry.ai/en/models/media/360/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0600\" data-seconds=\"62\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r3-alternative-02.jpg\" alt=\"Alternative B\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">B</span><span class=\"m\">GPT Image 2.5 Sunburst</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative C \u2014 GPT Image 2.5 Sunburst\" data-asset=\"assets/r3-alternative-03.jpg\" data-label=\"C\" data-index=\"3\" data-model=\"GPT Image 2.5 Sunburst\" data-model-url=\"https://cogfoundry.ai/en/models/media/360/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0600\" data-seconds=\"56\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r3-alternative-03.jpg\" alt=\"Alternative C\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">C</span><span class=\"m\">GPT Image 2.5 Sunburst</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative D \u2014 GPT Image 2.5 Flare\" data-asset=\"assets/r3-alternative-04.jpg\" data-label=\"D\" data-index=\"4\" data-model=\"GPT Image 2.5 Flare\" data-model-url=\"https://cogfoundry.ai/en/models/media/361/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0600\" data-seconds=\"29\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r3-alternative-04.jpg\" alt=\"Alternative D\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">D</span><span class=\"m\">GPT Image 2.5 Flare</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative E \u2014 GPT Image 2.5 Flare\" data-asset=\"assets/r3-alternative-05.jpg\" data-label=\"E\" data-index=\"5\" data-model=\"GPT Image 2.5 Flare\" data-model-url=\"https://cogfoundry.ai/en/models/media/361/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0600\" data-seconds=\"30\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r3-alternative-05.jpg\" alt=\"Alternative E\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">E</span><span class=\"m\">GPT Image 2.5 Flare</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative F \u2014 GPT Image 2.5 Flare\" data-asset=\"assets/r3-alternative-06.jpg\" data-label=\"F\" data-index=\"6\" data-model=\"GPT Image 2.5 Flare\" data-model-url=\"https://cogfoundry.ai/en/models/media/361/\" data-size=\"1122x1402\" data-asked=\"default\" data-cost=\"$0.0600\" data-seconds=\"31\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r3-alternative-06.jpg\" alt=\"Alternative F\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">F</span><span class=\"m\">GPT Image 2.5 Flare</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative G \u2014 GPT Image 2\" data-asset=\"assets/r3-alternative-07.jpg\" data-label=\"G\" data-index=\"7\" data-model=\"GPT Image 2\" data-model-url=\"https://cogfoundry.ai/en/models/media/314/\" data-size=\"1024x1536\" data-asked=\"1024x1536\" data-cost=\"$0.0000\" data-seconds=\"55\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r3-alternative-07.jpg\" alt=\"Alternative G\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">G</span><span class=\"m\">GPT Image 2</span></span></button>\n      <button type=\"button\" class=\"thumb\" aria-label=\"Show alternative H \u2014 GPT Image 2\" data-asset=\"assets/r3-alternative-08.jpg\" data-label=\"H\" data-index=\"8\" data-model=\"GPT Image 2\" data-model-url=\"https://cogfoundry.ai/en/models/media/314/\" data-size=\"1024x1536\" data-asked=\"1024x1536\" data-cost=\"$0.0000\" data-seconds=\"56\" data-selected=\"\"><span class=\"shot\"><img src=\"assets/r3-alternative-08.jpg\" alt=\"Alternative H\" loading=\"lazy\"></span><span class=\"thumb-cap\"><span class=\"ltr\">H</span><span class=\"m\">GPT Image 2</span></span></button>\n    </div>\n    \n    <div class=\"lightbox\" id=\"lightbox\" hidden role=\"dialog\" aria-modal=\"true\" aria-label=\"Full size image\">\n      <button type=\"button\" class=\"lb-close\" id=\"lb-close\" aria-label=\"Close (Esc)\">&times;</button>\n      <button type=\"button\" class=\"lb-nav prev\" id=\"lb-prev\" aria-label=\"Previous alternative\">&#8592;</button>\n      <button type=\"button\" class=\"lb-nav next\" id=\"lb-next\" aria-label=\"Next alternative\">&#8594;</button>\n      <figure class=\"lb-figure\">\n        <img id=\"lb-img\" src=\"assets/r3-alternative-01.jpg\" alt=\"\">\n        <figcaption class=\"lb-bar\">\n          <span id=\"lb-meta\"></span>\n          <span class=\"lb-right\"><span id=\"lb-pos\"></span><button type=\"button\" class=\"lb-linkbtn\" id=\"lb-copy-link\">Copy link</button><a id=\"lb-raw\" href=\"assets/r3-alternative-01.jpg\" target=\"_blank\" rel=\"noopener\">Open raw &#8599;</a></span>\n        </figcaption>\n      </figure>\n    </div>\n  </section>\n\n  <section class=\"run-facts\">\n    <div class=\"col\">\n    <span class=\"section-label\">Details</span>\n    <h2>The run</h2>\n    <p class=\"lead\">What Image Lab planned, and what it actually cost.</p>\n      <div class=\"facts\"><div class=\"fact\"><span class=\"fact-label\">Intent</span><p>launch / announcement image</p></div><div class=\"fact\"><span class=\"fact-label\">Models</span><p>3 &mdash; GPT Image 2.5 Sunburst, GPT Image 2.5 Flare, GPT Image 2</p></div><div class=\"fact\"><span class=\"fact-label\">Candidates</span><p>8 generated</p></div><div class=\"fact\"><span class=\"fact-label\">Requested size</span><p>default / 1024\u00d71536</p></div><div class=\"fact\"><span class=\"fact-label\">Actual cost</span><p>$0.3600 <span class=\"fact-aside\">(est. ~$0.1254)</span></p></div><div class=\"fact\"><span class=\"fact-label\">Generated</span><p>2026-09-14</p></div></div>\n    </div>\n  </section>\n\n  <section class=\"prompt\">\n    <div class=\"col\">\n    <span class=\"section-label\">Reuse</span>\n    <h2>The prompt</h2>\n    <p class=\"lead\">The exact brief this run used. Copy it, or adapt it.</p>\n      <blockquote class=\"prompt-core\">IMAGE 01 \u2014 THE LIFESTYLE\nEditorial Catalogue \u00b7 4:5 Vertical\n\nEverything through PHOTOGRAPHIC CHARACTER stays essentially the same as the successful Pure Hero Photography prompt.\n\nCREATIVE CONCEPT\nCreate a premium hero photograph for a Woolworths campaign that applies the visual discipline, composition, material sophistication, and photographic quality of a world-class automotive advertising campaign to an authentic Australian supermarket shopping experience.\nThe concept is simple:\nTreat the everyday Woolworths shopping trolley like a luxury automobile hero object.\nThe result should feel like a genuinely commissioned premium advertising photograph \u2014 not a supermarket advertisement, not stock photography, and not an AI-generated fantasy environment.\nThe supermarket remains recognizably real and Australian. The photography and art direction are elevated, not the retail environment itself.\nHERO STORY\nA stylish young Australian woman naturally pushes a classic Woolworths shopping trolley through a contemporary Woolworths supermarket.\nA young man walks naturally beside her, slightly behind.\nThey are shopping rather than posing.\nNeither looks at the camera.\nTheir interaction should feel spontaneous and observed \u2014 a believable moment from modern Australian everyday life.\nThe trolley is the visual hero.\nIt should receive the same compositional importance, physical presence and photographic attention that a premium automobile would receive in a luxury automotive campaign.\nThe trolley contains a believable weekly shop:\n\n* fresh Australian fruit and vegetables\n* fresh bread or bakery products\n* premium pantry groceries\n* herbs or a small bunch of flowers\n* a small selection of everyday household products\n\nEvery object must have believable scale, weight, material, contact and physical placement inside the trolley.\nENVIRONMENT\nA real, contemporary Australian Woolworths supermarket.\nThe store should feel clean, well-designed and visually considered without becoming a luxury mall or futuristic retail environment.\nInclude:\n\n* believable supermarket aisle proportions\n* realistic shelving\n* authentic retail fixtures\n* strong fresh-food presence\n* realistic product density\n* contemporary ceiling architecture\n* subtle Woolworths-green wayfinding and signage\n* polished but believable flooring\n* natural depth extending far into the store\n\nThe environment must remain recognizably Woolworths and recognizably Australian.\nDo not beautify the supermarket into an unrealistic luxury environment.\nCOMPOSITION\nFORMAT: 4:5 vertical.\nThink like a premium automotive campaign photograph.\nForeground\nThe shopping trolley dominates the lower foreground.\nIt should feel substantial, beautifully constructed and unusually important within the frame.\nShoot it with enough perspective and physical presence to make the viewer instinctively treat it as the hero object.\nMidground\nThe woman is the primary human subject, naturally connected to the trolley.\nThe man is secondary and slightly behind her.\nBackground\nLong retail perspective with shelves, fresh-food displays and a small number of distant shoppers.\nUse strong architectural and aisle lines to create depth and guide the eye toward the subjects.\nComposition should have clear visual hierarchy:\ntrolley \u2192 woman \u2192 companion \u2192 retail environment\nCAMERA\nFull-frame commercial photography.\nApproximately 32\u201335mm full-frame equivalent.\nLow-to-medium camera height.\nStrong natural perspective with no fisheye distortion.\nThe camera should feel physically present in the aisle rather than mounted at an unnatural height.\nModerate depth of field:\n\n* trolley and hero subjects highly resolved\n* surrounding environment clearly recognizable\n* background gradually softer but never artificially blurred\n\nThe image must retain the spatial depth of a real photograph.\nLIGHTING\nPremium architectural commercial lighting.\nCombine warm supermarket illumination with subtle cooler ambient light.\nUse controlled highlights across:\n\n* metal trolley\n* polished floor\n* glass\n* packaging\n* architectural surfaces\n\nWoolworths green should produce subtle, physically believable reflections where appropriate.\nShadows should be natural and dimensional.\nSkin should retain realistic texture.\nClothing should show believable fabric structure.\nMetal should have physically accurate reflections.\nFloor reflections should be subtle, imperfect and photographic.\nNo artificial glow.\nNo exaggerated cinematic effects.\nCOLOUR\nContemporary premium editorial colour grading.\nNatural Australian daylight-balanced colour with restrained warmth.\nFresh produce should provide natural colour variation.\nWoolworths Green is the signature accent, appearing selectively through authentic environmental details such as signage, trolley elements and small architectural or merchandising accents.\nGreen must be relatively rare.\nIt should function like the signature colour of a premium automotive brand:\nrecognizable, restrained and intentional.\nDo not make the entire environment green.\nHUMAN REALISM\nThe people must look like real contemporary Australians photographed in an actual supermarket.\nNatural posture.\nNatural walking movement.\nNatural interaction with the trolley.\nNatural facial expressions.\nNo influencer posing.\nNo model-like exaggerated expressions.\nNo direct eye contact with camera.\nNo staged advertising smiles.\nHands, fingers, arms, clothing and body proportions must be anatomically correct.\nThe people should feel like participants in a real moment, not actors deliberately posing for an advertisement.\nPHOTOGRAPHIC CHARACTER\nThe final image should feel like it was photographed by a world-class commercial photographer for a major Australian brand campaign.\nReference the discipline and precision of premium automotive advertising photography, combined with contemporary Australian lifestyle editorial photography.\nPrioritize:\n\n* photographic realism\n* precise composition\n* authentic materials\n* controlled perspective\n* natural human behaviour\n* sophisticated colour\n* believable retail architecture\n* subtle visual storytelling\n\nThe photograph should feel expensive because of art direction and photographic precision, not because it contains excessive luxury styling.\n\nEDITORIAL CATALOGUE DESIGN SYSTEM\n\nThe photograph must now function as a premium retail catalogue cover, not simply a photograph with text placed above it.\n\nCreate a sophisticated, asymmetric editorial graphic system inspired by the design discipline of premium automotive catalogues and contemporary high-end retail campaigns.\n\nThe graphic system should feel designed into the photograph.\n\nIt should not look like text was added afterward.\n\nDESIGN CHARACTER\n\nThink:\n\npremium automotive catalogue \u00d7 contemporary Australian retail editorial \u00d7 refined Swiss-inspired grid\n\nUse:\n\nstrong asymmetry\nconfident typography\nprecise alignment\ngenerous negative space\nthin technical rules\nsmall catalogue identifiers\nrestrained brand elements\ncarefully distributed graphic anchors\n\nThe design should feel expensive, confident and intentional, not decorative.\n\nPRIMARY HEADLINE\n\nUse:\n\nFRESH. EVERY DAY.\n\nThe headline should be bold, confident and editorial, not thin or delicate.\n\nPrefer a stacked 2\u20133 line treatment, for example:\n\nFRESH.\nEVERY\nDAY.\n\nor an equivalent strong composition.\n\nUse a clean contemporary sans-serif with strong geometric or condensed characteristics.\n\nThe headline should be substantially more visually assertive than the supporting text, while still occupying a relatively modest portion of the overall photograph.\n\nPrefer left alignment.\n\nDo not center the headline across the page.\n\nDo not stretch the text horizontally.\n\nDo not use oversized fashion-magazine typography.\n\nCATALOGUE IDENTIFIER\n\nInclude:\n\n01 / THE LIFESTYLE\n\nTreat this as an independent catalogue navigation element rather than simply a subtitle.\n\nIt may appear near the top edge or aligned with the main typographic grid.\n\nUse small uppercase typography with generous tracking.\n\nIt should be clearly visible but subordinate to the headline.\n\nSUPPORTING COPY\n\nInclude one short supporting statement:\n\nFresh food. Quality. Everyday Australian life.\n\nPlace it close to the main headline as a compact editorial copy block.\n\nUse substantially smaller typography.\n\nKeep line length short.\n\nDo not create a paragraph.\n\nBRAND / VALUE BLOCK\n\nIntroduce a small secondary Woolworths brand-value block in a separate area of the composition.\n\nPossible content:\n\nFRESH FOOD\nQUALITY\nEVERYDAY VALUE\n\nKeep this extremely restrained.\n\nIt should function like a small information block in a premium catalogue rather than advertising copy.\n\nPosition it independently from the main headline, preferably toward the upper-right or another natural negative-space area.\n\nDISTRIBUTED GRAPHIC SYSTEM\n\nDo not place all typography at the top.\n\nUse the entire 4:5 frame as a structured editorial grid.\n\nGraphic elements may appear in:\n\nupper-left\nupper-center\nupper-right\nlower-left\nlower-right\n\ndepending on available negative space.\n\nUse only a few elements.\n\nPossible elements include:\n\nthin horizontal rules\nvery thin vertical rules\nsmall corner brackets\ntiny catalogue numbering\nsubtle registration-style marks\nsmall Woolworths brand symbols\n\nThese elements should create visual tension and structure, not decoration.\n\nBRAND SIGNATURE\n\nInclude a small, accurate Woolworths brand signature.\n\nPrefer a natural position near the upper-left or upper-right portion of the composition.\n\nThe brand signature should be clearly identifiable but never dominate the headline or photograph.\n\nWoolworths Green should remain the primary brand accent.\n\nDo not introduce additional strong colours merely for graphic decoration.\n\nGRAPHIC / PHOTOGRAPH RELATIONSHIP\n\nTypography should interact with the architecture and negative space of the photograph.\n\nWhere possible:\n\nalign text with architectural lines\nuse shelf or ceiling geometry as compositional guides\nallow graphic rules to echo perspective lines\nplace text in naturally quieter areas\nnever cover important facial features\nnever obscure the trolley\nnever obscure important products\n\nThe graphic system should feel as though the photographer and graphic designer designed the composition together before the photograph was made.\n\nTYPOGRAPHIC HIERARCHY\n\nThe hierarchy should be:\n\n1. Hero photograph\n\n2. Trolley + human story\n\n3. Primary headline\n\n4. Woolworths brand\n\n5. Catalogue identifier\n\n6. Supporting/value information\n\n7. Technical graphic details\n\nThe photograph must remain dominant.\n\nThe typography should make the photograph feel more like a campaign, not compete with it.\n\nIMPORTANT \u2014 DESIGN DIRECTION\n\nThe result should feel closer to a real premium retail catalogue cover than to a conventional supermarket advertisement.\n\nAvoid:\n\ncentered headline\nthin luxury-magazine typography\nlarge empty banner at the top\ntext confined entirely to the top edge\ngeneric corporate presentation\nexcessive copy\nposter-like advertising\nfashion-magazine clich\u00e9s\n\nInstead use:\n\nbold editorial typography + asymmetric composition + restrained information blocks + distributed graphic anchors.\n\nFINAL DESIGN TEST\n\nAt thumbnail size, the image should still immediately read as:\n\na premium Woolworths campaign photograph.\n\nAt larger size, the viewer should discover:\n\nthe catalogue system \u2192 headline \u2192 brand \u2192 information details.\n\nThe graphic design must reward closer inspection without overwhelming the photograph.\n\nABSOLUTELY AVOID\nAvoid generic stock-photo supermarket scenes, staged advertising poses, people looking at camera, exaggerated smiles, perfectly symmetrical aisles, unrealistic supermarket architecture, luxury-mall aesthetics, futuristic retail design, excessive green, excessive bokeh, fisheye distortion, extreme wide-angle distortion, artificial glow, excessive lens flare, fake HDR, oversaturation, plastic skin, CGI-looking materials, impossible trolley geometry, floating objects, duplicated products, duplicated people, distorted hands, malformed bodies, warped shelving, nonsensical packaging, fake or distorted branding, and visible generative artifacts.\nDo not make the image look like an AI concept render.\nDo not turn the supermarket into a futuristic or luxury environment.\nDo not make the trolley physically impossible.\n\nFINAL OUTPUT\n4:5 vertical. Photorealistic premium commercial photography combined with a sophisticated asymmetric editorial catalogue system. One coherent photographic world, one hero story, one hero trolley, one unmistakably Woolworths identity, and a confident but restrained graphic language.</blockquote>\n      <p class=\"prompt-trigger\">&rarr; use Image Lab</p>\n      <button class=\"copy btn-ghost\" data-target=\"copy-src\">Copy prompt</button>\n      <ol class=\"how\">\n        <li>Copy the prompt above.</li>\n        <li>Paste it into any agent that has the Image Lab skill &mdash; or install it below.</li>\n        <li>Run it as-is, or swap the subject, style, or details to make it yours.</li>\n      </ol>\n      <span id=\"copy-src\" hidden>IMAGE 01 \u2014 THE LIFESTYLE\nEditorial Catalogue \u00b7 4:5 Vertical\n\nEverything through PHOTOGRAPHIC CHARACTER stays essentially the same as the successful Pure Hero Photography prompt.\n\nCREATIVE CONCEPT\nCreate a premium hero photograph for a Woolworths campaign that applies the visual discipline, composition, material sophistication, and photographic quality of a world-class automotive advertising campaign to an authentic Australian supermarket shopping experience.\nThe concept is simple:\nTreat the everyday Woolworths shopping trolley like a luxury automobile hero object.\nThe result should feel like a genuinely commissioned premium advertising photograph \u2014 not a supermarket advertisement, not stock photography, and not an AI-generated fantasy environment.\nThe supermarket remains recognizably real and Australian. The photography and art direction are elevated, not the retail environment itself.\nHERO STORY\nA stylish young Australian woman naturally pushes a classic Woolworths shopping trolley through a contemporary Woolworths supermarket.\nA young man walks naturally beside her, slightly behind.\nThey are shopping rather than posing.\nNeither looks at the camera.\nTheir interaction should feel spontaneous and observed \u2014 a believable moment from modern Australian everyday life.\nThe trolley is the visual hero.\nIt should receive the same compositional importance, physical presence and photographic attention that a premium automobile would receive in a luxury automotive campaign.\nThe trolley contains a believable weekly shop:\n\n* fresh Australian fruit and vegetables\n* fresh bread or bakery products\n* premium pantry groceries\n* herbs or a small bunch of flowers\n* a small selection of everyday household products\n\nEvery object must have believable scale, weight, material, contact and physical placement inside the trolley.\nENVIRONMENT\nA real, contemporary Australian Woolworths supermarket.\nThe store should feel clean, well-designed and visually considered without becoming a luxury mall or futuristic retail environment.\nInclude:\n\n* believable supermarket aisle proportions\n* realistic shelving\n* authentic retail fixtures\n* strong fresh-food presence\n* realistic product density\n* contemporary ceiling architecture\n* subtle Woolworths-green wayfinding and signage\n* polished but believable flooring\n* natural depth extending far into the store\n\nThe environment must remain recognizably Woolworths and recognizably Australian.\nDo not beautify the supermarket into an unrealistic luxury environment.\nCOMPOSITION\nFORMAT: 4:5 vertical.\nThink like a premium automotive campaign photograph.\nForeground\nThe shopping trolley dominates the lower foreground.\nIt should feel substantial, beautifully constructed and unusually important within the frame.\nShoot it with enough perspective and physical presence to make the viewer instinctively treat it as the hero object.\nMidground\nThe woman is the primary human subject, naturally connected to the trolley.\nThe man is secondary and slightly behind her.\nBackground\nLong retail perspective with shelves, fresh-food displays and a small number of distant shoppers.\nUse strong architectural and aisle lines to create depth and guide the eye toward the subjects.\nComposition should have clear visual hierarchy:\ntrolley \u2192 woman \u2192 companion \u2192 retail environment\nCAMERA\nFull-frame commercial photography.\nApproximately 32\u201335mm full-frame equivalent.\nLow-to-medium camera height.\nStrong natural perspective with no fisheye distortion.\nThe camera should feel physically present in the aisle rather than mounted at an unnatural height.\nModerate depth of field:\n\n* trolley and hero subjects highly resolved\n* surrounding environment clearly recognizable\n* background gradually softer but never artificially blurred\n\nThe image must retain the spatial depth of a real photograph.\nLIGHTING\nPremium architectural commercial lighting.\nCombine warm supermarket illumination with subtle cooler ambient light.\nUse controlled highlights across:\n\n* metal trolley\n* polished floor\n* glass\n* packaging\n* architectural surfaces\n\nWoolworths green should produce subtle, physically believable reflections where appropriate.\nShadows should be natural and dimensional.\nSkin should retain realistic texture.\nClothing should show believable fabric structure.\nMetal should have physically accurate reflections.\nFloor reflections should be subtle, imperfect and photographic.\nNo artificial glow.\nNo exaggerated cinematic effects.\nCOLOUR\nContemporary premium editorial colour grading.\nNatural Australian daylight-balanced colour with restrained warmth.\nFresh produce should provide natural colour variation.\nWoolworths Green is the signature accent, appearing selectively through authentic environmental details such as signage, trolley elements and small architectural or merchandising accents.\nGreen must be relatively rare.\nIt should function like the signature colour of a premium automotive brand:\nrecognizable, restrained and intentional.\nDo not make the entire environment green.\nHUMAN REALISM\nThe people must look like real contemporary Australians photographed in an actual supermarket.\nNatural posture.\nNatural walking movement.\nNatural interaction with the trolley.\nNatural facial expressions.\nNo influencer posing.\nNo model-like exaggerated expressions.\nNo direct eye contact with camera.\nNo staged advertising smiles.\nHands, fingers, arms, clothing and body proportions must be anatomically correct.\nThe people should feel like participants in a real moment, not actors deliberately posing for an advertisement.\nPHOTOGRAPHIC CHARACTER\nThe final image should feel like it was photographed by a world-class commercial photographer for a major Australian brand campaign.\nReference the discipline and precision of premium automotive advertising photography, combined with contemporary Australian lifestyle editorial photography.\nPrioritize:\n\n* photographic realism\n* precise composition\n* authentic materials\n* controlled perspective\n* natural human behaviour\n* sophisticated colour\n* believable retail architecture\n* subtle visual storytelling\n\nThe photograph should feel expensive because of art direction and photographic precision, not because it contains excessive luxury styling.\n\nEDITORIAL CATALOGUE DESIGN SYSTEM\n\nThe photograph must now function as a premium retail catalogue cover, not simply a photograph with text placed above it.\n\nCreate a sophisticated, asymmetric editorial graphic system inspired by the design discipline of premium automotive catalogues and contemporary high-end retail campaigns.\n\nThe graphic system should feel designed into the photograph.\n\nIt should not look like text was added afterward.\n\nDESIGN CHARACTER\n\nThink:\n\npremium automotive catalogue \u00d7 contemporary Australian retail editorial \u00d7 refined Swiss-inspired grid\n\nUse:\n\nstrong asymmetry\nconfident typography\nprecise alignment\ngenerous negative space\nthin technical rules\nsmall catalogue identifiers\nrestrained brand elements\ncarefully distributed graphic anchors\n\nThe design should feel expensive, confident and intentional, not decorative.\n\nPRIMARY HEADLINE\n\nUse:\n\nFRESH. EVERY DAY.\n\nThe headline should be bold, confident and editorial, not thin or delicate.\n\nPrefer a stacked 2\u20133 line treatment, for example:\n\nFRESH.\nEVERY\nDAY.\n\nor an equivalent strong composition.\n\nUse a clean contemporary sans-serif with strong geometric or condensed characteristics.\n\nThe headline should be substantially more visually assertive than the supporting text, while still occupying a relatively modest portion of the overall photograph.\n\nPrefer left alignment.\n\nDo not center the headline across the page.\n\nDo not stretch the text horizontally.\n\nDo not use oversized fashion-magazine typography.\n\nCATALOGUE IDENTIFIER\n\nInclude:\n\n01 / THE LIFESTYLE\n\nTreat this as an independent catalogue navigation element rather than simply a subtitle.\n\nIt may appear near the top edge or aligned with the main typographic grid.\n\nUse small uppercase typography with generous tracking.\n\nIt should be clearly visible but subordinate to the headline.\n\nSUPPORTING COPY\n\nInclude one short supporting statement:\n\nFresh food. Quality. Everyday Australian life.\n\nPlace it close to the main headline as a compact editorial copy block.\n\nUse substantially smaller typography.\n\nKeep line length short.\n\nDo not create a paragraph.\n\nBRAND / VALUE BLOCK\n\nIntroduce a small secondary Woolworths brand-value block in a separate area of the composition.\n\nPossible content:\n\nFRESH FOOD\nQUALITY\nEVERYDAY VALUE\n\nKeep this extremely restrained.\n\nIt should function like a small information block in a premium catalogue rather than advertising copy.\n\nPosition it independently from the main headline, preferably toward the upper-right or another natural negative-space area.\n\nDISTRIBUTED GRAPHIC SYSTEM\n\nDo not place all typography at the top.\n\nUse the entire 4:5 frame as a structured editorial grid.\n\nGraphic elements may appear in:\n\nupper-left\nupper-center\nupper-right\nlower-left\nlower-right\n\ndepending on available negative space.\n\nUse only a few elements.\n\nPossible elements include:\n\nthin horizontal rules\nvery thin vertical rules\nsmall corner brackets\ntiny catalogue numbering\nsubtle registration-style marks\nsmall Woolworths brand symbols\n\nThese elements should create visual tension and structure, not decoration.\n\nBRAND SIGNATURE\n\nInclude a small, accurate Woolworths brand signature.\n\nPrefer a natural position near the upper-left or upper-right portion of the composition.\n\nThe brand signature should be clearly identifiable but never dominate the headline or photograph.\n\nWoolworths Green should remain the primary brand accent.\n\nDo not introduce additional strong colours merely for graphic decoration.\n\nGRAPHIC / PHOTOGRAPH RELATIONSHIP\n\nTypography should interact with the architecture and negative space of the photograph.\n\nWhere possible:\n\nalign text with architectural lines\nuse shelf or ceiling geometry as compositional guides\nallow graphic rules to echo perspective lines\nplace text in naturally quieter areas\nnever cover important facial features\nnever obscure the trolley\nnever obscure important products\n\nThe graphic system should feel as though the photographer and graphic designer designed the composition together before the photograph was made.\n\nTYPOGRAPHIC HIERARCHY\n\nThe hierarchy should be:\n\n1. Hero photograph\n\n2. Trolley + human story\n\n3. Primary headline\n\n4. Woolworths brand\n\n5. Catalogue identifier\n\n6. Supporting/value information\n\n7. Technical graphic details\n\nThe photograph must remain dominant.\n\nThe typography should make the photograph feel more like a campaign, not compete with it.\n\nIMPORTANT \u2014 DESIGN DIRECTION\n\nThe result should feel closer to a real premium retail catalogue cover than to a conventional supermarket advertisement.\n\nAvoid:\n\ncentered headline\nthin luxury-magazine typography\nlarge empty banner at the top\ntext confined entirely to the top edge\ngeneric corporate presentation\nexcessive copy\nposter-like advertising\nfashion-magazine clich\u00e9s\n\nInstead use:\n\nbold editorial typography + asymmetric composition + restrained information blocks + distributed graphic anchors.\n\nFINAL DESIGN TEST\n\nAt thumbnail size, the image should still immediately read as:\n\na premium Woolworths campaign photograph.\n\nAt larger size, the viewer should discover:\n\nthe catalogue system \u2192 headline \u2192 brand \u2192 information details.\n\nThe graphic design must reward closer inspection without overwhelming the photograph.\n\nABSOLUTELY AVOID\nAvoid generic stock-photo supermarket scenes, staged advertising poses, people looking at camera, exaggerated smiles, perfectly symmetrical aisles, unrealistic supermarket architecture, luxury-mall aesthetics, futuristic retail design, excessive green, excessive bokeh, fisheye distortion, extreme wide-angle distortion, artificial glow, excessive lens flare, fake HDR, oversaturation, plastic skin, CGI-looking materials, impossible trolley geometry, floating objects, duplicated products, duplicated people, distorted hands, malformed bodies, warped shelving, nonsensical packaging, fake or distorted branding, and visible generative artifacts.\nDo not make the image look like an AI concept render.\nDo not turn the supermarket into a futuristic or luxury environment.\nDo not make the trolley physically impossible.\n\nFINAL OUTPUT\n4:5 vertical. Photorealistic premium commercial photography combined with a sophisticated asymmetric editorial catalogue system. One coherent photographic world, one hero story, one hero trolley, one unmistakably Woolworths identity, and a confident but restrained graphic language.\n\nuse Image Lab</span>\n    </div>\n  </section>\n\n  <section class=\"credits\">\n    <div class=\"col\">\n    <span class=\"section-label\">Provenance</span>\n    <h2>How this was made</h2>\n    <p class=\"lead\">Image Lab is not a benchmark &mdash; different models and seeds make these an unfair comparison. It turns one brief into strong choices. Everything below did real, billed work in this run.</p>\n      <ul class=\"tool-list\"><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai\" target=\"_blank\" rel=\"noopener\">CogFoundry model gateway</a></span><span class=\"trole\">Ran every generation in this run through <code>POST /api/v1/tasks/generations</code> and reported the real per-image cost. Run total: $0.3600.</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai/en/models/media/360/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Sunburst</a></span><span class=\"trole\">3 alternatives (A, B, C).</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai/en/models/media/361/\" target=\"_blank\" rel=\"noopener\">GPT Image 2.5 Flare</a></span><span class=\"trole\">3 alternatives (D, E, F).</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://cogfoundry.ai/en/models/media/314/\" target=\"_blank\" rel=\"noopener\">GPT Image 2</a></span><span class=\"trole\">2 alternatives (G, H).</span></li><li><span class=\"tname\"><a class=\"tn\" href=\"https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/image-lab\" target=\"_blank\" rel=\"noopener\">Image Lab</a></span><span class=\"trole\">A loomloom community example &mdash; the skill that classified the brief, chose the model allocation, gated the cost, and rendered this page.</span></li></ul>\n    </div>\n  </section>"}];
+  function initRoundNav() {
+    var prevBtn = document.getElementById("round-prev");
+    var nextBtn = document.getElementById("round-next");
+    [prevBtn, nextBtn].forEach(function (b) {
+      if (!b) return;
+      b.addEventListener("click", function () {
+        renderRound(parseInt(b.dataset.roundIndex, 10));
+      });
+    });
+  }
+  function renderRound(i) {
+    var r = ROUNDS[i];
+    document.getElementById("round-head").innerHTML = r.head;
+    document.getElementById("round-body").innerHTML = r.body;
+    document.title = r.title;
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    initGallery();
+    initPromptCopy();
+    initRoundNav();
+    document.getElementById("round-body").scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
+  initGallery();
+  initPromptCopy();
+  initRoundNav();
+</script>
+</body>
+</html>
