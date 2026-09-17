@@ -64,6 +64,7 @@ type creatorMarketListingVersionResponse struct {
 	ReviewStatus                string         `json:"reviewStatus"`
 	ReviewReason                string         `json:"reviewReason"`
 	TemplateVersionID           string         `json:"templateVersionId"`
+	SourceTemplateVersionID     string         `json:"sourceTemplateVersionId,omitempty"`
 	TaskFixedFeeT               *flexInt64     `json:"taskFixedFeeT,omitempty"`
 	TaskFixedFee                *moneyResponse `json:"taskFixedFee,omitempty"`
 	Currency                    string         `json:"currency"`
@@ -230,9 +231,12 @@ func inferExistingListingSkillPackageSelection(ctx context.Context, httpClient l
 		if strings.TrimSpace(version.ID) != publishedVersionID {
 			continue
 		}
-		currentTemplateVersionID := strings.TrimSpace(version.TemplateVersionID)
+		currentTemplateVersionID := strings.TrimSpace(version.SourceTemplateVersionID)
 		if currentTemplateVersionID == "" {
-			return nil, fmt.Errorf("current published listing version %s is missing templateVersionId", publishedVersionID)
+			currentTemplateVersionID = strings.TrimSpace(version.TemplateVersionID)
+		}
+		if currentTemplateVersionID == "" {
+			return nil, fmt.Errorf("current published listing version %s is missing sourceTemplateVersionId and templateVersionId", publishedVersionID)
 		}
 		if currentTemplateVersionID == nextTemplateVersionID {
 			return nil, nil // omitted selection maps to preserve for an existing Listing
