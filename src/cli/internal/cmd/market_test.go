@@ -135,6 +135,66 @@ func TestMarketPublishUsesAutoWhenTemplateVersionChanges(t *testing.T) {
 	}
 }
 
+func TestListingPublishResolvesSourceTemplateVersion(t *testing.T) {
+	for _, tt := range []struct {
+		name, fields, mode string
+		wantError          bool
+	}{
+		{name: "V2 unchanged", fields: `"sourceTemplateVersionId":"version-new","templateVersionId":""`},
+		{name: "V2 changed", fields: `"sourceTemplateVersionId":"version-old","templateVersionId":""`, mode: "auto"},
+		{name: "source takes precedence", fields: `"sourceTemplateVersionId":" version-new ","templateVersionId":"version-old"`},
+		{name: "legacy fallback", fields: `"sourceTemplateVersionId":" ","templateVersionId":"version-new"`},
+		{name: "missing versions", fields: `"sourceTemplateVersionId":"","templateVersionId":""`, wantError: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var body map[string]any
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				switch r.URL.Path {
+				case "/loom/v1/creators/me/marketListings/listing-1":
+					_, _ = w.Write([]byte(`{"publishedVersionId":"listing-version-1"}`))
+				case "/loom/v1/creators/me/marketListings/listing-1/versions":
+					_, _ = w.Write([]byte(`{"items":[{"id":"listing-version-1","saleStatus":"unlisted","executionAvailabilityStatus":"blocked","executionBlockReason":"force_unlisted",` + tt.fields + `}]}`))
+				case "/loom/v1/marketListings":
+					if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+						t.Errorf("decode request: %v", err)
+					}
+					w.WriteHeader(http.StatusCreated)
+					_, _ = w.Write([]byte(`{"id":"listing-1"}`))
+				default:
+					t.Errorf("unexpected path: %s", r.URL.Path)
+					w.WriteHeader(http.StatusNotFound)
+				}
+			}))
+			defer server.Close()
+			cmd := newListingPublishCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second})
+			cmd.SetOut(new(bytes.Buffer))
+			cmd.SetErr(new(bytes.Buffer))
+			cmd.SetArgs([]string{"template-1", "--listing-id", "listing-1", "--template-version-id", "version-new", "--display-name", "Test listing", "--task-fixed-fee", "0.5"})
+			err := cmd.Execute()
+			if tt.wantError {
+				if err == nil || !strings.Contains(err.Error(), "missing") || body != nil {
+					t.Fatalf("error=%v body=%#v; want missing version error without publish", err, body)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if body["listingId"] != "listing-1" || body["templateVersionId"] != "version-new" {
+				t.Fatalf("unexpected publish target: %#v", body)
+			}
+			if tt.mode == "" {
+				if _, ok := body["skillPackage"]; ok {
+					t.Fatalf("expected preserved package: %#v", body)
+				}
+			} else if selection, ok := body["skillPackage"].(map[string]any); !ok || selection["mode"] != tt.mode {
+				t.Fatalf("skillPackage=%#v want %s", body["skillPackage"], tt.mode)
+			}
+		})
+	}
+}
+
 func TestMarketPublishSendsArchiveSkillPackageSelection(t *testing.T) {
 	var body map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
