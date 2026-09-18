@@ -175,7 +175,8 @@ jobs:
         run: |
           node npm/scripts/publish-packages.mjs \
             --publish \
-            --confirm-tag "$RELEASE_TAG"
+            --confirm-tag "$RELEASE_TAG" \
+            --readback-attempts 180
 
       - name: Verify the official Registry user path
         shell: bash
