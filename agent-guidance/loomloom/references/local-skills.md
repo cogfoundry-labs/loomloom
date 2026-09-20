@@ -94,7 +94,7 @@ Proceed with this preparation as part of the user's use request. Keep progress m
 
 - A command error means installation failed. Briefly explain the reported problem. The CLI preserves the previous local package on failure.
 - `available=false` means installation was skipped. Explain the returned reason in the user's language: `listing_not_listed` means the Listing is not currently listed; `package_removed` means its package was removed; `distribution_blocked` means distribution is blocked; `distribution_unavailable` means distribution is not currently available. An unfamiliar reason should be reported without guessing its meaning.
-- For Market packages, the CLI handles `no_published_package` by attempting to obtain a standard package. Report the final installation result. For official templates, an unavailable package is reported as skipped.
+- For Market packages, the installation command automatically attempts to obtain an available ZIP. When no published ZIP exists (`no_published_package`), it requests the download endpoint, which can generate the ZIP on demand. The CLI verifies and installs the returned ZIP; report the final installation result. Report no installable package only when the service explicitly indicates that none is available; other errors follow the failure handling above. For official templates, an unavailable package is reported as skipped.
 
 ## Market publication
 
