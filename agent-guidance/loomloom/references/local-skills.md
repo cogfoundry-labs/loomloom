@@ -49,20 +49,26 @@ Use `--expected-archive-hash` and `--expected-validation-id` for a replacement o
 
 ## Consumer: official-template and Market packages
 
-Only trigger package installation when the user clearly tells the current Agent to **install** or **use** a selected official template or Market SkillBot. Listing, browsing, quoting, explaining, or merely showing it does not authorize installation. Once the template slug or Listing ID is known and the user has made that explicit request, check or install the package before downloading a workbook, reading the concrete input schema, preparing actual input, quoting, or executing.
+Requests to accomplish a task with an official template or Market SkillBot include its installation preparation. For example, "use this SkillBot to review my document" triggers installation once the target is identified. A request solely to browse, explain, or quote follows the discovery or quotation workflow.
 
-The Agent determines its own Skill root. Do not hard-code Codex, Claude, or OpenClaw paths, and do not ask the user to choose a platform-specific destination. Pass the root to the CLI:
+Determine the current Agent's Skill root from its runtime configuration or supported conventions. If the root cannot be determined, ask for that missing information. Run the appropriate command with this directory:
 
 ```bash
 loomloom skill package install market <listing-id> --skill-root <current-agent-skill-root>
 loomloom skill package install official <template-slug> --skill-root <current-agent-skill-root>
 ```
 
-Do not use `loomloom skill install market`. It is a legacy local-wrapper generator retained only for compatibility; it does not download the reviewed backend ZIP and is not the Market SkillBot installation flow.
+These `skill package install` commands install the backend-provided package. The older `skill install market` command generates a local wrapper and serves a separate compatibility workflow.
 
-This is an automatic action after the user's explicit install/use request: do not ask a second confirmation. First read the public package summary; do not skip this check. If no public ZIP is available, do not download or trigger package generation; continue with the normal LoomLoom cloud workflow. When a public ZIP is available, compare its `archiveHash` with the current Agent's local `.loomloom-package.json`: if it matches, keep the installed Skill; if it differs, download, verify, and atomically replace the same-source local Skill directory. A same-name directory owned by another source or not managed by LoomLoom is a name conflict and must not be overwritten. Package Skill names must remain stable across versions. If download, validation, extraction, or replacement fails, retain the previous local package.
+The CLI checks the local version, downloads the Skill Package ZIP when needed, verifies it, and extracts it into a Skill directory beneath the supplied Skill root. Installation success or `unchanged=true` means the Skill Package is available locally in the returned `dir`. Run the installation command even when the package may already be installed; the CLI decides whether an update is needed.
 
-If the public package is unavailable, do not install anything and do not treat the SkillBot as unexecutable: continue with the normal LoomLoom cloud workflow.
+Proceed with this preparation as part of the user's use request. Keep progress messages focused on the task and any decisions needed from the user. Paid execution follows the separate quote/precheck and confirmation rules in `billing.md`.
+
+### Installation exceptions
+
+- A command error means installation failed. Briefly explain the reported problem. The CLI preserves the previous local package on failure.
+- `available=false` means installation was skipped. Explain the returned reason in the user's language: `listing_not_listed` means the Listing is not currently listed; `package_removed` means its package was removed; `distribution_blocked` means distribution is blocked; `distribution_unavailable` means distribution is not currently available. An unfamiliar reason should be reported without guessing its meaning.
+- For Market packages, the CLI handles `no_published_package` by attempting to obtain a standard package. Report the final installation result. For official templates, an unavailable package is reported as skipped.
 
 ## Market publication
 

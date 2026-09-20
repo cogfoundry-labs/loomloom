@@ -41,7 +41,7 @@ func newSkillPackageInstallMarketCmd(opts *rootOptions) *cobra.Command {
 	cmd := &cobra.Command{Use: "market <listing-id>", Short: "Install or update a Market SkillBot ZIP package", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		listingID := strings.TrimSpace(args[0])
 		listingPath := url.PathEscape(listingID)
-		return installPublicSkillPackage(cmd, opts, "/marketListings/"+listingPath+"/skillPackage", "/marketListings/"+listingPath+"/skillPackage/archive", root, "market:"+listingID)
+		return installMarketSkillPackage(cmd, opts, "/marketListings/"+listingPath+"/skillPackage", "/marketListings/"+listingPath+"/skillPackage/archive", root, "market:"+listingID)
 	}}
 	addSkillRootFlag(cmd, &root)
 	return cmd
@@ -57,7 +57,7 @@ func newSkillPackageInstallOfficialCmd(opts *rootOptions) *cobra.Command {
 	return cmd
 }
 
-func installPublicSkillPackage(cmd *cobra.Command, opts *rootOptions, summaryPath, archivePath, root, sourceRef string) error {
+func installMarketSkillPackage(cmd *cobra.Command, opts *rootOptions, summaryPath, archivePath, root, sourceRef string) error {
 	httpClient, err := newHTTPClient(opts)
 	if err != nil {
 		return err
@@ -67,6 +67,22 @@ func installPublicSkillPackage(cmd *cobra.Command, opts *rootOptions, summaryPat
 	var summary skillPackageSummary
 	if err := httpClient.GetJSON(ctx, summaryPath, &summary); err != nil {
 		return err
+	}
+	if !summary.Available && summary.UnavailableReason == "no_published_package" {
+		// The Market archive endpoint can generate the first standard package.
+		// Read its published hash afterwards and verify these same downloaded bytes.
+		archive, err := httpClient.GetBinary(ctx, archivePath)
+		if err != nil {
+			return err
+		}
+		var refreshed skillPackageSummary
+		if err := httpClient.GetJSON(ctx, summaryPath, &refreshed); err != nil {
+			return fmt.Errorf("refresh market skill package after download: %w", err)
+		}
+		if !refreshed.Available {
+			return fmt.Errorf("market skill package is unavailable after download: %s", refreshed.UnavailableReason)
+		}
+		return installDownloadedSkillPackage(cmd, refreshed, archive.Body, root, sourceRef)
 	}
 	return downloadAndInstallSkillPackage(cmd, ctx, httpClient, summary, archivePath, root, sourceRef)
 }
@@ -107,7 +123,15 @@ func downloadAndInstallSkillPackage(cmd *cobra.Command, ctx context.Context, htt
 	if err != nil {
 		return err
 	}
-	result, err := skill.InstallPackage(skill.PackageInstallOptions{SkillRoot: root, SourceRef: sourceRef, ArchiveHash: expectedHash, Archive: archive.Body})
+	return installDownloadedSkillPackage(cmd, summary, archive.Body, root, sourceRef)
+}
+
+func installDownloadedSkillPackage(cmd *cobra.Command, summary skillPackageSummary, archive []byte, root, sourceRef string) error {
+	expectedHash := strings.TrimSpace(summary.ArchiveHash)
+	if expectedHash == "" {
+		return fmt.Errorf("public skill package summary is missing archiveHash")
+	}
+	result, err := skill.InstallPackage(skill.PackageInstallOptions{SkillRoot: root, SourceRef: sourceRef, ArchiveHash: expectedHash, Archive: archive})
 	if err != nil {
 		return err
 	}
