@@ -1,8 +1,15 @@
 # Agent Skill Packages
 
-Use this reference for a private template that needs local Agent capabilities, and when a user explicitly asks their current Agent to install or use an official template or Market SkillBot.
+Use this reference for a private template that needs local Agent capabilities, downloading private or creator Skill Package ZIPs, and when a user explicitly asks their current Agent to install or use an official template or Market SkillBot.
 
 Local package installation is not template execution. It must not create a run, quote/precheck execution cost, call a Market SkillBot, or create billable model/API usage.
+
+## Contents
+
+- [Creator: private template with Agent capabilities](#creator-private-template-with-agent-capabilities)
+- [Download a ZIP without installation](#download-a-zip-without-installation)
+- [Consumer: official-template and Market packages](#consumer-official-template-and-market-packages)
+- [Market publication](#market-publication)
 
 ## Creator: private template with Agent capabilities
 
@@ -46,6 +53,25 @@ loomloom skill package private detach <template-id> \
 ```
 
 Use `--expected-archive-hash` and `--expected-validation-id` for a replacement or detachment whenever a current Head exists, so a stale Agent cannot overwrite another change. Detachment only removes the current package binding; it does not delete the private template, template versions, or historical ZIP archives. Before detaching, explain this effect and obtain the creator's explicit confirmation.
+
+## Download a ZIP without installation
+
+To save the current package associated with one of the user's private templates:
+
+```bash
+loomloom skill package private download <template-id> --output-file <package.zip>
+```
+
+To save a specific Skill Package version belonging to one of the user's own Listings:
+
+```bash
+loomloom listing download-skill-package <listing-id> \
+  --version-id <skill-package-version-id> --output-file <package.zip>
+```
+
+`--version-id` identifies a Skill Package version, not a Listing or template version. Read it from the Server, for example `skillPackage.skillPackageVersionId` or `skillPackageReview.pending.id` in `loomloom listing show <listing-id> --output json`. The Server controls access, including to non-public package versions.
+
+Both commands only save the ZIP; they do not extract, install, or execute it. For output options, consult the command's `--help`.
 
 ## Consumer: official-template and Market packages
 

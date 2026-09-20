@@ -26,7 +26,7 @@ func newSkillPackageCmd(opts *rootOptions) *cobra.Command {
 	install := &cobra.Command{Use: "install", Short: "Download and install or update a Skill ZIP in the current Agent's Skill root"}
 	install.AddCommand(newSkillPackageInstallMarketCmd(opts), newSkillPackageInstallOfficialCmd(opts))
 	private := &cobra.Command{Use: "private", Short: "Manage the current private template Skill ZIP"}
-	private.AddCommand(newSkillPackagePrivateUploadCmd(opts), newSkillPackagePrivateShowCmd(opts), newSkillPackagePrivateDetachCmd(opts))
+	private.AddCommand(newSkillPackagePrivateUploadCmd(opts), newSkillPackagePrivateShowCmd(opts), newSkillPackagePrivateDownloadCmd(opts), newSkillPackagePrivateDetachCmd(opts))
 	cmd.AddCommand(install, private)
 	return cmd
 }

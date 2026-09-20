@@ -87,6 +87,7 @@ func newListingCmd(opts *rootOptions) *cobra.Command {
 		newListingPublishCmd(opts),
 		newListingUpdateCmd(opts),
 		newListingUpdateSkillPackageCmd(opts),
+		newListingDownloadSkillPackageCmd(opts),
 		newListingListCmd(opts),
 		newListingShowCmd(opts),
 		newListingVersionsCmd(opts),

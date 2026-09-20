@@ -218,6 +218,17 @@ Install/uninstall loomloom workflows as local tools for AI agents (e.g., Claude 
 - Installation only writes local wrapper files; it does not execute a template, quote/precheck costs, or create billable model/API usage.
 - For uninstall, run `loomloom skill uninstall --dir <skill-dir> --dry-run --output json` first. The command only removes directories that contain valid loomloom skill metadata; pass `--force` only when you intentionally want to remove a directory with extra files in it.
 
+### Download Skill Package ZIPs
+
+| Command | Description |
+|---|---|
+| `loomloom skill package private download <template-id> --output-file <zip>` | Download the current package associated with one of my private templates. |
+| `loomloom listing download-skill-package <listing-id> --version-id <skill-package-version-id> --output-file <zip>` | Download a specific Skill Package version of one of my Listings, subject to server authorization. |
+
+These commands only save ZIP files; they do not extract, install, generate packages, or execute tasks. `--output-file` (`-f`) is required and accepts a file path or directory. For a directory, the server filename is used, with `private-skill-package.zip` or `listing-skill-package.zip` as a fallback. Existing output files are replaced only after download and local staging succeed. Text output reports identifiers, `path`, and byte `size`; `--output json` returns `templateId` or `listingId`/`skillPackageVersionId`, plus `path`, `filename`, and `size`.
+
+The Listing command's `--version-id` is **not** a Listing version or template version ID. Read the Skill Package version from the server response, for example `skillPackage.skillPackageVersionId` or `skillPackageReview.pending.id` in `loomloom listing show <listing-id> --output json`. The creator endpoint can also handle non-public package versions when authorized; it is not a public-market historical download command. Missing packages and permission failures are reported as errors.
+
 ## 9. Market (Buy workflows)
 
 Typical flow
@@ -248,6 +259,7 @@ Typical flow
 | `loomloom listing list` | List my Market listings. |
 | `loomloom listing show <listing-id>` | Show one of my listings. |
 | `loomloom listing versions <listing-id>` | List versions of one of my listings. |
+| `loomloom listing download-skill-package <listing-id> --version-id <skill-package-version-id> --output-file <zip>` | Save a specific Skill Package version ZIP of one of my listings without installing it. |
 | `loomloom listing update <listing-id> --display-name <name>` | Submit a public-profile update for review after confirmation; pass a display name, description, or both. |
 | `loomloom listing unlist <listing-id>` | Stop new executions of a listing after confirmation. |
 | `loomloom listing relist <listing-id>` | Restore a previously unlisted listing after confirmation. |

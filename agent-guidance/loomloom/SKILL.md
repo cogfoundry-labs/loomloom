@@ -55,7 +55,7 @@ Read every required reference for the current intent before answering with busin
 | Create, explain, or version a private template or TemplateSpec | [template-spec.md](references/template-spec.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Discover, quote, or execute a Market SkillBot | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Publish, change price/version/profile, list/unlist/relist, review, usage, settlement, or earnings | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
-| Install or uninstall a LoomLoom template as a local Agent Skill | [local-skills.md](references/local-skills.md), [cli.md](references/cli.md) |
+| Manage Skill Packages or install/uninstall local Agent Skills | [local-skills.md](references/local-skills.md), [cli.md](references/cli.md) |
 | Diagnose a failure, ambiguous response, missing ID, or command syntax | [cli.md](references/cli.md) plus the relevant domain reference above |
 
 Whenever a task involves fees, quote/precheck, currency, balance, confirmation, paid execution, failure, cancellation, partial completion, usage, settlement, or creator earnings, read `billing.md` before answering or acting.
