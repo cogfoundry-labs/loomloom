@@ -209,5 +209,11 @@ the historical version.
 - `loomloom skill package private detach <template-id> [--expected-archive-hash <hash> --expected-validation-id <id>]`
 - `loomloom skill package install market <listing-id> --skill-root <current-agent-skill-root>`
 - `loomloom skill package install official <template-slug> --skill-root <current-agent-skill-root>`
+
+#### Legacy wrappers (compatibility)
+
+These commands belong to the local-wrapper workflow described in [local-skills.md](local-skills.md). Use the ZIP commands above for Market and official-template package installation; wrapper uninstall does not support installed ZIP packages.
+
+- `loomloom skill install market <listing-id> --agent <agent> --output-dir <dir>`
 - `loomloom skill install template-spec <template-id> <version-id> --agent <agent> --output-dir <dir>`
 - `loomloom skill uninstall --dir <skill-dir>`
