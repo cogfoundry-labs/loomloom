@@ -103,32 +103,6 @@ loomloom listing publish <template-id> \
 
 The private template version must already have one successful run. Use normal currency units such as `--task-fixed-fee 0.5`; the CLI converts them to backend units. A successful request returns a `reviewRequestId` with a pending review state.
 
-### Confirm duplicate names before publishing
-
-When creating a new Listing (without `--listing-id`), `listing publish` checks the authenticated creator's Market SkillBots across all states, including pending review and unlisted entries. Private templates are excluded. Matching ignores outer whitespace and case, but preserves internal whitespace. Updating an existing Listing with `--listing-id` skips this check.
-
-- No matching names: the CLI continues with the normal submission.
-- Matching names: the CLI displays all matches, including their IDs, names, and states, and requires confirmation. Duplicate names are allowed.
-- Check failure, including `Unimplemented`: the CLI warns that the result is unknown and requires confirmation. Do not describe this as no duplicates or as a failed template trial run.
-
-In an interactive terminal, only `y` or `yes` confirms. Enter, refusal, EOF, or the independent five-minute confirmation timeout cancels submission. Name checking and subsequent submission each have their own HTTP timeout (default 30 seconds, controlled by `--timeout`).
-
-Agent and other non-interactive calls do not receive a `y/N` prompt. On a duplicate-name warning or check failure, the CLI exits and asks for `--confirm-name-warning`. Explain the warning to the user and obtain explicit confirmation before retrying the same command with that flag. For a failed check, explicitly say that duplicate names could not be checked. Do not add the flag automatically to bypass a warning, and do not substitute a public Market search for the creator-scoped check.
-
-An explicit confirmation already given for this publication warning remains valid for an identical retry; do not ask again when the name, publication target, and known warning circumstances are unchanged. Obtain a new confirmation if any of those change. Before retrying an ambiguous submission failure, inspect the Listing or review state to avoid duplicate submissions.
-
-Only after the user confirms:
-
-```bash
-loomloom listing publish <template-id> \
-  --template-version-id <id> \
-  --display-name <name> \
-  --task-fixed-fee <amount> \
-  --confirm-name-warning
-```
-
-The flag still performs the check and prints warnings; it allows submission to continue after either kind of warning. It does not bypass the successful trial-run requirement, other server validation, or review. A successful submission is a pending review request, not an approved public listing. `Unimplemented` concerns the check service's RPC availability; verify the target environment and deployed services separately from trial-run validation.
-
 ### Change only the price
 
 Publish to the same Listing with:
