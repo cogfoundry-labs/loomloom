@@ -88,7 +88,19 @@ Use `market show` to understand public fields and examples before building JSON 
 
 ## Install a template or SkillBot as a local Agent Skill
 
-Local Agent Skills are lightweight usage wrappers that teach Codex, Claude Code, or OpenClaw how to use a specific template or SkillBot.
+For Market SkillBots, use the Skill Package installation command:
+
+```bash
+loomloom skill package install market <listing-id> --skill-root <current-agent-skill-root>
+```
+
+The CLI downloads the ZIP when needed, verifies it, and extracts it beneath the supplied Skill root. For official templates, use `loomloom skill package install official <template-slug> --skill-root <current-agent-skill-root>`. Installation does not execute the template or authorize a paid run.
+
+### Legacy wrappers (compatibility)
+
+The commands below remain available for the older local-wrapper workflow. They generate calling instructions locally rather than download a Skill Package ZIP. A private-template wrapper can target an exact version even when the template has no ZIP package. `skill uninstall` only removes these generated wrappers, not packages installed by `skill package install`.
+
+These wrappers teach Codex, Claude Code, or OpenClaw how to use a specific template or SkillBot.
 
 They define when to use it, what inputs to collect, how to estimate cost, and how to submit executions only after explicit confirmation. They do **not** include server-side execution logic, hidden prompts, model settings, credentials, or Market internals.
 

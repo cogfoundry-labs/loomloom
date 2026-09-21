@@ -55,16 +55,18 @@ Read every required reference for the current intent before answering with busin
 | Create, explain, or version a private template or TemplateSpec | [template-spec.md](references/template-spec.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Discover, quote, or execute a Market SkillBot | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Publish, change price/version/profile, list/unlist/relist, review, usage, settlement, or earnings | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
-| Install or uninstall a LoomLoom template as a local Agent Skill | [local-skills.md](references/local-skills.md), [cli.md](references/cli.md) |
+| Manage Skill Packages or install local Agent Skills | [local-skills.md](references/local-skills.md), [cli.md](references/cli.md) |
 | Diagnose a failure, ambiguous response, missing ID, or command syntax | [cli.md](references/cli.md) plus the relevant domain reference above |
 
 Whenever a task involves fees, quote/precheck, currency, balance, confirmation, paid execution, failure, cancellation, partial completion, usage, settlement, or creator earnings, read `billing.md` before answering or acting.
+
+When the user asks to accomplish a task with a Market SkillBot or official template, also read [local-skills.md](references/local-skills.md) for installation commands and result handling.
 
 ## High-Level Workflows
 
 ### Official template
 
-When the user explicitly asks to use a selected official template, first check or install its public Skill Package in the current Agent's Skill root. Do this after the template is identified and before downloading its workbook, reading its concrete input schema, quoting, or executing. Listing or explaining official templates alone does not authorize installation. If the package check reports no public ZIP, continue with the normal LoomLoom cloud workflow.
+When the user requests use of an official template, identify the target and automatically install its Skill Package into the current Agent's Skill root. For template execution, prepare and validate the input, obtain the current estimate through precheck, and present the estimated cost for confirmation before submission, following `billing.md`. Briefly explain any installation failure.
 
 Default workbook flow:
 
@@ -200,7 +202,7 @@ Discover Listing → Inspect public schema → Select Listing → Explicit use r
 → User confirms → Run through Listing → Usage/results
 ```
 
-Only after the user explicitly says to install or use a selected Market SkillBot, check or install its public Skill Package in the current Agent's Skill root. Do this before preparing the actual input or executing; browsing, explaining, and quoting do not authorize installation. If the package check reports no public ZIP, continue with the normal Market cloud workflow. Package installation does not authorize a paid run.
+When the user requests use of a Market SkillBot, identify the Listing and automatically install its Skill Package into the current Agent's Skill root. For Market execution, prepare input according to the Listing's public schema, obtain a quote, and present the estimated cost for confirmation before running through the Listing, following `billing.md`. Briefly explain any installation failure.
 
 ### Market creator
 
@@ -214,8 +216,10 @@ Changing only the price and changing the execution version are different operati
 ### Local Agent Skill
 
 ```text
-Explicit install/use request → Agent identifies its own Skill root
-→ Download current public ZIP → validate and atomically install/update
+Install/use request → Identify target and current Agent's Skill root
+→ Run installation command
+→ CLI downloads ZIP as needed, verifies it, and extracts it beneath the Skill root
+→ Package installed or already up to date
 ```
 
 This automatic package installation does not authorize a paid run. Creator package uploads remain a separate, explicitly confirmed flow.
