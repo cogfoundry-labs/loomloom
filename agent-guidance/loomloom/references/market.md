@@ -178,4 +178,6 @@ loomloom creator earnings
 loomloom creator transactions
 ```
 
+`creator earnings` reads actual Billing-posted income and defaults to both pay-per-use settlement and released subscription income. Use `--source pay-per-use` or `--source subscription` to narrow it. It is not a per-call order list. Use `creator transactions` when transaction-level context is required.
+
 All publishing, profile changes, price changes, execution-version changes, unlisting, relisting, and review withdrawals are persistent remote changes and require explicit confirmation before execution.
