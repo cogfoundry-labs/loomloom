@@ -187,31 +187,18 @@ Before executing any of these, describe the exact business action and ask for ex
 
 ## Creator Earnings
 
-Use `creator earnings` for the overview and `creator transactions` for recent line items. Do not show raw JSON unless requested.
+Use `creator earnings` for actual posted income and `creator transactions` for transaction facts. `creator earnings` defaults to `--source all`; `--source pay-per-use` selects posted settlement events and `--source subscription` selects subscription income only after release. A pay-per-use income event can aggregate a settlement window, so it is not necessarily one row per call. Locked subscription accruals are not posted income. Do not show raw JSON unless requested.
 
 Present:
 
 ```text
-Here is the earnings overview for your public Market template:
+Here are your posted creator earnings:
 
-Template: <template_display_name>
-
-Cumulative:
-- Calls: <total_call_count>
-- Creator call fee: <gross_creator_call_fee>
-- Platform commission: <platform_fee>
-- Creator net receivable: <creator_net_receivable>
-
-Settlement:
-- Settled: <settled_amount>
-- Pending: <pending_amount>
-- Failed: <failed_amount>
-
-Exception:
-<failure count and explanation, or no settlement exceptions>
+Total posted: <total_amount>
+Income events: <total_count>
 
 Latest 5:
-1. Run <run_id>, net <amount>, status: <settled|failed|pending>
+1. <occurred_at>, <pay-per-use|subscription>, reference <source_event_id>, <amount>, status posted
 ```
 
-Show at most five recent transactions by default. If a response field is absent, omit the line or state that it was not returned. Never fabricate amounts, counts, run IDs, or settlement states.
+Show at most five recent events unless the user requests more. If a response field is absent, omit the line or state that it was not returned. Never infer call count from income-event count, and never fabricate amounts, counts, run IDs, or settlement states.

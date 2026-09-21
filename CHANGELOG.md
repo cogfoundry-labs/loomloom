@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for exact-model or dedicated-interface workflows.
 
 ### Changed
+- `creator earnings` now reads Billing-authoritative posted income, defaults to
+  both pay-per-use and released subscription sources, and supports stable page
+  tokens without switching to the subscription accrual endpoint.
+- Subscription ID filtering remains transaction-specific; use
+  `creator transactions --source subscription --subscription-id <id>` instead
+  of the removed `creator earnings --subscription-id` combination.
 - The text authoring-context table includes dynamic Profile details while
   retaining the existing identity and legacy contract columns.
 - `capability resolve` text output no longer appends an empty revision suffix to
