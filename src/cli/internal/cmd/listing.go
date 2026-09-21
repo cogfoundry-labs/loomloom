@@ -1,15 +1,19 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // creatorMarketListingResponse mirrors the backend marketListingResponse
@@ -78,6 +82,19 @@ type creatorMarketListingVersionsResponse struct {
 	Items []creatorMarketListingVersionResponse `json:"items"`
 }
 
+type duplicateNameListingResponse struct {
+	ListingID      string `json:"listingId"`
+	DisplayName    string `json:"displayName"`
+	Status         string `json:"status"`
+	ReviewStatus   string `json:"reviewStatus"`
+	SaleStatus     string `json:"saleStatus"`
+	UnlistedReason string `json:"unlistedReason"`
+}
+
+type checkDuplicateNameResponse struct {
+	Matches []duplicateNameListingResponse `json:"matches"`
+}
+
 func newListingCmd(opts *rootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "listing",
@@ -100,14 +117,15 @@ func newListingCmd(opts *rootOptions) *cobra.Command {
 
 func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 	var (
-		listingID         string
-		templateVersionID string
-		displayName       string
-		description       string
-		taskFixedFee      string
-		taskFixedFeeT     int64
-		skillArchiveHash  string
-		skillValidationID string
+		listingID          string
+		templateVersionID  string
+		displayName        string
+		description        string
+		taskFixedFee       string
+		taskFixedFeeT      int64
+		skillArchiveHash   string
+		skillValidationID  string
+		confirmNameWarning bool
 	)
 	cmd := &cobra.Command{
 		Use:   "publish <template-id>",
@@ -123,9 +141,6 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
-			defer cancel()
-
 			req := publishMarketListingRequest{
 				ListingID:         strings.TrimSpace(listingID),
 				TemplateID:        strings.TrimSpace(args[0]),
@@ -138,6 +153,13 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if req.ListingID == "" {
+				if err := precheckListingDisplayName(cmd.Context(), cmd, httpClient, req.DisplayName, confirmNameWarning, opts.timeout); err != nil {
+					return err
+				}
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
 			if selection == nil && req.ListingID != "" {
 				selection, err = inferExistingListingSkillPackageSelection(ctx, httpClient, req.ListingID, req.TemplateVersionID)
 				if err != nil {
@@ -164,10 +186,101 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 	cmd.Flags().Int64Var(&taskFixedFeeT, "task-fixed-fee-t", 0, "Deprecated: creator fixed fee per billable task, in raw API units")
 	cmd.Flags().StringVar(&skillArchiveHash, "skill-package-archive-hash", "", "Private Skill Package Head archive hash to freeze with this listing")
 	cmd.Flags().StringVar(&skillValidationID, "skill-package-validation-id", "", "Private Skill Package Head validation ID to freeze with this listing")
+	cmd.Flags().BoolVar(&confirmNameWarning, "confirm-name-warning", false, "Continue non-interactively after a duplicate-name warning or name-check failure")
 	_ = cmd.Flags().MarkDeprecated("task-fixed-fee-t", "use --task-fixed-fee with a decimal currency amount")
 	_ = cmd.MarkFlagRequired("template-version-id")
 	_ = cmd.MarkFlagRequired("display-name")
 	return cmd
+}
+
+func precheckListingDisplayName(ctx context.Context, cmd *cobra.Command, httpClient listingPublishProductReader, displayName string, confirmed bool, requestTimeout time.Duration) error {
+	query := url.Values{}
+	query.Set("displayName", strings.TrimSpace(displayName))
+	var response checkDuplicateNameResponse
+	requestCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+	err := httpClient.GetProductJSONWithQuery(requestCtx, "/creators/me/marketListings:checkDuplicateName", query, &response)
+	cancel()
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if err == nil && response.Matches == nil {
+		err = errors.New("invalid name-check response: matches must be an array")
+	}
+	if err == nil && len(response.Matches) == 0 {
+		return nil
+	}
+
+	w := cmd.ErrOrStderr()
+	if err != nil {
+		_, _ = fmt.Fprintf(w, "Warning: unable to check whether you already have a Market SkillBot named %q: %v\n", strings.TrimSpace(displayName), err)
+	} else {
+		_, _ = fmt.Fprintf(w, "Warning: you already have %d Market SkillBot(s) with this display name:\n", len(response.Matches))
+		for _, match := range response.Matches {
+			_, _ = fmt.Fprintf(w, "- %s\t%s\t%s\n",
+				sanitizeRemoteText(match.ListingID, false),
+				sanitizeRemoteText(match.DisplayName, false),
+				sanitizeRemoteText(duplicateNameListingStatus(match), false))
+		}
+	}
+	if confirmed {
+		return nil
+	}
+	if !isInteractiveTerminal(cmd.InOrStdin(), w) {
+		return errors.New("submission not confirmed; pass --confirm-name-warning to continue")
+	}
+	confirmationCtx, cancelConfirmation := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancelConfirmation()
+	return promptNameWarningConfirmation(confirmationCtx, cmd.InOrStdin(), w)
+}
+
+func duplicateNameListingStatus(item duplicateNameListingResponse) string {
+	parts := make([]string, 0, 4)
+	for _, value := range []string{item.Status, item.ReviewStatus, item.SaleStatus, item.UnlistedReason} {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			parts = append(parts, value)
+		}
+	}
+	if len(parts) == 0 {
+		return "unknown"
+	}
+	return strings.Join(parts, "/")
+}
+
+func isInteractiveTerminal(in io.Reader, out io.Writer) bool {
+	inFile, inOK := in.(*os.File)
+	outFile, outOK := out.(*os.File)
+	return inOK && outOK && term.IsTerminal(int(inFile.Fd())) && term.IsTerminal(int(outFile.Fd()))
+}
+
+func promptNameWarningConfirmation(ctx context.Context, in io.Reader, out io.Writer) error {
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("submission cancelled: %w", err)
+	}
+	_, _ = fmt.Fprint(out, "Continue creating this Market SkillBot? [y/N] (expires in 5 minutes) ")
+	result := make(chan error, 1)
+	go func() {
+		line, err := bufio.NewReader(in).ReadString('\n')
+		if err != nil {
+			result <- fmt.Errorf("submission cancelled: read confirmation: %w", err)
+			return
+		}
+		switch strings.ToLower(strings.TrimSpace(line)) {
+		case "y", "yes":
+			result <- nil
+		default:
+			result <- errors.New("submission cancelled")
+		}
+	}()
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("submission cancelled: confirmation expired or interrupted: %w", ctx.Err())
+	case err := <-result:
+		if ctx.Err() != nil {
+			return fmt.Errorf("submission cancelled: %w", ctx.Err())
+		}
+		return err
+	}
 }
 
 type listingPublishProductReader interface {
