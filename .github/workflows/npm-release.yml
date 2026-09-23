@@ -77,14 +77,11 @@ jobs:
           exit 1
 
       - name: Download the published GitHub Release assets
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p release
-          gh release download "$RELEASE_TAG" \
+          scripts/download-github-release-assets.sh \
             --repo "$GITHUB_REPOSITORY" \
-            --dir release
-          scripts/validate-release-assets.sh release
+            --tag "$RELEASE_TAG" \
+            --output-dir release
 
       - name: Generate and pack npm packages
         run: |
