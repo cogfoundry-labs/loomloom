@@ -198,6 +198,11 @@ func TestListingPublishResolvesSourceTemplateVersion(t *testing.T) {
 func TestMarketPublishSendsArchiveSkillPackageSelection(t *testing.T) {
 	var body map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/loom/v1/creators/me/marketListings:checkDuplicateName" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"matches":[]}`))
+			return
+		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Fatalf("decode request body: %v", err)
 		}
@@ -263,6 +268,11 @@ func TestMarketPublishTaskFixedFeeConvertsCurrencyUnits(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var body map[string]any
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodGet && r.URL.Path == "/loom/v1/creators/me/marketListings:checkDuplicateName" {
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = w.Write([]byte(`{"matches":[]}`))
+					return
+				}
 				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 					t.Fatalf("decode request body: %v", err)
 				}
@@ -294,6 +304,11 @@ func TestMarketPublishTaskFixedFeeConvertsCurrencyUnits(t *testing.T) {
 func TestMarketPublishDeprecatedTaskFixedFeeTStillWorks(t *testing.T) {
 	var body map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/loom/v1/creators/me/marketListings:checkDuplicateName" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"matches":[]}`))
+			return
+		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Fatalf("decode request body: %v", err)
 		}
@@ -314,35 +329,6 @@ func TestMarketPublishDeprecatedTaskFixedFeeTStillWorks(t *testing.T) {
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("market publish command error = %v", err)
-	}
-	if body["taskFixedFeeT"] != float64(5_000_000) {
-		t.Fatalf("taskFixedFeeT=%v want 5000000", body["taskFixedFeeT"])
-	}
-}
-
-func TestDeprecatedMarketPublishTaskFixedFeeConvertsCurrencyUnits(t *testing.T) {
-	var body map[string]any
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode request body: %v", err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":"listing-1"}`))
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newDeprecatedMarketPublishCmd(opts)
-	cmd.SetArgs([]string{
-		"--template-id", "template-1",
-		"--template-version-id", "version-1",
-		"--display-name", "PRD Review Bot",
-		"--task-fixed-fee", "0.5",
-	})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("deprecated market publish command error = %v", err)
 	}
 	if body["taskFixedFeeT"] != float64(5_000_000) {
 		t.Fatalf("taskFixedFeeT=%v want 5000000", body["taskFixedFeeT"])
@@ -627,10 +613,12 @@ func TestMarketPublishRejectsTaskFixedFeeConflict(t *testing.T) {
 	}
 }
 
-func TestDeprecatedMarketCommandsRemainAvailable(t *testing.T) {
+func TestMarketPublishCompatibilityCommandRemovedAndRelistRemainsAvailable(t *testing.T) {
 	cmd := newMarketCmd(&rootOptions{})
-	if found, _, err := cmd.Find([]string{"publish"}); err != nil || found.Name() != "publish" {
-		t.Fatalf("market publish compatibility command missing: found=%v err=%v", found, err)
+	for _, subcommand := range cmd.Commands() {
+		if subcommand.Name() == "publish" {
+			t.Fatal("deprecated market publish compatibility command should be removed")
+		}
 	}
 	if found, _, err := cmd.Find([]string{"relist"}); err != nil || found.Name() != "relist" {
 		t.Fatalf("market relist compatibility command missing: found=%v err=%v", found, err)

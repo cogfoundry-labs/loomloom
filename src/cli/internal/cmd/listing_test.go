@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -38,6 +41,198 @@ func TestListingUnlistUsesUnlistEndpointWithoutCreatorUserID(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `"sale_status": "unlisted"`) {
 		t.Fatalf("unexpected output: %s", out.String())
+	}
+}
+
+func TestListingPublishChecksDuplicateNameBeforeSubmitting(t *testing.T) {
+	var paths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/loom/v1/creators/me/marketListings:checkDuplicateName":
+			if got := r.URL.Query().Get("displayName"); got != "Review Bot" {
+				t.Errorf("displayName=%q want Review Bot", got)
+			}
+			_, _ = w.Write([]byte(`{"matches":[]}`))
+		case "/loom/v1/marketListings":
+			_, _ = w.Write([]byte(`{"id":"listing-new"}`))
+		default:
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	cmd := newListingPublishCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second})
+	cmd.SetArgs([]string{"template-1", "--template-version-id", "version-1", "--display-name", " Review Bot ", "--task-fixed-fee", "0.5"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("publish error: %v", err)
+	}
+	if got := strings.Join(paths, ","); got != "/loom/v1/creators/me/marketListings:checkDuplicateName,/loom/v1/marketListings" {
+		t.Fatalf("paths=%s", got)
+	}
+}
+
+func TestListingPublishDuplicateNameRequiresConfirmation(t *testing.T) {
+	published := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/loom/v1/creators/me/marketListings:checkDuplicateName" {
+			_, _ = w.Write([]byte(`{"matches":[{"listingId":"listing-old","displayName":"Review Bot","status":"active","reviewStatus":"approved"}]}`))
+			return
+		}
+		published = true
+		_, _ = w.Write([]byte(`{"id":"listing-new"}`))
+	}))
+	defer server.Close()
+
+	cmd := newListingPublishCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second})
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"template-1", "--template-version-id", "version-1", "--display-name", "Review Bot", "--task-fixed-fee", "0.5"})
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "--confirm-name-warning") || published {
+		t.Fatalf("error=%v published=%v", err, published)
+	}
+	assertContainsAll(t, stderr.String(), "listing-old", "Review Bot", "active/approved")
+}
+
+func TestListingPublishConfirmationFlagContinuesAfterCheckFailure(t *testing.T) {
+	published := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/loom/v1/creators/me/marketListings:checkDuplicateName" {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte(`{"error":"temporarily unavailable"}`))
+			return
+		}
+		published = true
+		_, _ = w.Write([]byte(`{"id":"listing-new"}`))
+	}))
+	defer server.Close()
+
+	cmd := newListingPublishCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second})
+	cmd.SetErr(new(bytes.Buffer))
+	cmd.SetArgs([]string{"template-1", "--template-version-id", "version-1", "--display-name", "Review Bot", "--task-fixed-fee", "0.5", "--confirm-name-warning"})
+	if err := cmd.Execute(); err != nil || !published {
+		t.Fatalf("error=%v published=%v", err, published)
+	}
+}
+
+func TestListingDuplicateNameDisplaySanitizesRemoteText(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Error("must not publish without confirmation")
+		}
+		_, _ = io.WriteString(w, `{"matches":[{"listingId":"old\tID","displayName":"Bot\n\u001b[2J\u202eName","status":"published\u001b[31m","reviewStatus":"approved"}]}`)
+	}))
+	defer server.Close()
+	cmd := newListingPublishCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second})
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetOut(io.Discard)
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+	cmd.SetArgs([]string{"template-1", "--template-version-id", "v1", "--display-name", "Bot", "--task-fixed-fee", "0.5"})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "--confirm-name-warning") {
+		t.Fatalf("expected confirmation requirement, got %v", err)
+	}
+	want := "Warning: you already have 1 Market SkillBot(s) with this display name:\n- old ID\tBot  [2J Name\tpublished [31m/approved\n"
+	if stderr.String() != want {
+		t.Fatalf("warning=%q want %q", stderr.String(), want)
+	}
+}
+
+func TestListingPublishExistingListingSkipsDuplicateNameCheck(t *testing.T) {
+	var checked bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/loom/v1/creators/me/marketListings:checkDuplicateName":
+			checked = true
+		case "/loom/v1/creators/me/marketListings/listing-1":
+			_, _ = w.Write([]byte(`{"publishedVersionId":""}`))
+		case "/loom/v1/marketListings":
+			_, _ = w.Write([]byte(`{"id":"listing-1"}`))
+		default:
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	cmd := newListingPublishCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second})
+	cmd.SetArgs([]string{"template-1", "--listing-id", "listing-1", "--template-version-id", "version-2", "--display-name", "Review Bot", "--task-fixed-fee", "0.5"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("publish error: %v", err)
+	}
+	if checked {
+		t.Fatal("existing listing update must skip duplicate-name check")
+	}
+}
+
+func TestPromptNameWarningConfirmation(t *testing.T) {
+	for _, tt := range []struct {
+		input   string
+		wantErr bool
+	}{{"y\n", false}, {" YES \n", false}, {"\n", true}, {"n\n", true}, {"", true}, {"y", true}} {
+		if err := promptNameWarningConfirmation(context.Background(), strings.NewReader(tt.input), new(bytes.Buffer)); (err != nil) != tt.wantErr {
+			t.Fatalf("input=%q error=%v wantErr=%v", tt.input, err, tt.wantErr)
+		}
+	}
+}
+
+func TestNameConfirmationTimeout(t *testing.T) {
+	r, w := io.Pipe()
+	defer r.Close()
+	defer w.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	err := promptNameWarningConfirmation(ctx, r, io.Discard)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected confirmation timeout, got %v", err)
+	}
+}
+
+func TestPublishRejectsInvalidCheckResponse(t *testing.T) {
+	for _, body := range []string{`{}`, `null`, `{"matches":null}`, `{"matches":{}}`, `{"matches":"bad"}`} {
+		t.Run(body, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodPost {
+					t.Error("must not publish without confirmation")
+				}
+				_, _ = io.WriteString(w, body)
+			}))
+			defer server.Close()
+			cmd := newListingPublishCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second})
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
+			cmd.SetArgs([]string{"template-1", "--template-version-id", "v1", "--display-name", "Bot", "--task-fixed-fee", "0.5"})
+			if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "--confirm-name-warning") {
+				t.Fatalf("expected confirmation requirement, got %v", err)
+			}
+		})
+	}
+}
+
+func TestPublishGetsFreshDeadlineAfterCheckTimeout(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			<-r.Context().Done()
+			return
+		}
+		_, _ = io.WriteString(w, `{"id":"new-listing"}`)
+	}))
+	defer server.Close()
+	cmd := newListingPublishCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: 200 * time.Millisecond})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"template-1", "--template-version-id", "v1", "--display-name", "Bot", "--task-fixed-fee", "0.5", "--confirm-name-warning"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "new-listing") {
+		t.Fatalf("missing publish result: %s", out.String())
 	}
 }
 

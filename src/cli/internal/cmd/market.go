@@ -34,7 +34,6 @@ func newMarketCmd(opts *rootOptions) *cobra.Command {
 		newMarketQuoteCmd(opts),
 		newMarketRunCmd(opts),
 		newMarketWorkbookCmd(opts),
-		newDeprecatedMarketPublishCmd(opts),
 		newDeprecatedMarketRelistCmd(opts),
 	)
 	return cmd
@@ -1141,63 +1140,6 @@ func isBidiControl(r rune) bool {
 		return true
 	}
 	return r >= '\u202a' && r <= '\u202e' || r >= '\u2066' && r <= '\u2069'
-}
-
-func newDeprecatedMarketPublishCmd(opts *rootOptions) *cobra.Command {
-	var (
-		listingID         string
-		templateID        string
-		templateVersionID string
-		displayName       string
-		description       string
-		taskFixedFee      string
-		taskFixedFeeT     int64
-	)
-	cmd := &cobra.Command{
-		Use:        "publish",
-		Short:      "Publish a template version as a Market SkillBot",
-		Deprecated: "use 'loomloom listing publish <template-id>'",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			resolvedTaskFixedFeeT, err := taskFixedFeeFromFlags(cmd, taskFixedFee, taskFixedFeeT)
-			if err != nil {
-				return err
-			}
-
-			req := publishMarketListingRequest{
-				ListingID:         strings.TrimSpace(listingID),
-				DisplayName:       strings.TrimSpace(displayName),
-				Description:       strings.TrimSpace(description),
-				TaskFixedFeeT:     resolvedTaskFixedFeeT,
-				TemplateID:        strings.TrimSpace(templateID),
-				TemplateVersionID: strings.TrimSpace(templateVersionID),
-			}
-
-			httpClient, err := newHTTPClient(opts)
-			if err != nil {
-				return err
-			}
-			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
-			defer cancel()
-
-			var resp map[string]any
-			if err := httpClient.PostProductJSON(ctx, "/marketListings", req, &resp); err != nil {
-				return err
-			}
-			return writeIndentedJSON(cmd.OutOrStdout(), resp)
-		},
-	}
-	cmd.Flags().StringVar(&listingID, "listing-id", "", "Existing listing ID when publishing a new version")
-	cmd.Flags().StringVar(&templateID, "template-id", "", "Template ID to publish")
-	cmd.Flags().StringVar(&templateVersionID, "template-version-id", "", "Template version ID to publish")
-	cmd.Flags().StringVar(&displayName, "display-name", "", "Market SkillBot display name")
-	cmd.Flags().StringVar(&description, "description", "", "Market SkillBot description")
-	cmd.Flags().StringVar(&taskFixedFee, "task-fixed-fee", "", "Creator fixed fee per billable task, in currency units (for example 0.5)")
-	cmd.Flags().Int64Var(&taskFixedFeeT, "task-fixed-fee-t", 0, "Deprecated: creator fixed fee per billable task, in raw API units")
-	_ = cmd.Flags().MarkDeprecated("task-fixed-fee-t", "use --task-fixed-fee with a decimal currency amount")
-	_ = cmd.MarkFlagRequired("template-id")
-	_ = cmd.MarkFlagRequired("template-version-id")
-	_ = cmd.MarkFlagRequired("display-name")
-	return cmd
 }
 
 func newDeprecatedMarketRelistCmd(opts *rootOptions) *cobra.Command {
