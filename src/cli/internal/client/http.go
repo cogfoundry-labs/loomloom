@@ -192,7 +192,7 @@ func (c *Client) GetProductJSONWithQuery(ctx context.Context, path string, query
 }
 
 func (c *Client) PostJSON(ctx context.Context, path string, in any, out any) error {
-	return c.postJSON(ctx, c.endpoint(path), in, out)
+	return c.mutateJSON(ctx, http.MethodPost, c.endpoint(path), in, out)
 }
 
 func (c *Client) PostProductJSON(ctx context.Context, path string, in any, out any) error {
@@ -204,10 +204,18 @@ func (c *Client) PostProductJSONWithQuery(ctx context.Context, path string, quer
 	if len(query) > 0 {
 		endpoint += "?" + query.Encode()
 	}
-	return c.postJSON(ctx, endpoint, in, out)
+	return c.mutateJSON(ctx, http.MethodPost, endpoint, in, out)
 }
 
-func (c *Client) postJSON(ctx context.Context, endpoint string, in any, out any) error {
+func (c *Client) PutProductJSON(ctx context.Context, path string, in any, out any) error {
+	return c.mutateJSON(ctx, http.MethodPut, c.endpoint(path), in, out)
+}
+
+func (c *Client) PatchProductJSON(ctx context.Context, path string, in any, out any) error {
+	return c.mutateJSON(ctx, http.MethodPatch, c.endpoint(path), in, out)
+}
+
+func (c *Client) mutateJSON(ctx context.Context, method, endpoint string, in any, out any) error {
 	var body io.Reader
 	if in != nil {
 		payload, err := json.Marshal(in)
@@ -216,7 +224,7 @@ func (c *Client) postJSON(ctx context.Context, endpoint string, in any, out any)
 		}
 		body = bytes.NewReader(payload)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, body)
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, body)
 	if err != nil {
 		return err
 	}

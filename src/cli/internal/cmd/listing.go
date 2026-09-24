@@ -111,21 +111,25 @@ func newListingCmd(opts *rootOptions) *cobra.Command {
 		newListingWithdrawCmd(opts),
 		newListingUnlistCmd(opts),
 		newListingRelistCmd(opts),
+		newListingPaymentSettingsCmd(opts),
 	)
 	return cmd
 }
 
 func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 	var (
-		listingID          string
-		templateVersionID  string
-		displayName        string
-		description        string
-		taskFixedFee       string
-		taskFixedFeeT      int64
-		skillArchiveHash   string
-		skillValidationID  string
-		confirmNameWarning bool
+		listingID                       string
+		templateVersionID               string
+		displayName                     string
+		description                     string
+		taskFixedFee                    string
+		taskFixedFeeT                   int64
+		skillArchiveHash                string
+		skillValidationID               string
+		confirmNameWarning              bool
+		payPerUse                       bool
+		subscription                    bool
+		expectedPaymentSettingsRevision int64
 	)
 	cmd := &cobra.Command{
 		Use:   "publish <template-id>",
@@ -167,6 +171,24 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 				}
 			}
 			req.SkillPackage = selection
+			paymentModesChanged := cmd.Flags().Changed("pay-per-use") || cmd.Flags().Changed("subscription")
+			if req.ListingID == "" {
+				req.PayPerUse = boolPointer(payPerUse)
+				req.Subscription = boolPointer(subscription)
+			} else if paymentModesChanged {
+				if !cmd.Flags().Changed("expected-payment-settings-revision") {
+					return errors.New("--expected-payment-settings-revision is required when changing payment modes on an existing listing")
+				}
+				if cmd.Flags().Changed("pay-per-use") {
+					req.PayPerUse = boolPointer(payPerUse)
+				}
+				if cmd.Flags().Changed("subscription") {
+					req.Subscription = boolPointer(subscription)
+				}
+				req.ExpectedPaymentSettingsRevision = &expectedPaymentSettingsRevision
+			} else if cmd.Flags().Changed("expected-payment-settings-revision") {
+				return errors.New("--expected-payment-settings-revision requires --pay-per-use or --subscription")
+			}
 
 			var resp map[string]any
 			if err := httpClient.PostProductJSON(ctx, "/marketListings", req, &resp); err != nil {
@@ -187,6 +209,9 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 	cmd.Flags().StringVar(&skillArchiveHash, "skill-package-archive-hash", "", "Private Skill Package Head archive hash to freeze with this listing")
 	cmd.Flags().StringVar(&skillValidationID, "skill-package-validation-id", "", "Private Skill Package Head validation ID to freeze with this listing")
 	cmd.Flags().BoolVar(&confirmNameWarning, "confirm-name-warning", false, "Continue non-interactively after a duplicate-name warning or name-check failure")
+	cmd.Flags().BoolVar(&payPerUse, "pay-per-use", true, "Enable pay-per-use for this listing")
+	cmd.Flags().BoolVar(&subscription, "subscription", false, "Enable the automatic single-SkillBot subscription package")
+	cmd.Flags().Int64Var(&expectedPaymentSettingsRevision, "expected-payment-settings-revision", 0, "Current payment settings revision when changing an existing listing")
 	_ = cmd.Flags().MarkDeprecated("task-fixed-fee-t", "use --task-fixed-fee with a decimal currency amount")
 	_ = cmd.MarkFlagRequired("template-version-id")
 	_ = cmd.MarkFlagRequired("display-name")
@@ -282,6 +307,8 @@ func promptNameWarningConfirmation(ctx context.Context, in io.Reader, out io.Wri
 		return err
 	}
 }
+
+func boolPointer(value bool) *bool { return &value }
 
 type listingPublishProductReader interface {
 	GetProductJSON(context.Context, string, any) error

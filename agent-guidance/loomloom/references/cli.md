@@ -195,8 +195,8 @@ the historical version.
 - `loomloom listing unlist <listing-id>`
 - `loomloom listing relist <listing-id>`
 - `loomloom listing withdraw <listing-id>`
-- `loomloom creator earnings`
-- `loomloom creator transactions`
+- `loomloom creator earnings [--source all|pay-per-use|subscription] [--limit 1..100] [--page-token <token>]`
+- `loomloom creator transactions [--source pay-per-use|subscription]`
 - `loomloom creator review list`
 - `loomloom creator review get <review-request-id>`
 - `loomloom creator review withdraw <review-request-id>`

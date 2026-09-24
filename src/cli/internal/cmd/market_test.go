@@ -767,6 +767,8 @@ func TestMarketRunInsufficientBalanceDoesNotExecute(t *testing.T) {
 		switch r.URL.Path {
 		case "/loom/v1/marketListings/listing-1":
 			_, _ = w.Write([]byte(marketListingDetailBody(t)))
+		case "/loom/v1/marketTransactions:lookup":
+			http.NotFound(w, r)
 		case "/loom/v1/marketListings/listing-1:quote":
 			_, _ = w.Write([]byte(`{"quoteId":"quote-1","balanceCheck":{"currency":"CNY","availableBalance":0,"isSufficient":false}}`))
 		case "/loom/v1/marketListings/listing-1:execute":
@@ -800,6 +802,8 @@ func TestMarketRunUnknownPlatformInsufficientBalanceDoesNotExecute(t *testing.T)
 		switch r.URL.Path {
 		case "/loom/v1/marketListings/listing-1":
 			_, _ = w.Write([]byte(marketListingDetailBody(t)))
+		case "/loom/v1/marketTransactions:lookup":
+			http.NotFound(w, r)
 		case "/loom/v1/marketListings/listing-1:quote":
 			_, _ = w.Write([]byte(`{"quoteId":"quote-1","balanceCheck":{"currency":"CNY","availableBalance":0,"isSufficient":false}}`))
 		case "/loom/v1/marketListings/listing-1:execute":
@@ -1069,6 +1073,8 @@ func TestMarketRunExecutionTextShowsFormattedAmounts(t *testing.T) {
 		switch r.URL.Path {
 		case "/loom/v1/marketListings/listing-1":
 			_, _ = w.Write([]byte(marketListingDetailBody(t)))
+		case "/loom/v1/marketTransactions:lookup":
+			http.NotFound(w, r)
 		case "/loom/v1/marketListings/listing-1:quote":
 			_, _ = w.Write([]byte(`{"quoteId":"quote-1","currency":"CNY","estimatedBuyerPayableT":5069300}`))
 		case "/loom/v1/marketListings/listing-1:execute":
@@ -1162,11 +1168,19 @@ func TestMarketRunQuotesThenExecutesPublicInputRows(t *testing.T) {
 		switch r.URL.Path {
 		case "/loom/v1/marketListings/listing-1":
 			_, _ = w.Write([]byte(marketListingDetailBody(t)))
+		case "/loom/v1/marketTransactions:lookup":
+			http.NotFound(w, r)
 		case "/loom/v1/marketListings/listing-1:quote":
 			if err := json.NewDecoder(r.Body).Decode(&quoteBody); err != nil {
 				t.Fatalf("decode quote body: %v", err)
 			}
-			_, _ = w.Write([]byte(`{"quoteId":"quote-1","estimatedBuyerPayableT":10}`))
+			_, _ = w.Write([]byte(`{
+				"quoteId":"quote-1",
+				"listingVersionId":"lv-quoted",
+				"estimatedBuyerPayableT":10,
+				"effectivePaymentMode":"pay_per_use",
+				"effectiveCreatorFee":{"currency":"CNY","amount":"0.5000000","amountT":5000000}
+			}`))
 		case "/loom/v1/marketListings/listing-1:execute":
 			if err := json.NewDecoder(r.Body).Decode(&executeBody); err != nil {
 				t.Fatalf("decode execute body: %v", err)
@@ -1198,12 +1212,13 @@ func TestMarketRunQuotesThenExecutesPublicInputRows(t *testing.T) {
 		logWriter: &logs,
 	}
 	cmd := newMarketRunCmd(opts)
-	cmd.SetArgs([]string{"listing-1", "--input-file", inputPath, "--confirm"})
+	cmd.SetArgs([]string{"listing-1", "--input-file", inputPath, "--payment", "pay_per_use", "--confirm"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("market run command error = %v", err)
 	}
 	wantPaths := []string{
+		"/loom/v1/marketTransactions:lookup",
 		"/loom/v1/marketListings/listing-1",
 		"/loom/v1/marketListings/listing-1:quote",
 		"/loom/v1/marketListings/listing-1:execute",
@@ -1231,8 +1246,146 @@ func TestMarketRunQuotesThenExecutesPublicInputRows(t *testing.T) {
 	if executeBody["clientRequestId"] != "req-1" {
 		t.Fatalf("clientRequestId=%v want req-1", executeBody["clientRequestId"])
 	}
+	if quoteBody["paymentPreference"] != "pay_per_use" || executeBody["paymentPreference"] != "pay_per_use" {
+		t.Fatalf("paymentPreference quote=%v execute=%v want pay_per_use", quoteBody["paymentPreference"], executeBody["paymentPreference"])
+	}
+	if executeBody["expectedListingVersionId"] != "lv-quoted" || executeBody["expectedPaymentMode"] != "pay_per_use" {
+		t.Fatalf("execute payment confirmation=%#v", executeBody)
+	}
+	maxCreatorFee, ok := executeBody["maxCreatorFee"].(map[string]any)
+	if !ok || maxCreatorFee["amount"] != "0.5000000" || maxCreatorFee["currency"] != "CNY" {
+		t.Fatalf("maxCreatorFee=%#v want quoted Money object", executeBody["maxCreatorFee"])
+	}
 	if !strings.Contains(logs.String(), "market run: submitted listing_id=listing-1 run_id=run-1 transaction_id=transaction-1") {
 		t.Fatalf("logs=%q want market run submission identifiers", logs.String())
+	}
+}
+
+func TestMarketRunExistingTransactionSkipsListingAndQuote(t *testing.T) {
+	var paths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path != "/loom/v1/marketTransactions:lookup" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("clientRequestId"); got != "req-existing" {
+			t.Fatalf("clientRequestId=%q want req-existing", got)
+		}
+		_, _ = w.Write([]byte(`{
+			"transaction":{
+				"runTransactionId":"transaction-1",
+				"runId":"run-1",
+				"listingId":"listing-1",
+				"listingVersionId":"lv-frozen",
+				"transactionStatus":"reserved",
+				"paymentMode":"subscription"
+			},
+			"recoveryAction":"none"
+		}`))
+	}))
+	defer server.Close()
+
+	inputPath := writeMarketInputFile(t, `{"inputRows":[{"prompt":"review this"}]}`)
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
+	cmd := newMarketRunCmd(opts)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"listing-1", "--input-file", inputPath, "--client-request-id", "req-existing", "--confirm"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("market run command error = %v", err)
+	}
+	if !reflect.DeepEqual(paths, []string{"/loom/v1/marketTransactions:lookup"}) {
+		t.Fatalf("paths=%v want lookup only", paths)
+	}
+	assertContainsAll(t, out.String(), `"runTransactionId": "transaction-1"`, `"paymentMode": "subscription"`)
+}
+
+func TestMarketRunRecoveryResubmitsFrozenVersionWithoutQuote(t *testing.T) {
+	var paths []string
+	var executeBody map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/loom/v1/marketTransactions:lookup":
+			_, _ = w.Write([]byte(`{
+				"transaction":{
+					"runTransactionId":"transaction-1",
+					"listingId":"listing-1",
+					"listingVersionId":"lv-frozen",
+					"transactionStatus":"pending_run",
+					"paymentMode":"pay_per_use"
+				},
+				"recoveryAction":"resubmit_original_input"
+			}`))
+		case "/loom/v1/marketListings/listing-1:execute":
+			if err := json.NewDecoder(r.Body).Decode(&executeBody); err != nil {
+				t.Fatalf("decode execute body: %v", err)
+			}
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"runId":"run-1","runTransactionId":"transaction-1"}`))
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	inputPath := writeMarketInputFile(t, `{"clientRequestId":"req-recover","listingVersionId":"lv-stale","inputRows":[{"prompt":"review this"}]}`)
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
+	cmd := newMarketRunCmd(opts)
+	cmd.SetArgs([]string{"listing-1", "--input-file", inputPath, "--confirm"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("market run command error = %v", err)
+	}
+	wantPaths := []string{"/loom/v1/marketTransactions:lookup", "/loom/v1/marketListings/listing-1:execute"}
+	if !reflect.DeepEqual(paths, wantPaths) {
+		t.Fatalf("paths=%v want %v", paths, wantPaths)
+	}
+	if executeBody["clientRequestId"] != "req-recover" || executeBody["listingVersionId"] != "lv-frozen" || executeBody["confirm"] != true {
+		t.Fatalf("executeBody=%#v want frozen replay identity", executeBody)
+	}
+	if _, ok := executeBody["expectedPaymentMode"]; ok {
+		t.Fatalf("recovery must use existing immutable authorization: %#v", executeBody)
+	}
+	rows, ok := executeBody["inputRows"].([]any)
+	if !ok || len(rows) != 1 {
+		t.Fatalf("inputRows=%#v want original row", executeBody["inputRows"])
+	}
+}
+
+func TestMarketRunRequiresExplicitChoiceBeforeExecute(t *testing.T) {
+	executeCalled := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/loom/v1/marketTransactions:lookup":
+			http.NotFound(w, r)
+		case "/loom/v1/marketListings/listing-1":
+			_, _ = w.Write([]byte(marketListingDetailBody(t)))
+		case "/loom/v1/marketListings/listing-1:quote":
+			_, _ = w.Write([]byte(`{"quoteId":"quote-1","requiresPaymentChoice":true}`))
+		case "/loom/v1/marketListings/listing-1:execute":
+			executeCalled = true
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	inputPath := writeMarketInputFile(t, `{"inputRows":[{"prompt":"review this"}]}`)
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
+	cmd := newMarketRunCmd(opts)
+	cmd.SetArgs([]string{"listing-1", "--input-file", inputPath, "--client-request-id", "req-choice", "--confirm"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "payment choice required") {
+		t.Fatalf("error=%v want payment choice required", err)
+	}
+	if executeCalled {
+		t.Fatal("execute endpoint was called without an explicit payment choice")
 	}
 }
 
@@ -1242,6 +1395,8 @@ func TestMarketRunPrintsGeneratedClientRequestIDBeforeRequestFailure(t *testing.
 		switch r.URL.Path {
 		case "/loom/v1/marketListings/listing-1":
 			_, _ = w.Write([]byte(marketListingDetailBody(t)))
+		case "/loom/v1/marketTransactions:lookup":
+			http.NotFound(w, r)
 		case "/loom/v1/marketListings/listing-1:quote":
 			_, _ = w.Write([]byte(`{"quoteId":"quote-1"}`))
 		case "/loom/v1/marketListings/listing-1:execute":
@@ -1274,6 +1429,8 @@ func TestMarketRunGeneratesStableClientRequestIDWhenMissing(t *testing.T) {
 		switch r.URL.Path {
 		case "/loom/v1/marketListings/listing-1":
 			_, _ = w.Write([]byte(marketListingDetailBody(t)))
+		case "/loom/v1/marketTransactions:lookup":
+			http.NotFound(w, r)
 		case "/loom/v1/marketListings/listing-1:quote":
 			_, _ = w.Write([]byte(`{"quoteId":"quote-1"}`))
 		case "/loom/v1/marketListings/listing-1:execute":
@@ -1369,6 +1526,8 @@ func TestMarketRunClientRequestIDFlagOverridesInputFile(t *testing.T) {
 		switch r.URL.Path {
 		case "/loom/v1/marketListings/listing-1":
 			_, _ = w.Write([]byte(marketListingDetailBody(t)))
+		case "/loom/v1/marketTransactions:lookup":
+			http.NotFound(w, r)
 		case "/loom/v1/marketListings/listing-1:quote":
 			_, _ = w.Write([]byte(`{"quoteId":"quote-1"}`))
 		case "/loom/v1/marketListings/listing-1:execute":
@@ -1481,21 +1640,33 @@ func TestMarketWorkbookRunQuotesThenExecutes(t *testing.T) {
 		Content  []byte `json:"content"`
 	}
 	var executeRequest struct {
-		Filename        string `json:"filename"`
-		Content         []byte `json:"content"`
-		Confirm         bool   `json:"confirm"`
-		ClientRequestID string `json:"clientRequestId"`
+		Filename                 string         `json:"filename"`
+		Content                  []byte         `json:"content"`
+		Confirm                  bool           `json:"confirm"`
+		ClientRequestID          string         `json:"clientRequestId"`
+		PaymentPreference        string         `json:"paymentPreference"`
+		ExpectedListingVersionID string         `json:"expectedListingVersionId"`
+		ExpectedPaymentMode      string         `json:"expectedPaymentMode"`
+		MaxCreatorFee            map[string]any `json:"maxCreatorFee"`
 	}
 	var paths []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		paths = append(paths, r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
+		case "/loom/v1/marketTransactions:lookup":
+			http.NotFound(w, r)
 		case "/loom/v1/marketListings/listing-1:quoteWorkbook":
 			if err := json.NewDecoder(r.Body).Decode(&quoteRequest); err != nil {
 				t.Fatalf("decode quote workbook request: %v", err)
 			}
-			_, _ = w.Write([]byte(`{"quoteId":"quote-1","estimatedBuyerPayableT":10}`))
+			_, _ = w.Write([]byte(`{
+				"quoteId":"quote-1",
+				"listingVersionId":"lv-1",
+				"estimatedBuyerPayableT":10,
+				"effectivePaymentMode":"subscription",
+				"effectiveCreatorFee":{"currency":"CNY","amount":"0.0000000","amountT":0}
+			}`))
 		case "/loom/v1/marketListings/listing-1:executeWorkbook":
 			if err := json.NewDecoder(r.Body).Decode(&executeRequest); err != nil {
 				t.Fatalf("decode execute workbook request: %v", err)
@@ -1525,12 +1696,13 @@ func TestMarketWorkbookRunQuotesThenExecutes(t *testing.T) {
 	cmd := newMarketWorkbookRunCmd(opts)
 	var out bytes.Buffer
 	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"listing-1", "--file", workbookPath, "--client-request-id", "req-1", "--confirm"})
+	cmd.SetArgs([]string{"listing-1", "--file", workbookPath, "--client-request-id", "req-1", "--payment", "subscription", "--confirm"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("market workbook run command error = %v", err)
 	}
 	wantPaths := []string{
+		"/loom/v1/marketTransactions:lookup",
 		"/loom/v1/marketListings/listing-1:quoteWorkbook",
 		"/loom/v1/marketListings/listing-1:executeWorkbook",
 	}
@@ -1542,6 +1714,12 @@ func TestMarketWorkbookRunQuotesThenExecutes(t *testing.T) {
 	}
 	if !executeRequest.Confirm || executeRequest.ClientRequestID != "req-1" {
 		t.Fatalf("execute request=%#v want confirm and clientRequestId", executeRequest)
+	}
+	if executeRequest.PaymentPreference != "subscription" || executeRequest.ExpectedPaymentMode != "subscription" || executeRequest.ExpectedListingVersionID != "lv-1" {
+		t.Fatalf("execute payment confirmation=%#v", executeRequest)
+	}
+	if executeRequest.MaxCreatorFee["amount"] != "0.0000000" || executeRequest.MaxCreatorFee["currency"] != "CNY" {
+		t.Fatalf("maxCreatorFee=%#v want quoted zero Money object", executeRequest.MaxCreatorFee)
 	}
 	assertContainsAll(t, out.String(), "CNY 0.5", "CNY 0.50693", "currency")
 	assertContainsNone(t, out.String(), "task_fixed_fee_t", "estimated_payable_t")

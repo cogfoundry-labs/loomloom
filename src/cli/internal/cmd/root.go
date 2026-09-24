@@ -97,6 +97,7 @@ func NewRootCmd() *cobra.Command {
 		newMarketCmd(opts),
 		newListingCmd(opts),
 		newCreatorCmd(opts),
+		newSubscriptionCmd(opts),
 		newUsageCmd(opts),
 		newInputAssetCmd(opts),
 		newOrchestrationInputCmd(opts),

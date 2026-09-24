@@ -82,7 +82,7 @@ These commands show monetary values:
 - Workbook execution: `market workbook quote/run`
 - Listings: `listing list/show/versions`
 - Usage tracking: `usage list/get`
-- Creator earnings: `creator transactions`
+- Creator earnings: `creator earnings [--source all|pay-per-use|subscription]`; transaction facts: `creator transactions`
 
 ## 1. Configuration and diagnostics
 
@@ -278,8 +278,8 @@ Typical flow
 | `loomloom listing unlist <listing-id>` | Stop new executions of a listing after confirmation. |
 | `loomloom listing relist <listing-id>` | Restore a previously unlisted listing after confirmation. |
 | `loomloom listing withdraw <listing-id>` | Withdraw the pending review request for a listing after confirmation. |
-| `loomloom creator earnings` | List Market earnings. |
-| `loomloom creator transactions` | List Market transactions. |
+| `loomloom creator earnings [--source all\|pay-per-use\|subscription]` | List Billing-posted creator income. The default `all` includes settled pay-per-use income and released subscription income. |
+| `loomloom creator transactions` | List Market transaction facts; use `--source subscription` for subscription purchase/release/reversal projections. |
 | `loomloom creator review list` | List my review requests. |
 | `loomloom creator review get <review-request-id>` | Show one review request. |
 | `loomloom creator review withdraw <review-request-id>` | Withdraw a pending review request after confirmation. |

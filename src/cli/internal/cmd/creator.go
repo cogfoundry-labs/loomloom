@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -39,12 +40,36 @@ type creatorTransactionsListResponse struct {
 	TotalCount int                         `json:"totalCount"`
 }
 
+type creatorEarningSummary struct {
+	ID               string         `json:"id"`
+	Source           string         `json:"source"`
+	SourceEventID    string         `json:"sourceEventId"`
+	RunID            string         `json:"runId,omitempty"`
+	RunTransactionID string         `json:"runTransactionId,omitempty"`
+	ListingID        string         `json:"listingId,omitempty"`
+	ListingVersionID string         `json:"listingVersionId,omitempty"`
+	AmountT          *flexInt64     `json:"amountT,omitempty"`
+	Amount           *moneyResponse `json:"amount,omitempty"`
+	Currency         string         `json:"currency"`
+	IncomePostStatus string         `json:"incomePostStatus"`
+	OccurredAt       string         `json:"occurredAt"`
+}
+
+type creatorEarningsListResponse struct {
+	Items         []creatorEarningSummary `json:"items"`
+	TotalAmountT  *flexInt64              `json:"totalAmountT,omitempty"`
+	TotalAmount   *moneyResponse          `json:"totalAmount,omitempty"`
+	TotalCount    uint64                  `json:"totalCount"`
+	NextPageToken string                  `json:"nextPageToken,omitempty"`
+}
+
 func newCreatorCmd(opts *rootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "creator",
 		Short: "Creator Market commands",
 	}
 	cmd.AddCommand(
+		newCreatorBundleCmd(opts),
 		newCreatorEarningsCmd(opts),
 		newCreatorTransactionsCmd(opts),
 		newCreatorReviewCmd(opts),
@@ -54,11 +79,20 @@ func newCreatorCmd(opts *rootOptions) *cobra.Command {
 
 func newCreatorEarningsCmd(opts *rootOptions) *cobra.Command {
 	var limit int
+	var source, pageToken, currency string
 
 	cmd := &cobra.Command{
 		Use:   "earnings",
-		Short: "List creator Market earnings",
+		Short: "List posted creator earnings",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if limit < 1 || limit > 100 {
+				return fmt.Errorf("--limit must be between 1 and 100")
+			}
+			source = strings.TrimSpace(source)
+			if source != "all" && source != "pay-per-use" && source != "subscription" {
+				return fmt.Errorf("--source must be all, pay-per-use, or subscription")
+			}
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
 				return err
@@ -70,24 +104,87 @@ func newCreatorEarningsCmd(opts *rootOptions) *cobra.Command {
 			if limit > 0 {
 				query.Set("pageSize", fmt.Sprintf("%d", limit))
 			}
+			query.Set("source", source)
+			if value := strings.TrimSpace(pageToken); value != "" {
+				query.Set("pageToken", value)
+			}
+			if value := strings.TrimSpace(currency); value != "" {
+				query.Set("currency", value)
+			}
 
-			var resp map[string]any
-			if err := httpClient.GetProductJSONWithQuery(ctx, "/creators/me/earnings", query, &resp); err != nil {
+			var raw json.RawMessage
+			if err := httpClient.GetProductJSONWithQuery(ctx, "/creators/me/earnings", query, &raw); err != nil {
 				return err
 			}
-			return writeIndentedJSON(cmd.OutOrStdout(), resp)
+			if opts.output == "json" {
+				return writeIndentedJSON(cmd.OutOrStdout(), raw)
+			}
+			var resp creatorEarningsListResponse
+			if err := json.Unmarshal(raw, &resp); err != nil {
+				return fmt.Errorf("decode creator earnings response: %w", err)
+			}
+			return printCreatorEarnings(cmd.OutOrStdout(), resp)
 		},
 	}
-	cmd.Flags().IntVar(&limit, "limit", 100, "Maximum number of earning records")
+	cmd.Flags().IntVar(&limit, "limit", 100, "Maximum number of earning records (1-100)")
+	cmd.Flags().StringVar(&source, "source", "all", "Earning source: all|pay-per-use|subscription")
+	cmd.Flags().StringVar(&pageToken, "page-token", "", "Opaque earnings page token")
+	cmd.Flags().StringVar(&currency, "currency", "", "Settlement currency for earnings")
 	return cmd
+}
+
+func printCreatorEarnings(w io.Writer, resp creatorEarningsListResponse) error {
+	if len(resp.Items) == 0 {
+		if _, err := fmt.Fprintln(w, "no posted creator earnings"); err != nil {
+			return err
+		}
+	} else {
+		tw := newTabWriter(w)
+		if _, err := fmt.Fprintln(tw, "occurred_at\tsource\treference\tamount\tstatus"); err != nil {
+			return err
+		}
+		for _, item := range resp.Items {
+			amount, err := formatResponseMoney(item.Amount, item.AmountT, item.Currency)
+			if err != nil {
+				return fmt.Errorf("creator earning %s amount contract error: %w", item.ID, err)
+			}
+			reference := strings.TrimSpace(item.RunTransactionID)
+			if reference == "" {
+				reference = strings.TrimSpace(item.SourceEventID)
+			}
+			if _, err := fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
+				oneLine(item.OccurredAt), oneLine(item.Source), oneLine(reference), amount, oneLine(item.IncomePostStatus)); err != nil {
+				return err
+			}
+		}
+		if err := tw.Flush(); err != nil {
+			return err
+		}
+	}
+	totalAmount, err := formatResponseMoney(resp.TotalAmount, resp.TotalAmountT, "")
+	if err != nil {
+		return fmt.Errorf("creator earnings totalAmount contract error: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "total_amount\t%s\ntotal_count\t%d\n", totalAmount, resp.TotalCount); err != nil {
+		return err
+	}
+	if resp.NextPageToken != "" {
+		_, err = fmt.Fprintf(w, "next_page_token\t%s\n", resp.NextPageToken)
+	}
+	return err
 }
 
 func newCreatorTransactionsCmd(opts *rootOptions) *cobra.Command {
 	var pageSize int
+	var source, subscriptionID, period, pageToken, currency string
 	cmd := &cobra.Command{
 		Use:   "transactions",
 		Short: "List creator Market transactions",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			source = strings.TrimSpace(source)
+			if source != "pay-per-use" && source != "subscription" {
+				return fmt.Errorf("--source must be pay-per-use or subscription")
+			}
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
 				return err
@@ -99,10 +196,22 @@ func newCreatorTransactionsCmd(opts *rootOptions) *cobra.Command {
 			if pageSize > 0 {
 				query.Set("pageSize", fmt.Sprintf("%d", pageSize))
 			}
+			path := "/creators/me/marketTransactions"
+			if source == "subscription" {
+				path = "/creators/me/subscriptionIncomeEntries"
+				for key, value := range map[string]string{"subscriptionId": subscriptionID, "period": period, "pageToken": pageToken, "currency": currency} {
+					if value = strings.TrimSpace(value); value != "" {
+						query.Set(key, value)
+					}
+				}
+			}
 
 			var raw map[string]any
-			if err := httpClient.GetProductJSONWithQuery(ctx, "/creators/me/marketTransactions", query, &raw); err != nil {
+			if err := httpClient.GetProductJSONWithQuery(ctx, path, query, &raw); err != nil {
 				return err
+			}
+			if source == "subscription" {
+				return writeIndentedJSON(cmd.OutOrStdout(), raw)
 			}
 			if opts.output == "json" {
 				return writeIndentedJSON(cmd.OutOrStdout(), raw)
@@ -115,6 +224,11 @@ func newCreatorTransactionsCmd(opts *rootOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().IntVar(&pageSize, "page-size", 0, "Page size")
+	cmd.Flags().StringVar(&source, "source", "pay-per-use", "Transaction source: pay-per-use|subscription")
+	cmd.Flags().StringVar(&subscriptionID, "subscription-id", "", "Filter subscription transactions by subscription ID")
+	cmd.Flags().StringVar(&period, "period", "", "Filter subscription transactions by accounting period")
+	cmd.Flags().StringVar(&pageToken, "page-token", "", "Opaque subscription transactions page token")
+	cmd.Flags().StringVar(&currency, "currency", "", "Settlement currency for subscription transactions")
 	return cmd
 }
 
