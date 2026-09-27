@@ -30,43 +30,71 @@
 
 ## See it in action
 
-Real runs and real output — some are videos generated straight from a community skill's own case study, others are SkillApps you can run yourself.
+Real AI work built with loomloom.
 
-[redesign-lab](examples/community/redesign-lab/) — a community pipeline built on loomloom — turns an existing website into several real, working design directions, then builds the one you choose. Two full before/after runs:
+### [Redesign Lab](examples/community/redesign-lab/)
 
-<div align="center">
-  <video src="https://github.com/user-attachments/assets/3c2c8fb7-68db-4e67-9514-fb93b91612b3" width="100%" controls></video>
-</div>
+Explore → choose → build
 
-> **aider.chat** — traded Inter's extra-bold headline for an uppercase Archivo Black display face, tightening letter-spacing for a more assertive visual hierarchy. → [Full case study](https://maxaibuilds.github.io/aider-redesign/)
+<table>
+<tr>
+<td width="50%">
+<video src="https://github.com/user-attachments/assets/3c2c8fb7-68db-4e67-9514-fb93b91612b3" width="100%" controls></video>
+<br>
+<b><a href="https://maxaibuilds.github.io/aider-redesign/">Aider</a></b><br>
+Website redesign
+</td>
+<td width="50%">
+<video src="https://github.com/user-attachments/assets/9c00a067-a4d4-414f-ab00-efb7f8714600" width="100%" controls></video>
+<br>
+<b><a href="https://maxaibuilds.github.io/tabbyml-redesign/">TabbyML</a></b><br>
+Website redesign
+</td>
+</tr>
+</table>
 
-<div align="center">
-  <video src="https://github.com/user-attachments/assets/9c00a067-a4d4-414f-ab00-efb7f8714600" width="100%" controls></video>
-</div>
+### [Image Lab](examples/community/image-lab/)
 
-> **tabbyml.com** — consolidated a ~40-token color inventory down to 8 deliberate values, upgraded headline and nav type to a true cross-platform Geist Mono stack (real monospace fallbacks instead of Arial), and squared off previously rounded corners for a sharper, angular finish. → [Full case study](https://maxaibuilds.github.io/tabbyml-redesign/)
+One image brief → multiple model-generated alternatives.
 
-[image-lab](examples/community/image-lab/) — a community skill built on loomloom — turns one image prompt into several strong alternatives across the models that best fit the brief, behind a single cost gate, then builds a shareable gallery you pick the winner from. Two full runs:
+<table>
+<tr>
+<td width="50%">
+<video src="https://github.com/user-attachments/assets/087fe262-d154-48a6-9a62-efdf4361c3a3" width="100%" controls></video>
+<br>
+<b><a href="https://maxaibuilds.github.io/woolworths-trolley-hero/">Woolworths Editorial Catalogue</a></b>
+</td>
+<td width="50%">
+<video src="https://github.com/user-attachments/assets/f1d670f1-d122-421b-bfa8-89624cdcce33" width="100%" controls></video>
+<br>
+<b><a href="https://maxaibuilds.github.io/zoro-robin-storyboard/">Zoro & Robin Storyboard</a></b>
+</td>
+</tr>
+</table>
 
-<div align="center">
-  <video src="https://github.com/user-attachments/assets/f1d670f1-d122-421b-bfa8-89624cdcce33" width="100%" controls></video>
-</div>
+### [Buffett 4-Pillar US Equity Screener](https://github.com/gold3bear/loomloom-buffett-screener)
 
-> **Zoro & Robin storyboard** — one brief classified as `infographic / diagram`, `count 8` → GPT Image 2 ×3 + Nano Banana Pro ×3 + Nano Banana 2 ×2. Eight complete storyboard sheets, three models, **$0.5547** total. → [Full case study](https://maxaibuilds.github.io/zoro-robin-storyboard/)
+Batch research → parallel analysis → evidence audit
 
-<div align="center">
-  <video src="https://github.com/user-attachments/assets/087fe262-d154-48a6-9a62-efdf4361c3a3" width="100%" controls></video>
-</div>
-
-> **Woolworths Trolley Hero** — one brief classified as `launch / announcement image`, refined across 3 rounds (plain hero photograph → catalogue typography → full editorial system) → GPT Image 2.5 Sunburst ×3 + GPT Image 2.5 Flare ×3 + GPT Image 2 ×2 each round, **$1.0554** total across all three. → [Full case study](https://maxaibuilds.github.io/woolworths-trolley-hero/)
-
-[LoomLoom × Buffett 4-Pillar US Equity Screener](https://github.com/gold3bear/loomloom-buffett-screener) — a community SkillApp, not a loomloom-run pipeline like the two above — screens US equities against Warren Buffett's four filters (circle of competence, durable moat, trustworthy management, margin of safety, plus a financial-quality supplement) with byte-verified SEC EDGAR / IR evidence and hard veto gates:
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/gold3bear/loomloom-buffett-screener/main/loomloom-four-filters-hero-v2.png" width="100%">
-</div>
-
-> **Buffett 4-Pillar Screener** — batch long-term value screening, deterministic Markdown report, `Community` · Compatibility `v0.4.5+` · MIT · research aid only, **not investment advice**. → [Full listing](https://github.com/cogfoundry-labs/awesome-loomloom#templates-and-skillapps)
+<table>
+<tr>
+<td width="33%">
+<a href="https://github.com/gold3bear/loomloom-buffett-screener"><img src="https://raw.githubusercontent.com/gold3bear/loomloom-buffett-screener/main/docs/images/nvda-decision-card.png" width="100%"></a>
+<br>
+NVDA decision card
+</td>
+<td width="33%">
+<a href="https://github.com/gold3bear/loomloom-buffett-screener"><img src="https://raw.githubusercontent.com/gold3bear/loomloom-buffett-screener/main/docs/images/evidence-audit-log.png" width="100%"></a>
+<br>
+Evidence audit log
+</td>
+<td width="33%">
+<a href="https://github.com/gold3bear/loomloom-buffett-screener"><img src="https://raw.githubusercontent.com/gold3bear/loomloom-buffett-screener/main/docs/images/intc-rejection.png" width="100%"></a>
+<br>
+INTC rejection
+</td>
+</tr>
+</table>
 
 More community examples land as they're built.
 
