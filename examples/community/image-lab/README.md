@@ -23,7 +23,7 @@ The case study shows everything the run actually produced — every alternative,
 Another real run — this one used the multi-round workflow to refine the same brief across three passes without ever losing the case study's address.
 
 <div align="center">
-  <video src="case-studies/woolworths-trolley-hero/assets/imagelab.mp4" width="100%" controls></video>
+  <video src="https://github.com/user-attachments/assets/087fe262-d154-48a6-9a62-efdf4361c3a3" width="100%" controls></video>
 </div>
 
 > **Woolworths Trolley Hero** — one brief classified as `launch / announcement image`, refined across 3 rounds (plain hero photograph → catalogue typography → full editorial system) → **GPT Image 2.5 Sunburst ×3 + GPT Image 2.5 Flare ×3 + GPT Image 2 ×2** each round, **$1.0554** total across all three. 16:9, ~54 s, rendered from the case study's own images. → [Full case study](https://maxaibuilds.github.io/woolworths-trolley-hero/)
