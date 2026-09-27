@@ -29,7 +29,7 @@ Alternatively, you can start by exploring official templates created, approved, 
 
 - [Understand your template](../reference/private-template.md)
 - [Official templates](../reference/official-templates.md)
-- [Build your first SkillApp](build-your-first-skillbot.md)
+- [Build your first SkillApp](build-your-first-skillapp.md)
 - [CLI reference](../reference/cli.md)
 
 ---

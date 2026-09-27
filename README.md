@@ -268,7 +268,7 @@ Organizations that prefer a production-ready implementation can also license the
 
 - [How to install](docs/quick-start/installation.md)
 - [Create your first **template** (AI work IR)](docs/guides/create-your-first-template.md)
-- [Build your first SkillApp](docs/guides/build-your-first-skillbot.md)
+- [Build your first SkillApp](docs/guides/build-your-first-skillapp.md)
 - [loomloom workflows](docs/guides/workflows.md)
 - [Changelog](CHANGELOG.md)
 - [Developer docs](https://docs.cogfoundry.ai/documentation/overview/quickstart)

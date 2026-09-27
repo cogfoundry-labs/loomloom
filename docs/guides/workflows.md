@@ -91,4 +91,4 @@ loomloom market run <listing-id> --input-file ./request.json --confirm --client-
 loomloom usage get <run-transaction-id>
 ```
 
-For the complete creator and user workflow, including publishing, purchasing, and running SkillApps, see [Build your first SkillApp](../guides/build-your-first-skillbot.md).
+For the complete creator and user workflow, including publishing, purchasing, and running SkillApps, see [Build your first SkillApp](../guides/build-your-first-skillapp.md).

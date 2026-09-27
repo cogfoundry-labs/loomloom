@@ -52,7 +52,7 @@ image), but its cause — "`asset_ref` → `reference` port binding is
 documented but not implemented" — was never actually isolated from a much
 more mundane possibility: `scripts/score.py` itself was building a malformed
 request. Re-reading `scripts/score.py` alongside loomloom's own docs
-(`build-your-first-skillbot.md`, `template-spec docs examples`) surfaced a
+(`build-your-first-skillapp.md`, `template-spec docs examples`) surfaced a
 real, independent bug: the script called `loomloom market run` (the command
 family for a *published Market listing*) against what is actually a
 *private* template, and built input rows shaped like
