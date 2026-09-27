@@ -18,9 +18,19 @@
 
 </div>
 
+## What's new
+
+- 🖼️ [image-lab](examples/community/image-lab/) — a community skill: one image prompt → several alternatives across the best-fit models, behind one cost gate → [See the runs](#see-it-in-action)
+
+- 🎨 [redesign-lab](examples/community/redesign-lab/) — a community skill for exploring and building website redesigns → [See the runs](#see-it-in-action)
+
+- 🚀 0.5.0 — SkillApp bundles now support subscriptions → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.5.0)
+
+- 💬 How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
+
 ## See it in action
 
-Real runs, start to finish — not mockups, not screenshots. Every video below is generated straight from a community skill's own case study output.
+Real runs and real output — some are videos generated straight from a community skill's own case study, others are SkillApps you can run yourself.
 
 [redesign-lab](examples/community/redesign-lab/) — a community pipeline built on loomloom — turns an existing website into several real, working design directions, then builds the one you choose. Two full before/after runs:
 
@@ -50,17 +60,15 @@ Real runs, start to finish — not mockups, not screenshots. Every video below i
 
 > **Woolworths Trolley Hero** — one brief classified as `launch / announcement image`, refined across 3 rounds (plain hero photograph → catalogue typography → full editorial system) → GPT Image 2.5 Sunburst ×3 + GPT Image 2.5 Flare ×3 + GPT Image 2 ×2 each round, **$1.0554** total across all three. → [Full case study](https://maxaibuilds.github.io/woolworths-trolley-hero/)
 
+[LoomLoom × Buffett 4-Pillar US Equity Screener](https://github.com/gold3bear/loomloom-buffett-screener) — a community SkillApp, not a loomloom-run pipeline like the two above — screens US equities against Warren Buffett's four filters (circle of competence, durable moat, trustworthy management, margin of safety, plus a financial-quality supplement) with byte-verified SEC EDGAR / IR evidence and hard veto gates:
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/gold3bear/loomloom-buffett-screener/main/loomloom-four-filters-hero-v2.png" width="100%">
+</div>
+
+> **Buffett 4-Pillar Screener** — batch long-term value screening, deterministic Markdown report, `Community` · Compatibility `v0.4.5+` · MIT · research aid only, **not investment advice**. → [Full listing](https://github.com/cogfoundry-labs/awesome-loomloom#templates-and-skillapps)
+
 More community examples land as they're built.
-
-## What's new
-
-- 🖼️ [image-lab](examples/community/image-lab/) — a community skill: one image prompt → several alternatives across the best-fit models, behind one cost gate → [See the runs](#see-it-in-action)
-
-- 🎨 [redesign-lab](examples/community/redesign-lab/) — a community skill for exploring and building website redesigns → [See the runs](#see-it-in-action)
-
-- 🚀 0.5.0 — SkillBot bundles now support subscriptions → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.5.0)
-
-- 💬 How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
 
 ## AI work as software
 
@@ -142,7 +150,7 @@ Developers use the `CLI` to:
 
 - Define and transform `AI work` into reusable `AI work IR`, including its inputs, logic, and outputs
 - Compile, execute, debug, and test `AI work IR`
-- Package, version, publish, and distribute compiled AI systems as deployable, modular AI systems - or SkillBots
+- Package, version, publish, and distribute compiled AI systems as deployable, modular AI systems - or SkillApps
 
 #### Reusable AI work IR — Intermediate representation for AI systems
 
@@ -180,11 +188,11 @@ Reusable `AI work IR` represents the following information according to the [IR 
 - execution budgets and constraints
 - final artifacts and output requirements
 
-#### SkillBot — A deployable, modular AI system
+#### SkillApp — A deployable, modular AI system
 
-Just as a Docker image packages an application for deployment, SkillBot packages a compiled AI system into a complete, deployable unit. A SkillBot can be deployed to any loomloom-compatible execution platform and invoked through APIs, MCP, or the CLI; installed into supported AI agents and applications; embedded into websites or online systems; or composed with other SkillBots, forming a modular AI system ecosystem.
+Just as a Docker image packages an application for deployment, SkillApp packages a compiled AI system into a complete, deployable unit. A SkillApp can be deployed to any loomloom-compatible execution platform and invoked through APIs, MCP, or the CLI; installed into supported AI agents and applications; embedded into websites or online systems; or composed with other SkillApps, forming a modular AI system ecosystem.
 
-Beyond the compiled AI system itself, SkillBot also includes the information required to transform a locally developed AI system into a production-ready, scalable execution unit:
+Beyond the compiled AI system itself, SkillApp also includes the information required to transform a locally developed AI system into a production-ready, scalable execution unit:
 
 - version history
 - access rights
@@ -193,13 +201,13 @@ Beyond the compiled AI system itself, SkillBot also includes the information req
 
 #### SkillCompiler — Compile your AI work into AI systems
 
-SkillCompiler is the default AI work compiler integrated into the loomloom `CLI`. It transforms the instructions, capabilities, workflows, and AI-generated artifacts that define AI work into reusable AI work IR, then compiles the IR into an optimized execution DAG and compiled AI system that can be packaged as a SkillBot.
+SkillCompiler is the default AI work compiler integrated into the loomloom `CLI`. It transforms the instructions, capabilities, workflows, and AI-generated artifacts that define AI work into reusable AI work IR, then compiles the IR into an optimized execution DAG and compiled AI system that can be packaged as a SkillApp.
 
 SkillCompiler compiles AI work according to the [IR spec](docs/ir-spec/en/README.md). This enables the community to build alternative AI work compilers, specialized optimization engines, and alternative execution platforms that are compatible with each other, helping accelerate innovation across the AI ecosystem.
 
 #### Execution platform — Production runtime
 
-The loomloom execution platform is CogFoundry's reference implementation of a managed runtime for compiled AI systems. It executes SkillBots as stateful, observable, multi-step jobs with maximum safe parallelism, faithfully implementing the execution semantics, optimization strategies, and runtime policies defined in the reusable `AI work IR`.
+The loomloom execution platform is CogFoundry's reference implementation of a managed runtime for compiled AI systems. It executes SkillApps as stateful, observable, multi-step jobs with maximum safe parallelism, faithfully implementing the execution semantics, optimization strategies, and runtime policies defined in the reusable `AI work IR`.
 
 Built-in runtime capabilities include:
 
@@ -211,7 +219,7 @@ Built-in runtime capabilities include:
 - retries, recovery, and failure handling
 - artifact management
 - execution metering and settlement
-- SkillBot licensing and revenue settlement
+- SkillApp licensing and revenue settlement
 
 Execution platform runs compiled AI systems based on the [IR spec](docs/ir-spec/en/README.md). This allows anyone to build compatible platforms with their own runtime technologies, infrastructure, and optimization strategies while remaining interoperable with the same open standard.
 
@@ -232,7 +240,7 @@ Organizations that prefer a production-ready implementation can also license the
 
 - [How to install](docs/quick-start/installation.md)
 - [Create your first **template** (AI work IR)](docs/guides/create-your-first-template.md)
-- [Build your first SkillBot](docs/guides/build-your-first-skillbot.md)
+- [Build your first SkillApp](docs/guides/build-your-first-skillbot.md)
 - [loomloom workflows](docs/guides/workflows.md)
 - [Changelog](CHANGELOG.md)
 - [Developer docs](https://docs.cogfoundry.ai/documentation/overview/quickstart)

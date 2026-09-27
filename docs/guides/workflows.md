@@ -1,6 +1,6 @@
 # loomloom workflows
 
-This guide covers the main end-to-end workflows supported by loomloom, from using official templates, creating and running private templates, and publishing them as SkillBots — all through CLI commands.
+This guide covers the main end-to-end workflows supported by loomloom, from using official templates, creating and running private templates, and publishing them as SkillApps — all through CLI commands.
 
 If you have more than one Server profile, select the platform for the workflow before continuing:
 
@@ -67,7 +67,7 @@ For large JSONL inputs, `template-spec estimate` provides a fast cost-only refer
 
 Full authoring guide, including the row-data (JSONL) alternative to workbooks, is in [Understand your private template](../reference/private-template.md).
 
-## 4. Publish a private template as a paid SkillBot
+## 4. Publish a private template as a paid SkillApp
 
 Once a private template version has at least one successful run, publish it to the Market:
 
@@ -75,12 +75,12 @@ Once a private template version has at least one successful run, publish it to t
 # Confirm before submitting this listing review request.
 loomloom listing publish <template-id> \
   --template-version-id <version-id> \
-  --display-name "My SkillBot" \
+  --display-name "My SkillApp" \
   --task-fixed-fee 0.1
 loomloom creator review list
 ```
 
-## 5. Buy and run a SkillBot from the Market
+## 5. Buy and run a SkillApp from the Market
 
 ```bash
 loomloom market list --keyword "tweet"
@@ -91,4 +91,4 @@ loomloom market run <listing-id> --input-file ./request.json --confirm --client-
 loomloom usage get <run-transaction-id>
 ```
 
-For the complete creator and user workflow, including publishing, purchasing, and running SkillBots, see [Build your first SkillBot](../guides/build-your-first-skillbot.md).
+For the complete creator and user workflow, including publishing, purchasing, and running SkillApps, see [Build your first SkillApp](../guides/build-your-first-skillbot.md).

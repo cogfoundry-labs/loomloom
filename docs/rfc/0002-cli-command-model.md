@@ -52,16 +52,16 @@ word "workflow"**, which is off-vocabulary.
 | **TemplateSpec** | The JSON authoring format that *defines* an AI work — its steps, inputs, model bindings, and dependencies. The file you hand to `build`; written throughout as `<spec.json>` (a TemplateSpec `.json` file). | "config", "manifest" |
 | **reusable AI work IR** | The inspected/optimized intermediate representation produced by compilation. | "config" |
 | **compiled AI system** | The optimized execution DAG produced from the IR. | — |
-| **SkillBot** | A published, packaged AI system — the result of `publish`. Every SkillBot lives on the Market, so there is **no separate "Market SkillBot"**; it is just a SkillBot. | "Market SkillBot", "public template", "plugin" |
+| **SkillApp** | A published, packaged AI system — the result of `publish`. Every SkillApp lives on the Market, so there is **no separate "Market SkillApp"**; it is just a SkillApp. | "Market SkillApp", "public template", "plugin" |
 | **official template** | A platform-maintained runnable AI work. | — |
 | **private template** (+ **version**) | User-authored AI work created via **TemplateSpec**. | — |
 | **run** | One execution instance of an AI work. | "task" (a task is a row *within* a run) |
-| **Market** | The marketplace where published SkillBots are discovered and run. A place, not a command group. | — |
-| **Listing** / **Listing Version** *(internal)* | The backend record behind a published SkillBot. **Never user-facing** — users only ever say "SkillBot" (and its "version"). | surfaced as "SkillBot" |
+| **Market** | The marketplace where published SkillApps are discovered and run. A place, not a command group. | — |
+| **Listing** / **Listing Version** *(internal)* | The backend record behind a published SkillApp. **Never user-facing** — users only ever say "SkillApp" (and its "version"). | surfaced as "SkillApp" |
 
 **Metavar convention.** Prose always uses the full concept name **"AI work."** The CLI
 *argument* is shortened to **`<work>`** — a placeholder for a reference to any runnable
-AI work: an official template id, a private template version, or a SkillBot id. The
+AI work: an official template id, a private template version, or a SkillApp id. The
 short form matches the `work` collection noun in `list work`,
 so `run <work>` and `list work` read consistently. (Same pattern as docs saying "a pull
 request" while the argument is `<pr>`.)
@@ -76,19 +76,19 @@ request" while the argument is `<pr>`.)
 
 > **Design consideration — why insist on "AI work" over "workflow"?**
 > RFC-0001 already speaks of "run work, publish work," and the README builds its
-> whole compiler metaphor on **AI work → IR → compiled AI system → SkillBot**.
+> whole compiler metaphor on **AI work → IR → compiled AI system → SkillApp**.
 > Introducing "workflow" would fork the vocabulary and undercut the one mental
 > model the project has invested in. A CLI is documentation users type; its nouns
 > must be the project's nouns. (The term has already leaked: the current binary's own
 > root `--help` describes itself as *"Developer CLI for LoomLoom workflows."*)
 
-> **Design consideration — one word for a published thing: "SkillBot".**
-> The current model exposes three near-synonyms — "Market SkillBot", "Listing",
+> **Design consideration — one word for a published thing: "SkillApp".**
+> The current model exposes three near-synonyms — "Market SkillApp", "Listing",
 > "Listing Version" — plus "public template" in places. For a user, these are one
-> thing: a **SkillBot** they published (or that someone else did). This RFC collapses
-> them: you `publish` AI work and get a **SkillBot**; "Listing"/"Listing Version" stay
+> thing: a **SkillApp** they published (or that someone else did). This RFC collapses
+> them: you `publish` AI work and get a **SkillApp**; "Listing"/"Listing Version" stay
 > as backend records the CLI never names; "Market" is the *place*, never a prefix on
-> "SkillBot". This is the same "hide internal distinctions" rule that motivates
+> "SkillApp". This is the same "hide internal distinctions" rule that motivates
 > collapsing official/private/Market in `run` (§0.2, §1.2) — applied to the noun.
 
 ---
@@ -199,7 +199,7 @@ Part 0.
 | **0.2 — `client-request-id` exposed** | **Auto-minted idempotency key, printed to stderr; `--idempotency-key` to pin — §2.1 rule 3, §4.1(4)** |
 | **0.2 — `*T` money units leak** | **Money always rendered with a currency; raw `*T` only under `--raw` — Part 3.1** |
 | **0.2 — official/private/Market taxonomy** | **`run <work>` resolves the type; `--kind` overrides only on ambiguity — §1.2, §5.2(3)** |
-| Market SkillBot / Listing terminology | One user word, "SkillBot"; Listing is internal — Terminology, §1.4 |
+| Market SkillApp / Listing terminology | One user word, "SkillApp"; Listing is internal — Terminology, §1.4 |
 | No `{data, meta}` envelope | Single envelope, `meta.nextCursor` — Part 3.1 |
 | Inconsistent pagination | `--limit`/`--all`/`--cursor`, `null`-terminated — §2.1, Part 3.1 |
 | Text keys ≠ JSON keys | One camelCase key set, text labels aligned — Part 3.1 |
@@ -319,18 +319,18 @@ verbs — no resource noun-groups anywhere. Grouped by what you're doing:
 
 **Act on AI work**
 ```
-loom run <work> --input <file>   # run any AI work (official template, private, or a SkillBot)
-loom build <spec.json>           # compile a TemplateSpec (the .json that defines your AI work) into a SkillBot
-loom publish <work>              # publish your AI work as a SkillBot
-loom install <ref>               # install a SkillBot as a local agent skill
+loom run <work> --input <file>   # run any AI work (official template, private, or a SkillApp)
+loom build <spec.json>           # compile a TemplateSpec (the .json that defines your AI work) into a SkillApp
+loom publish <work>              # publish your AI work as a SkillApp
+loom install <ref>               # install a SkillApp as a local agent skill
 loom upload <file>               # provide input data (asset or rows)
 ```
 
 **Discover & inspect**
 ```
-loom search <query>              # find AI work to run (official templates + SkillBots)
+loom search <query>              # find AI work to run (official templates + SkillApps)
 loom list <collection>           # list of your own: work | runs | skillbots | usage | earnings | servers | models
-loom get <id>                    # inspect any one object by id (a work, run, SkillBot, usage record…)
+loom get <id>                    # inspect any one object by id (a work, run, SkillApp, usage record…)
 ```
 
 **Configure & identify**
@@ -406,20 +406,20 @@ these current commands: `template list`, `template-spec list/get/versions`,
 `creator earnings/transactions`, `asset list`, `model list`, `server list`, and
 `run list`.
 
-State-changing management stays as intent verbs. Only the published-SkillBot lifecycle
+State-changing management stays as intent verbs. Only the published-SkillApp lifecycle
 needs sub-actions, grouped under `publish`:
 
 ```
-loom publish <work> [--fee …]                       # publish AI work as a SkillBot
-loom publish update <id>                            # change a SkillBot's price / profile / version
-loom publish pause | resume <id>                    # take a SkillBot off the Market / put it back
+loom publish <work> [--fee …]                       # publish AI work as a SkillApp
+loom publish update <id>                            # change a SkillApp's price / profile / version
+loom publish pause | resume <id>                    # take a SkillApp off the Market / put it back
 loom publish withdraw <id>                          # withdraw a pending review
 ```
 
 > **Design consideration — `pause`/`resume`, not `unlist`/`relist`.**
 > The current verbs `unlist`/`relist` name the internal *Listing* object and embed
 > "list" — which now collides with the top-level `list` command. `pause`/`resume`
-> describe the user's actual intent (temporarily stop / restart sales of a SkillBot),
+> describe the user's actual intent (temporarily stop / restart sales of a SkillApp),
 > carry no internal noun, and don't clash with `list`.
 
 Net effect: `template`, `template-spec`, `market`, `listing`, `creator`, `usage`,
@@ -463,10 +463,10 @@ flowchart LR
 > layer) by replacing six scattered `X list` commands.
 
 > **Design consideration — `list` means *enumerate*, never *put on the Market*.**
-> In marketplace vernacular, "list a SkillBot" means *offer it for sale* — so
-> `loom list skillbots` could be misread as "list this SkillBot for sale" instead of
-> "show me my SkillBots." Two things keep `list` unambiguous. First, the sales action
-> has its **own** verb: you put a SkillBot on the Market with **`publish`** and take it
+> In marketplace vernacular, "list a SkillApp" means *offer it for sale* — so
+> `loom list skillbots` could be misread as "list this SkillApp for sale" instead of
+> "show me my SkillApps." Two things keep `list` unambiguous. First, the sales action
+> has its **own** verb: you put a SkillApp on the Market with **`publish`** and take it
 > off with **`publish pause`** — "list"/"unlist" carry *no* marketplace meaning anywhere
 > in this CLI (that vocabulary was deliberately removed, §1.4/§2.1). Second, the help
 > text reads **"list *of* your own …"** — framing `list` as the noun *"the list of"*,
@@ -718,7 +718,7 @@ quote before start, known pitfalls). This pairing is tested empirically (§4.4).
 ### 4.4 Empirical validation (release gate, not aspiration)
 
 Per Sobiecki §Testing: run the new CLI through an agent harness on real tasks (run a
-template, publish a SkillBot, install a skill), have the agent report snags (extra
+template, publish a SkillApp, install a skill), have the agent report snags (extra
 lookups, parsing friction, missing flags, vague errors, noise), and repeat with a
 **weaker model** to expose ambiguous names. Ship when tool use is "boring."
 
@@ -993,14 +993,14 @@ scraping; idempotency is automatic; one lifecycle verb set (`download`/`quote`/`
 
 The same collapse applies across every "run something" path and the create/manage
 tasks. Note how the three *distinct* execution paths in the current CLI (official
-workbook, private TemplateSpec, Market SkillBot) become **one** `run` in the proposal:
+workbook, private TemplateSpec, Market SkillApp) become **one** `run` in the proposal:
 
 | Task | Current CLI | Proposed |
 |---|---|---|
 | Run a **private TemplateSpec** (JSONL) | `orchestration-input upload rows.jsonl` → `template-spec precheck <id> --version-id <v> --input-file-id <f>` → `template-spec run <id> --version-id <v> --input-file-id <f> --client-request-id <k>` | `loom run quote <id> --version <v> --input @rows.jsonl` → `loom run start <id> --version <v> --input @rows.jsonl --yes` |
-| Run a **Market SkillBot** (JSON) | `market quote <id> --input-file in.json` → `market run <id> --input-file in.json --confirm --client-request-id <k>` | `loom run quote <id> --input in.json` → `loom run start <id> --input in.json --yes` |
+| Run a **Market SkillApp** (JSON) | `market quote <id> --input-file in.json` → `market run <id> --input-file in.json --confirm --client-request-id <k>` | `loom run quote <id> --input in.json` → `loom run start <id> --input in.json --yes` |
 | **Check status / get results** | `run watch <run-id>` → `run result-workbook <run-id> -o out.xlsx` (or `artifact download`) | `loom run watch <run-id>` → `loom run results <run-id> --format workbook -o out.xlsx` |
-| **Publish / update** a SkillBot | `listing publish <id> --template-version-id <v> --task-fixed-fee 0.5` … `listing update <id> …` | `loom publish <work> --version <v> --fee 0.5` … `loom publish update <id> …` |
+| **Publish / update** a SkillApp | `listing publish <id> --template-version-id <v> --task-fixed-fee 0.5` … `listing update <id> …` | `loom publish <work> --version <v> --fee 0.5` … `loom publish update <id> …` |
 | **Install** as a local agent skill | `skill install market <listing-id> --agent <a> --output-dir <d>` | `loom install <ref> --agent <a> -o <d>` |
 
 The through-line: the user says **what** (run / publish / install this thing), never
