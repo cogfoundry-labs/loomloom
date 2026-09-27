@@ -135,7 +135,7 @@
       <span class="step"><code>run results</code></span>
     </div>
     <p class="note">Or the whole safe loop in one line: <b>loom run &lt;work&gt; --input input.xlsx</b>. The same
-      command runs an official template, a private one, or a Market SkillBot — the CLI resolves which.</p>
+      command runs an official template, a private one, or a Market SkillApp — the CLI resolves which.</p>
   </section>
 
   <!-- SECTIONS -->
@@ -154,13 +154,13 @@
       <h3><span class="dot b-cyan"></span> Find &amp; inspect</h3>
       <p class="role t-cyan">Two readers cover everything you own or can run.</p>
       <div class="item"><div class="task">Find AI work to run (official + Market)</div><code class="cmd">loom search <span class="p">"&lt;query&gt;"</span></code></div>
-      <div class="item"><div class="task">The list <em>of</em> my own work / runs / SkillBots / usage <span class="p">(“list” only enumerates — publishing is <code style="font-family:ui-monospace,Consolas,monospace">publish</code>)</span></div><code class="cmd">loom list <span class="p">work</span>   <span class="p">runs</span>   <span class="p">skillbots</span>   <span class="p">usage</span></code></div>
+      <div class="item"><div class="task">The list <em>of</em> my own work / runs / SkillApps / usage <span class="p">(“list” only enumerates — publishing is <code style="font-family:ui-monospace,Consolas,monospace">publish</code>)</span></div><code class="cmd">loom list <span class="p">work</span>   <span class="p">runs</span>   <span class="p">skillbots</span>   <span class="p">usage</span></code></div>
       <div class="item"><div class="task">Inspect anything by id</div><code class="cmd">loom get <span class="p">&lt;id&gt;</span></code></div>
     </div>
 
     <div class="card span2">
       <h3><span class="dot b-green"></span> Run AI work</h3>
-      <p class="role t-green">One verb set — official template, private template, or Market SkillBot.</p>
+      <p class="role t-green">One verb set — official template, private template, or Market SkillApp.</p>
       <div class="item"><div class="task">Get a blank input template</div><code class="cmd">loom run download <span class="p">&lt;work&gt;</span> <span class="f">-o</span> input.xlsx</code></div>
       <div class="item"><div class="task">Validate my input (free)</div><code class="cmd">loom run check <span class="p">&lt;work&gt;</span> <span class="f">--input</span> input.xlsx</code></div>
       <div class="item"><div class="task">Estimate the cost (free)</div><code class="cmd">loom run quote <span class="p">&lt;work&gt;</span> <span class="f">--input</span> input.xlsx</code></div>
@@ -173,8 +173,8 @@
 
     <div class="card">
       <h3><span class="dot b-orange"></span> Build &amp; publish</h3>
-      <p class="role t-orange">Turn your method into a sellable SkillBot.</p>
-      <div class="item"><div class="task">Compile my TemplateSpec (the .json that defines my AI work) into a SkillBot</div><code class="cmd">loom build spec.json</code></div>
+      <p class="role t-orange">Turn your method into a sellable SkillApp.</p>
+      <div class="item"><div class="task">Compile my TemplateSpec (the .json that defines my AI work) into a SkillApp</div><code class="cmd">loom build spec.json</code></div>
       <div class="item"><div class="task">Add a new version</div><code class="cmd">loom build spec.json <span class="f">--as-version</span> <span class="p">&lt;id&gt;</span></code></div>
       <div class="item"><div class="task">Publish it on the Market</div><code class="cmd">loom publish <span class="p">&lt;work&gt;</span> <span class="f">--fee</span> 0.5</code></div>
       <div class="item"><div class="task">Change price / profile</div><code class="cmd">loom publish update <span class="p">&lt;id&gt;</span></code></div>
@@ -184,7 +184,7 @@
 
     <div class="card">
       <h3><span class="dot b-purple"></span> Use in your agent</h3>
-      <p class="role t-purple">Install a SkillBot as a local agent skill.</p>
+      <p class="role t-purple">Install a SkillApp as a local agent skill.</p>
       <div class="item"><div class="task">Install as a local agent skill</div><code class="cmd">loom install <span class="p">&lt;ref&gt;</span> <span class="f">-o</span> <span class="p">&lt;dir&gt;</span></code></div>
       <div class="item"><div class="task">Remove it</div><code class="cmd">loom uninstall <span class="p">&lt;dir&gt;</span></code></div>
     </div>
@@ -205,7 +205,7 @@
     <code>template</code> / <code>template-spec</code> / <code>market</code> / <code>listing</code> /
     <code>creator</code> groups to learn, <b>no</b> <code>client-request-id</code> to mint, and
     <b>no</b> <code>*T</code> units to convert — the same knowledge runs an official template, a
-    private one, or a Market SkillBot.
+    private one, or a Market SkillApp.
   </p>
 
   <footer>

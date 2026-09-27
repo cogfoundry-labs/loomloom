@@ -13,7 +13,7 @@ Once loomloom CLI is [installed](../quick-start/installation.md), tell your AI a
 3. **Review the proposed template.** The agent generates a reusable template, recommends an execution strategy, and may suggest alternative designs with estimated execution costs.
 4. **Run the template.** Provide your inputs (for example, an Excel workbook), execute the template, and review the results.
 5. **Iterate.** Ask the agent to refine any part of the template until you are satisfied.
-6. **Publish (optional).** Publish the template as a SkillBot so others can use it through the loomloom Marketplace.
+6. **Publish (optional).** Publish the template as a SkillApp so others can use it through the loomloom Marketplace.
 
 The workflow is fully collaborative — you can ask questions, change requirements, compare different approaches, or let the agent make recommendations at any stage.
 
@@ -29,7 +29,7 @@ Alternatively, you can start by exploring official templates created, approved, 
 
 - [Understand your template](../reference/private-template.md)
 - [Official templates](../reference/official-templates.md)
-- [Build your first SkillBot](build-your-first-skillbot.md)
+- [Build your first SkillApp](build-your-first-skillbot.md)
 - [CLI reference](../reference/cli.md)
 
 ---

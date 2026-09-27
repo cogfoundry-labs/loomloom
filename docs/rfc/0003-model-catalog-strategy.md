@@ -19,10 +19,10 @@ method. The specific picks will differ from platform to platform; the way you
 arrive at them shouldn't.
 
 loomloom is not a chat app. Creators compile AI work into
-[SkillBots](../../README.md#skillbot--a-deployable-modular-ai-system), publish
-them, and sell them — and a published SkillBot pins the models it runs on. So
+[SkillApps](../../README.md#skillbot--a-deployable-modular-ai-system), publish
+them, and sell them — and a published SkillApp pins the models it runs on. So
 "best model" can't mean "whatever tops a leaderboard this week." It has to mean
-the model that does the job well, at a price that keeps a SkillBot viable, from a
+the model that does the job well, at a price that keeps a SkillApp viable, from a
 provider we can keep serving. Cost, stability, and a reliable backup count as
 much as raw capability.
 
@@ -40,7 +40,7 @@ Every model in the catalog earns its place by answering three plain questions:
    (the closest quality at much lower cost — the default most steps should use).
 3. **Is there a reliable alternative?** Every pick has a cross-provider
    **Redundancy** backup, so one model's outage or retirement never breaks a
-   running SkillBot.
+   running SkillApp.
 
 Everything after this — gates, scored criteria, benchmarks, thresholds,
 lifecycle — is just the method that answers these three questions in a way anyone
@@ -65,12 +65,12 @@ product. Three things about loomloom make model choice matter more here than
 almost anywhere else:
 
 1. **Batch economics, with a quality floor.** A template runs over N rows, so a
-   3× price gap can decide whether a SkillBot is worth shipping — cost and
+   3× price gap can decide whether a SkillApp is worth shipping — cost and
    throughput matter more than in an interactive product. But cheap is never
    allowed to mean bad: the default optimizes cost *above* an acceptable-quality
    bar, it doesn't just minimize price. A model that produces unacceptable output
    is disqualified, not defaulted to.
-2. **A published SkillBot has to keep running.** It pins a model. That does *not*
+2. **A published SkillApp has to keep running.** It pins a model. That does *not*
    mean any one model lives forever — models get retired. It means the *catalog*
    guarantees continuity: a pinned snapshot keeps resolving through the
    deprecation window, retirements come with notice and an overlap period, and a
@@ -117,7 +117,7 @@ almost anywhere else:
   weak leader isn't good enough.
 - **Show your work.** Every pick cites a credible, public benchmark. No citation,
   no designation.
-- **Pin snapshots and honor the deprecation contract.** SkillBots depend on it.
+- **Pin snapshots and honor the deprecation contract.** SkillApps depend on it.
 - **Start small, then grow.** The first catalog is intentionally lean; it's meant
   to widen over time. Each addition earns its place, and a work type gets its own
   entry only when its leader actually differs (see the
@@ -183,7 +183,7 @@ Fail any gate and the model is out, full stop.
 - **G1 — Availability & compliance** on CogFoundry: we can license/host it for the
   target regions on acceptable data-handling terms.
 - **G2 — Commercial terms** allow resale, monetization, and programmatic batch use
-  — SkillBots are commercial products. *We'll need a per-provider terms checklist
+  — SkillApps are commercial products. *We'll need a per-provider terms checklist
   here* (training-data use, output ownership, resale rights, batch allowance),
   since terms vary a lot for image/video. Building it is provider-onboarding work,
   out of scope for this RFC.
@@ -387,7 +387,7 @@ re-verify before adoption.
 > **Lifecycle note.** We leave OpenAI's Sora 2 off on purpose: its API is set to
 > shut down (Sep 24, 2026). It's a perfect example of the risk the
 > [lifecycle contract](#catalog-lifecycle-and-operations) exists to prevent —
-> never pin a SkillBot to a model that's on its way out.
+> never pin a SkillApp to a model that's on its way out.
 
 ## Catalog lifecycle and operations
 
@@ -396,7 +396,7 @@ re-verify before adoption.
 1. **Pin snapshots, never floating aliases**, in the catalog.
 2. **Deprecation** follows the committed SLA in [Decisions](#decisions) — a
    notice period plus an overlap window where both the old and new snapshots
-   resolve, so published SkillBots keep running.
+   resolve, so published SkillApps keep running.
 3. **One published default per execution unit**, versioned (see the
    [mapping](#mapping-work-types-to-execution-units)).
 4. **Adding a model needs a filled scorecard** (gates + criteria); **removing one
@@ -484,11 +484,11 @@ benchmark-quality-vs-price as the cold-start proxy until then.
 
 ## Open questions
 
-- Do we want an **embeddings** execution unit (for retrieval-heavy SkillBots),
+- Do we want an **embeddings** execution unit (for retrieval-heavy SkillApps),
   which would add a fourth modality?
 - Do we expose an **open/self-hostable** entry now, or wait? It would be gated on
   **reproducibility, offline operability, and permissive licensing** on top of
-  G1–G3 — deferred until there's buyer demand for reproducible/offline SkillBots.
+  G1–G3 — deferred until there's buyer demand for reproducible/offline SkillApps.
 - Are the **threshold numbers** right after the first catalog pass (text ~90% /
   image ~95% / video ~90%; cost 3×/3×/2×)?
 - Is a **two-review** hysteresis window right, or should high-value pinned models
@@ -509,7 +509,7 @@ first catalog pass.
 
 ### loomloom
 
-- [README — SkillBot & runtime](../../README.md)
+- [README — SkillApp & runtime](../../README.md)
 - [Execution Units reference](../ir-spec/en/reference/execution-units.md)
 - [Configure models](../ir-spec/en/how-to/configure-models.md)
 

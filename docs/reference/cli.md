@@ -22,8 +22,8 @@ loomloom's CLI is organized into the following command groups, in the order they
 6. **Catalog** → list available models and assets
 7. **Private templates** → build your own workflows with TemplateSpec
 8. **Local agent skills** → install/uninstall workflows as agent skills
-9. **Market — Buy** → discover and run SkillBots
-10. **Market — Create** → publish and manage SkillBots
+9. **Market — Buy** → discover and run SkillApps
+10. **Market — Create** → publish and manage SkillApps
 
 Most users only need:
 
@@ -33,7 +33,7 @@ Useful inspection commands:
 
 - `loomloom <command> --help` shows positional arguments and flags.
 - `loomloom template schema <template-id> --output json` shows official template fields.
-- `loomloom market show <listing-id> --output json` shows a Market SkillBot's public input schema.
+- `loomloom market show <listing-id> --output json` shows a Market SkillApp's public input schema.
 - `loomloom template-spec docs spec|examples|conversation` shows TemplateSpec authoring docs.
 - Use `--output json` when one command feeds another, and preserve returned IDs exactly.
 
@@ -169,7 +169,7 @@ Generated files from workflows (images, videos, documents, etc.)
 | `loomloom capability resolve --input <modality> --output-modality <modality>` | Resolve task modalities to current TemplateSpec authoring choices. |
 | `loomloom model list --step-type <type>` | List executable models for a step type. |
 | `loomloom balance` | Show the currently observable settled LoomLoom balance. Gateway remains the final model-request admission authority. |
-| `loomloom asset list` | Aggregated list of my private templates and available Market SkillBots; does not include official templates. |
+| `loomloom asset list` | Aggregated list of my private templates and available Market SkillApps; does not include official templates. |
 
 ## 7. Private templates (created via TemplateSpec)
 
@@ -211,7 +211,7 @@ Use these commands for Market and official-template installation. They download 
 
 | Command | Description |
 |---|---|
-| `loomloom skill package install market <listing-id> --skill-root <skill-root>` | Install or update a Market SkillBot's ZIP package. |
+| `loomloom skill package install market <listing-id> --skill-root <skill-root>` | Install or update a Market SkillApp's ZIP package. |
 | `loomloom skill package install official <template-slug> --skill-root <skill-root>` | Install or update an official template's ZIP package. |
 
 ### Legacy wrappers (compatibility)
@@ -250,15 +250,15 @@ Typical flow
 
 | Command | Description |
 |---|---|
-| `loomloom market list` | Browse published Market SkillBots. |
-| `loomloom market show <listing-id>` | Show one SkillBot, including its input schema. |
+| `loomloom market list` | Browse published Market SkillApps. |
+| `loomloom market show <listing-id>` | Show one SkillApp, including its input schema. |
 | `loomloom market quote <listing-id> --input-file <json>` | Estimate execution cost. |
-| `loomloom market run <listing-id> --input-file <json> --confirm --client-request-id <id>` | Execute a SkillBot from JSON input rows (paid). |
+| `loomloom market run <listing-id> --input-file <json> --confirm --client-request-id <id>` | Execute a SkillApp from JSON input rows (paid). |
 | `loomloom market workbook download <listing-id> --output-file <xlsx>` | Download a Market workbook template. |
 | `loomloom market workbook validate <listing-id> --file <xlsx>` | Validate a filled Market workbook. |
 | `loomloom market workbook quote <listing-id> --file <xlsx>` | Estimate execution cost for a workbook. |
-| `loomloom market workbook run <listing-id> --file <xlsx> --confirm --client-request-id <id>` | Execute a SkillBot from a workbook (paid). |
-| `loomloom usage list` | List my Market SkillBot usage records. |
+| `loomloom market workbook run <listing-id> --file <xlsx> --confirm --client-request-id <id>` | Execute a SkillApp from a workbook (paid). |
+| `loomloom usage list` | List my Market SkillApp usage records. |
 | `loomloom usage get <run-transaction-id>` | Show one usage record. |
 
 ## 10. Market (Create workflows)
