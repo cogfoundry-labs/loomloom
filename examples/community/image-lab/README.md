@@ -20,6 +20,14 @@ One real run, start to finish — a One Piece-style 30-second storyboard sheet, 
 
 The case study shows everything the run actually produced — every alternative, the model behind each one, the size each ran at, the per-image and total cost, and the exact prompt. Nothing staged, nothing a screenshot.
 
+Another real run — this one used the multi-round workflow to refine the same brief across three passes without ever losing the case study's address.
+
+<div align="center">
+  <video src="case-studies/woolworths-trolley-hero/assets/imagelab.mp4" width="100%" controls></video>
+</div>
+
+> **Woolworths Trolley Hero** — one brief classified as `launch / announcement image`, refined across 3 rounds (plain hero photograph → catalogue typography → full editorial system) → **GPT Image 2.5 Sunburst ×3 + GPT Image 2.5 Flare ×3 + GPT Image 2 ×2** each round, **$1.0554** total across all three. 16:9, ~54 s, rendered from the case study's own images. → [Full case study](https://maxaibuilds.github.io/woolworths-trolley-hero/)
+
 ## Why I built this
 
 I'm not a prompt engineer and I don't have a favourite image model. I kept doing the same thing anyway: pick whichever model I used last, run it four times, squint at the results, run it four more. Trying a *different* model meant another tab, another mental model of its quirks, another guess at what it would cost — so I mostly didn't.
