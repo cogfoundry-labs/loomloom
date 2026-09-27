@@ -18,13 +18,47 @@
 
 </div>
 
+## See it in action
+
+Real runs, start to finish — not mockups, not screenshots. Every video below is generated straight from a community skill's own case study output.
+
+[redesign-lab](examples/community/redesign-lab/) — a community pipeline built on loomloom — turns an existing website into several real, working design directions, then builds the one you choose. Two full before/after runs:
+
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/3c2c8fb7-68db-4e67-9514-fb93b91612b3" width="100%" controls></video>
+</div>
+
+> **aider.chat** — traded Inter's extra-bold headline for an uppercase Archivo Black display face, tightening letter-spacing for a more assertive visual hierarchy. → [Full case study](https://maxaibuilds.github.io/aider-redesign/)
+
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/9c00a067-a4d4-414f-ab00-efb7f8714600" width="100%" controls></video>
+</div>
+
+> **tabbyml.com** — consolidated a ~40-token color inventory down to 8 deliberate values, upgraded headline and nav type to a true cross-platform Geist Mono stack (real monospace fallbacks instead of Arial), and squared off previously rounded corners for a sharper, angular finish. → [Full case study](https://maxaibuilds.github.io/tabbyml-redesign/)
+
+[image-lab](examples/community/image-lab/) — a community skill built on loomloom — turns one image prompt into several strong alternatives across the models that best fit the brief, behind a single cost gate, then builds a shareable gallery you pick the winner from. Two full runs:
+
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/f1d670f1-d122-421b-bfa8-89624cdcce33" width="100%" controls></video>
+</div>
+
+> **Zoro & Robin storyboard** — one brief classified as `infographic / diagram`, `count 8` → GPT Image 2 ×3 + Nano Banana Pro ×3 + Nano Banana 2 ×2. Eight complete storyboard sheets, three models, **$0.5547** total. → [Full case study](https://maxaibuilds.github.io/zoro-robin-storyboard/)
+
+<div align="center">
+  <video src="https://github.com/user-attachments/assets/087fe262-d154-48a6-9a62-efdf4361c3a3" width="100%" controls></video>
+</div>
+
+> **Woolworths Trolley Hero** — one brief classified as `launch / announcement image`, refined across 3 rounds (plain hero photograph → catalogue typography → full editorial system) → GPT Image 2.5 Sunburst ×3 + GPT Image 2.5 Flare ×3 + GPT Image 2 ×2 each round, **$1.0554** total across all three. → [Full case study](https://maxaibuilds.github.io/woolworths-trolley-hero/)
+
+More community examples land as they're built.
+
 ## What's new
 
-- 🖼️ [image-lab](examples/community/image-lab/) — a community skill: one image prompt → several alternatives across the best-fit models, behind one cost gate → [See the run](#examples)
+- 🖼️ [image-lab](examples/community/image-lab/) — a community skill: one image prompt → several alternatives across the best-fit models, behind one cost gate → [See the runs](#see-it-in-action)
 
-- 🎨 [redesign-lab](examples/community/redesign-lab/) — a community skill for exploring and building website redesigns → [See the runs](#examples)
+- 🎨 [redesign-lab](examples/community/redesign-lab/) — a community skill for exploring and building website redesigns → [See the runs](#see-it-in-action)
 
-- 🚀 0.3.0 — TemplateSpec v2 is now server-authoritative → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.3.0)
+- 🚀 0.5.0 — SkillBot bundles now support subscriptions → [Release notes](https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.5.0)
 
 - 💬 How should AI-native tools choose the right model for the work? → [Join the discussion](https://github.com/orgs/cogfoundry-labs/discussions/28)
 
@@ -187,32 +221,6 @@ Organizations that prefer a production-ready implementation can also license the
 
 - 🚧 loomloom is currently in beta. The core concepts, architecture, and initial implementations are available and working. Some features are already implemented, while others are under active development.
 - ℹ️ Design details may evolve based on community feedback and real-world usage. Significant changes will be documented publicly.
-
-## Examples
-
-[redesign-lab](examples/community/redesign-lab/) — a community pipeline built on loomloom — turns an existing website into several real, working design directions, then builds the one you choose. Two full before/after runs:
-
-<div align="center">
-  <video src="https://github.com/user-attachments/assets/3c2c8fb7-68db-4e67-9514-fb93b91612b3" width="100%" controls></video>
-</div>
-
-> **aider.chat** — traded Inter's extra-bold headline for an uppercase Archivo Black display face, tightening letter-spacing for a more assertive visual hierarchy. → [Full case study](https://maxaibuilds.github.io/aider-redesign/)
-
-<div align="center">
-  <video src="https://github.com/user-attachments/assets/9c00a067-a4d4-414f-ab00-efb7f8714600" width="100%" controls></video>
-</div>
-
-> **tabbyml.com** — consolidated a ~40-token color inventory down to 8 deliberate values, upgraded headline and nav type to a true cross-platform Geist Mono stack (real monospace fallbacks instead of Arial), and squared off previously rounded corners for a sharper, angular finish. → [Full case study](https://maxaibuilds.github.io/tabbyml-redesign/)
-
-[image-lab](examples/community/image-lab/) — a community skill built on loomloom — turns one image prompt into several strong alternatives across the models that best fit the brief, behind a single cost gate, then builds a shareable gallery you pick the winner from. One full run:
-
-<div align="center">
-  <video src="https://github.com/user-attachments/assets/f1d670f1-d122-421b-bfa8-89624cdcce33" width="100%" controls></video>
-</div>
-
-> **Zoro & Robin storyboard** — one brief classified as `infographic / diagram`, `count 8` → GPT Image 2 ×3 + Nano Banana Pro ×3 + Nano Banana 2 ×2. Eight complete storyboard sheets, three models, **$0.5547** total. → [Full case study](https://maxaibuilds.github.io/zoro-robin-storyboard/)
-
-More community examples land as they're built.
 
 ## Documentation
 
