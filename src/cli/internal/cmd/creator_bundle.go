@@ -163,16 +163,38 @@ func newCreatorBundleStatusCmd(opts *rootOptions, publish bool) *cobra.Command {
 
 func newListingPaymentSettingsCmd(opts *rootOptions) *cobra.Command {
 	var payPerUse, subscription bool
+	var subscriptionTiersFile string
 	var revision int64
-	cmd := &cobra.Command{Use: "payment-settings <listing-id>", Short: "Update pay-per-use and automatic subscription modes", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
-		if !cmd.Flags().Changed("pay-per-use") || !cmd.Flags().Changed("subscription") || revision < 0 {
-			return fmt.Errorf("--pay-per-use, --subscription, and --expected-revision must be explicit")
-		}
-		path := "/creators/me/marketListings/" + url.PathEscape(strings.TrimSpace(args[0])) + "/paymentSettings"
-		return creatorBundleMutation(cmd, opts, "PUT", path, map[string]any{"payPerUse": payPerUse, "subscription": subscription, "expectedRevision": revision})
-	}}
+	cmd := &cobra.Command{
+		Use:   "payment-settings <listing-id>",
+		Short: "Update pay-per-use and automatic subscription modes",
+		Long: "Update payment modes using the current payment-settings revision. " +
+			"--subscription-tiers-file can initialize an automatic bundle only when it has no existing tiers. " +
+			"Existing prices must be changed with creator bundle set-tier and its bundle revision. " +
+			"A newly initialized bundle remains draft; enabling subscription does not publish it.",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if !cmd.Flags().Changed("pay-per-use") || !cmd.Flags().Changed("subscription") || revision < 0 {
+				return fmt.Errorf("--pay-per-use, --subscription, and --expected-revision must be explicit")
+			}
+			request := listingPaymentSettingsRequest{PayPerUse: payPerUse, Subscription: subscription, ExpectedRevision: revision}
+			if cmd.Flags().Changed("subscription-tiers-file") {
+				if !subscription {
+					return fmt.Errorf("--subscription-tiers-file requires --subscription=true")
+				}
+				var err error
+				request.SubscriptionTiers, err = readInitialSubscriptionTiersFile(subscriptionTiersFile)
+				if err != nil {
+					return err
+				}
+			}
+			path := "/creators/me/marketListings/" + url.PathEscape(strings.TrimSpace(args[0])) + "/paymentSettings"
+			return creatorBundleMutation(cmd, opts, "PUT", path, request)
+		},
+	}
 	cmd.Flags().BoolVar(&payPerUse, "pay-per-use", true, "Enable per-run creator pricing")
 	cmd.Flags().BoolVar(&subscription, "subscription", false, "Enable the stable automatic single-SkillBot bundle")
+	cmd.Flags().StringVar(&subscriptionTiersFile, "subscription-tiers-file", "", "JSON array of initial monthly/yearly tiers; only initializes an automatic bundle without existing prices")
 	cmd.Flags().Int64Var(&revision, "expected-revision", -1, "Current payment settings revision; use 0 for first creation")
 	return cmd
 }

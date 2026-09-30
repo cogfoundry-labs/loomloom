@@ -103,6 +103,62 @@ loomloom listing publish <template-id> \
 
 The private template version must already have one successful run. Use normal currency units such as `--task-fixed-fee 0.5`; the CLI converts them to backend units. A successful request returns a `reviewRequestId` with a pending review state.
 
+### Configure initial subscription prices
+
+`--subscription=true` enables the automatic single-SkillBot subscription mode.
+`--task-fixed-fee` is the creator's per-call fee, not a subscription price.
+For a new Listing, provide initial prices in the same publication request:
+
+```bash
+loomloom listing publish <template-id> \
+  --template-version-id <id> \
+  --display-name <name> \
+  --task-fixed-fee 0 \
+  --pay-per-use=false \
+  --subscription=true \
+  --subscription-tiers-file <tiers.json>
+```
+
+Publication requires an explicit per-call fee even when pay-per-use is disabled;
+the `0` above is that fee, not the subscription amount.
+
+The file is a JSON array of `tierType`, `price`, and `enabled` objects:
+
+```json
+[
+  {"tierType":"monthly","price":{"amount":"0.01","currency":"CNY"},"enabled":true},
+  {"tierType":"yearly","price":{"amount":"0.02","currency":"CNY"},"enabled":false}
+]
+```
+
+Use each supported type (`monthly`, `yearly`) at most once. Prices are CNY decimal
+strings, non-negative with at most four decimal places; zero is legal and must
+be explicit. `enabled` must be an explicit boolean. Invalid files fail locally
+before any HTTP request; an explicit `null` or empty array is rejected rather
+than silently interpreted as omitted. No flag means no initial tier field.
+The Server rejects subscription mode without an enabled tier with HTTP 409,
+code `subscription_tier_required`, including all-disabled input; CLI exit is
+non-zero. Do not interpret a failed submission as a created or approved Listing.
+
+`listing payment-settings` accepts the same file only to initialize a missing
+or empty automatic bundle. Pass both mode booleans explicitly and the current
+payment-settings revision. The Server rejects attempts to overwrite existing
+prices. Use `creator bundle set-tier` and the current bundle revision for later
+price or enabled-state changes. These two revision counters are distinct.
+Do not retry a conflict with a guessed or automatically incremented revision.
+
+Existing Listing publications cannot carry this initial-tier flag. Omit
+unchanged payment flags when publishing a new version to preserve saved modes;
+existing subscription configuration is still checked by the Server.
+
+After publication, read `creator review get <review-request-id>` and the saved
+automatic bundle (`creator bundle list`, then `creator bundle show <bundle-id>`).
+Match `sourceListingId` and verify actual amounts, currency, enabled state, and
+revision. A pending review or draft bundle is not approval or availability for
+purchase. Initialization keeps the automatic bundle draft; authorized formal
+approval or explicit bundle publication is a separate step. Profile/Skill
+Package reviews must not be treated as formal subscription publication.
+
 ### Confirm duplicate names before publishing
 
 When creating a new Listing (without `--listing-id`), `listing publish` checks the authenticated creator's Market SkillBots across all states, including pending review and unlisted entries. Private templates are excluded. Matching ignores outer whitespace and case, but preserves internal whitespace. Updating an existing Listing with `--listing-id` skips this check.

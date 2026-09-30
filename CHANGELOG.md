@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `listing publish` and `listing payment-settings` accept
+  `--subscription-tiers-file` to send initial monthly/yearly prices atomically
+  with subscription mode. Strict JSON and money validation preserves explicit
+  disabled tiers and zero prices; later repricing continues through the
+  revision-checked bundle tier command.
 - `template-spec authoring-context` now exposes dynamic Capability Profile
   definitions, operations defaults, default-model availability, and fixed
   input/output ports for text, image, and video authoring.
