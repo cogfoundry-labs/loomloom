@@ -270,6 +270,8 @@ Typical flow
 |---|---|
 | `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee <amount>` | Submit a template version for Market review after confirmation. Use normal currency units such as `--task-fixed-fee 0.5`. |
 | `loomloom listing publish <template-id> --listing-id <listing-id> --template-version-id <new-id> ...` | Submit a new version for an existing listing after confirmation. |
+| `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee 0 --pay-per-use=false --subscription=true --subscription-tiers-file <tiers.json>` | Submit a subscription-only first publication with initial prices in the same request. |
+| `loomloom listing payment-settings <listing-id> --pay-per-use=<bool> --subscription=<bool> --expected-revision <revision> [--subscription-tiers-file <tiers.json>]` | Update payment modes; initial tiers only initialize an automatic bundle without existing prices. Use the payment-settings revision. |
 | `loomloom listing list` | List my Market listings. |
 | `loomloom listing show <listing-id>` | Show one of my listings. |
 | `loomloom listing versions <listing-id>` | List versions of one of my listings. |
@@ -283,6 +285,60 @@ Typical flow
 | `loomloom creator review list` | List my review requests. |
 | `loomloom creator review get <review-request-id>` | Show one review request. |
 | `loomloom creator review withdraw <review-request-id>` | Withdraw a pending review request after confirmation. |
+
+### Initial subscription prices
+
+`--subscription` selects a payment mode. `--task-fixed-fee` sets the creator's
+pay-per-use call fee; it is not a monthly or yearly subscription price.
+Publication still requires an explicit `--task-fixed-fee`, even when
+`--pay-per-use=false`; use `--task-fixed-fee 0` when no per-call fee is intended.
+
+Use `--subscription-tiers-file` on `listing publish` for a new Listing, or on
+`listing payment-settings` to initialize a missing or empty automatic bundle.
+It requires `--subscription=true` and a file containing one JSON array:
+
+```json
+[
+  {"tierType":"monthly","price":{"amount":"0.01","currency":"CNY"},"enabled":true},
+  {"tierType":"yearly","price":{"amount":"0.02","currency":"CNY"},"enabled":false}
+]
+```
+
+See [the initial-tier example](../../examples/subscriptions/initial-tiers.json).
+Only `monthly` and `yearly` are supported, each at most once. Amounts must be
+non-negative decimal **strings** with at most four decimal places and currency
+`CNY`. A free tier must explicitly set `"amount":"0"`. Every tier must explicitly
+set boolean `enabled`; omission or `null` is a local input error. Invalid files,
+unknown fields, duplicate types, missing prices, other currencies, negative
+amounts, excess precision, and overflow fail locally before any HTTP request.
+An explicitly supplied `null` or empty array is rejected locally; omitting the
+flag omits `subscriptionTiers` from the request.
+
+A zero subscription price does not imply zero model/API execution cost. Check
+the actual buyer quote before any purchase or hosted execution.
+
+The CLI sends initial tiers and payment modes together; it does not first enable
+subscription and then issue separate price writes. At least one tier must be
+enabled. The Server enforces this rule and returns HTTP 409 with business code
+`subscription_tier_required` when no usable tier exists, including an all-disabled
+file. The CLI exits non-zero and preserves the Server's message and code.
+
+Existing Listings cannot pass initial tiers to `listing publish`. For an
+automatic bundle that already has prices, use `creator bundle set-tier` with its
+current **bundle** `--expected-revision`; `payment-settings` uses a separate
+payment-settings revision. The Server rejects initial prices that would overwrite
+saved tiers. It also rejects stale revisions; the CLI does not retry with a newer
+revision automatically. When publishing a new version of an existing Listing,
+omit unchanged payment flags to preserve its saved modes; the Server still
+checks its existing subscription prices.
+
+After submission, read the returned `reviewRequestId` with `creator review get`.
+Use `creator bundle list` and `creator bundle show` to read saved amounts,
+currency, enabled state, and bundle revision; match `sourceListingId` to the
+Listing. Pending review and an initialized draft bundle do not mean the product
+is sellable. An initialized automatic bundle remains draft until an authorized
+publication/approval makes it sellable. Public profile and Skill Package reviews
+are separate from formal publication.
 
 ## Multi-step workflows
 

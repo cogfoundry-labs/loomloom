@@ -129,22 +129,23 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 		confirmNameWarning              bool
 		payPerUse                       bool
 		subscription                    bool
+		subscriptionTiersFile           string
 		expectedPaymentSettingsRevision int64
 	)
 	cmd := &cobra.Command{
 		Use:   "publish <template-id>",
 		Short: "Submit a template version for Market SkillBot review",
-		Args:  cobra.ExactArgs(1),
+		Long: "Submit a template version for Market SkillBot review. " +
+			"On first publication, use --subscription-tiers-file with --subscription=true to include initial monthly/yearly prices in the same request. " +
+			"Existing listings use creator bundle set-tier to change prices. " +
+			"Subscription mode requires at least one enabled tier; submitting for review does not make the listing or bundle sellable.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolvedTaskFixedFeeT, err := taskFixedFeeFromFlags(cmd, taskFixedFee, taskFixedFeeT)
 			if err != nil {
 				return err
 			}
 
-			httpClient, err := newHTTPClient(opts)
-			if err != nil {
-				return err
-			}
 			req := publishMarketListingRequest{
 				ListingID:         strings.TrimSpace(listingID),
 				TemplateID:        strings.TrimSpace(args[0]),
@@ -152,6 +153,22 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 				DisplayName:       strings.TrimSpace(displayName),
 				Description:       strings.TrimSpace(description),
 				TaskFixedFeeT:     resolvedTaskFixedFeeT,
+			}
+			if cmd.Flags().Changed("subscription-tiers-file") {
+				if req.ListingID != "" {
+					return errors.New("--subscription-tiers-file is only for first publication; use creator bundle set-tier with the current bundle --expected-revision to change existing prices")
+				}
+				if !subscription {
+					return errors.New("--subscription-tiers-file requires --subscription=true")
+				}
+				req.SubscriptionTiers, err = readInitialSubscriptionTiersFile(subscriptionTiersFile)
+				if err != nil {
+					return err
+				}
+			}
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
 			}
 			selection, err := listingSkillPackageSelectionFromFlags(skillArchiveHash, skillValidationID)
 			if err != nil {
@@ -211,6 +228,7 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 	cmd.Flags().BoolVar(&confirmNameWarning, "confirm-name-warning", false, "Continue non-interactively after a duplicate-name warning or name-check failure")
 	cmd.Flags().BoolVar(&payPerUse, "pay-per-use", true, "Enable pay-per-use for this listing")
 	cmd.Flags().BoolVar(&subscription, "subscription", false, "Enable the automatic single-SkillBot subscription package")
+	cmd.Flags().StringVar(&subscriptionTiersFile, "subscription-tiers-file", "", "JSON array of initial monthly/yearly tiers; first publication only, requires --subscription=true")
 	cmd.Flags().Int64Var(&expectedPaymentSettingsRevision, "expected-payment-settings-revision", 0, "Current payment settings revision when changing an existing listing")
 	_ = cmd.Flags().MarkDeprecated("task-fixed-fee-t", "use --task-fixed-fee with a decimal currency amount")
 	_ = cmd.MarkFlagRequired("template-version-id")

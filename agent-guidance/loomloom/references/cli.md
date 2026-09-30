@@ -187,6 +187,11 @@ the historical version.
 ### Market creator
 
 - `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee <amount>`
+- `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee 0 --pay-per-use=false --subscription=true --subscription-tiers-file <tiers.json>`
+- `loomloom listing payment-settings <listing-id> --pay-per-use=<bool> --subscription=<bool> --expected-revision <revision> [--subscription-tiers-file <tiers.json>]`
+- `loomloom creator bundle list`
+- `loomloom creator bundle show <bundle-id>`
+- `loomloom creator bundle set-tier <bundle-id> --tier monthly|yearly --price <amount> --currency CNY --enabled=<bool> --expected-revision <bundle-revision>`
 - `loomloom listing list`
 - `loomloom listing show <listing-id>`
 - `loomloom listing versions <listing-id>`

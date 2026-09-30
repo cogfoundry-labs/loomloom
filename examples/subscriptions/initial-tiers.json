@@ -1,0 +1,12 @@
+[
+  {
+    "tierType": "monthly",
+    "price": { "amount": "0.01", "currency": "CNY" },
+    "enabled": true
+  },
+  {
+    "tierType": "yearly",
+    "price": { "amount": "0.02", "currency": "CNY" },
+    "enabled": false
+  }
+]
