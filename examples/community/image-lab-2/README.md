@@ -26,7 +26,9 @@ The agent plans the experiment (`plan.json`, checked with `python scripts/image.
 
 | Where | What |
 |---|---|
-| [`SKILL.md`](SKILL.md) | how the agent uses it: rules, quick mode, experiment mode |
+| [`references/quickstart.md`](references/quickstart.md) | **start here**: your first plan in one page, with two complete example plans (`references/examples/`) |
+| [`SKILL.md`](SKILL.md) | how the agent uses it: the rules, and experiment mode steps 0 to 5 |
+| [`skills/quick.md`](skills/quick.md), [`skills/results.md`](skills/results.md) | quick mode; generate, results and retry after approval |
 | [`skills/plan.md`](skills/plan.md), [`skills/direction.md`](skills/direction.md) | the planner and Creative Direction stages |
 | [`references/plan-schema.md`](references/plan-schema.md), [`references/examples/direction-plan.json`](references/examples/direction-plan.json) | the plan file and a complete four-direction example |
 | [`docs/design-v2.md`](docs/design-v2.md) | the design, decisions and status |
