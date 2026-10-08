@@ -350,3 +350,18 @@ Decisions: **Fable 5 is dropped from the long-output evaluations** (decided by y
 - **What it does not show:** the benchmark cannot separate these models, and the instruction ("read letter by letter") primes careful reading. Gross, large-lettering text defects are the easy case. Subtle defects (small text, hands and anatomy, a changed product label), smaller images, and a prompt that does not warn the reviewer would be the next benchmark.
 - **Advisor output:** Result review now reads "Strong; N measured at your level; cheapest GPT-5.4 mini (about $0.0007 per use); keep". Plan writing is still unmeasured.
 - **Cost:** the benchmark images $0.13, the gateway reviews about $0.22 (quoted $0.55 expected, capped at $1.25). Feature total about $4.0 of the $6 hard stop.
+
+**Plan-writing evaluation (2026-10-09): this one separates the models.** Each model read `skills/plan.md`, the plan schema, the intent names and the `controls` vocabulary (no tools) and wrote `plan.json` for the 5 briefs of the planner evaluation set (`tests/planner-eval/briefs.json`: a product photo from a reference, a selfie, a wide banner, a plain prompt that belongs in quick mode, and a brief that is too wide), twice each. A plan passes when `scripts/planner_eval.py` finds no rule broken (valid plan, 2 to 4 dimensions, wording for every value, the right route, no self-acknowledged consent, a workable size). That checks structure, not whether the dimensions are the best ones.
+
+| Model | Harness | Plans passing | Per run | Cost per plan |
+|---|---|---|---|---|
+| Claude Sonnet 5.5 (default model) | agent, free | 10 of 10 | 1.0, 1.0 | session allowance |
+| Claude Sonnet 5 | gateway | 8 of 10 | 0.6, 1.0 | about $0.043 |
+| Gemini 3 Flash | gateway | 8 of 10 | 0.8, 0.8 | about $0.012 |
+| GPT-5.6 Luna | gateway | 6 of 10 | 0.6, 0.6 | about $0.003 |
+| GPT-5.4 mini | gateway | 4 of 10 | 0.2, 0.6 | about $0.007 |
+
+- **Where they fail:** the product-photo brief failed in 6 of the 8 gateway runs (every model failed it at least once): they offered camera values the planner skill treats as unreliable with a reference photo, which the default model avoided. Luna and GPT-5.4 mini broke the four-dimension limit on the too-wide brief (6 or 7 dimensions, 576 to 2,916 combinations). GPT-5.4 mini also routed the selfie brief to quick mode once and returned no plan once. Sonnet 5 returned an empty reply once after 62 s (the gateway's 60 s silence limit again).
+- **What it means:** unlike result review, plan writing is not a place to save money with the cheapest model: the cheapest two pass 40 to 60 percent of plans. The default model is the strongest measured here. This is suggestive: five briefs, two runs, rule checks only, and the default model ran in a different harness.
+- **Advisor output:** Plan writing now reads "Strong; 4 measured, none better; keep". The report treats an alternative as level with yours only within 0.05 of your score.
+- **Cost:** $0.65 (quoted $0.72, capped at $1.20). Feature total about $4.65 of the $6 hard stop.

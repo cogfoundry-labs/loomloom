@@ -96,6 +96,11 @@ class Advice(unittest.TestCase):
         text = lf.format_report(rep)
         self.assertIn("2 measured at your level; cheapest m/cheap (about $0.0007 per use)", text)
 
+    def test_an_alternative_that_scores_clearly_lower_is_not_a_tie_even_if_its_runs_varied_a_lot(self):
+        recs = [rec("anthropic/claude-sonnet-5", "plan", 1.0, spread=0.0), rec("m/noisy", "plan", 0.8, spread=0.4)]
+        row = next(r for r in lf.advise("Claude Sonnet 5", self.models, recs, "yes")["rows"] if r["step"] == "Plan writing")
+        self.assertEqual(row["ties"], [])
+
     def test_measured_but_all_lower_says_none_better(self):
         recs = [rec("anthropic/claude-sonnet-5", "plan", 0.95), rec("m/worse", "plan", 0.5)]
         text = lf.format_report(lf.advise("Claude Sonnet 5", self.models, recs, "yes"))
@@ -503,9 +508,70 @@ class VisionRunner(unittest.TestCase):
         self.assertTrue(all(r["status"] == "skipped" for r in res["results"]))
 
 
+class PlanWriting(unittest.TestCase):
+    GOLDEN = Path(__file__).resolve().parent / "planner-eval" / "golden"
+
+    def reply(self, brief):
+        return "Notes.\n```json\n" + (self.GOLDEN / (brief + ".json")).read_text(encoding="utf-8") + "\n```"
+
+    def test_the_golden_plans_pass_their_own_briefs_and_a_wrong_one_does_not(self):
+        for brief in ("product-photo", "person-photo", "banner-aspect", "prompt-only", "too-wide"):
+            ck = lf.plan_checks(self.reply(brief), brief)
+            self.assertTrue(ck["passed"], (brief, ck["fails"]))
+        self.assertFalse(lf.plan_checks(self.reply("product-photo"), "prompt-only")["passed"])      # a plan where quick mode was right
+
+    def test_a_reply_without_a_plan_or_with_a_broken_one_fails_without_crashing(self):
+        self.assertFalse(lf.plan_checks("I would vary lighting and camera.", "product-photo")["passed"])
+        self.assertFalse(lf.plan_checks("```json\n{\"intent\": 5}\n```", "product-photo")["passed"])
+
+    def test_the_prompt_carries_the_skill_the_schema_the_intents_the_controls_and_the_brief(self):
+        p = lf.plan_eval_prompt("banner-aspect")
+        for needle in ("=== SKILL ===", "=== PLAN SCHEMA ===", "=== INTENT NAMES ===", "poster / flyer", "=== THE CONTROLS VOCABULARY", "soft daylight", "remote work"):
+            self.assertIn(needle, p)
+
+    def test_the_quote_covers_every_brief_and_run_and_a_budget_changes_the_fingerprint(self):
+        models = lf.parse_models({"data": [{"api_name": n, "company": "x", "name": n, "architecture": {"input": "text"},
+                                            "pricing": {"input_price": 1, "output_price": 5, "currency": "USD"}} for n in ("m/a", "m/b")]})
+        q = lf.plan_quote(models, ("m/a", "m/b"), runs=2)
+        self.assertEqual([c["calls"] for c in q["calls"]], [10, 10])
+        self.assertGreater(q["max_usd"], q["expected_usd"])
+        self.assertNotEqual(q["fingerprint"], lf.plan_quote(models, ("m/a", "m/b"), runs=2, budget=0.5)["fingerprint"])
+
+    def test_a_confirmed_run_saves_scores_and_summarizes_and_the_budget_skips_calls(self):
+        models = lf.parse_models({"data": [{"api_name": "m/a", "company": "x", "name": "m/a", "architecture": {"input": "text"},
+                                            "pricing": {"input_price": 1, "output_price": 5, "currency": "USD"}}]})
+        q = lf.plan_quote(models, ("m/a",), runs=1)
+        sent = []
+
+        def post(body):
+            sent.append(body)
+            return 200, {"choices": [{"message": {"content": "```json\n{\"route\": \"quick\"}\n```"}}], "usage": {"prompt_tokens": 100, "completion_tokens": 20}}, ""
+
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(lf, "PLAN_FILE", Path(d) / "plan-evals.jsonl"):
+            res = lf.run_plan_eval(q, q["fingerprint"], models, ("m/a",), post=post, out_dir=Path(d) / "o", workers=1)
+            self.assertEqual(len(sent), 5)
+            self.assertTrue(lf.plan_reply_path("m/a", "prompt-only", 1, Path(d) / "o").exists())
+            s = res["summary"]["m/a"]
+            self.assertEqual((s["repeats"], s["briefs"]), (1, 5))
+            self.assertAlmostEqual(s["score"], 0.2)                       # quick mode is right for exactly one of the five briefs
+            sent.clear()
+            res2 = lf.run_plan_eval(lf.plan_quote(models, ("m/a",), runs=1, budget=0.0001), lf.plan_quote(models, ("m/a",), runs=1, budget=0.0001)["fingerprint"],
+                                    models, ("m/a",), post=post, out_dir=Path(d) / "o2", workers=1)
+            self.assertEqual(sent, [])
+            self.assertTrue(all(r["status"] == "skipped" for r in res2["results"]))
+
+    def test_nothing_is_sent_without_the_matching_confirmation(self):
+        models = lf.parse_models({"data": [{"api_name": "m/a", "company": "x", "name": "m/a", "architecture": {"input": "text"},
+                                            "pricing": {"input_price": 1, "output_price": 5, "currency": "USD"}}]})
+        sent = []
+        with self.assertRaises(PermissionError):
+            lf.run_plan_eval(lf.plan_quote(models, ("m/a",), runs=1), "nope", models, ("m/a",), post=lambda b: sent.append(b))
+        self.assertEqual(sent, [])
+
+
 class Cli(unittest.TestCase):
     def test_llm_advice_runs_offline_and_says_there_is_no_evidence(self):
-        r = subprocess.run([sys.executable, str(SCRIPTS / "image.py"), "llm-advice", "--offline", "--model", "Claude Sonnet 5.5",
+        r = subprocess.run([sys.executable, str(SCRIPTS / "image.py"), "llm-advice", "--offline", "--model", "Mystery Model 9",
                             "--can-read-images", "yes"], capture_output=True, text=True, encoding="utf-8",
                            env={**__import__("os").environ, "PYTHONUTF8": "1"})
         self.assertEqual(r.returncode, 0, r.stderr)
