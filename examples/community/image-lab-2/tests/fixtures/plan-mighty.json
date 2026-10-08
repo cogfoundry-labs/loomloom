@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "brief": "Product photos of the Mighty toothpaste refill and dispenser on a bathroom counter",
+  "intent": "product / e-commerce shot",
+  "references": [
+    {"id": "ref1", "file": "refs/mighty-product.png", "role": "product", "contains_person": false}
+  ],
+  "consent_acknowledged": null,
+  "fixed": {"product identity": "the cream refill bottle with the teal MIGHTY label and the mint-green dispenser in ref1, unchanged"},
+  "prompt": {
+    "text_prefix": "A clean commercial product photograph of a pastel mint-green pump dispenser bottle standing next to a cream-colored toothpaste refill bottle with a silver cap, on a pale stone bathroom counter.",
+    "reference_prefix": "Use the reference image only to identify the product: keep the cream refill bottle with its teal \"MIGHTY Toothpaste Refill\" label and the mint-green dispenser unchanged in shape, color, branding and proportions. Re-photograph them from the camera angle described below. The products stand upright on a pale stone bathroom counter, exactly as they would in real life; do not copy the tilt, rotation, floating pose or viewpoint of the reference image.",
+    "text_suffix": "Sharp focus, realistic, square composition, no text overlays.",
+    "reference_suffix": "Commercial product photograph, realistic, square composition."
+  },
+  "dimensions": {
+    "camera": [
+      {"value": "eye-level front", "fragment": "Eye-level front view, the camera straight on at the product"},
+      {"value": "three-quarter high",
+       "fragment": "Three-quarter view from slightly above, looking down at about 30 degrees",
+       "fragment_with_reference": "Three-quarter view from clearly above: the camera is raised and looks down at about 35 degrees, so the top surface of the counter is clearly visible"},
+      {"value": "low angle",
+       "fragment": "Extreme low angle: the camera sits on the counter surface pointing sharply upward, the products tower above the lens with strong perspective foreshortening, the ceiling or upper wall is visible behind them",
+       "fragment_with_reference": "Low camera position at counter level, looking slightly upward at the standing products",
+       "reliability": {"reference": "unreliable"}}
+    ],
+    "lighting": [
+      {"value": "soft daylight", "fragment": "Soft, even, diffused daylight from a window, gentle shadows"},
+      {"value": "golden hour", "fragment": "Deep orange-amber golden-hour sunlight from low on the horizon at the side, a strong warm orange color cast over the whole scene, glowing orange rim light on the edges, long soft shadows"},
+      {"value": "dramatic spotlight", "fragment": "Hard directional spotlight from the side at counter height, strong contrast and deep dark shadows, moody"}
+    ]
+  },
+  "constraints": [],
+  "model_strategy": "single"
+}

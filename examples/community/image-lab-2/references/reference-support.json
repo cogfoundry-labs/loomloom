@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "note": "Reference-image support per model, as seen at the CogFoundry gateway (design-v2.md 11.4). State: verified = a real reference call succeeded; documented = the model page lists reference input; unknown = no information; unsupported = no reference input. usd_per_image_reference is null until a real reference call has been priced. `identity` records whether the product in a reference photo survived (visual check by a person, n=1 per model, one product); `changed` models are not picked automatically for reference rows.",
+  "verified_on": "2026-10-07",
+  "models": {
+    "google/gemini-2.5-flash-image": {
+      "state": "verified",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 5,
+      "usd_per_image_reference": 0.039
+    },
+    "google/gemini-3.1-flash-image": {
+      "state": "verified",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 10,
+      "usd_per_image_reference": 0.0678,
+      "verified_on": "2026-10-07",
+      "identity": {
+        "result": "kept",
+        "n": 1,
+        "tested_on": "2026-10-07",
+        "product": "Mighty refill bottle + dispenser, tilted reference photo, eye-level front / soft daylight"
+      }
+    },
+    "google/gemini-3-pro-image": {
+      "state": "verified",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 10,
+      "usd_per_image_reference": 0.1385,
+      "verified_on": "2026-10-07",
+      "identity": {
+        "result": "changed",
+        "n": 1,
+        "tested_on": "2026-10-07",
+        "product": "Mighty refill bottle + dispenser, tilted reference photo, eye-level front / soft daylight",
+        "note": "redesigned the label and replaced the dispenser with a pump bottle"
+      }
+    },
+    "openai/gpt-image-2": {
+      "state": "verified",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 16,
+      "usd_per_image_reference": 0.0202,
+      "verified_on": "2026-10-07",
+      "identity": {
+        "result": "kept",
+        "n": 1,
+        "tested_on": "2026-10-07",
+        "product": "Mighty refill bottle + dispenser, tilted reference photo, eye-level front / soft daylight"
+      }
+    },
+    "openai/gpt-image-2.5-sunburst": {
+      "state": "verified",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 16,
+      "usd_per_image_reference": 0.0225,
+      "verified_on": "2026-10-07",
+      "identity": {
+        "result": "kept",
+        "n": 1,
+        "tested_on": "2026-10-07",
+        "product": "Mighty refill bottle + dispenser, tilted reference photo, eye-level front / soft daylight"
+      }
+    },
+    "openai/gpt-image-2.5-flare": {
+      "state": "verified",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 16,
+      "usd_per_image_reference": 0.0225,
+      "verified_on": "2026-10-07",
+      "identity": {
+        "result": "kept",
+        "n": 1,
+        "tested_on": "2026-10-07",
+        "product": "Mighty refill bottle + dispenser, tilted reference photo, eye-level front / soft daylight"
+      }
+    },
+    "bytedance/doubao-seedream-5-0-pro": {
+      "state": "verified",
+      "field": "image",
+      "image_is_array": true,
+      "max_images": 10,
+      "usd_per_image_reference": 0.0507,
+      "verified_on": "2026-10-07",
+      "identity": {
+        "result": "kept",
+        "n": 1,
+        "tested_on": "2026-10-07",
+        "product": "Mighty refill bottle + dispenser, tilted reference photo, eye-level front / soft daylight",
+        "note": "shape and label kept; small label text soft"
+      }
+    },
+    "bytedance/doubao-seedream-5-0-lite": {
+      "state": "verified",
+      "field": "image",
+      "image_is_array": true,
+      "max_images": 10,
+      "usd_per_image_reference": 0.0372,
+      "verified_on": "2026-10-07",
+      "identity": {
+        "result": "kept",
+        "n": 1,
+        "tested_on": "2026-10-07",
+        "product": "Mighty refill bottle + dispenser, tilted reference photo, eye-level front / soft daylight",
+        "note": "shape and label kept; fine label text slightly garbled"
+      }
+    },
+    "bytedance/doubao-seedream-4.5": {
+      "state": "verified",
+      "field": "image",
+      "image_is_array": true,
+      "max_images": 10,
+      "usd_per_image_reference": 0.0423,
+      "verified_on": "2026-10-07",
+      "identity": {
+        "result": "changed",
+        "n": 1,
+        "tested_on": "2026-10-07",
+        "product": "Mighty refill bottle + dispenser, tilted reference photo, eye-level front / soft daylight",
+        "note": "turned the refill bottle into a squeeze tube with the cap at the bottom"
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "brief": "A cozy coffee shop interior for a poster",
+  "intent": "poster / flyer",
+  "references": [],
+  "consent_acknowledged": null,
+  "fixed": {
+    "subject": "the interior of a small independent coffee shop, no people, no text"
+  },
+  "dimensions": {
+    "lighting": [
+      "soft daylight",
+      "golden hour",
+      "overcast daylight"
+    ],
+    "camera": [
+      "eye-level front",
+      "top-down",
+      "wide shot"
+    ],
+    "style": [
+      "photorealistic",
+      "flat illustration",
+      "editorial"
+    ],
+    "mood": [
+      "warm",
+      "calm",
+      "energetic"
+    ]
+  },
+  "constraints": [],
+  "model_strategy": "single",
+  "visual_checks": [
+    "no people anywhere in the image",
+    "no text, lettering or signage anywhere in the image"
+  ]
+}

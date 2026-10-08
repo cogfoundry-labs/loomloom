@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "note": "TEST FIXTURE: a frozen snapshot of the support data (Nano Banana verified, everything else documented), so tests do not depend on the live file.",
+  "verified_on": "2026-10-07",
+  "models": {
+    "google/gemini-2.5-flash-image": {
+      "state": "verified",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 5,
+      "usd_per_image_reference": 0.039
+    },
+    "google/gemini-3.1-flash-image": {
+      "state": "documented",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 10,
+      "usd_per_image_reference": null
+    },
+    "google/gemini-3-pro-image": {
+      "state": "documented",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 10,
+      "usd_per_image_reference": null
+    },
+    "openai/gpt-image-2": {
+      "state": "documented",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 16,
+      "usd_per_image_reference": null
+    },
+    "openai/gpt-image-2.5-sunburst": {
+      "state": "documented",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 16,
+      "usd_per_image_reference": null
+    },
+    "openai/gpt-image-2.5-flare": {
+      "state": "documented",
+      "field": "image",
+      "image_is_array": false,
+      "max_images": 16,
+      "usd_per_image_reference": null
+    },
+    "bytedance/doubao-seedream-5-0-pro": {
+      "state": "documented",
+      "field": "image",
+      "image_is_array": true,
+      "max_images": 10,
+      "usd_per_image_reference": null
+    },
+    "bytedance/doubao-seedream-5-0-lite": {
+      "state": "documented",
+      "field": "image",
+      "image_is_array": true,
+      "max_images": 10,
+      "usd_per_image_reference": null
+    },
+    "bytedance/doubao-seedream-4.5": {
+      "state": "documented",
+      "field": "image",
+      "image_is_array": true,
+      "max_images": 10,
+      "usd_per_image_reference": null
+    }
+  }
+}

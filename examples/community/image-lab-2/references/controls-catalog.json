@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "note": "Starter vocabulary for experiment dimensions: dimension -> value -> neutral wording. The plan always wins over this file. Each value has `fragment` (text-only runs) and optionally `fragment_with_reference` (when a reference photo is sent, because wording that works alone can mislead the model, see docs/design-v2.md item 26). `reliability` marks a mode where the wording is known not to work. `validation` says how far the wording was tested: `m0` = blind-tested on 2026-10-07 on one product-on-counter scene (experiments/m0/m0-plan.md sections 13-14, 9 images per cell, 2 text models + 1 reference model); `unvalidated` = plausible starter wording nobody has tested, so check a first batch before trusting it. `aspect` is deliberately absent: it is a size, not wording. `scope` marks wording written for a product on a surface (`product`) or for a person (`portrait`); a value without `scope` is general. Do not use `product` wording for a portrait or a whole-room scene: write your own fragment. Environment wording names concrete things that must be visible behind the subject; mild wording such as 'outdoors' alone is too weak to show (the same lesson as lighting).",
+  "lighting": {
+    "soft daylight": {
+      "fragment": "Soft, even, diffused daylight from a window, gentle shadows",
+      "validation": "m0: 9/9 identified, text and reference"
+    },
+    "golden hour": {
+      "fragment": "Deep orange-amber golden-hour sunlight from low on the horizon at the side, a strong warm orange color cast over the whole scene, glowing orange rim light on the edges, long soft shadows",
+      "validation": "m0: 9/9 identified. The milder 'warm low golden-hour sunlight' wording was too subtle to see; keep the strong cast"
+    },
+    "dramatic spotlight": {
+      "fragment": "Hard directional spotlight from the side at counter height, strong contrast and deep dark shadows, moody",
+      "validation": "m0: 9/9 identified. Shadows the top of the subject",
+      "scope": "product"
+    },
+    "studio softbox": {
+      "fragment": "Even studio softbox lighting, clean soft shadows, high key",
+      "validation": "unvalidated"
+    },
+    "overcast daylight": {
+      "fragment": "Flat overcast daylight, muted colors, very soft shadows",
+      "validation": "unvalidated"
+    },
+    "rim light": {
+      "fragment": "Strong backlight with a bright rim light outlining the subject, darker front",
+      "validation": "unvalidated"
+    }
+  },
+  "camera": {
+    "eye-level front": {
+      "fragment": "Eye-level front view, the camera straight on at the subject",
+      "validation": "m0: 9/9 identified"
+    },
+    "three-quarter high": {
+      "fragment": "Three-quarter view from slightly above, looking down at about 30 degrees",
+      "fragment_with_reference": "Three-quarter view from clearly above: the camera is raised and looks down at about 35 degrees, so the top surface is clearly visible",
+      "validation": "m0: text 6/6 with the 30-degree wording (the 35-degree wording overshot to near top-down, 4 of 9 unmatched); reference 1/3: with a reference photo the effect is weak, so it is flagged",
+      "reliability": {
+        "reference": "weak"
+      }
+    },
+    "low angle": {
+      "fragment": "Extreme low angle: the camera sits on the surface pointing sharply upward, the subject towers above the lens with strong perspective foreshortening, the ceiling or upper wall is visible behind it",
+      "fragment_with_reference": "Low camera position at surface level, looking slightly upward at the subject",
+      "reliability": {
+        "reference": "unreliable"
+      },
+      "validation": "m0: text 6/6; reference 0/3 (strong wording tilts the product, the mild wording above is invisible)",
+      "scope": "product"
+    },
+    "top-down": {
+      "fragment": "Top-down view, the camera directly above looking straight down at the subject",
+      "validation": "unvalidated"
+    },
+    "close-up": {
+      "fragment": "Close-up view filling the frame with the subject and its details",
+      "validation": "unvalidated"
+    },
+    "wide shot": {
+      "fragment": "Wide shot showing the whole scene with the subject smaller in the frame",
+      "validation": "unvalidated"
+    },
+    "head-and-shoulders": {
+      "fragment": "Head-and-shoulders portrait framing, the face centered and clearly visible, looking toward the camera",
+      "scope": "portrait",
+      "validation": "unvalidated"
+    }
+  },
+  "composition": {
+    "centered": {
+      "fragment": "The subject centered with generous empty space around it",
+      "validation": "unvalidated"
+    },
+    "rule of thirds": {
+      "fragment": "The subject placed on the left third of the frame with open space on the right",
+      "validation": "unvalidated"
+    },
+    "negative space": {
+      "fragment": "Large areas of clean negative space, suitable for adding text later",
+      "validation": "unvalidated"
+    },
+    "flat lay": {
+      "fragment": "Flat lay arrangement seen from directly above, items neatly arranged",
+      "validation": "unvalidated",
+      "scope": "product"
+    }
+  },
+  "style": {
+    "photorealistic": {
+      "fragment": "Photorealistic commercial photograph",
+      "validation": "unvalidated",
+      "scope": "product"
+    },
+    "editorial": {
+      "fragment": "Editorial magazine-style photograph with considered styling",
+      "validation": "unvalidated"
+    },
+    "minimalist": {
+      "fragment": "Minimalist composition, restrained palette, clean and uncluttered",
+      "validation": "unvalidated"
+    },
+    "flat illustration": {
+      "fragment": "Clean flat vector illustration style",
+      "validation": "unvalidated"
+    },
+    "3d render": {
+      "fragment": "Polished 3D render with soft studio lighting",
+      "validation": "unvalidated"
+    },
+    "natural portrait": {
+      "fragment": "Natural, flattering portrait photograph with true-to-life skin tones",
+      "scope": "portrait",
+      "validation": "unvalidated"
+    },
+    "studio portrait": {
+      "fragment": "Professional studio portrait photograph, polished and well lit",
+      "scope": "portrait",
+      "validation": "unvalidated"
+    }
+  },
+  "mood": {
+    "calm": {
+      "fragment": "A calm, quiet, relaxed mood",
+      "validation": "unvalidated"
+    },
+    "energetic": {
+      "fragment": "An energetic, vibrant, lively mood",
+      "validation": "unvalidated"
+    },
+    "luxurious": {
+      "fragment": "A luxurious, premium, refined mood",
+      "validation": "unvalidated"
+    },
+    "playful": {
+      "fragment": "A playful, cheerful, fun mood",
+      "validation": "unvalidated"
+    },
+    "warm": {
+      "fragment": "A warm, cozy, inviting mood",
+      "validation": "unvalidated"
+    }
+  },
+  "environment": {
+    "studio backdrop": {
+      "fragment": "Set against a seamless plain pastel-grey studio backdrop, nothing else visible behind the subject",
+      "validation": "unvalidated"
+    },
+    "home interior": {
+      "fragment": "In a bright living room, a sofa, a plant and a large window clearly visible behind the subject",
+      "validation": "unvalidated"
+    },
+    "outdoors": {
+      "fragment": "Outdoors in a green park, trees, grass and bright sky clearly visible behind the subject",
+      "validation": "unvalidated"
+    },
+    "office": {
+      "fragment": "In a bright modern office, desks and large windows softly blurred behind the subject",
+      "validation": "unvalidated"
+    },
+    "city street": {
+      "fragment": "On a city street, buildings and passing lights softly blurred behind the subject",
+      "validation": "unvalidated"
+    }
+  }
+}

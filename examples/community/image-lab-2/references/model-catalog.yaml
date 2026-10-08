@@ -1,0 +1,233 @@
+# MODEL CATALOG — TEMPORARY ADAPTER
+#
+# TODO: delete this file and read the catalog from the gateway when CogFoundry
+#       ships a model / capability / pricing endpoint, e.g.
+#         GET /api/v1/models?modality=image
+#         GET /api/v1/capabilities
+#       image.py isolates this behind one function (load_model_catalog());
+#       swapping the source is a one-function change.
+#
+# It exists only because /api/v1/models currently returns just the chat/LLM
+# models and there is no pricing endpoint. This is NOT part of Image Lab's
+# design — it is a hand-maintained shim.
+#
+# rates: measured 2026-09-06 by submitting one real task per (model, size) and
+#        confirming the charge against `loomloom balance` (openai/gpt-image-2.5-*
+#        measured 2026-09-13, same method). The gateway's data.cost field is
+#        authoritative and matched the balance delta every time; these numbers
+#        are only a *pre-flight guess* of it.
+#
+#   - Google + OpenAI bill per image. Only openai/gpt-image-2 changes price
+#     with output size, so it carries a `pricing:` tier list; every other model
+#     is flat (`usd_per_image`).
+#   - google/gemini-3.1-flash-image billed 0.0 on 2026-09-06 (free launch
+#     preview). Its usd_per_image is a deliberate over-estimate, not 0 — see
+#     the note on that model below.
+#
+# Quality scores used to live here as a hand-judged `scores:` block per model.
+# They don't anymore — see references/arena-scores.yaml. That file holds the
+# raw Arena.ai Text-to-Image Arena data (Elo + margin per model per category);
+# image.py's compute_arena_scores() turns it into the same [-1, 2]-per-
+# dimension shape score_models() expects, at load time. Nobody should
+# hand-type a quality score into this file again — re-measuring means
+# re-pulling arena-scores.yaml, not editing a number here.
+#
+# url: the model's CogFoundry page — shown as a link on the exploration page.
+#
+# request: HOW to call this model — checked against each model's live schema
+#          on cogfoundry.ai, not assumed. Added 2026-09-13 after discovering
+#          image.py previously sent one hardcoded body shape (literal `size`
+#          WxH + `watermark: false`) to every model regardless of what that
+#          model's own schema declares — silently wrong for several models
+#          already in this catalog (see docs/plans/2026-09-13-image-lab-
+#          lessons-from-model-image-arena.md). Fields:
+#   size_param    wxh | tier | aspect_ratio | none
+#                 - wxh:          `size` is a literal "WxH" string
+#                 - tier:         `size` is a tier token ("1K"/"2K"/...), NOT WxH
+#                 - aspect_ratio: no absolute-size control at all on this model
+#                 - none:         no size-shaping parameter exists at all
+#   size_values   known-good values for this model, checked live. For `wxh`
+#                 models with a genuinely continuous/constrained range (not a
+#                 small enum) this is omitted and `size_min_px` drives the old
+#                 floor-based computation instead — currently only
+#                 openai/gpt-image-2.
+#   size_default  this model's own declared default — the always-safe fallback
+#                 when no preferred size matches size_values. NOT always
+#                 size_values[0]; take it from the model's own schema, not by
+#                 position.
+#   watermark_param  true only if this model's schema declares a `watermark`
+#                 field. Several models (the GPT Image 2.5 pair) 400 on any
+#                 parameter their schema doesn't declare — never send a field
+#                 speculatively.
+#   aspect_ratio_param  true only if this model's schema declares a real,
+#                 independent `aspect_ratio` field (checked 2026-09-13; only
+#                 Google's three Gemini image models do). This is orthogonal
+#                 to size_param — a tier-shaped model can take a size tier AND
+#                 an aspect ratio at the same time — so it is NOT one of the
+#                 size_param enum values; it's sent alongside whatever `size`
+#                 the model's own size_param shape produces (or alone, for the
+#                 aspect_ratio-shaped model, which has no size control at all).
+#
+# verified_on   ISO date (YYYY-MM-DD) this model's row was last checked against
+#               its live schema/pricing on cogfoundry.ai. `image.py check` warns
+#               (does not fail) when an entry is missing this or it's more than
+#               STALE_AFTER_DAYS old — a bound on how old our last look was, not
+#               a live check. Every model here should carry one; update it
+#               whenever you re-verify that model.
+#
+# CONFLICT POLICY: when a model's real behavior is ambiguous, under-documented,
+# or was only confirmed to tolerate a field rather than declare it (see
+# openai/gpt-image-2's watermark_param below), prefer the reading that can't
+# overcharge or get unexpectedly rejected — never guess permissive. State the
+# ambiguity in a comment rather than resolving it silently, so the next person
+# to touch this model knows it was a judgment call, not a verified fact.
+
+models:
+
+  google/gemini-2.5-flash-image:
+    label: Nano Banana
+    url: https://cogfoundry.ai/en/models/media/185/
+    verified_on: "2026-10-07"
+    usd_per_image: 0.039          # re-measured 2026-10-07 (M0: 18 real calls, text-only and reference alike);
+                                  # was 0.0032 on 2026-09-13 — the model's price rose, not a reference surcharge
+    size_min_px: 1048576         # informational only — no size param on this model
+    request:
+      size_param: aspect_ratio    # only `aspect_ratio` exists (default 1:1); no `size` field at all
+      aspect_ratio_param: true
+      watermark_param: false      # no `watermark` field in this model's schema
+
+  google/gemini-3.1-flash-image:
+    label: Nano Banana 2
+    url: https://cogfoundry.ai/en/models/media/283/
+    verified_on: "2026-10-07"
+    # Billed $0.00 on 2026-09-06 (a launch free preview). Re-measured 2026-10-07
+    # with one real call (text-only, 1K, 1:1): $0.0672. Billing has started, so the
+    # old 0.006 over-estimate was ~11x too low and is corrected here.
+    usd_per_image: 0.0672
+    size_min_px: 1048576
+    request:
+      size_param: tier             # `size` is 0.5K/1K/2K/4K, NOT WxH — checked 2026-09-13
+      size_values: ["0.5K", "1K", "2K", "4K"]
+      size_default: "1K"
+      aspect_ratio_param: true     # also takes an independent `aspect_ratio` field alongside `size`
+      watermark_param: false       # no `watermark` field in this model's schema
+
+  google/gemini-3-pro-image:
+    label: Nano Banana Pro
+    url: https://cogfoundry.ai/en/models/media/241/
+    verified_on: "2026-09-13"
+    usd_per_image: 0.1344        # CORRECTED 2026-10-07: page rate $120/1M output tokens x ~1120 tokens for 1K; a real
+                                  # reference call cost $0.1385. The earlier $0.0134 was off by 10x
+    size_min_px: 1048576
+    request:
+      size_param: tier             # `size` is 1K/2K/4K, NOT WxH — checked 2026-09-13
+      size_values: ["1K", "2K", "4K"]
+      size_default: "1K"
+      aspect_ratio_param: true     # also takes an independent `aspect_ratio` field alongside `size`
+      watermark_param: false       # no `watermark` field in this model's schema
+
+  openai/gpt-image-2:
+    label: GPT Image 2
+    url: https://cogfoundry.ai/en/models/media/314/
+    verified_on: "2026-09-13"
+    size_min_px: 1048576
+    usd_per_image: 0.0059        # <= ~1.2 MP; see pricing tiers below
+    pricing:                      # measured: price rises sharply with size
+      - { up_to_px: 1200000, usd: 0.0059 }   # ~1024x1024
+      - { up_to_px: 99999999, usd: 0.042 }   # ~1024x1536 / 1536x1024 and up
+    request:
+      quality_values: ["auto", "low", "medium", "high"]   # the live page's `quality` parameter (checked 2026-10-07); the price depends on it
+      size_param: wxh              # genuinely continuous/constrained (not a small enum) —
+                                    # no size_values; size_min_px drives the floor computation, as before
+      watermark_param: false       # no `watermark` field in this model's schema (tolerated it in
+                                    # practice as of 2026-09-13, but don't rely on that leniency)
+
+  openai/gpt-image-2.5-sunburst:
+    label: GPT Image 2.5 Sunburst
+    url: https://cogfoundry.ai/en/models/media/360/
+    verified_on: "2026-10-07"
+    # Released 2026-09-11. "Precision-oriented tier" per cogfoundry.ai: tighter
+    # edit control, higher fidelity, more reliable instruction following, at
+    # the cost of longer generation times than Flare.
+    usd_per_image: 0.0069        # measured 2026-09-13 with short prompts at the DEFAULT size. NOT valid for an explicit size or a long
+                                  # prompt: on 2026-10-07, 12 real images at size 1024x1280 with a ~9,800-character prompt billed $0.0302
+                                  # (5 images) or $0.0549 (7 images), average $0.0426, i.e. 4x to 8x this figure. Cause unknown (the explicit
+                                  # size, the long prompt's input tokens, or quality=auto choosing a higher tier). Billing is per token.
+    size_min_px: 1048576
+    request:
+      quality_values: ["auto", "low", "medium", "high", "xhigh", "max"]   # the live page's `quality` parameter (checked 2026-10-07); the price depends on it
+      # CORRECTED 2026-10-07: the live model page lists `size` (default "auto"; "auto", 1024x1024, 1536x1024,
+      # 1024x1536, 2048x2048, 2048x1152 and others) with the documented constraints: both sides a multiple of 16,
+      # max side 3840, aspect ratio at most 3:1, total pixels 655,360 to 8,294,400. It also lists `quality`
+      # (auto, low, medium, high, xhigh, max) and `n`, which Image Lab does not send yet. The 2026-09-13 entry said
+      # "no size parameter" and was wrong or has since changed.
+      size_param: wxh
+      size_step: 16                 # any WxH on this grid is allowed, so an exact aspect ratio can be requested
+      watermark_param: false        # 400s with "Unknown parameter: 'watermark'" — confirmed 2026-09-13
+
+  openai/gpt-image-2.5-flare:
+    label: GPT Image 2.5 Flare
+    url: https://cogfoundry.ai/en/models/media/361/
+    verified_on: "2026-10-07"
+    # Released 2026-09-11. "Speed-oriented tier" per cogfoundry.ai: lower
+    # latency than gpt-image-2, aimed at everyday generation / rapid
+    # prototyping.
+    usd_per_image: 0.0069        # measured 2026-09-13 via a real call
+    size_min_px: 1048576
+    request:
+      quality_values: ["auto", "low", "medium", "high", "xhigh", "max"]   # the live page's `quality` parameter (checked 2026-10-07); the price depends on it
+      # CORRECTED 2026-10-07: the live page lists `size` (auto, 1024x1024, 1536x1024, 1024x1536, 2048x2048, 2048x1152),
+      # `quality` and `n`. The multiple-of-16 rule is documented on Sunburst's page and assumed here; a size the
+      # gateway rejects fails without charge.
+      size_param: wxh
+      size_step: 16
+      watermark_param: false        # 400s with "Unknown parameter: 'watermark'" — confirmed 2026-09-13
+
+  bytedance/doubao-seedream-5-0-pro:
+    label: Seedream 5.0 Pro
+    url: https://cogfoundry.ai/en/models/media/352/
+    verified_on: "2026-09-13"
+    usd_per_image: 0.05          # CORRECTED 2026-10-07: page says $0.05 per output image up to 2.36 MP (+$0.0031 per input
+                                  # image); a real reference call cost $0.0507. Was $0.1015 (measured 2026-09-06; the page's own
+                                  # pricing table shows a different, unclear unit as of 2026-09-13)
+    size_min_px: 995328          # informational — real floor is its smallest listed size (864x1152);
+                                  # NOT the ~3.69MP this catalog wrongly claimed before 2026-09-13
+    prompt_max_chars: 500           # the live page: prompt is at most 500 characters (checked 2026-10-07)
+    request:
+      size_param: wxh
+      # BUGFIX 2026-09-13: this catalog previously set size_min_px: 3686400 (~3.69MP)
+      # for this model, copied from its Seedream siblings. Its real schema's sizes top
+      # out around 1.04MP — every prior selection computed a WxH outside this model's
+      # entire valid range. Fixed by moving to its real enumerated sizes.
+      size_values: ["1024x1024", "1152x864", "864x1152", "1424x800", "800x1424", "1248x832"]
+      size_default: "1024x1024"
+      watermark_param: true
+
+  bytedance/doubao-seedream-5-0-lite:
+    label: Seedream 5.0 Lite
+    url: https://cogfoundry.ai/en/models/media/281/
+    verified_on: "2026-09-13"
+    usd_per_image: 0.03          # current live per-image price, checked 2026-09-13 (was $0.0371 on 2026-09-06)
+    size_min_px: 3981312         # informational — real floor is its smallest listed size
+    prompt_max_chars: 500           # the live page: prompt is at most 500 characters (checked 2026-10-07)
+    request:
+      size_param: wxh
+      # BUGFIX 2026-09-13: the old floor-only computation could produce "1920x1920",
+      # which clears the pixel-count floor but is not one of this model's actual
+      # accepted sizes. Fixed by moving to its real enumerated sizes.
+      size_values: ["2048x2048", "1728x2304", "2304x1728", "2848x1600", "1600x2848", "2496x1664"]
+      size_default: "2048x2048"
+      watermark_param: true
+
+  bytedance/doubao-seedream-4.5:
+    label: Seedream 4.5
+    url: https://cogfoundry.ai/en/models/media/248/
+    verified_on: "2026-09-13"
+    usd_per_image: 0.04          # current live per-image price, checked 2026-09-13 (was $0.0422 on 2026-09-06)
+    size_min_px: 3981312         # informational — real floor is its smallest listed size
+    prompt_max_chars: 500           # the live page: prompt is at most 500 characters (checked 2026-10-07)
+    request:
+      size_param: wxh
+      size_values: ["2048x2048", "2304x1728", "1728x2304", "2560x1440", "1440x2560", "2496x1664"]
+      size_default: "2560x1440"   # NOTE: not size_values[0] — this model's own declared default
+      watermark_param: true

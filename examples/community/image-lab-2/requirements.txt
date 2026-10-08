@@ -1,0 +1,4 @@
+allpairspy>=2.5
+XlsxWriter>=3.2.2
+openpyxl>=3.1
+# optional: Pillow (embedded thumbnails, the M0 harness)

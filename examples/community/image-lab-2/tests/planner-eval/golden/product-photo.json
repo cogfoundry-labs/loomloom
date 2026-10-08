@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "brief": "Product page photos of the toothpaste refill bottle and dispenser in different lighting and from different camera angles",
+  "intent": "product / e-commerce shot",
+  "references": [
+    {
+      "id": "ref1",
+      "file": "refs/product.png",
+      "role": "product",
+      "contains_person": false
+    }
+  ],
+  "consent_acknowledged": null,
+  "fixed": {
+    "product identity": "the refill bottle and the dispenser in the reference image, unchanged in shape, color, label and proportions"
+  },
+  "dimensions": {
+    "camera": [
+      "eye-level front",
+      "three-quarter high"
+    ],
+    "lighting": [
+      "soft daylight",
+      "golden hour",
+      "dramatic spotlight"
+    ],
+    "environment": [
+      "studio backdrop",
+      "home interior"
+    ]
+  },
+  "constraints": [],
+  "model_strategy": "single",
+  "visual_checks": [
+    "the shape, label and colors of the bottle and dispenser match the reference image",
+    "the product is upright, not tilted like the reference photo",
+    "no extra text added beyond what is printed on the product"
+  ]
+}

@@ -1,0 +1,116 @@
+# Pipeline: image-lab-2 / generate  (v2, gateway API only)
+#
+# Not executable by loomloom. The agent session reads this manifest stage by stage,
+# the same way redesign-lab/pipelines/ works. `scripts/image.py` is the engine. The
+# loomloom CLI is NOT used. Authoritative design: docs/design-v2.md. SKILL.md holds the
+# commands and the exact wording to the user; this file is the stage map.
+#
+# Two modes, one engine, one ledger, one gate:
+#   quick       one finished prompt -> N alternatives across the best-fit models
+#   experiment  a plan.json of dimensions (+ optional reference photos) -> workbook rows
+#
+# Hard rules (both modes):
+#   - ONE approval per paid batch; `run --confirm <fingerprint>` reads ONLY the snapshot
+#     the fingerprint names, never the workbook
+#   - the price shown is the KNOWN total; unverified rows are counted separately
+#   - `Unknown` outcomes are never retried automatically
+#   - request ids are written to the ledger before polling; `run` again resumes, it never resubmits
+
+name: image-lab-2-generate
+version: 3
+
+quick:
+  stages:
+    - id: capture
+      user_step: PLAN
+      engine: agent
+      note: "final prompt from context / paste / file. Needs a reference photo -> experiment mode."
+    - id: classify
+      user_step: PLAN
+      engine: agent
+      reads: [references/generation-policy.md]
+      note: "ONE intent label; count 1/2/4/8 (default 4)."
+    - id: quote
+      user_step: QUOTE
+      engine: local
+      script: 'python scripts/image.py quick --prompt "<prompt>" --intent "<intent>" --count <N> --out ./out [--models "<id>,<id>"]'
+      note: "writes ledger.json + snapshots/<fp>.json; no gateway call, spends nothing. Prints rows, price, fingerprint."
+      produces: [fingerprint]
+    - id: approve
+      user_step: APPROVE
+      type: human
+      mechanism: "AskUserQuestion: Generate <N> / Adjust / Stop, naming the real model mix and total"
+      on_adjust: return_to(quote)
+      on_stop: halt
+      gate: THE WALLET BOUNDARY
+    - id: generate
+      user_step: GENERATE
+      engine: local
+      background: true
+      script: 'python scripts/image.py run --dir ./out --confirm <fingerprint> --progress-file ./out/progress.json'
+      note: "agent posts a plain-text update every ~30s from progress.json. Exit 0 ok, 1 something failed/unknown/unfinished (run again to resume), 2 refused (nothing spent)."
+    - id: results
+      user_step: RESULTS
+      engine: agent
+      note: "SendUserFile per image (./out/round-N/<id>.png), table id/model/time/cost/size, actual vs estimate; name failed/blocked/unknown samples plainly."
+    - id: case-study-page
+      user_step: RESULTS
+      engine: local
+      script: 'python scripts/build-exploration-page.py --session ./out --inline --title "<..>" --subject "<..>" --invocation "<user message>" [--selected R001-1]'
+      note: "free; always built. Labels on the page are the uppercase sample ids."
+    - id: adjust
+      type: human
+      mechanism: "AskUserQuestion: Pick a favourite / Adjust the prompt for another round / Stop"
+      on_adjust: return_to(capture)    # same --out = another round; a new subject = a new --out
+
+experiment:
+  stages:
+    - id: brief
+      user_step: BRIEF
+      engine: agent
+      note: "ask only what cannot be inferred; reference photos go in refs/. A pictured person -> show the consent notice, and only after the user says yes run `image.py acknowledge-person --plan plan.json` (plan/preflight/run refuse without it; results stay local)."
+    - id: plan
+      user_step: PLAN
+      engine: agent
+      reads: [skills/plan.md, references/plan-schema.md, references/controls-catalog.json, references/generation-policy.md]
+      script: 'python scripts/image.py check --plan plan.json ; python scripts/image.py plan --plan plan.json --out ./out/<name> --dry-run'
+      note: "follow skills/plan.md: write plan.json, check it, dry-run it (writes nothing), show it in plain words; ONE confirmation (with the person notice if a person is pictured)."
+    - id: build
+      user_step: PLAN
+      engine: local
+      script: 'python scripts/image.py plan --plan ./plan.json --out ./out/<name>'
+      note: "valid combinations, a pairwise-covering first batch (~30 rows, one image each) ticked in experiment.xlsx. Spends nothing."
+    - id: edit
+      user_step: SELECT
+      type: human
+      mechanism: "the user ticks rows / edits Take in experiment.xlsx and saves; the agent never edits it"
+    - id: preflight
+      user_step: QUOTE
+      engine: local
+      script: 'python scripts/image.py preflight --dir ./out/<name>'
+      note: "reads the workbook read-only; validates, compiles prompts, picks models/sizes, prices; writes the snapshot. Issues exclude rows; fix in the workbook and preflight again."
+      produces: [fingerprint]
+    - id: approve
+      user_step: APPROVE
+      type: human
+      mechanism: "AskUserQuestion: Generate / Edit the workbook / Stop, naming images, models, known total"
+      gate: THE WALLET BOUNDARY
+    - id: generate
+      user_step: GENERATE
+      engine: local
+      background: true
+      script: 'python scripts/image.py run --dir ./out/<name> --confirm <fingerprint> --progress-file ./out/<name>/progress.json'
+      note: "regenerates the workbook afterwards (Status, Images link, Cost); experiment.prev.xlsx kept; a locked workbook gets experiment.refresh-<time>.xlsx."
+    - id: results
+      user_step: RESULTS
+      engine: agent
+      note: "images ./out/<name>/round-N/<row>-<k>.png captioned with the row's dimension values from ledger.json."
+    - id: contact-sheet
+      user_step: RESULTS
+      engine: local
+      script: 'python scripts/image.py sheet --dir ./out/<name> [--rows <dim> --cols <dim>] [--selected <ids>]'
+      note: "built automatically after run; free. A pivot of two dimensions with cost, model, status and the exact prompt per image. --inline embeds images (refused for person experiments, which stay local). If the plan has visual_checks, look at every image and report which checks fail."
+    - id: next
+      type: human
+      mechanism: "retry (python scripts/image.py retry --dir ...: Failed/Partial rows, missing samples only, new fingerprint, new approval), edit the workbook for a new batch, or stop"
+      note: "Unknown is only retried with --include-unknown after the user checked the console usage log. Blocked is not retried."
