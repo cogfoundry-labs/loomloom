@@ -22,7 +22,7 @@ Two modes share one engine (`scripts/image.py`), one ledger and one gate:
 Run commands from this skill's folder. Everything is `python scripts/image.py <command>`.
 Setup once: `pip install -r requirements.txt` (experiment mode; quick mode needs nothing) and a gateway
 token in `LOOMLOOM_TOKEN_COGFOUNDRY` (an API key from https://console.cogfoundry.ai/api-keys); the
-loomloom CLI is **not** used. On Windows set `PYTHONUTF8=1` (`PYTHONUTF8=1 python scripts/image.py ...`) so non-ASCII text prints. Where the host has no
+loomloom CLI is **not** used. On Windows set `PYTHONUTF8=1` so non-ASCII text prints (bash: `PYTHONUTF8=1 python scripts/image.py ...`; PowerShell: `$env:PYTHONUTF8=1` once, then `python scripts/image.py ...`). Where the host has no
 `AskUserQuestion` or `SendUserFile`, ask in plain chat and give the file paths instead.
 
 ## Rules that always apply
@@ -191,7 +191,7 @@ wording with a reference, rows that are already Completed and still ticked, so w
 generated again). Issues are fixed in the workbook, then preflight again.
 For a **calibration** (one image per creative direction before the full batch) add `--one-per direction`
 (`preflight --dir ./out/<name> --one-per direction`); `--only r001,r009` prices named rows. The other ticked rows stay ticked, and a plain
-preflight afterwards takes the rest. On a fresh clone there is no observed price yet, so rows show as unverified: `run` then needs `--max-usd`.
+preflight afterwards takes the rest. On a fresh clone there is no observed price yet, so rows show as unverified (nothing is added to the known total) and `run` needs `--max-usd`; preflight prints an "Indicative" range from `references/price-hints.json` and a safe limit to use. That range is a hint, not a quote: say so, and name the safe limit when you ask for approval.
 
 **5. Approve** with `AskUserQuestion` (Generate / Edit the workbook / Stop), naming
 images, models and the known total.

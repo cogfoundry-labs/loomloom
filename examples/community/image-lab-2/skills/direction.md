@@ -10,7 +10,7 @@ The planner (`skills/plan.md`) varies **within an idea**. This stage generates *
 > Creative Direction expands the user's creative search space. It never replaces the user's starting idea.
 
 Nothing here spends money. Your output is a **Direction Sheet** (shown to the user, then turned into `plan.json` by the plan stage).
-Read `../references/plan-schema.md` for the plan shape. Run commands from the skill folder (`PYTHONUTF8=1 python scripts/image.py ...` on Windows).
+Read `../references/plan-schema.md` for the plan shape. Run commands from the skill folder (on Windows set `PYTHONUTF8=1`: `PYTHONUTF8=1 python ...` in bash, `$env:PYTHONUTF8=1; python ...` in PowerShell).
 
 ## When this stage runs
 
@@ -59,9 +59,9 @@ Collect the brief's own lists (colors, poses, framings, styles it names) as cand
   thumbnail size: **ground** (the surface or background), **medium** (photograph, print, collage, illustration, graphic), **layout** (where the subject, camera
   and negative space sit: viewpoint, subject placement, how much empty space), **type** (headline scale and placement), **density** (how many graphic elements)
   and **palette**. Put them in the plan as `traits` on each direction value. `check` refuses a plan where **any two directions differ in fewer than three of the
-  six**, or where **more than two share a palette**. A direction that only changes the ground and the color of the same poster (cutout runner, stacked headline
+  six**, or where **more than two share a palette**. A direction that only changes the ground and the color of the same poster (a cutout subject, stacked headline
   on the left, brush shape behind) fails on layout, type and density, which is exactly the failure to avoid.
-- **Contrast the picture structure, not just the surface.** At most **one** direction may be "a cutout runner on a poster ground with a stacked headline". Where the
+- **Contrast the picture structure, not just the surface.** At most **one** direction may be "a cutout subject on a poster ground with a stacked headline". Where the
   brief allows, include at least one **full-bleed photograph with the subject in the scene** (no cutout, small or integrated type), and at least one with **large
   negative space** (a third of the frame or more) and a quiet, small headline. Directions should differ in viewpoint, subject scale, headline scale and graphic
   density as much as in color.
@@ -87,7 +87,7 @@ paper, ink and texture"). Without it, directions leak into each other.
 grid, registration marks, measurement ticks, halftone dots...") reads as vague. A portrait brief needs no graphic system or exact typography; a campaign key
 visual does. The criterion is "every relevant decision resolved", not a count.
 
-**Coherence check.** After writing each direction, reread it for self-contradiction (a coarse halftone runner next to a sharp, detailed runner; a flat
+**Coherence check.** After writing each direction, reread it for self-contradiction (a coarse halftone subject next to a sharp, detailed one; a flat
 minimal field next to a layered collage; "no people" next to a subject who is a person). Fix it before moving on.
 
 ## Step D. Variation inside each direction
@@ -98,7 +98,7 @@ A direction's **defining traits are fixed**; they live in its own wording. Vary 
   The composition lever's values must change where the subject, the camera and the type sit (for example centered break, diagonal flow, edge-framed, deep
   perspective), not mirror the same layout; the first test's images all had the headline stacked on the left because no direction had a layout lever.
 - **Layout values belong to the direction.** Give each direction its **own** composition values, written as physical, spatial instructions (where the camera is, how big the
-  subject is, where the type physically sits: "stencilled on the ground in perspective", "the shoe huge in the foreground", "headline filling the frame with the runner small
+  subject is, where the type physically sits: "stencilled on the ground in perspective", "the shoe huge in the foreground", "headline filling the frame with the subject small
   in a lower corner"). A composition lever shared by every direction ("rising diagonal" for all) gets drowned by the shared opening and produces the same poster in each: in
   the second paid test the plan with a shared layout lever rendered three of four directions alike, while the plan with direction-specific layouts rendered five different pictures.
 - If the brief names colors, add a **color lever** (the brief's own colors) inside each direction.
@@ -123,12 +123,12 @@ A direction's **defining traits are fixed**; they live in its own wording. Vary 
   goes in `prompt.text_suffix` and **lists the only allowed text** (the user's copy, small numerals or data marks if the brief wants them) followed by
   "do not add any other words, slogans or taglines".
 - Every direction value carries its **`traits`** (six keys, Step B); `check` enforces the differences.
-- **One runner for the campaign.** If the brief does not say who the runner is, choose one description (age range, build, hair, apparel) and put it in the shared opening so the
-  campaign has one cast; state the choice under Open gaps. Vary the runner only if the user asks for variety.
+- **One cast for the campaign.** If the brief has a recurring subject (a person, a character, a mascot) but does not say who it is, choose one description (for a person: age range, build, hair, apparel) and put it in
+  the shared opening so the campaign has one cast; state the choice under Open gaps. Vary it only if the user asks for variety.
 - Flags live in the plan data: the wildcard value carries `wildcard: true` and `relaxes: [...]`, so anyone reading `plan.json` sees them.
 - Then the variation dimensions (Step D) with `fragment` wording; `aspect` as a single ratio if the brief fixes one.
 - `batch_by: "direction"` so the first batch is split evenly and each direction gets its own covering design. Choose the batch size with
-  `plan --target max(30, 4 x directions)`; each direction needs at least 4 images.
+  `plan --target max(30, 4 x directions)` (the default target is 30; it is rounded up to an equal share per direction, so 4 directions give 32); each direction needs at least 4 images.
 - `intent`: pick from the intent list by what the image is for. `model_strategy`: `single`. `quality`: set it (see plan.md) so cost is predictable.
 - `fixed`: record the Said items for the user's reading (the compiler uses `prompt.text_prefix`).
 - `visual_checks` (at most six): the copy is spelled exactly with no other text; the product is clearly visible and plausible; the subject's anatomy; each
@@ -143,7 +143,8 @@ limits); and that **the first spend is a calibration with one image per directio
 The calibration needs no second plan: create the experiment with the full target, run `preflight --dir <experiment> --one-per direction` (it prices only the
 first ticked row of each direction; the other ticked rows stay ticked), show that quote and get one approval, `run` it, look at the images (`montage --dir <experiment> --by direction` writes one labelled grid per direction; add `--blind` for
 a shuffled grid with a key), fix any direction that came out alike, and only then run a plain `preflight` for the rest. On a fresh clone there may be no observed price yet: the
-quote then says "unverified", so pass `--max-usd` to `run` and let the first image set the price.
+quote then says "unverified" and adds an "Indicative" range and a safe limit (from `references/price-hints.json`; a hint, not a quote). Tell the user both,
+and pass that `--max-usd` to `run`: the first image then sets the real price.
 Say plainly that image models follow wording loosely, so the first batch is how you find out. Ask for **one** confirmation or edits, in one turn.
 Show the full lever matrix only if asked.
 
