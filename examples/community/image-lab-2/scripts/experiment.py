@@ -541,6 +541,10 @@ def register(sub, with_run: bool = True) -> None:
     la.add_argument("--limit", type=int, default=None, help="with --judge: judge only the first N sheets (a cheap trial)")
     la.add_argument("--judge-model", default=None, help="with --judge: the judge's gateway model id (default x-ai/grok-4.6)")
     la.add_argument("--judge", action="store_true", help="the blind judge on the saved Direction replies (gateway, quoted first); needs --confirm <fingerprint>")
+    la.add_argument("--vision-eval", action="store_true", help="the result-review evaluation: models review the 16 benchmark images (gateway, quoted first); needs --confirm <fingerprint>")
+    la.add_argument("--budget", type=float, default=None, help="with --vision-eval: a spending cap in USD for the run (part of the approval fingerprint)")
+    la.add_argument("--vision-models", default=None, help="with --vision-eval: comma-separated gateway model ids (default: the four in llm_fit.VISION_MODELS)")
+    la.add_argument("--score-vision", nargs="+", metavar="FILE", help="free: score saved reviewer answers ({image: answer} JSON) on the result-review benchmark")
     la.add_argument("--score", nargs="+", metavar="FILE", help="free: run the mechanical Creative Direction checks on saved replies")
     la.add_argument("--stream-check", action="store_true",
                     help="one long streamed reply from the cheap model (a few thousandths of a dollar); needs --confirm <fingerprint>")

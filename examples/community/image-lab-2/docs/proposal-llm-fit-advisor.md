@@ -335,3 +335,18 @@ Decisions: **Fable 5 is dropped from the long-output evaluations** (decided by y
 - **Spend:** about $3.2 of the $6 hard stop, from the usage figures (probes and pilot $0.56, worker batch $2.09, judge trials and run $0.57).
 
 **Human spot-check (2026-10-08):** the owner read three sheets (Gemini 3 Flash children's r1, GPT-6 Astra children's r1, GPT-5.6 Luna children's r1) and confirmed that they look like the judged scores (0.92, 0.99, 0.98). One reviewer and three sheets, so the findings stay suggestive; the check supports the judge's ordering at the ends of the range, not its ability to separate the top three.
+
+**Result review (vision) evaluation (2026-10-08): the benchmark is saturated.** A 16-image benchmark (`references/llm-fit/vision-bench/`: 8 clean posters and 8 with a known text defect made by the image model itself: a typo "READ THE SUMER", a wrong word "REED THE SUMMER", an extra line "SAVE 50% TODAY", and no text; labels confirmed by the owner) was shown to each reviewer one image at a time at 768 px, asking for a letter-by-letter transcription of the headline and a pass or fail on "spelled exactly, no other lettering". Scoring is mechanical (`scripts/vision_bench.py`).
+
+| Reviewer | Harness | Balanced accuracy | Recall | False alarms | Transcription | Cost per image |
+|---|---|---|---|---|---|---|
+| Claude Sonnet 5.5 (default model) | agent, free | 1.00 (2 runs) | 1.00 | 0.00 | 1.00 | session allowance |
+| GPT-5.4 mini | gateway | 1.00 (2 runs) | 1.00 | 0.00 | 1.00 | about $0.0007 |
+| Claude Haiku 4.5 (thinking) | gateway | 1.00 (2 runs) | 1.00 | 0.00 | 1.00 | about $0.0011 |
+| GPT-5.4 | gateway | 1.00 (2 runs) | 1.00 | 0.00 | 1.00 | about $0.0023 |
+| Gemini 3 Flash | gateway | 1.00 (2 runs) | 1.00 | 0.00 | 1.00 (one reply unreadable of 32) | about $0.0027 |
+
+- **What it shows:** every reviewer tested, including the cheapest, caught every gross text defect, raised no false alarm and read the headline letter for letter without autocorrecting "SUMER" or "REED". For this kind of check any of them is enough, and the cheapest (GPT-5.4 mini, about $0.0007 per image) is about a quarter of the next one's price.
+- **What it does not show:** the benchmark cannot separate these models, and the instruction ("read letter by letter") primes careful reading. Gross, large-lettering text defects are the easy case. Subtle defects (small text, hands and anatomy, a changed product label), smaller images, and a prompt that does not warn the reviewer would be the next benchmark.
+- **Advisor output:** Result review now reads "Strong; N measured at your level; cheapest GPT-5.4 mini (about $0.0007 per use); keep". Plan writing is still unmeasured.
+- **Cost:** the benchmark images $0.13, the gateway reviews about $0.22 (quoted $0.55 expected, capped at $1.25). Feature total about $4.0 of the $6 hard stop.

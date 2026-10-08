@@ -87,7 +87,7 @@ def load_models(offline: bool = False, fetch=None):
 def save_snapshot(models: list[dict], path: Path = SNAPSHOT_FILE) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"fetched_at": time.strftime("%Y-%m-%d"), "note": "facts from the gateway's /models listing; "
-                                "quality is NOT in it. Prices are USD, unit not stated by the gateway (probably per million tokens).",
+                                "quality is NOT in it. Prices are USD per million tokens (the gateway does not state the unit; confirmed against billed usage on 2026-10-08).",
                                 "models": models}, indent=1, ensure_ascii=False), encoding="utf-8")
 
 
@@ -179,6 +179,9 @@ def advise(host_name: str | None, models: list[dict], records: list[dict], can_r
         alts = [v for (m, t), v in agg.items() if t == task and m not in host_keys]
         better = sorted((a for a in alts if (not host or a["score"] > host["score"])), key=lambda a: -a["score"])
         alt = better[0] if better else None
+        # models measured at the same level as the host (or higher is "better" above): the cheapest of them is worth knowing about
+        ties = sorted((a for a in alts if host and a["score"] <= host["score"] and a["score"] >= host["score"] - max(host["spread"], a["spread"])),
+                      key=lambda a: (a.get("cost_per_use") is None, a.get("cost_per_use") or 0)) if host else []
         tier = comparison_tier(host, alt) if alt else "insufficient"
         host_level = level(host["score"] if host else None)
         if step in STEP_NEEDS_IMAGES and can_read_images == "no":
@@ -192,7 +195,8 @@ def advise(host_name: str | None, models: list[dict], records: list[dict], can_r
         else:
             rec = "no recommendation yet (insufficient evidence)"
         rows.append({"step": step, "host_level": host_level, "alt": alt, "tier": tier, "recommendation": rec,
-                     "measured_host": bool(host), "measured_any": bool(alts) or bool(host)})
+                     "measured_host": bool(host), "measured_any": bool(alts) or bool(host),
+                     "ties": [{"model": t["model"], "cost_per_use": t.get("cost_per_use")} for t in ties], "n_alts": len(alts)})
     return {"host_name": host_name, "mapped": mapped, "can_read_images": can_read_images, "rows": rows,
             "measured_records": len(records)}
 
@@ -206,7 +210,7 @@ def format_report(rep: dict, source: str = "", fetched: str = "") -> str:
     if m["match"]:
         mm = m["match"]
         L.append(f"On the gateway as {mm['name']} ({mm['api_name']}): context {mm['context_window']:,} tokens, "
-                 f"price {mm['input_price']} in / {mm['output_price']} out ({mm['currency']}, unit not stated by the gateway), images: {mm['modality']}.")
+                 f"price {mm['input_price']} in / {mm['output_price']} out ({mm['currency']} per million tokens), images: {mm['modality']}.")
     elif m["how"] == "not given":
         L.append("Your assistant was not named; pass --model \"<name>\" (the agent knows its own model).")
     else:
@@ -214,20 +218,26 @@ def format_report(rep: dict, source: str = "", fetched: str = "") -> str:
         L.append(f"{host} is not on the gateway" + (f" (closest listed: {near}; a near version is not treated as the same model)" if near else "")
                  + ". It can be measured in your session but not through the gateway.")
     L.append("")
-    L.append(f"{'Step':<20} {'Your assistant':<16} {'Best measured alternative':<44} Recommendation")
+    L.append(f"{'Step':<20} {'Your assistant':<16} {'Best measured alternative':<70} Recommendation")
     for r in rep["rows"]:
         if r["alt"]:
             a = r["alt"]
             alt = f"{a['model']} ({r['tier']} evidence" + (f", about ${a['cost_per_use']} per use" if a.get("cost_per_use") else "") + ")"
+        elif r.get("ties"):
+            t = r["ties"][0]
+            alt = (f"{len(r['ties'])} measured at your level; cheapest {t['model']}"
+                   + (f" (about ${t['cost_per_use']} per use)" if t.get("cost_per_use") else ""))
+        elif r.get("n_alts"):
+            alt = f"{r['n_alts']} measured, none better"
         else:
             alt = "none measured yet"
-        L.append(f"{r['step']:<20} {r['host_level']:<16} {alt[:44]:<44} {r['recommendation']}")
+        L.append(f"{r['step']:<20} {r['host_level']:<16} {alt:<70} {r['recommendation']}")
     L.append("")
     cap = {"yes": "yes", "no": "NO", "unknown": "unknown (pass --can-read-images yes|no)"}[rep["can_read_images"]]
     L.append(f"Host check: can read image files: {cap}. The result review needs it.")
     if not rep["measured_records"]:
         L.append("No recommendation is made without measured evidence. Keep your assistant unless it cannot read images.")
-    L.append(f"Model facts from {source or 'unknown'}" + (f" ({fetched})" if fetched else "") + "; prices assume USD per million tokens (unverified).")
+    L.append(f"Model facts from {source or 'unknown'}" + (f" ({fetched})" if fetched else "") + "; prices are USD per million tokens (confirmed against billed usage, 2026-10-08).")
     L.append("Advice only: nothing was sent anywhere and nothing was changed.")
     return "\n".join(L)
 
@@ -884,6 +894,150 @@ def run_judge_command(models: list[dict], confirm: str | None, limit: int | None
 
 
 # --------------------------------------------------------------------------- #
+# the result-review evaluation (P1b, vision): each model reviews the 16 benchmark images one at a time; scored mechanically
+# --------------------------------------------------------------------------- #
+VISION_MODELS = ("google/gemini-3-flash", "openai/gpt-5.4-mini", "anthropic/claude-haiku-4.5:thinking", "openai/gpt-5.4")
+VISION_RUNS = 2
+VISION_IMAGE_TOKENS = 1300                      # expected input tokens for one 768 px image plus the prompt (a probe image measured ~1,000)
+VISION_EXPECTED_OUT = 400
+VISION_CEILING_IN = 2200
+VISION_CEILING_OUT = 3000                       # reasoning tokens are not held to max_tokens, so the ceiling is generous
+VISION_MAX_TOKENS = 1500
+VISION_OUT_DIR = ROOT / "out" / "llm-fit" / "vision"
+VISION_FILE = FIT_DIR / "vision-evals.jsonl"
+
+
+def vision_quote(models: list[dict], names: tuple | None = None, runs: int = VISION_RUNS, bench=None, budget: float | None = None) -> dict:
+    import vision_bench as vb
+    n_images = len(vb.load_labels(bench))
+    calls = []
+    for name in (names or VISION_MODELS):
+        m = next((x for x in models if x["api_name"] == name), None) or {}
+        pin, pout = m.get("input_price"), m.get("output_price")
+        if pin is None or pout is None:
+            calls.append({"model": name, "calls": 0, "expected": 0.0, "max": 0.0, "unpriced": True})
+            continue
+        k = n_images * runs
+        calls.append({"model": name, "calls": k, "unpriced": False,
+                      "expected": round(k * (VISION_IMAGE_TOKENS * pin + VISION_EXPECTED_OUT * pout) / 1e6, 4),
+                      "max": round(k * (VISION_CEILING_IN * pin + VISION_CEILING_OUT * pout) / 1e6, 4)})
+    fp = hashlib.sha256((json.dumps(calls, sort_keys=True) + str(runs) + str(budget) + vb.PROMPT).encode()).hexdigest()[:12]
+    return {"calls": calls, "runs": runs, "budget": budget, "images": n_images, "expected_usd": round(sum(c["expected"] for c in calls), 3),
+            "max_usd": round(sum(c["max"] for c in calls), 3), "fingerprint": fp, "unpriced": [c["model"] for c in calls if c["unpriced"]]}
+
+
+def run_vision(quote: dict, confirm: str, models: list[dict], names: tuple | None = None, post=None, bench=None, out_dir: Path | None = None,
+               workers: int = 4, budget: float | None = None) -> dict:
+    """One call per (model, run, image), a few at a time; never past `budget`. Answers are saved per model and run, usage is recorded,
+    and everything is scored mechanically against the labels. A failed call is recorded and never retried."""
+    from concurrent.futures import ThreadPoolExecutor
+    import threading
+    import vision_bench as vb
+    if confirm != quote["fingerprint"] or quote["fingerprint"] != vision_quote(models, names, quote["runs"], bench, quote.get("budget"))["fingerprint"]:
+        raise PermissionError("the confirmation does not match the quote: nothing was sent")
+    if post is None:
+        import image as il
+        tok = il.token()
+
+        def post(body):
+            return stream_chat(tok, body)
+    labels = vb.load_labels(bench)
+    bench_dir = Path(bench or vb.BENCH_DIR)
+    out = Path(out_dir or VISION_OUT_DIR)
+    out.mkdir(parents=True, exist_ok=True)
+    budget = (quote.get("budget") or quote["max_usd"]) if budget is None else budget
+    per_call_max = {c["model"]: (c["max"] / c["calls"] if c["calls"] else 0.0) for c in quote["calls"]}
+    price = {m["api_name"]: (m.get("input_price"), m.get("output_price")) for m in models}
+    lock = threading.Lock()
+    committed = [0.0]
+    jobs = [(c["model"], run, name) for c in quote["calls"] if not c["unpriced"] for run in range(1, quote["runs"] + 1) for name in sorted(labels)]
+
+    def one(job):
+        model, run, name = job
+        with lock:
+            if committed[0] + per_call_max[model] > budget:
+                return {"model": model, "run": run, "image": name, "status": "skipped", "error": "budget", "answer": None, "usage": {}, "implied_usd": None}
+            committed[0] += per_call_max[model]
+        content = [{"type": "text", "text": vb.PROMPT}, {"type": "image_url", "image_url": {"url": vb.image_data_uri(bench_dir / f"{name}.jpg")}}]
+        t0 = time.time()
+        status, js, err = post({"model": model, "max_tokens": VISION_MAX_TOKENS, "messages": [{"role": "user", "content": content}]})
+        text = (((js or {}).get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+        usage = (js or {}).get("usage") or {}
+        pin, pout = price.get(model, (None, None))
+        implied = round(((usage.get("prompt_tokens") or 0) * pin + (usage.get("completion_tokens") or 0) * pout) / 1e6, 6) if pin is not None and usage else None
+        with lock:
+            committed[0] += (implied if implied is not None else 0.0) - per_call_max[model]
+        return {"model": model, "run": run, "image": name, "status": status, "error": err, "seconds": round(time.time() - t0, 1),
+                "answer": vb.parse_answer(text), "raw": text[:300] if not vb.parse_answer(text) else None, "usage": usage, "implied_usd": implied}
+
+    before = _live_spend()
+    with ThreadPoolExecutor(max_workers=workers) as ex_:
+        results = list(ex_.map(one, jobs))
+    after = _live_spend()
+    scores: dict = {}
+    for model in {j[0] for j in jobs}:
+        for run in range(1, quote["runs"] + 1):
+            rs = [r for r in results if r["model"] == model and r["run"] == run]
+            answers = {r["image"]: r["answer"] for r in rs}
+            sc = vb.score(answers, labels)
+            cost = round(sum(r["implied_usd"] or 0 for r in rs), 4)
+            scores.setdefault(model, []).append({**sc, "run": run, "cost_usd": cost, "skipped": sum(1 for r in rs if r["status"] == "skipped")})
+            (out / f"{model.replace('/', '__')}__r{run}.json").write_text(
+                json.dumps({r["image"]: r["answer"] for r in rs}, indent=1, ensure_ascii=False), encoding="utf-8")
+    VISION_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with VISION_FILE.open("a", encoding="utf-8") as f:
+        for r in results:
+            f.write(json.dumps({"at": time.strftime("%Y-%m-%dT%H:%M:%S"), **{k: v for k, v in r.items() if k != "answer"}, "ok": bool(r["answer"])}, ensure_ascii=False) + "\n")
+    return {"scores": scores, "results": results, "settled_delta_usd": None if before is None or after is None else round(after - before, 4)}
+
+
+def run_vision_command(models: list[dict], confirm: str | None, names: tuple | None = None, budget: float | None = None) -> str:
+    q = vision_quote(models, names, budget=budget)
+    lines = [f"VISION REVIEW QUOTE (result review: each model looks at {q['images']} benchmark images one at a time, {q['runs']} runs each; "
+             f"images at 768 px; one call per image, streamed)"]
+    for c in q["calls"]:
+        lines.append(f"  {c['model']:<38} {c['calls']} call(s): expected about ${c['expected']:.2f}, at most ${c['max']:.2f}" if not c["unpriced"]
+                     else f"  {c['model']}: not priced in the listing (skipped)")
+    lines.append(f"Total: expected about ${q['expected_usd']:.2f}, ceiling ${q['max_usd']:.2f} (listed prices, USD per million tokens; the ceiling assumes 2,200 tokens in "
+                 f"and 3,000 out per call; reasoning tokens are not held to the cap).")
+    lines.append(f"Spending cap for this run: ${q['budget'] if q['budget'] else q['max_usd']:.2f}: the run reserves each call's ceiling before sending it and "
+                 f"skips any call that could pass the cap (cheapest models go first, so the most expensive one is skipped first).")
+    lines.append("It sends one benchmark image (an invented children's-library poster) and the review instruction per call to each model's provider; nothing from your project.")
+    if not confirm:
+        lines.append(f"Fingerprint: {q['fingerprint']}   (run again with --confirm {q['fingerprint']} after you approve the cost)")
+        return "\n".join(lines)
+    res = run_vision(q, confirm, models, names)
+    for model, runs in res["scores"].items():
+        for sc in runs:
+            f = lambda x: "n/a" if x is None else f"{x:.2f}"          # noqa: E731
+            lines.append(f"  {model:<38} run {sc['run']}: balanced {f(sc['balanced'])}  recall {f(sc['recall'])}  false alarms {f(sc['false_alarm'])}  "
+                         f"transcription {f(sc['transcription'])}  answered {sc['answered']}  cost ${sc['cost_usd']:.3f}")
+    if res["settled_delta_usd"] is not None:
+        lines.append(f"Gateway running total moved by ${res['settled_delta_usd']} during the run (it settles with a lag).")
+    lines.append(f"Answers in {VISION_OUT_DIR.relative_to(ROOT)}; per-call usage in {VISION_FILE.relative_to(ROOT)}.")
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# the result-review benchmark (free scoring; the gateway runner is separate)
+# --------------------------------------------------------------------------- #
+def score_vision_command(files: list[str]) -> str:
+    """Score saved reviewer answers ({image name: answer}) against the benchmark labels."""
+    import vision_bench as vb
+    labels = vb.load_labels()
+    lines = []
+    for f in files:
+        raw = json.loads(Path(f).read_text(encoding="utf-8"))
+        answers = {k: (vb.parse_answer(json.dumps(v)) if not isinstance(v, str) else vb.parse_answer(v)) for k, v in raw.items()}
+        r = vb.score(answers, labels)
+        fmt = lambda x: "n/a" if x is None else f"{x:.2f}"          # noqa: E731
+        lines.append(f"{Path(f).name}: balanced {fmt(r['balanced'])}  recall {fmt(r['recall'])}  false alarms {fmt(r['false_alarm'])}  "
+                     f"transcription {fmt(r['transcription'])}  answered {r['answered']}")
+        lines.append(f"    by defect {r['by_defect']}  missed {r['missed']}  false alarms {r['false_alarms']}  autocorrected {r['autocorrected']}")
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
 def run(args) -> str:
     """The `llm-advice` command."""
     models, source, fetched = load_models(offline=getattr(args, "offline", False))
@@ -905,6 +1059,11 @@ def run(args) -> str:
             lines.append(f"  {r['id']:<7} status {r['status']}  {r['seconds']}s  usage {json.dumps(r['usage'])}  extra {json.dumps(r['extra'])[:120]}")
         lines.append(f"Recorded in {PROBES_FILE.relative_to(ROOT)}. Read the usage to confirm the price unit and how an image is charged.")
         return "\n".join(lines)
+    if getattr(args, "vision_eval", False):
+        names = tuple(x.strip() for x in args.vision_models.split(",") if x.strip()) if getattr(args, "vision_models", None) else None
+        return run_vision_command(models, getattr(args, "confirm", None), names, getattr(args, "budget", None))
+    if getattr(args, "score_vision", None):
+        return score_vision_command(args.score_vision)
     if getattr(args, "judge_model", None):
         globals()["JUDGE_MODEL"] = args.judge_model
     if getattr(args, "judge", False):

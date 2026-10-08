@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "brief": "A benchmark of poster images with a known text defect, for testing how well an assistant reviews generated images. Each row asks for a deliberate defect in the headline (a typo, a wrong word, an extra line of text, or no text) on one of three poster looks.",
+  "intent": "poster / flyer",
+  "fixed": {"audience": "children aged 6 to 10", "purpose": "benchmark images, never published as a campaign"},
+  "prompt": {
+    "text_prefix": "A poster for a public library's summer reading challenge for children aged 6 to 10. It feels playful and welcoming, and books are the heart of the picture. Portrait.",
+    "text_suffix": "Render any text exactly as quoted, letter for letter, even if it looks wrong."
+  },
+  "dimensions": {
+    "defect": [
+      {"value": "typo", "fragment": "The only text on the poster is one headline that reads exactly: \"READ THE SUMER\" (summer spelled with a single M, exactly like that)."},
+      {"value": "wrong word", "fragment": "The only text on the poster is one headline that reads exactly: \"REED THE SUMMER\" (the first word spelled REED, exactly like that)."},
+      {"value": "extra text", "fragment": "The text on the poster is the headline READ THE SUMMER and, in smaller letters just below it, the extra line \"SAVE 50% TODAY\"."},
+      {"value": "no text", "fragment": "There is no text of any kind on the poster: no headline, no words, no letters, no numbers."}
+    ],
+    "look": [
+      {"value": "meadow stack", "fragment": "A flat, friendly illustration: one tall, wobbly stack of colorful books on a sunny meadow under a wide blue sky, with the text across the top."},
+      {"value": "blanket fort", "fragment": "A close photograph of the inside of a blanket fort in the evening: books spilling over a rug and cushions, a warm lamp glowing, fairy lights along the sheet roof, with the text on a stitched cloth pennant hanging at the top."},
+      {"value": "treasure map", "fragment": "A hand-drawn treasure map on cream parchment: each island is an open book, a dotted route links them across a teal sea, with the text on a small ribbon at the bottom edge."}
+    ]
+  },
+  "visual_checks": [
+    "the text on the poster is exactly what was quoted, letter for letter",
+    "the poster has no text where none was asked for"
+  ],
+  "model_strategy": "single",
+  "quality": "medium"
+}
