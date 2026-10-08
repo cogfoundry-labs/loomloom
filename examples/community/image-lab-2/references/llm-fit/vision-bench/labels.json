@@ -1,0 +1,114 @@
+{
+ "v01": {
+  "defect": "none",
+  "headline": "READ THE SUMMER",
+  "extra_text": false,
+  "look": "meadow stack",
+  "source": "showcase r011"
+ },
+ "v02": {
+  "defect": "none",
+  "headline": "READ THE SUMMER",
+  "extra_text": false,
+  "look": "blanket fort",
+  "source": "showcase r024"
+ },
+ "v03": {
+  "defect": "none",
+  "headline": "READ THE SUMMER",
+  "extra_text": false,
+  "look": "blanket fort",
+  "source": "showcase r026"
+ },
+ "v04": {
+  "defect": "none",
+  "headline": "READ THE SUMMER",
+  "extra_text": false,
+  "look": "meadow stack",
+  "source": "showcase r001"
+ },
+ "v05": {
+  "defect": "none",
+  "headline": "READ THE SUMMER",
+  "extra_text": false,
+  "look": "blanket fort",
+  "source": "showcase r029"
+ },
+ "v06": {
+  "defect": "extra text",
+  "headline": "READ THE SUMMER",
+  "extra_text": true,
+  "look": "blanket fort",
+  "source": "vision-bench-gen r008"
+ },
+ "v07": {
+  "defect": "no text",
+  "headline": null,
+  "extra_text": false,
+  "look": "meadow stack",
+  "source": "vision-bench-gen r010"
+ },
+ "v08": {
+  "defect": "none",
+  "headline": "READ THE SUMMER",
+  "extra_text": false,
+  "look": "meadow stack",
+  "source": "showcase r008"
+ },
+ "v09": {
+  "defect": "none",
+  "headline": "READ THE SUMMER",
+  "extra_text": false,
+  "look": "blanket fort",
+  "source": "showcase r019"
+ },
+ "v10": {
+  "defect": "typo",
+  "headline": "READ THE SUMER",
+  "extra_text": false,
+  "look": "blanket fort",
+  "source": "vision-bench-gen r002"
+ },
+ "v11": {
+  "defect": "extra text",
+  "headline": "READ THE SUMMER",
+  "extra_text": true,
+  "look": "meadow stack",
+  "source": "vision-bench-gen r007"
+ },
+ "v12": {
+  "defect": "wrong word",
+  "headline": "REED THE SUMMER",
+  "extra_text": false,
+  "look": "meadow stack",
+  "source": "vision-bench-gen r004"
+ },
+ "v13": {
+  "defect": "wrong word",
+  "headline": "REED THE SUMMER",
+  "extra_text": false,
+  "look": "blanket fort",
+  "source": "vision-bench-gen r005"
+ },
+ "v14": {
+  "defect": "no text",
+  "headline": null,
+  "extra_text": false,
+  "look": "blanket fort",
+  "source": "vision-bench-gen r011"
+ },
+ "v15": {
+  "defect": "typo",
+  "headline": "READ THE SUMER",
+  "extra_text": false,
+  "look": "meadow stack",
+  "source": "vision-bench-gen r001"
+ },
+ "v16": {
+  "defect": "none",
+  "headline": "READ THE SUMMER",
+  "extra_text": false,
+  "look": "meadow stack",
+  "source": "showcase r006"
+ }
+}

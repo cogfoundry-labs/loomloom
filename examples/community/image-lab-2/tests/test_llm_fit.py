@@ -86,6 +86,21 @@ class Advice(unittest.TestCase):
         self.assertIn("cannot read image files", review["recommendation"])
         self.assertNotIn("cannot read", next(r for r in rep["rows"] if r["step"] == "Plan writing")["recommendation"])
 
+    def test_models_measured_at_the_hosts_level_are_reported_as_ties_with_the_cheapest_first(self):
+        recs = [rec("anthropic/claude-sonnet-5", "vision", 1.0), rec("m/cheap", "vision", 1.0, cost_per_use=0.0007),
+                rec("m/pricey", "vision", 1.0, cost_per_use=0.0023), rec("m/worse", "vision", 0.6)]
+        rep = lf.advise("Claude Sonnet 5", self.models, recs, "yes")
+        row = next(r for r in rep["rows"] if r["step"] == "Result review")
+        self.assertEqual([t["model"] for t in row["ties"]], ["m/cheap", "m/pricey"])          # the lower-scoring model is not a tie
+        self.assertEqual((row["recommendation"], row["alt"]), ("keep", None))
+        text = lf.format_report(rep)
+        self.assertIn("2 measured at your level; cheapest m/cheap (about $0.0007 per use)", text)
+
+    def test_measured_but_all_lower_says_none_better(self):
+        recs = [rec("anthropic/claude-sonnet-5", "plan", 0.95), rec("m/worse", "plan", 0.5)]
+        text = lf.format_report(lf.advise("Claude Sonnet 5", self.models, recs, "yes"))
+        self.assertIn("1 measured, none better", text)
+
     def test_levels_are_words_and_a_good_host_is_told_to_keep(self):
         recs = [rec("anthropic/claude-sonnet-5", "plan", 0.95)]
         row = next(r for r in lf.advise("Claude Sonnet 5", self.models, recs)["rows"] if r["step"] == "Plan writing")
@@ -412,6 +427,80 @@ class Judge(unittest.TestCase):
                 with self.assertRaises(PermissionError):
                     lf.run_judge(q, "nope", models, post=lambda b: sent.append(b), replies_dir=Path(d))
         self.assertEqual(sent, [])
+
+
+class VisionRunner(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        d = Path(self.tmp.name)
+        self.bench = d / "bench"
+        self.bench.mkdir()
+        labels = {"v01": {"defect": "none", "headline": "READ THE SUMMER", "extra_text": False},
+                  "v02": {"defect": "typo", "headline": "READ THE SUMER", "extra_text": False}}
+        (self.bench / "labels.json").write_text(json.dumps(labels), encoding="utf-8")
+        for n in labels:
+            (self.bench / (n + ".jpg")).write_bytes(b"\xff\xd8fake")
+        self.models = lf.parse_models({"data": [
+            {"api_name": n, "company": "x", "name": n, "architecture": {"input": "text+image"}, "pricing": {"input_price": pin, "output_price": pout, "currency": "USD"}}
+            for n, pin, pout in (("m/cheap", 0.5, 3), ("m/pricey", 2.5, 15))]})
+        self.names = ("m/cheap", "m/pricey")
+        self.evals = mock.patch.object(lf, "VISION_FILE", d / "vision-evals.jsonl")
+        self.evals.start()
+        self.addCleanup(self.evals.stop)
+
+    def test_the_quote_prices_every_call_and_changes_with_the_runs(self):
+        q = lf.vision_quote(self.models, self.names, runs=2, bench=self.bench)
+        self.assertEqual([c["calls"] for c in q["calls"]], [4, 4])               # 2 images x 2 runs each
+        self.assertGreater(q["max_usd"], q["expected_usd"])
+        self.assertNotEqual(q["fingerprint"], lf.vision_quote(self.models, self.names, runs=3, bench=self.bench)["fingerprint"])
+
+    def test_nothing_is_sent_without_the_matching_confirmation(self):
+        sent = []
+        q = lf.vision_quote(self.models, self.names, bench=self.bench)
+        with self.assertRaises(PermissionError):
+            lf.run_vision(q, "nope", self.models, self.names, post=lambda b: sent.append(b), bench=self.bench, out_dir=Path(self.tmp.name) / "o")
+        self.assertEqual(sent, [])
+
+    def test_a_confirmed_run_sends_one_image_per_call_scores_and_saves_the_answers(self):
+        q = lf.vision_quote(self.models, self.names, bench=self.bench)
+        seen = []
+
+        def post(body):
+            seen.append(body)
+            img = [p for p in body["messages"][0]["content"] if p.get("type") == "image_url"]
+            self.assertEqual(len(img), 1)                                          # individual images, never a montage
+            good = '{"headline_text": "READ THE SUMER", "other_lettering": null, "requirement_met": false, "evidence": "e"}'
+            return 200, {"choices": [{"message": {"content": good}}], "usage": {"prompt_tokens": 1300, "completion_tokens": 100}}, ""
+
+        out = Path(self.tmp.name) / "o"
+        res = lf.run_vision(q, q["fingerprint"], self.models, self.names, post=post, bench=self.bench, out_dir=out, workers=1)
+        self.assertEqual(len(seen), 8)
+        sc = res["scores"]["m/cheap"][0]
+        self.assertEqual(sc["recall"], 1.0)                                          # the typo image is flagged
+        self.assertEqual(sc["false_alarm"], 1.0)                                     # and so is the clean one (the fake always says "not met")
+        self.assertTrue((out / "m__cheap__r1.json").exists())
+        self.assertEqual(len((Path(self.tmp.name) / "vision-evals.jsonl").read_text(encoding="utf-8").splitlines()), 8)
+
+    def test_a_failed_or_unparseable_answer_is_counted_as_unanswered_and_never_retried(self):
+        q = lf.vision_quote(self.models, ("m/cheap",), runs=1, bench=self.bench)
+        calls = []
+
+        def post(body):
+            calls.append(1)
+            return (504, {}, "HTTP 504") if len(calls) == 1 else (200, {"choices": [{"message": {"content": "I cannot tell"}}], "usage": {}}, "")
+
+        res = lf.run_vision(q, q["fingerprint"], self.models, ("m/cheap",), post=post, bench=self.bench, out_dir=Path(self.tmp.name) / "o2", workers=1)
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(res["scores"]["m/cheap"][0]["answered"], "0/2")
+
+    def test_the_budget_stops_calls_before_they_are_sent(self):
+        q = lf.vision_quote(self.models, self.names, bench=self.bench)
+        sent = []
+        res = lf.run_vision(q, q["fingerprint"], self.models, self.names, post=lambda b: sent.append(b) or (200, {}, ""), bench=self.bench,
+                            out_dir=Path(self.tmp.name) / "o3", workers=1, budget=0.0001)
+        self.assertEqual(sent, [])
+        self.assertTrue(all(r["status"] == "skipped" for r in res["results"]))
 
 
 class Cli(unittest.TestCase):
