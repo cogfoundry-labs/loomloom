@@ -555,6 +555,9 @@ def register(sub, with_run: bool = True) -> None:
     sh = sub.add_parser("sheet", help="build the contact-sheet page for an experiment (free)")
     import sheet as _sheet
     _sheet.add_args(sh)
+    mo = sub.add_parser("montage", help="labelled image grids of finished images, one per value of a dimension (free, needs Pillow)")
+    import montage as _montage
+    _montage.add_args(mo)
     cc = sub.add_parser("controls", help="list the controls vocabulary (dimensions, values, wording, how far tested)")
     cc.add_argument("--dimension", default=None)
     cc.add_argument("--json", action="store_true")
@@ -650,6 +653,9 @@ def _handle(a) -> None:
         sys.exit(1 if probs else 0)
     elif a.cmd == "run":
         cmd_run_batch(a)
+    elif a.cmd == "montage":
+        import montage as _montage
+        sys.exit(_montage.run(a))
     elif a.cmd == "sheet":
         import sheet as _sheet
         sys.exit(_sheet.run(a))

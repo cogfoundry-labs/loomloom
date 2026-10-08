@@ -141,8 +141,8 @@ One message with: the **Said / Inferred / Brand assumptions / Open gaps** table;
 different, keep out, the copy, and the one "wildcard, relaxes: ... (needs your OK)" mark if there is a wildcard); the **traits table** (ground, medium, layout, type, density and palette per direction, from the plan's `traits`); the **Direction 1 coverage line** (how many of the brief's specifics are kept and what was compressed); for each direction **what is fixed and what varies**; the dry-run numbers (images per direction, model, size, price basis,
 limits); and that **the first spend is a calibration with one image per direction**, which doubles as the check that the directions really look different.
 The calibration needs no second plan: create the experiment with the full target, run `preflight --dir <experiment> --one-per direction` (it prices only the
-first ticked row of each direction; the other ticked rows stay ticked), show that quote and get one approval, `run` it, look at the images (a montage or the
-workbook), fix any direction that came out alike, and only then run a plain `preflight` for the rest. On a fresh clone there may be no observed price yet: the
+first ticked row of each direction; the other ticked rows stay ticked), show that quote and get one approval, `run` it, look at the images (`montage --dir <experiment> --by direction` writes one labelled grid per direction; add `--blind` for
+a shuffled grid with a key), fix any direction that came out alike, and only then run a plain `preflight` for the rest. On a fresh clone there may be no observed price yet: the
 quote then says "unverified", so pass `--max-usd` to `run` and let the first image set the price.
 Say plainly that image models follow wording loosely, so the first batch is how you find out. Ask for **one** confirmation or edits, in one turn.
 Show the full lever matrix only if asked.

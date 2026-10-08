@@ -333,3 +333,5 @@ Decisions: **Fable 5 is dropped from the long-output evaluations** (decided by y
 - **Astra's reliability on the longest brief (adidas):** one run hit the 10,000-token output cap and returned an unfinished plan ($0.58), the other returned a 504 before any text (nothing billed). It finished the other two briefs (150 to 180 s each). Fable 5 returned no text on any long call. Both are findings about reliability through the gateway, not about quality.
 - **Advisor output:** `llm-advice --model "Claude Sonnet 5.5"` now says Creative Direction: Strong, keep. Plan writing and Result review are not measured.
 - **Spend:** about $3.2 of the $6 hard stop, from the usage figures (probes and pilot $0.56, worker batch $2.09, judge trials and run $0.57).
+
+**Human spot-check (2026-10-08):** the owner read three sheets (Gemini 3 Flash children's r1, GPT-6 Astra children's r1, GPT-5.6 Luna children's r1) and confirmed that they look like the judged scores (0.92, 0.99, 0.98). One reviewer and three sheets, so the findings stay suggestive; the check supports the judge's ordering at the ends of the range, not its ability to separate the top three.

@@ -1002,7 +1002,7 @@ Results**; everything else supports that flow.
 | **M4** Planner and catalog (**done**, see items 39-41) | `skills/plan.md`, `references/plan-schema.md`, `controls-catalog.json`, planner evaluation set. | no |
 | **M5** (after the MVP, **done**, see item 42) | Contact-sheet results page for experiments. | no |
 | **M6** Creative Direction (**done**, see items 52-54) | `skills/direction.md`, `batch_by`, wildcard flags, look traits and takes in the plan schema, tested with blind planner runs and 99 generated images. | yes (tests) |
-| **M7** Tooling the tests exposed (**partly built**, item 57) | Built: `preflight --only` / `--one-per <dimension>` (a calibration subset), value scoping (`only_in`), a did-you-mean for misspelled catalog dimensions, a complete example plan. Not built: `image.py montage`, direction rules in `planner_eval.py`. | no |
+| **M7** Tooling the tests exposed (**mostly built**, item 57) | Built: `preflight --only` / `--one-per <dimension>` (a calibration subset), value scoping (`only_in`), a did-you-mean for misspelled catalog dimensions, a complete example plan. `image.py montage --by <dimension>` (with `--blind`). Not built: direction rules in `planner_eval.py`. | no |
 | **M8** Assistant fit (**proposed**, `docs/proposal-llm-fit-advisor.md`) | `llm-advice` (L1 only): measured per-step advice on the user's own assistant; evaluations on gateway models gated by a quote and confirmation, $6 hard stop set after a pilot. | yes |
 
 Not built in the MVP: any optimization beyond the pairwise covering algorithm,

@@ -35,6 +35,23 @@ The agent plans the experiment (`plan.json`, checked with `python scripts/image.
 
 `python scripts/image.py llm-advice` (free) reports how well your assistant's model suits each step, from the evidence collected so far; it is advice only.
 
+## Image Lab 2 in action: four directions of one brief
+
+An invented brief, run end to end with [`references/examples/direction-plan.json`](references/examples/direction-plan.json): *a poster for a public library's summer reading challenge, for children aged 6 to 10, headline READ THE SUMMER, portrait*. Creative Direction turned it into four directions (Direction 1 is the brief as written); each direction then varies its own layout, an accent color and the headline style.
+
+**One image per direction first (a calibration), to check the directions really look different:**
+
+![The four calibration images, one per direction](docs/showcase/calibration.jpg)
+
+Then the other 20 of the 24 planned images, one grid per direction. Every grid keeps its direction's look and varies only inside it.
+
+![Direction 1: a flat illustration, a stack of books on a meadow](docs/showcase/direction-1-stack.jpg)
+![Direction 2: a photograph inside a blanket fort](docs/showcase/direction-2-fort.jpg)
+![Direction 3: a hand-drawn treasure map where each island is a book](docs/showcase/direction-3-map.jpg)
+![Direction 4: cut-paper shapes on one color with huge letters](docs/showcase/direction-4-shapes.jpg)
+
+**What it cost, measured:** 4 calibration images $0.0446, then 20 images $0.2229 (the quote was $0.2230), so **24 images for $0.2675** on GPT Image 2.5 Sunburst at medium quality, 1024x1536. Each paid batch was quoted first and generated only after one approval. The headline was spelled correctly in all 24 images (checked by eye; image models follow "no other text" loosely, which is why the plan carries visual checks). Grids made with `python scripts/image.py montage --dir <experiment> --by direction`.
+
 The rest of this file is the v0.1 README: its install line, "no loomloom CLI needed" framing and case studies describe v0.1, and its links to sibling folders (`../image-lab`, `../redesign-lab`) point inside the loomloom repository.
 
 ---

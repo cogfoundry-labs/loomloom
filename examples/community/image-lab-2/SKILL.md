@@ -218,6 +218,9 @@ text" and "leave space here" wording only loosely and nothing in the pipeline ca
 so these checks are the user's only signal; name failing images plainly, and suggest
 rewording or a retry for them. Do not claim a check passed unless you looked.
 
+For a quick look at the images grouped by one dimension (for example one grid per creative direction) run
+`python scripts/image.py montage --dir ./out/<name> --by direction` (free, needs Pillow); `--blind` writes one shuffled grid with neutral labels and a key file.
+
 **8. Retry and next batch.**
 - `python scripts/image.py retry --dir ./out/<name>` preflights the `Failed`/`Partial`
   rows for their **missing samples only**, with its own fingerprint and approval, then
