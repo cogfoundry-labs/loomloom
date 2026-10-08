@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "brief": "Profile pictures from one selfie in different styles and backgrounds, keeping the face the same",
+  "intent": "profile / avatar",
+  "references": [
+    {
+      "id": "ref1",
+      "file": "refs/selfie.jpg",
+      "role": "person",
+      "contains_person": true
+    }
+  ],
+  "consent_acknowledged": null,
+  "fixed": {
+    "identity": "the person in the reference image: same face and likeness in every image"
+  },
+  "dimensions": {
+    "style": [
+      "photorealistic",
+      "editorial",
+      "flat illustration"
+    ],
+    "environment": [
+      "studio backdrop",
+      "outdoors",
+      "home interior"
+    ],
+    "lighting": [
+      "soft daylight",
+      "studio softbox"
+    ]
+  },
+  "constraints": [
+    {
+      "exclude": {
+        "style": "flat illustration",
+        "lighting": "studio softbox"
+      }
+    }
+  ],
+  "model_strategy": "single",
+  "visual_checks": [
+    "the face is recognizably the same person as the reference photo",
+    "head-and-shoulders framing with the face clearly visible",
+    "no text or logos in the image"
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "meta": {
+    "name": "image-lab-variants-4",
+    "description": "One prompt, four image variants generated in parallel. Image Lab community example (v0.4 showcase).",
+    "scenario": "image-generation",
+    "inputSummary": "One image prompt and an aspect ratio.",
+    "displayOutputType": "Image",
+    "primaryOutputType": "image"
+  },
+  "templateInputs": {
+    "imagePrompt": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "constraints": { "minLength": 1, "maxLength": 4000 },
+      "presentation": { "label": "Image prompt", "widget": "textarea", "order": 10 }
+    },
+    "aspectRatio": {
+      "kind": "value",
+      "valueType": "string",
+      "required": false,
+      "blankPolicy": "omit",
+      "defaultValue": "1:1",
+      "constraints": { "enum": ["1:1", "3:2", "2:3", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"] },
+      "presentation": { "label": "Aspect ratio", "order": 20 }
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_imgaaa",
+      "displayName": "Variant A",
+      "executionBinding": { "kind": "fixedModelContract", "subjectRevisionId": "cf30706b-fbe8-59e2-af74-d5dd2d4e0824" },
+      "inputBindings": {
+        "prompt": { "source": "templateInput", "inputKey": "imagePrompt" },
+        "aspect_ratio": { "source": "templateInput", "inputKey": "aspectRatio" }
+      }
+    },
+    {
+      "stepId": "stp_imgbbb",
+      "displayName": "Variant B",
+      "executionBinding": { "kind": "fixedModelContract", "subjectRevisionId": "cf30706b-fbe8-59e2-af74-d5dd2d4e0824" },
+      "inputBindings": {
+        "prompt": { "source": "templateInput", "inputKey": "imagePrompt" },
+        "aspect_ratio": { "source": "templateInput", "inputKey": "aspectRatio" }
+      }
+    },
+    {
+      "stepId": "stp_imgccc",
+      "displayName": "Variant C",
+      "executionBinding": { "kind": "fixedModelContract", "subjectRevisionId": "cf30706b-fbe8-59e2-af74-d5dd2d4e0824" },
+      "inputBindings": {
+        "prompt": { "source": "templateInput", "inputKey": "imagePrompt" },
+        "aspect_ratio": { "source": "templateInput", "inputKey": "aspectRatio" }
+      }
+    },
+    {
+      "stepId": "stp_imgddd",
+      "displayName": "Variant D",
+      "executionBinding": { "kind": "fixedModelContract", "subjectRevisionId": "cf30706b-fbe8-59e2-af74-d5dd2d4e0824" },
+      "inputBindings": {
+        "prompt": { "source": "templateInput", "inputKey": "imagePrompt" },
+        "aspect_ratio": { "source": "templateInput", "inputKey": "aspectRatio" }
+      }
+    }
+  ],
+  "workbook": {
+    "instructions": [
+      "One row = one prompt. Four image variants are generated in parallel from that single prompt.",
+      "The four branches are identical; spread comes from the model's own non-determinism.",
+      "Leave 'Aspect ratio' blank for 1:1, or pick one of the listed values."
+    ],
+    "sampleRows": [
+      { "values": { "imagePrompt": "A small purple cat on a moss-covered stone, golden hour, photoreal, shallow depth of field", "aspectRatio": "4:5" } }
+    ]
+  }
+}

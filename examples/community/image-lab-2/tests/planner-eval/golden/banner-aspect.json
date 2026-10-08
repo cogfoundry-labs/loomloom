@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "brief": "A wide hero banner for a blog post about remote work, with room for a headline",
+  "intent": "blog hero / article cover",
+  "references": [],
+  "consent_acknowledged": null,
+  "fixed": {
+    "subject": "a person working remotely from a bright home workspace",
+    "text": "no text or logos in the image"
+  },
+  "dimensions": {
+    "style": [
+      "editorial",
+      "minimalist",
+      "flat illustration"
+    ],
+    "composition": [
+      "negative space",
+      "rule of thirds",
+      "centered"
+    ],
+    "aspect": [
+      "16:9",
+      "3:2"
+    ]
+  },
+  "constraints": [],
+  "model_strategy": "single",
+  "visual_checks": [
+    "no text, letters, numbers or logos anywhere in the image",
+    "a large calm, empty area for a headline, not crowded by the subject",
+    "the image reads as remote work (a laptop or workspace is visible)"
+  ]
+}

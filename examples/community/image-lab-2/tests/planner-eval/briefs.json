@@ -1,0 +1,103 @@
+{
+  "note": "Planner evaluation set (design-v2.md section 14). Each brief is what a user might say; `expect` is what scripts/planner_eval.py checks in the plan an agent produces by following skills/plan.md. A person reviews the plans too: the checker only proves they obey the rules. Golden plans in golden/ are reference answers that pass the checker and double as regression tests for it.",
+  "briefs": [
+    {
+      "id": "product-photo",
+      "brief": "I have a photo of our toothpaste refill bottle and dispenser. Show me how it looks in different lighting and from different camera angles, for the product page.",
+      "reference_files": [
+        "product.png (a product photo, no person)"
+      ],
+      "tests": "reference product photo: identity Fixed, camera wording safe with a reference, lighting values unmistakable",
+      "expect": {
+        "route": "plan",
+        "intents": [
+          "product / e-commerce shot"
+        ],
+        "references": [
+          {
+            "role": "product",
+            "contains_person": false
+          }
+        ],
+        "require_dimensions_any": [
+          "camera",
+          "lighting"
+        ],
+        "forbid_unreliable": true,
+        "require_visual_checks": true
+      }
+    },
+    {
+      "id": "person-photo",
+      "brief": "Here is a selfie of me. I want profile pictures in a few different styles and backgrounds, keeping my face the same.",
+      "reference_files": [
+        "selfie.jpg (a photo of a person)"
+      ],
+      "tests": "person notice: role person, contains_person true, and the planner never acknowledges consent itself",
+      "expect": {
+        "route": "plan",
+        "intents": [
+          "profile / avatar"
+        ],
+        "references": [
+          {
+            "role": "person",
+            "contains_person": true
+          }
+        ],
+        "consent_must_be_null": true,
+        "require_dimensions_any": [
+          "style",
+          "environment"
+        ],
+        "require_visual_checks": true
+      }
+    },
+    {
+      "id": "banner-aspect",
+      "brief": "I need a wide hero banner for a blog post about remote work, 16:9 or similar. Try a few looks and layouts, there will be a headline over it.",
+      "reference_files": [],
+      "tests": "a fixed shape: an aspect dimension of ratios with no wording, composition options that leave room for text",
+      "expect": {
+        "route": "plan",
+        "intents": [
+          "blog hero / article cover",
+          "launch / announcement image"
+        ],
+        "references": [],
+        "require_aspect": true,
+        "require_dimensions_any": [
+          "composition",
+          "style"
+        ],
+        "require_visual_checks": true
+      }
+    },
+    {
+      "id": "prompt-only",
+      "brief": "Generate that with Image Lab, 4 options: a red apple on a white table, studio photo.",
+      "reference_files": [],
+      "tests": "routing: a single finished prompt, no reference, no controlled variation, 4 images -> quick mode, no plan",
+      "expect": {
+        "route": "quick"
+      }
+    },
+    {
+      "id": "too-wide",
+      "brief": "Explore a cozy coffee shop interior for a poster. Vary everything: the environment, the lighting, the camera angle, the style, the mood and the composition.",
+      "reference_files": [],
+      "tests": "restraint: six dimensions asked for, the plan keeps at most four and the first batch stays readable",
+      "expect": {
+        "route": "plan",
+        "intents": [
+          "poster / flyer",
+          "illustration / concept art",
+          "generic"
+        ],
+        "references": [],
+        "min_dims": 3,
+        "max_dims": 4
+      }
+    }
+  ]
+}
