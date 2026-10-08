@@ -66,6 +66,9 @@ def check_intent(plan: dict) -> None:
         raise mx.PlanError(f"intent {plan['intent']!r} is not one of the known intents: " + "; ".join(known))
 
 
+PLANNER_MAX_DIMS, PLANNER_MAX_VALUES, PLANNER_MAX_VALID = 4, 4, 150      # the planner skill's limits (skills/plan.md); a dry-run warning, not a refusal
+
+
 def build_experiment(plan_path, out_dir, target: int = 30, dry_run: bool = False) -> dict:
     """Validate a plan, enumerate, recommend a covering batch and (unless `dry_run`) write
     plan.json, ledger.json and experiment.xlsx. A dry run touches no file: it is how a planner
@@ -195,8 +198,16 @@ def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
     if by and not all(isinstance(v, dict) and isinstance(v.get("traits"), dict) for v in plan["dimensions"].get(by, [])):
         warns.append(f"the {by} dimension has no `traits` on every value, so nothing checks that its values look different "
                      f"(see skills/direction.md); a plan whose directions share a layout renders as the same picture")
+    if not by:                                  # creative directions (batch_by) are exempt: they are wide by design
+        variable = [d for d, v in plan["dimensions"].items() if not (d == "aspect" and len(v) == 1)]
+        if len(variable) > PLANNER_MAX_DIMS:
+            warns.append(f"{len(variable)} variable dimensions ({', '.join(variable)}): the planner works best with 2 to {PLANNER_MAX_DIMS}; "
+                         f"more makes the effect of each one hard to see. Drop the least important or fix some to a single value")
+        wide = [d for d, v in plan["dimensions"].items() if len(v) > PLANNER_MAX_VALUES]
+        if wide:
+            warns.append(f"dimension(s) {', '.join(wide)} have more than {PLANNER_MAX_VALUES} values; 3 or 4 visibly different values is the workable size")
     limited = sorted(m for m in adv.catalog if adv.prompt_limit(m) and worst_chars > adv.prompt_limit(m))
-    if limited:
+    if limited and plan.get("model_strategy", "single") != "single":    # with one auto-picked model the limited ones are never chosen anyway
         warns.append(f"the longest prompt is about {worst_chars:,} characters; {', '.join(limited)} accept at most "
                      f"{adv.prompt_limit(limited[0]):,} and would be refused, so they are not auto-picked")
     if best and adv.prompt_limit(best["model"]) and worst_chars > adv.prompt_limit(best["model"]):
@@ -242,7 +253,7 @@ def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
         if hit:
             warns.append(f'fixed "{key}" mentions {hit[0]}: Fixed text goes into the prompt as written and the model '
                          f'only sees "the reference image", so say "the product in the reference image" instead')
-    if len(valid) > 150:
+    if len(valid) > PLANNER_MAX_VALID and not by:           # creative directions (batch_by) are wide by design
         warns.append(f"{len(valid)} valid combinations is wide; consider fewer dimensions or values "
                      f"(the first batch is still about {len(result['rows'])} rows)")
     plan_dir = Path(plan_dir) if plan_dir else None

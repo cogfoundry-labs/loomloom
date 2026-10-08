@@ -25,6 +25,15 @@ token in `LOOMLOOM_TOKEN_COGFOUNDRY` (an API key from https://console.cogfoundry
 loomloom CLI is **not** used. On Windows set `PYTHONUTF8=1` so non-ASCII text prints (bash: `PYTHONUTF8=1 python scripts/image.py ...`; PowerShell: `$env:PYTHONUTF8=1` once, then `python scripts/image.py ...`). Where the host has no
 `AskUserQuestion` or `SendUserFile`, ask in plain chat and give the file paths instead.
 
+## Start here
+
+First time? Read [`references/quickstart.md`](references/quickstart.md) (one page): which route to take, the five-command loop, the plan file in 30 seconds, what the
+checker enforces for you, and what to show the user. Then **copy a complete example plan** and edit it: `references/examples/variation-plan.json` (a variation
+experiment) or `references/examples/direction-plan.json` (creative directions). Run `check` and the dry run; they say what to fix.
+
+Read the rest of this file as you reach each step, not before: "Rules that always apply" always; "Experiment mode" steps 3 to 8 when you get there; `skills/quick.md` only
+for quick mode; `skills/plan.md` and `skills/direction.md` (about 17 KB each) only for the detail the quickstart points to or when `check` complains.
+
 ## Rules that always apply
 
 1. **One approval per paid batch.** Nothing is spent before the user approves the numbers
@@ -56,69 +65,8 @@ loomloom CLI is **not** used. On Windows set `PYTHONUTF8=1` so non-ASCII text pr
 
 ## Quick mode
 
-```
-PLAN -> QUOTE -> APPROVE -> GENERATE -> RESULTS (+ gallery page) -> adjust?
-```
-
-**1. Capture** the final prompt (from the conversation or a file). No prompt: ask.
-If they want to start from a photo, use experiment mode instead.
-
-**2. Classify** the intent, your one judgement call; the user can correct it. One of:
-`launch / announcement image` · `profile / avatar` · `social post` ·
-`blog hero / article cover` · `poster / flyer` · `infographic / diagram` ·
-`illustration / concept art` · `3D render / isometric illustration` ·
-`product / e-commerce shot` · `generic` (only if nothing fits).
-
-Map count: "just one" 1 · "a couple / two" 2 · nothing said **4** · "lots / deep dive" 8.
-Only 1, 2, 4, 8 exist (5 becomes 4; 6+ becomes 8).
-
-**3. Quote** (writes `ledger.json` and a snapshot, no workbook, spends nothing):
-
-```
-python scripts/image.py quick --prompt "<final prompt>" --intent "<intent>" --count <N> --out ./out
-```
-
-Add `--models "<id>[,<id>]"` only if the user named models; the Advisor never replaces a
-model they asked for. Reuse the same `--out` for a further round of the same subject; a
-different subject gets a fresh `--out`. It prints each row (`r001`...), model, samples,
-price, the total, and a fingerprint. For the score table use
-`python scripts/image.py resolve --intent "<intent>" --count <N> --explain`.
-
-**4. Approve:** `AskUserQuestion` with Generate / Adjust / Stop, naming the real mix and
-total ("Generate 4: Sunburst x2 + Nano Banana 2 x2, about $0.14?"). Adjust goes back to 3.
-
-**5. Generate**, in the background, with a progress file:
-
-```
-python scripts/image.py run --dir ./out --confirm <fingerprint> --progress-file ./out/progress.json
-```
-
-Every ~30 s read the progress file and post a short update (a plain text tree):
-`phase` (`generating` -> `done` or `paused`), `done`, `failed`, `unknown`, `total`,
-`actual_usd_so_far`, and `samples[]` with `id`, `model`, `status`, `progress`, `cost_usd`.
-
-**6. Results.** `run` prints the result and writes `./out/round-N/run.json`; images are
-`./out/round-N/<id>.<ext>` (`r001-1`, `r001-2`, ...; the extension is usually `.png`, but Seedream models
-return `.jpg`, so take the file name from `run.json` or the ledger's `file` field, never assume `.png`). Send each image with
-`SendUserFile`, captioned with id and model; show a table (id, model, time, cost,
-size) and `Actual total vs estimated`. Name any failed, blocked or unknown sample plainly.
-Exit code 0 = all done, 1 = something failed/unknown/unfinished, 2 = refused or busy (nothing
-spent). If it says samples are unfinished, run the same command again: it resumes
-polling and never resubmits.
-
-**7. Gallery page** (free; always build it):
-
-```
-python scripts/build-exploration-page.py --session ./out --inline \
-  --title "<3-5 words>" --subject "<short noun phrase>" \
-  --invocation "<the user's message>" [--selected R001-2]
-```
-
-Labels on the page are the uppercase sample ids (`R001-1`). Publish `index.inline.html`
-as an artifact. Full flags: `references/exploration-page.md`.
-
-**8. Adjust?** Pick a favourite / adjust the prompt for another round / stop. Another
-round re-enters step 3 in full (new quote, new approval).
+One finished prompt, no photo, no variation, a few options: no plan, no workbook. The full steps (capture, classify the intent, quote, approve, generate, results,
+gallery page, adjust) are in [`skills/quick.md`](skills/quick.md). The rules below apply to it too.
 
 ## Experiment mode
 
@@ -196,53 +144,9 @@ preflight afterwards takes the rest. On a fresh clone there is no observed price
 **5. Approve** with `AskUserQuestion` (Generate / Edit the workbook / Stop), naming
 images, models and the known total.
 
-**6. Generate** (background, ~30 s updates as in quick mode):
-
-```
-python scripts/image.py run --dir ./out/<name> --confirm <fingerprint> \
-  --progress-file ./out/<name>/progress.json
-```
-
-**7. Results.** `run` also builds `contact-sheet.html` in the experiment folder (free; rebuild any
-time with `python scripts/image.py sheet --dir ./out/<name> [--rows camera --cols lighting]
-[--selected r003-1]`): every image in a pivot of two dimensions so the effect of each control can be
-compared at a glance, with cost, model, status and the exact prompt one click away. Tell the user
-to open it. `--inline` embeds the images into one shareable file, and is refused for a person
-experiment (those stay local). Images are `round-N/<row>-<k>.<ext>` (read the `file` field in `ledger.json`; Seedream models give `.jpg`). Send them captioned with the row's
-dimension values (read `ledger.json`: `rows[].params`), give a table and the real cost.
-`run` regenerates the workbook with Status, Images (a link) and Cost.
-If the plan has `visual_checks` (`plan.json`), **look at every generated image** and add a
-Checks column to the table: for each image, which of the plan's checks it fails ("text
-present", "no empty space for the headline", "the label changed"). Image models follow "no
-text" and "leave space here" wording only loosely and nothing in the pipeline can see that,
-so these checks are the user's only signal; name failing images plainly, and suggest
-rewording or a retry for them. Do not claim a check passed unless you looked.
-
-For a quick look at the images grouped by one dimension (for example one grid per creative direction) run
-`python scripts/image.py montage --dir ./out/<name> --by direction` (free, needs Pillow); `--blind` writes one shuffled grid with neutral labels and a key file.
-
-**8. Retry and next batch.**
-- `python scripts/image.py retry --dir ./out/<name>` preflights the `Failed`/`Partial`
-  rows for their **missing samples only**, with its own fingerprint and approval, then
-  `run --confirm` as above. It never asks again for a sample that is Completed, still in
-  flight, `Blocked` (the model refused: offer to change the wording instead), `Unknown`
-  (unless `--include-unknown`), or billed but not downloaded (use `recover`, free). A row the
-  user edited after it ran is a new configuration: its earlier images are kept as they were.
-- For a new batch the user edits the workbook (tick rows, change values, add rows) and you
-  preflight again. A row that finished stays ticked unless they untick it.
-- If a result says "image generated but download failed", the image was billed but not saved:
-  run `python scripts/image.py recover --dir ./out/<name>` (free, it re-fetches from the
-  recorded URL; do this soon, the URLs expire). Never resubmit to fix that.
-- `python scripts/image.py refresh --dir ./out/<name>` re-merges their edits and
-  regenerates the workbook (useful after they edited a saved copy).
-
-## Files an experiment folder holds
-
-`plan.json` (the Creative Plan) · `ledger.json` (system of record: rows, batches, every
-attempt with request id, cost, file) · `snapshots/` (approved execution snapshots) ·
-`experiment.xlsx` (a view; never edit it from code) · `round-N/` (images, `progress.json`,
-`run.json`) · `session.json` (derived export). Quick mode writes the same, minus the
-plan and the workbook.
+**6 to 8. Generate, results, retry.** After the user's approval: `run --dir ./out/<name> --confirm <fingerprint> --max-usd <N>` in the background with a progress
+file (about 30 s updates), then results (contact sheet, the plan's `visual_checks` against every image, real cost), then retry, recover and next batch. The commands, the
+`Unknown` and `Blocked` rules and the folder layout are in [`skills/results.md`](skills/results.md). Read it when you reach step 6.
 
 ## What NOT to do
 

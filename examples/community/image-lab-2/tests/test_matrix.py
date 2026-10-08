@@ -179,12 +179,60 @@ class OnlyInTests(unittest.TestCase):
             self.assertIn(word, errs, scope)
 
 
+class PlannerLimitWarnings(unittest.TestCase):
+    """The planner's limits (4 variable dimensions, about 150 combinations) are a dry-run warning, not a refusal."""
+    def warns(self, plan):
+        import experiment as ex
+        return [w for w in ex.preview_plan(plan)["warnings"] if "variable dimensions" in w or "valid combinations" in w or "more than 4 values" in w]
+
+    def wide(self):
+        return make_plan(dimensions={d: [f"{d}{i}" for i in range(4)] for d in "abcdef"})
+
+    def test_too_many_dimensions_and_combinations_warn_but_the_plan_is_still_valid(self):
+        plan = self.wide()
+        self.assertEqual(mx.validate_plan(plan), [])
+        w = " ".join(self.warns(plan))
+        self.assertIn("6 variable dimensions", w)
+        self.assertIn("4096 valid combinations", w)
+
+    def test_a_single_value_aspect_does_not_count_and_a_normal_plan_is_quiet(self):
+        plan = make_plan(dimensions={"environment": ["a", "b", "c"], "camera": ["x", "y", "z"], "aspect": ["4:5"]})
+        self.assertEqual(self.warns(plan), [])
+
+    def test_creative_directions_with_batch_by_are_exempt(self):
+        plan = self.wide()
+        plan["batch_by"] = "a"
+        self.assertEqual(self.warns(plan), [])
+
+    def test_more_than_four_values_in_one_dimension_warns(self):
+        plan = make_plan(dimensions={"environment": [f"e{i}" for i in range(6)], "camera": ["x", "y", "z"]})
+        self.assertIn("more than 4 values", " ".join(self.warns(plan)))
+
+
+class LongPromptWarning(unittest.TestCase):
+    def warns(self, **over):
+        import experiment as ex
+        plan = make_plan(prompt={"text_prefix": "A long opening sentence. " * 40}, **over)
+        return " ".join(ex.preview_plan(plan)["warnings"])
+
+    def test_the_models_that_would_refuse_a_long_prompt_are_only_mentioned_when_they_could_be_picked(self):
+        self.assertNotIn("would be refused", self.warns())                              # one auto-picked model: they are never chosen
+        self.assertIn("would be refused", self.warns(model_strategy="spread"))
+
+
 class ExamplePlanTests(unittest.TestCase):
     def test_the_shipped_direction_plan_is_valid_and_has_no_hand_written_excludes(self):
         plan = mx.load_plan(Path(__file__).resolve().parent.parent / "references" / "examples" / "direction-plan.json")
         self.assertEqual(plan.get("constraints", []), [])
         dims = {d: [mx.value_name(v) for v in vs] for d, vs in plan["dimensions"].items()}
         self.assertEqual(len(mx.enumerate_valid(dims, mx.excludes(plan))), 72)
+
+    def test_the_shipped_variation_plan_is_valid_quiet_and_passes_the_planner_rules(self):
+        import experiment as ex
+        import planner_eval as pe
+        plan = mx.load_plan(Path(__file__).resolve().parent.parent / "references" / "examples" / "variation-plan.json")
+        self.assertEqual(pe.check_plan(plan, pe.load_briefs()["banner-aspect"]["expect"]), [])
+        self.assertEqual([w for w in ex.preview_plan(plan)["warnings"] if "variable dimensions" in w or "valid combinations" in w], [])
 
     def test_a_misspelled_catalog_dimension_gets_a_did_you_mean(self):
         import experiment as ex
