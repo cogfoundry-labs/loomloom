@@ -93,6 +93,64 @@ class Plan(Base):
             self.assertEqual(cams, {"eye-level front", "three-quarter high", "low angle"})   # each model covered
 
 
+class IndicativePrice(unittest.TestCase):
+    HINTS = {"measured": __import__("datetime").date.today().isoformat(), "usd_per_image": {"m|1024x1536|q=medium": 0.01, "m|1152x1440|q=medium": 0.02, "m|1024x1536|q=high": 0.09}}
+
+    def test_an_exact_hint_gives_a_single_figure_and_a_safe_limit(self):
+        r = pf.indicative(["m|1024x1536|q=medium"] * 4, self.HINTS)
+        self.assertEqual((r["low"], r["high"], r["rows"]), (0.04, 0.04, 4))
+        self.assertEqual(r["max_usd"], 0.06)                            # 1.5 x 0.04, never below 0.05
+
+    def test_an_unmatched_size_gives_the_range_for_that_model_and_quality_only(self):
+        r = pf.indicative(["m|default|q=medium"] * 2, self.HINTS)
+        self.assertEqual((r["low"], r["high"]), (0.02, 0.04))            # not the q=high price
+        self.assertEqual(r["max_usd"], 0.06)
+
+    def test_reference_and_auto_quality_rows_get_no_range(self):
+        self.assertIsNone(pf.indicative(["m|default|q=medium|reference"], self.HINTS))        # a reference call bills about 3.4x
+        self.assertIsNone(pf.indicative(["m|default"], self.HINTS))                           # auto quality bills differently
+        self.assertIsNone(pf.indicative(["m|1024x1536|q=medium", "m|default|reference"], self.HINTS))   # one unhintable row: no total
+        exact = dict(self.HINTS, usd_per_image={**self.HINTS["usd_per_image"], "m|default|q=medium|reference": 0.05})
+        self.assertEqual(pf.indicative(["m|default|q=medium|reference"], exact)["high"], 0.05)   # an exact reference hint is fine
+
+    def test_old_or_undated_hints_are_not_shown(self):
+        old = dict(self.HINTS, measured="2020-01-01")
+        self.assertIsNone(pf.indicative(["m|1024x1536|q=medium"], old))
+        self.assertIsNone(pf.indicative(["m|1024x1536|q=medium"], dict(self.HINTS, measured="soon")))
+
+    def test_the_price_key_matches_the_observed_price_keys(self):
+        self.assertEqual(pf.price_key("m", "1024x1536", "medium", "text"), "m|1024x1536|q=medium")
+        self.assertEqual(pf.price_key("m", None, "auto", "text"), "m|default")
+        self.assertEqual(pf.price_key("m", None, None, "reference"), "m|default|reference")
+        self.assertEqual(pf.price_key("m", "1K", "high", "reference"), "m|1K|q=high|reference")
+
+    def test_no_matching_model_or_no_hints_gives_nothing(self):
+        self.assertIsNone(pf.indicative(["other|default|q=medium"], self.HINTS))
+        self.assertIsNone(pf.indicative(["m|default"], {}))
+
+    def test_the_report_prints_the_hint_but_keeps_it_out_of_the_known_total(self):
+        rep = {"ready": 4, "selected": 32, "issues": [], "images": 4, "models": ["m"], "references": [], "by_model": {"m": 4}, "known_usd": 0.0,
+               "unverified_rows": ["r1"] * 4, "warnings": [], "info": [], "merge_warnings": [], "workbook_saved": None, "fingerprint": "abc",
+               "coverage": 0.99, "subset": True, "indicative": pf.indicative(["m|1024x1536|q=medium"] * 4, self.HINTS), "retry": False}
+        text = pf.format_report(rep)
+        self.assertIn("$0.0000 known", text)
+        self.assertIn("Indicative:         about $0.04", text)
+        self.assertIn("--max-usd 0.06", text)
+        self.assertIn("this batch is a subset", text)
+        self.assertIn("all ticked rows, not only this subset", text)
+
+    def test_the_shipped_hints_file_loads(self):
+        self.assertTrue(pf.load_price_hints()["usd_per_image"])
+
+    def test_the_target_note_says_what_happened_to_the_target(self):
+        r = {"by": "direction"}
+        self.assertIn("rounded up", ex._target_note({"target": 30, "recommended": 32}, r))
+        self.assertIn("only 20 images exist for a target of 30", ex._target_note({"target": 30, "recommended": 20}, r))
+        self.assertEqual(ex._target_note({"target": 30, "recommended": 30}, r), "your target of 30: ")
+        self.assertEqual(ex._target_note({"target": 0, "recommended": 12}, r), "")
+        self.assertEqual(ex._target_note({"recommended": 12}, r), "")
+
+
 class Preflight(Base):
     def test_ready_rows_snapshot_and_fingerprint(self):
         self.build()

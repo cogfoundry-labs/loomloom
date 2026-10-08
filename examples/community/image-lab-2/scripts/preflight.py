@@ -83,6 +83,59 @@ def snapshot_fingerprint(snap: dict) -> str:
 MAX_REFERENCE_BYTES = 20 * 1024 * 1024
 
 
+def price_key(model: str, token, quality, mode: str) -> str:
+    """The key an observed or hinted price is stored under: model, size token, explicit quality, reference mode."""
+    return (f"{model}|{token or 'default'}" + (f"|q={quality}" if quality and quality != "auto" else "")
+            + ("|reference" if mode == "reference" else ""))
+
+
+PRICE_HINTS_FILE = Path(__file__).resolve().parent.parent / "references" / "price-hints.json"
+HINT_MAX_AGE_DAYS = 180
+
+
+def load_price_hints(path=None) -> dict:
+    try:
+        return json.loads(Path(path or PRICE_HINTS_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _hints_fresh(hints: dict) -> bool:
+    """A hint older than HINT_MAX_AGE_DAYS (or with no readable date) is not shown: prices change and nothing else expires it."""
+    import datetime
+    try:
+        age = (datetime.date.today() - datetime.date.fromisoformat(str(hints.get("measured")))).days
+    except ValueError:
+        return False
+    return 0 <= age <= HINT_MAX_AGE_DAYS
+
+
+def indicative(keys: list[str], hints: dict | None = None) -> dict | None:
+    """An indicative price range for rows whose real price is unknown (never part of a quote): an exact hint for the row's
+    model, size and quality, else the range over the hints for that model and quality. None when nothing matches."""
+    hints = hints if hints is not None else load_price_hints()
+    table = hints.get("usd_per_image") or {}
+    if not keys or not table or not _hints_fresh(hints):
+        return None
+    lo = hi = 0.0
+    for key in keys:
+        if key in table:
+            lo += table[key]
+            hi += table[key]
+            continue
+        parts = key.split("|")
+        q = next((part for part in parts[1:] if part.startswith("q=")), None)
+        if q is None or "reference" in parts:        # no explicit quality ("auto" bills differently) or a reference call (about 3.4x): no hint
+            return None
+        near = [v for k, v in table.items() if k.split("|")[0] == parts[0] and q in k.split("|") and "reference" not in k.split("|")]
+        if not near:
+            return None
+        lo += min(near)
+        hi += max(near)
+    return {"low": round(lo, 4), "high": round(hi, 4), "measured": hints.get("measured"), "rows": len(keys),
+            "max_usd": max(0.05, round(-(-hi * 1.5 * 100 // 1) / 100, 2))}
+
+
 def reference_problem(exp_dir: Path, rel: str) -> str | None:
     """Why this reference file cannot be sent, or None. Confined to the experiment folder."""
     p = (Path(exp_dir) / rel).resolve()
@@ -228,10 +281,10 @@ class Advisor:
         and the catalog's flat figure is never used for it."""
         entry = self.catalog[model]
         if quality and quality != "auto":
-            key = f"{model}|{size['token'] or 'default'}|q={quality}" + ("|reference" if mode == "reference" else "")
+            key = price_key(model, size["token"], quality, mode)
             return (self.observations[key], "observed") if key in self.observations else (None, "unverified")
         if mode == "reference":
-            key = f"{model}|{size['token'] or 'default'}|reference"
+            key = price_key(model, size["token"], None, mode)
             if key in self.observations:
                 return self.observations[key], "observed"
             p = (ref_support.get(model) or {}).get("usd_per_image_reference")
@@ -290,6 +343,7 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
     ref_models = (ref_models - changed) or ref_models        # never auto-pick a model that altered the product
     rows_out, snapshot_rows, prompts = [], [], {}
     unverified, known_total = [], 0.0
+    unverified_keys: list[str] = []
     models_used, refs_used = set(), set()
     seen_sigs: dict = {}
     by_model: dict[str, int] = {}
@@ -516,6 +570,7 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
         refs_used.update(e["file"] for e in ref_entries)
         if row_usd is None:
             unverified.append(rid)
+            unverified_keys.append(price_key(chosen, size["token"], row_quality, mode))
         else:
             known_total += row_usd
         for n in notes:
@@ -556,7 +611,7 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
         "ready": len(snapshot_rows), "selected": sum(1 for r in ledger["rows"] if r.get("selected") and r["status"] != "Removed"),
         "images": sum(r["qty"] for r in snapshot_rows), "models": sorted(models_used),
         "references": sorted(refs_used), "known_usd": round(known_total, 6), "unverified_rows": unverified,
-        "retry": retry, "by_model": by_model,
+        "retry": retry, "by_model": by_model, "indicative": indicative(unverified_keys), "subset": subset is not None,
         "fingerprint": fp if snapshot_rows else None, "snapshot": snapshot,
         "prompts": prompts, "workbook_written": wrote_workbook,
     })
@@ -600,7 +655,8 @@ def format_report(r: dict) -> str:
         return "\n".join(L)
     if r["workbook_saved"]:
         L.append(f"Workbook saved:     {r['workbook_saved']}   (save it again and re-run if you changed it since)")
-    L.append(f"Rows selected:      {r['selected']}   Ready: {r['ready']}   Issues: {len(r['issues'])}")
+    L.append(f"Rows selected:      {r['selected']}   Ready: {r['ready']}   Issues: {len(r['issues'])}"
+             + ("   (this batch is a subset of the ticked rows; the others stay ticked)" if r.get("subset") else ""))
     L.append(f"Images:             {r['images']}   Models: {len(r['models'])}   Reference assets: {len(r['references'])}")
     for m, n in sorted(r.get("by_model", {}).items()):
         L.append(f"  {m}: {n} image(s)")
@@ -610,9 +666,15 @@ def format_report(r: dict) -> str:
     L.append(f"Estimated cost:     {cost}")
     if r["unverified_rows"]:
         L.append("Price basis:        no observed price yet for these rows; pass --max-usd <N> to `run` (the first image sets the price)")
+        ind = r.get("indicative")
+        if ind:
+            rng = f"${ind['low']:.2f}" if ind["low"] == ind["high"] else f"${ind['low']:.2f} to ${ind['high']:.2f}"
+            L.append(f"Indicative:         about {rng} for these {ind['rows']} row(s), from prices measured {ind['measured']} for this model at this quality "
+                     f"(a hint, not a quote). A safe limit: --max-usd {ind['max_usd']:.2f}")
     L.append("Balance:            unread (the gateway will confirm)")
     if r.get("coverage") is not None:
-        L.append(f"Pairwise coverage:  {r['coverage'] * 100:.0f}% of valid pairs (selected rows)")
+        L.append(f"Pairwise coverage:  {r['coverage'] * 100:.0f}% of valid pairs ("
+                 + ("all ticked rows, not only this subset)" if r.get("subset") else "selected rows)"))
     if r["issues"]:
         L.append("\nIssues (these rows are not included):")
         for i in r["issues"]:

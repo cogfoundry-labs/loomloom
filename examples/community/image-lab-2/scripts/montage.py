@@ -98,8 +98,8 @@ def build(exp_dir, by: str | None = None, cols: int = 6, thumb: int = 320, blind
 
 def add_args(ap) -> None:
     ap.add_argument("--dir", required=True, help="the experiment folder")
-    ap.add_argument("--by", default=None, help="a dimension: one grid per value (for example direction)")
-    ap.add_argument("--cols", type=int, default=6)
+    ap.add_argument("--by", default=None, help="a dimension of the experiment: one grid per value of it (for example direction); without it, one grid of everything")
+    ap.add_argument("--cols", type=int, default=6, help="images per row in each grid (default 6)")
     ap.add_argument("--thumb", type=int, default=320, help="thumbnail width in pixels")
     ap.add_argument("--blind", action="store_true", help="one shuffled grid with neutral labels S01... and a key file")
     ap.add_argument("--out", default=None, help="output folder (default <dir>/montage)")

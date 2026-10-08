@@ -1,0 +1,9 @@
+{
+ "_note": "Indicative prices (USD per image) measured on the CogFoundry gateway, used ONLY to print an indicative range on a fresh clone where no price has been observed yet. They are never folded into a quote or a total. An observed price in references/price-observations.json (written by real runs) always wins. A hint is shown only for text-to-image rows with an explicit quality (never for reference calls or 'auto' quality, which bill differently), and is ignored 180 days after the measured date.",
+ "measured": "2026-10-08",
+ "usd_per_image": {
+  "openai/gpt-image-2.5-sunburst|1024x1536|q=medium": 0.011145,
+  "openai/gpt-image-2.5-sunburst|1024x1280|q=medium": 0.014752,
+  "openai/gpt-image-2.5-sunburst|1152x1440|q=medium": 0.0162
+ }
+}

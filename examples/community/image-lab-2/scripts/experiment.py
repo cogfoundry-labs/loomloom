@@ -125,7 +125,7 @@ def build_experiment(plan_path, out_dir, target: int = 30, dry_run: bool = False
         ledger["experiment"]["main_workbook_rows"] = [r["id"] for r in ledger["rows"]]
         lg.save(out / "ledger.json", ledger)
     return {"plan": plan, "result": result, "valid": len(valid), "rows_written": len(ledger["rows"]),
-            "recommended": len(recommended), "takes": takes, "estimate": est, "workbook": wb, "dims": dims}
+            "recommended": len(recommended), "target": target, "takes": takes, "estimate": est, "workbook": wb, "dims": dims}
 
 
 def il_shape_q(entry: dict) -> list:
@@ -275,7 +275,7 @@ def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
         role = (plan.get("references") or [{}])[0].get("role") if ids else None
         sample = cp.compile_prompt(plan, {d: v for d, v in row.items() if v}, mode, cat, role)["prompt"]
     return {"plan": plan, "result": result, "valid": len(valid), "rows_written": 0,
-            "recommended": len(result["rows"]), "takes": takes, "dims": dims, "dry_run": True, "workbook": None,
+            "recommended": len(result["rows"]), "target": target, "takes": takes, "dims": dims, "dry_run": True, "workbook": None,
             "estimate": {"known_usd": known, "unverified_rows": list(range(unpriced))},
             "model": best["model"] if best else None, "warnings": warns,
             "price_each": each, "price_basis": basis, "sample_prompt": sample, "mode": mode,
@@ -286,6 +286,18 @@ def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
                       for d, vals in plan["dimensions"].items() for v in vals if isinstance(v, dict)
                       and (v.get("wildcard") is True or v.get("relaxes"))],
             "quality": plan.get("quality") if plan.get("quality") not in (None, "auto") else None}
+
+
+def _target_note(s: dict, r: dict) -> str:
+    """What happened to the user's target when the batch is split evenly across a dimension."""
+    t, rec = s.get("target"), s["recommended"]
+    if not t or t <= 0:
+        return ""
+    if rec > t:
+        return f"your target of {t} is rounded up to an equal share per value of {r['by']}: "
+    if rec < t:
+        return f"only {rec} images exist for a target of {t} (fewer valid combinations); "
+    return f"your target of {t}: "
 
 
 def format_plan_summary(s: dict) -> str:
@@ -305,7 +317,7 @@ def format_plan_summary(s: dict) -> str:
         f"Covers:              {covers}",
         (f"Why {s['recommended']}:".ljust(21) + f"every pair of values appears at least once ({r['covering_min']} needed); "
          f"the rest is spare") if not r.get("strata") else
-        (f"Why {s['recommended']}:".ljust(21) + f"split evenly across {r['by']} ("
+        (f"Why {s['recommended']}:".ljust(21) + _target_note(s, r) + f"split evenly across {r['by']} ("
          + ", ".join(f"{v}: {x['rows']}" for v, x in r["strata"].items()) + "), each with its own covering design; "
          + ("; ".join(f"{v} has NO valid combination and gets no images" for v, x in r["strata"].items() if x.get("empty")) + "; "
             if any(x.get("empty") for x in r["strata"].values()) else "")
