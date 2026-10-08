@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sys
 import time
 from pathlib import Path
 
@@ -34,6 +35,7 @@ TASK_OF_STEP = {"Creative Direction": "direction", "Plan writing": "plan", "Resu
 STEP_NEEDS_IMAGES = {"Result review"}
 
 STRONG_LEVEL, GOOD_LEVEL = 0.8, 0.6          # internal: a score becomes the words Strong / Good / Limited; users never see the numbers
+TIE_TOLERANCE = 0.05                          # an alternative within this of the host's score counts as 'at your level'
 MIN_BRIEFS, MIN_REPEATS = 3, 2               # what a "strong" comparison needs at least
 
 
@@ -180,7 +182,7 @@ def advise(host_name: str | None, models: list[dict], records: list[dict], can_r
         better = sorted((a for a in alts if (not host or a["score"] > host["score"])), key=lambda a: -a["score"])
         alt = better[0] if better else None
         # models measured at the same level as the host (or higher is "better" above): the cheapest of them is worth knowing about
-        ties = sorted((a for a in alts if host and a["score"] <= host["score"] and a["score"] >= host["score"] - max(host["spread"], a["spread"])),
+        ties = sorted((a for a in alts if host and a["score"] <= host["score"] and a["score"] >= host["score"] - TIE_TOLERANCE),
                       key=lambda a: (a.get("cost_per_use") is None, a.get("cost_per_use") or 0)) if host else []
         tier = comparison_tier(host, alt) if alt else "insufficient"
         host_level = level(host["score"] if host else None)
@@ -1019,6 +1021,197 @@ def run_vision_command(models: list[dict], confirm: str | None, names: tuple | N
 
 
 # --------------------------------------------------------------------------- #
+# the plan-writing evaluation (P1b, plan): each model turns the planner-eval briefs into plan.json by following skills/plan.md;
+# the plan is scored by scripts/planner_eval.py (the same mechanical rules the planner skill has been tested with)
+# --------------------------------------------------------------------------- #
+PLAN_MODELS = ("openai/gpt-5.6-luna", "google/gemini-3-flash", "openai/gpt-5.4-mini", "openai/gpt-5.4", "anthropic/claude-sonnet-5")
+PLAN_RUNS = 2
+PLAN_MAX_TOKENS = 6000
+PLAN_EXPECTED_OUT = 2500
+PLAN_CEILING_OUT = 6000
+PLAN_OUT_DIR = ROOT / "out" / "llm-fit" / "plans"
+PLAN_FILE = FIT_DIR / "plan-evals.jsonl"
+PLAN_INSTRUCTIONS = (
+    "You are the planning assistant of Image Lab 2. Follow the skill below exactly. You have no tools: you cannot run commands, read files or ask the "
+    "user anything, so skip any step that needs one (the starter vocabulary the skill tells you to look up with `controls` is included below). "
+    "Decide, and note any assumption in one line. Reply with the complete plan.json in ONE ```json block. If the brief should go to quick mode "
+    "(the skill says when), reply with the single block ```json\n{\"route\": \"quick\"}\n``` instead. At most five lines of notes outside the block.")
+_CONTROLS_TEXT: list[str] = []
+
+
+def _controls_text() -> str:
+    if not _CONTROLS_TEXT:
+        import os
+        import subprocess
+        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "image.py"), "controls"], capture_output=True, text=True, encoding="utf-8",
+                           env={**os.environ, "PYTHONUTF8": "1"})
+        _CONTROLS_TEXT.append(r.stdout)
+    return _CONTROLS_TEXT[0]
+
+
+def plan_eval_prompt(brief_id: str, root: Path = ROOT) -> str:
+    import planner_eval as pe
+    brief = pe.load_briefs()[brief_id]["brief"]
+    skill = (root / "skills" / "plan.md").read_text(encoding="utf-8")
+    schema = (root / "references" / "plan-schema.md").read_text(encoding="utf-8")
+    return (f"{PLAN_INSTRUCTIONS}\n\n=== SKILL ===\n{skill}\n\n=== PLAN SCHEMA ===\n{schema}\n\n=== INTENT NAMES ===\n" + "\n".join(pe.INTENTS)
+            + f"\n\n=== THE CONTROLS VOCABULARY (output of `controls`) ===\n{_controls_text()}\n\n=== THE USER'S BRIEF ===\n{brief}")
+
+
+def plan_checks(reply: str, brief_id: str) -> dict:
+    """Score one reply against the planner-eval expectations for its brief. passed = no failures."""
+    import planner_eval as pe
+    plan, err = _json_block(reply)
+    if plan is None:
+        return {"passed": False, "fails": [err]}
+    try:
+        fails = pe.check_plan(plan, pe.load_briefs()[brief_id]["expect"])
+    except Exception as e:                                  # noqa: BLE001  a plan that crashes the checker is a failed plan, not a crash
+        fails = [f"the plan could not be checked: {str(e)[:120]}"]
+    return {"passed": not fails, "fails": fails}
+
+
+def plan_reply_path(model: str, brief: str, run: int, out_dir: Path | None = None) -> Path:
+    return (out_dir or PLAN_OUT_DIR) / f"{model.replace('/', '__')}__{brief}__r{run}.md"
+
+
+def plan_quote(models: list[dict], names: tuple | None = None, runs: int = PLAN_RUNS, budget: float | None = None) -> dict:
+    import planner_eval as pe
+    briefs = list(pe.load_briefs())
+    prompts = {b: plan_eval_prompt(b) for b in briefs}
+    calls = []
+    for name in (names or PLAN_MODELS):
+        m = next((x for x in models if x["api_name"] == name), None) or {}
+        pin, pout = m.get("input_price"), m.get("output_price")
+        if pin is None or pout is None:
+            calls.append({"model": name, "calls": 0, "expected": 0.0, "max": 0.0, "unpriced": True})
+            continue
+        exp = mx_ = 0.0
+        for b, p in prompts.items():
+            exp += runs * (len(p) / 4.2 * pin + PLAN_EXPECTED_OUT * pout) / 1e6
+            mx_ += runs * (len(p) / 3.0 * pin + PLAN_CEILING_OUT * pout) / 1e6
+        calls.append({"model": name, "calls": runs * len(briefs), "expected": round(exp, 4), "max": round(mx_, 4), "unpriced": False})
+    fp = hashlib.sha256((json.dumps(calls, sort_keys=True) + str(runs) + str(budget) + "".join(hashlib.sha256(p.encode()).hexdigest() for p in prompts.values())).encode()).hexdigest()[:12]
+    return {"calls": calls, "runs": runs, "briefs": briefs, "budget": budget, "expected_usd": round(sum(c["expected"] for c in calls), 3),
+            "max_usd": round(sum(c["max"] for c in calls), 3), "fingerprint": fp, "unpriced": [c["model"] for c in calls if c["unpriced"]]}
+
+
+def run_plan_eval(quote: dict, confirm: str, models: list[dict], names: tuple | None = None, post=None, out_dir: Path | None = None,
+                  workers: int = 4, budget: float | None = None) -> dict:
+    from concurrent.futures import ThreadPoolExecutor
+    import threading
+    if confirm != quote["fingerprint"] or quote["fingerprint"] != plan_quote(models, names, quote["runs"], quote.get("budget"))["fingerprint"]:
+        raise PermissionError("the confirmation does not match the quote: nothing was sent")
+    if post is None:
+        import image as il
+        tok = il.token()
+
+        def post(body):
+            return stream_chat(tok, body)
+    prompts = {b: plan_eval_prompt(b) for b in quote["briefs"]}
+    price = {m["api_name"]: (m.get("input_price"), m.get("output_price")) for m in models}
+    budget = (quote.get("budget") or quote["max_usd"]) if budget is None else budget
+    per_call_max = {c["model"]: (c["max"] / c["calls"] if c["calls"] else 0.0) for c in quote["calls"]}
+    lock = threading.Lock()
+    committed = [0.0]
+    jobs = [(c["model"], b, run) for c in quote["calls"] if not c["unpriced"] for b in quote["briefs"] for run in range(1, quote["runs"] + 1)]
+
+    def one(job):
+        model, brief, run = job
+        with lock:
+            if committed[0] + per_call_max[model] > budget:
+                return {"model": model, "brief": brief, "run": run, "status": "skipped", "error": "budget", "passed": None, "fails": None, "implied_usd": None}
+            committed[0] += per_call_max[model]
+        t0 = time.time()
+        status, js, err = post({"model": model, "max_tokens": PLAN_MAX_TOKENS, "messages": [{"role": "user", "content": prompts[brief]}]})
+        reply = (((js or {}).get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+        usage = (js or {}).get("usage") or {}
+        pin, pout = price.get(model, (None, None))
+        implied = round(((usage.get("prompt_tokens") or 0) * pin + (usage.get("completion_tokens") or 0) * pout) / 1e6, 5) if pin is not None and usage else None
+        with lock:
+            committed[0] += (implied if implied is not None else 0.0) - per_call_max[model]
+        path = plan_reply_path(model, brief, run, out_dir)
+        if reply:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(reply, encoding="utf-8")
+        ck = plan_checks(reply, brief) if reply else {"passed": False, "fails": ["no reply" + (f" ({err})" if err else "")]}
+        return {"model": model, "brief": brief, "run": run, "status": status, "error": err, "seconds": round(time.time() - t0, 1), "usage": usage,
+                "implied_usd": implied, "passed": ck["passed"], "fails": ck["fails"][:4]}
+
+    before = _live_spend()
+    with ThreadPoolExecutor(max_workers=workers) as ex_:
+        results = list(ex_.map(one, jobs))
+    after = _live_spend()
+    PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with PLAN_FILE.open("a", encoding="utf-8") as f:
+        for r in results:
+            f.write(json.dumps({"at": time.strftime("%Y-%m-%dT%H:%M:%S"), **r}, ensure_ascii=False) + "\n")
+    return {"results": results, "summary": summarize_plan_results(results), "settled_delta_usd": None if before is None or after is None else round(after - before, 4)}
+
+
+def summarize_plan_results(results: list[dict]) -> dict:
+    """Per model: the share of briefs whose plan passed, per run, the mean, and the spread between runs."""
+    out: dict = {}
+    for model in sorted({r["model"] for r in results}):
+        runs = {}
+        for r in results:
+            if r["model"] == model and r["passed"] is not None:
+                runs.setdefault(r["run"], []).append(1.0 if r["passed"] else 0.0)
+        per_run = {k: sum(v) / len(v) for k, v in runs.items()}
+        if per_run:
+            vals = list(per_run.values())
+            out[model] = {"score": round(sum(vals) / len(vals), 3), "per_run": {k: round(v, 3) for k, v in sorted(per_run.items())},
+                          "spread": round(max(vals) - min(vals), 3), "briefs": len({r["brief"] for r in results if r["model"] == model}),
+                          "repeats": len(per_run), "cost": round(sum(r["implied_usd"] or 0 for r in results if r["model"] == model), 4),
+                          "failed": sorted({f"{r['brief']}" for r in results if r["model"] == model and r["passed"] is False})}
+    return out
+
+
+def run_plan_command(models: list[dict], confirm: str | None, names: tuple | None = None, budget: float | None = None) -> str:
+    q = plan_quote(models, names, budget=budget)
+    lines = [f"PLAN-WRITING QUOTE (each model turns the {len(q['briefs'])} planner-eval briefs into plan.json by following skills/plan.md, {q['runs']} runs each; streamed; "
+             f"scored by scripts/planner_eval.py)"]
+    for c in q["calls"]:
+        lines.append(f"  {c['model']:<30} {c['calls']} call(s): expected about ${c['expected']:.2f}, at most ${c['max']:.2f}" if not c["unpriced"]
+                     else f"  {c['model']}: not priced in the listing (skipped)")
+    lines.append(f"Total: expected about ${q['expected_usd']:.2f}, ceiling ${q['max_usd']:.2f} (listed prices, USD per million tokens; the ceiling assumes every call "
+                 f"spends {PLAN_CEILING_OUT:,} output tokens, reasoning included).")
+    lines.append(f"Spending cap for this run: ${q['budget'] if q['budget'] else q['max_usd']:.2f}: each call's ceiling is reserved before sending and a call that could pass the cap is skipped.")
+    lines.append("It sends the planner skill, the plan schema, the controls vocabulary and one invented brief per call to each model's provider; nothing from your project.")
+    if not confirm:
+        lines.append(f"Fingerprint: {q['fingerprint']}   (run again with --confirm {q['fingerprint']} after you approve the cost)")
+        return "\n".join(lines)
+    res = run_plan_eval(q, confirm, models, names)
+    for model, d in sorted(res["summary"].items(), key=lambda kv: -kv[1]["score"]):
+        lines.append(f"  {model:<30} score {d['score']:.2f}  per run {d['per_run']}  failing briefs {d['failed']}  cost ${d['cost']:.3f}")
+    lines.append(f"Replies in {PLAN_OUT_DIR.relative_to(ROOT)}; per-call details in {PLAN_FILE.relative_to(ROOT)}.")
+    return "\n".join(lines)
+
+
+def score_plans_command(directory: str) -> str:
+    """Free: score saved replies named <label>__<brief>__r<k>.md (for example the default model's runs) with the same checks."""
+    import re as _re
+    rows: dict = {}
+    for p in sorted(Path(directory).glob("*__*__r*.md")):
+        m = _re.match(r"^(.*)__([a-z\-]+)__r(\d+)$", p.stem)
+        if not m:
+            continue
+        label, brief, run = m.group(1), m.group(2), int(m.group(3))
+        ck = plan_checks(p.read_text(encoding="utf-8"), brief)
+        rows.setdefault(label, []).append((brief, run, ck))
+    lines = []
+    for label, rs in rows.items():
+        per_run: dict = {}
+        for brief, run, ck in rs:
+            per_run.setdefault(run, []).append(1.0 if ck["passed"] else 0.0)
+        lines.append(f"{label}: " + "  ".join(f"run {k}: {sum(v) / len(v):.2f} ({int(sum(v))}/{len(v)})" for k, v in sorted(per_run.items())))
+        for brief, run, ck in rs:
+            if not ck["passed"]:
+                lines.append(f"    r{run} {brief}: " + "; ".join(ck["fails"][:3]))
+    return "\n".join(lines) or "no replies found"
+
+
+# --------------------------------------------------------------------------- #
 # the result-review benchmark (free scoring; the gateway runner is separate)
 # --------------------------------------------------------------------------- #
 def score_vision_command(files: list[str]) -> str:
@@ -1059,6 +1252,11 @@ def run(args) -> str:
             lines.append(f"  {r['id']:<7} status {r['status']}  {r['seconds']}s  usage {json.dumps(r['usage'])}  extra {json.dumps(r['extra'])[:120]}")
         lines.append(f"Recorded in {PROBES_FILE.relative_to(ROOT)}. Read the usage to confirm the price unit and how an image is charged.")
         return "\n".join(lines)
+    if getattr(args, "score_plans", None):
+        return score_plans_command(args.score_plans)
+    if getattr(args, "plan_eval", False):
+        names = tuple(x.strip() for x in args.plan_models.split(",") if x.strip()) if getattr(args, "plan_models", None) else None
+        return run_plan_command(models, getattr(args, "confirm", None), names, getattr(args, "budget", None))
     if getattr(args, "vision_eval", False):
         names = tuple(x.strip() for x in args.vision_models.split(",") if x.strip()) if getattr(args, "vision_models", None) else None
         return run_vision_command(models, getattr(args, "confirm", None), names, getattr(args, "budget", None))
