@@ -106,8 +106,9 @@ A direction's **defining traits are fixed**; they live in its own wording. Vary 
 - Levers come from the brief's own lists first, then a standard set: composition, movement or pose, color accent, graphic language, typography treatment,
   texture or light. Give values wording that states the visible result, with the proportions the brief uses (negative space, element counts, type scale); strong
   concrete cues are seen, mild ones are not.
-- Mark where a value belongs to **one direction only**. Until value scoping exists, express this as `constraints` (`exclude` of a value in the directions it
-  does not belong to). Every excluded pair must name values that exist.
+- Mark where a value belongs to **one direction only** with `only_in` on the value: `{"value": "camera low in the books", "fragment": "...",
+  "only_in": {"direction": ["2 Reading fort"]}}` means it is never combined with another direction. Every name in `only_in` must exist (`check` refuses
+  unknown ones). Use `constraints` (`exclude`) only for pairs `only_in` cannot say.
 - Keep the total workable: the plan may have more than four variable dimensions and more than 150 valid combinations here (the direction dimension multiplies
   the rest), and the batch is chosen per direction (below). The hard limits are the validity ones (`check`), not the planner's usual four.
 - A single-value `aspect` is not a variable and does not count.
@@ -139,6 +140,10 @@ A direction's **defining traits are fixed**; they live in its own wording. Vary 
 One message with: the **Said / Inferred / Brand assumptions / Open gaps** table; the **direction cards** (name, one-line idea, the insight it serves, what makes it
 different, keep out, the copy, and the one "wildcard, relaxes: ... (needs your OK)" mark if there is a wildcard); the **traits table** (ground, medium, layout, type, density and palette per direction, from the plan's `traits`); the **Direction 1 coverage line** (how many of the brief's specifics are kept and what was compressed); for each direction **what is fixed and what varies**; the dry-run numbers (images per direction, model, size, price basis,
 limits); and that **the first spend is a calibration with one image per direction**, which doubles as the check that the directions really look different.
+The calibration needs no second plan: create the experiment with the full target, run `preflight --dir <experiment> --one-per direction` (it prices only the
+first ticked row of each direction; the other ticked rows stay ticked), show that quote and get one approval, `run` it, look at the images (a montage or the
+workbook), fix any direction that came out alike, and only then run a plain `preflight` for the rest. On a fresh clone there may be no observed price yet: the
+quote then says "unverified", so pass `--max-usd` to `run` and let the first image set the price.
 Say plainly that image models follow wording loosely, so the first batch is how you find out. Ask for **one** confirmation or edits, in one turn.
 Show the full lever matrix only if asked.
 
@@ -149,17 +154,21 @@ Show the full lever matrix only if asked.
 - Do not claim a direction is "exactly as you wrote it" unless it is word for word.
 - Do not pad to the requested count with near-duplicates.
 - Do not leave a keep-out line empty.
+- Do not rely on "no X" alone: a model may draw what you name. Say what the picture has instead where you can, and keep the "no X" as the last
+  sentence of the direction; the `visual_checks` catch the leaks after the first images.
 - Do not edit `experiment.xlsx`, put a price in the plan, or run `acknowledge-person` yourself.
 
 ## A worked example (different domain)
 
-Brief: *"Hero image for the autumn launch of a small-batch coffee roaster: warm, honest, a bag of beans on a wooden counter. Headline: SLOW MORNINGS. Portrait."*
+A complete plan is `../references/examples/direction-plan.json` (a library's summer reading poster: four directions with traits, `only_in` layouts, three
+shared levers, `batch_by`, visual checks). Run `check` and `plan --dry-run` on it to see the Look table and the per-direction shares. Its shape:
 
 | Direction | Idea | Differs on | Keep out |
 |---|---|---|---|
-| 1 Your brief | a warm still life, bag of beans on a wooden counter, morning light | the baseline | no people, no steam clichés |
-| 2 Process | the craft: hands, scoops, a roaster, close and tactile | subject (hands), setting (workshop), energy | no finished retail shelf |
-| 3 Ritual | a quiet pour-over moment in a home, window light | setting (home), energy (slow), subject (a person) | no bag as the hero |
-| 4 Graphic | flat-lay, bold color blocks, large headline | medium (graphic), density, typography | no wooden counter |
+| 1 Your brief | a flat illustration, a tall stack of books on a meadow | the baseline | no photographs |
+| 2 Reading fort | a photograph inside a blanket fort, lamplight | medium (photograph), setting, light | no drawn or illustrated elements |
+| 3 Adventure map | a hand-drawn treasure map, each island an open book | medium, layout (bird's-eye, empty sea), density | no photographs, no people |
+| 4 Bold shapes | cut-paper shapes on one color, huge letters | density, typography, ground | no scenery, no gradients |
 
-Each direction then varies two or more levers (for example light, framing, color accent), and the batch is split evenly across the four.
+Every keep-out only says what the direction leaves out of itself; none removes something the brief asked for (books, the headline, the portrait format), so
+none is a wildcard. Each direction varies a layout lever of its own plus the shared accent color and headline style.

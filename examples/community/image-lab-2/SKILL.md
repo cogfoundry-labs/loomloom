@@ -22,7 +22,8 @@ Two modes share one engine (`scripts/image.py`), one ledger and one gate:
 Run commands from this skill's folder. Everything is `python scripts/image.py <command>`.
 Setup once: `pip install -r requirements.txt` (experiment mode; quick mode needs nothing) and a gateway
 token in `LOOMLOOM_TOKEN_COGFOUNDRY` (an API key from https://console.cogfoundry.ai/api-keys); the
-loomloom CLI is **not** used.
+loomloom CLI is **not** used. On Windows set `PYTHONUTF8=1` (`PYTHONUTF8=1 python scripts/image.py ...`) so non-ASCII text prints. Where the host has no
+`AskUserQuestion` or `SendUserFile`, ask in plain chat and give the file paths instead.
 
 ## Rules that always apply
 
@@ -44,14 +45,14 @@ loomloom CLI is **not** used.
 5. **One writer at a time.** While a `run` is going, `preflight`, `retry`, `refresh`, `recover`, `quick`
    and a second `run` of the same experiment answer `BUSY` (exit 2) and change nothing; the user can still
    edit the workbook, and you preflight after the run ends. A crashed run's lock expires after 5 minutes.
-5. **Quality and price.** For models with a `quality` setting, `auto` can bill two different prices for the same
+6. **Quality and price.** For models with a `quality` setting, `auto` can bill two different prices for the same
    request (measured $0.030 vs $0.055). Set `quality` in the plan for a predictable cost; an explicit quality is
    unpriced until one image bills, so the preflight says `unverified` and `run` needs `--max-usd`. After the
    first images the guard counts in-flight samples at the highest real price seen.
-5. **Spend limits.** `run` stops submitting past `--max-usd` (default 1.25x the known
+7. **Spend limits.** `run` stops submitting past `--max-usd` (default 1.25x the known
    estimate; required when a row has no verified price). It cannot stop tasks already
    in flight, so say so if the user asks for a hard cap.
-6. A fingerprint that already ran needs `--again`: a repeat is a new spend, so ask first.
+8. A fingerprint that already ran needs `--again`: a repeat is a new spend, so ask first.
 
 ## Quick mode
 
@@ -149,7 +150,8 @@ all refuse a plan with a pictured person and no acknowledgment, and the gallery 
 builder refuses to publish a person experiment. Never run `acknowledge-person` unless the
 user has said yes in chat.
 
-**2. Plan.** Follow the planner stage, `skills/plan.md`: pick the intent, what is **fixed**,
+**2. Plan.** Which stage writes the plan follows from step 0: Creative Direction (`skills/direction.md`) for an open brief, which ends by writing
+`plan.json` through the plan stage; otherwise the planner alone. Put `plan.json` next to the `refs/` folder (any folder; `--plan` takes the path). Follow the planner stage, `skills/plan.md`: pick the intent, what is **fixed**,
 2-4 dimensions with 3-4 values each, wording (the starter vocabulary is
 `python scripts/image.py controls`; values marked UNTESTED work but are unproven), and
 `constraints` for combinations that make no sense. Write `plan.json` (shape:
@@ -187,6 +189,9 @@ the prompts, chooses models and sizes, prices the batch and writes
 left out), images, known cost and unverified rows, warnings (custom values, unreliable
 wording with a reference, rows that are already Completed and still ticked, so would be
 generated again). Issues are fixed in the workbook, then preflight again.
+For a **calibration** (one image per creative direction before the full batch) add `--one-per direction`
+(`preflight --dir ./out/<name> --one-per direction`); `--only r001,r009` prices named rows. The other ticked rows stay ticked, and a plain
+preflight afterwards takes the rest. On a fresh clone there is no observed price yet, so rows show as unverified: `run` then needs `--max-usd`.
 
 **5. Approve** with `AskUserQuestion` (Generate / Edit the workbook / Stop), naming
 images, models and the known total.
@@ -251,7 +256,7 @@ plan and the workbook.
 
 ## Status
 
-Built through M5 (design `docs/design-v2.md`): generator, the experiment contact sheet (`scripts/sheet.py`), retry, quick mode, references (one
+Built through M6 (design `docs/design-v2.md`): generator, the experiment contact sheet (`scripts/sheet.py`), retry, quick mode, references (one
 per row), person-notice enforcement, reference-support states promoted by real use, the
 planner stage (`skills/plan.md`), Creative Direction (`skills/direction.md`, M6), the controls vocabulary (`references/controls-catalog.json`,
 only lighting and camera are blind-tested) and a planner evaluation set

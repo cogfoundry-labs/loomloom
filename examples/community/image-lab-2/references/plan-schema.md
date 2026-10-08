@@ -1,7 +1,6 @@
 # `plan.json` (the Creative Plan)
 
-Written by the agent (or by hand) and validated by `image.py plan`. A worked example that
-the tests use: `tests/fixtures/plan-mighty.json`. Design: `docs/design-v2.md` section 6.2.
+Written by the agent (or by hand) and validated by `image.py plan`. Worked examples: `tests/fixtures/plan-mighty.json` (the tests use it) and `references/examples/direction-plan.json` (a four-direction plan). Design: `docs/design-v2.md` section 6.2.
 
 ```json
 {
@@ -52,6 +51,7 @@ the tests use: `tests/fixtures/plan-mighty.json`. Design: `docs/design-v2.md` se
 | `quality` | no | the model's quality setting, sent with every request (for GPT Image 2.5 Sunburst/Flare: `low`, `medium`, `high`, `xhigh`, `max`; gpt-image-2: up to `high`; Gemini and Seedream models have none, and a plan that names such a model with a quality is refused). Omit or `auto` to let the model choose: then one request shape can bill two different prices (measured: $0.030 or $0.055 per image). An explicit quality has its own observed price, so the preflight shows it as **unverified** until one image has been billed; run with `--max-usd` and the first image sets the price for the rest |
 | `wildcard`, `relaxes` (on a dimension value object) | no | marks the one value that deliberately leaves a rule of the brief: `{"value": "...", "fragment": "...", "wildcard": true, "relaxes": ["the off-white foundation"]}`. `relaxes` requires `wildcard: true`, and **at most one value in the whole plan** may be flagged (`check` refuses more). The dry run prints it. They are not part of the prompt |
 | `traits` (on every value of a direction dimension) | no | `{"ground", "medium", "layout", "type", "density", "palette"}`, short text each, describing the picture at thumbnail size. When every value of a dimension has them, `check` refuses a plan in which two values differ in fewer than three of the six, or more than two share a palette. The dry run prints them. They are not part of the prompt |
+| `only_in` (on a dimension value object) | no | `{"direction": ["2 Reading fort"]}`: this value is only ever combined with the listed values of another dimension (it replaces hand-written `exclude` pairs for creative directions). Every named dimension and value must exist |
 | `batch_by` | no | name of a dimension (for example `territory`): the first batch is split evenly across its values and each value gets its own covering design. Use it when one dimension is a hierarchy that excludes different values of the others (three campaign territories); without it a plain pairwise design can be badly unbalanced across that dimension (8 / 16 / 7 rows in one measured plan) |
 | `takes` | no | how many images each ticked row of the first batch gets, 1 to 3 (default 1). A row is always exactly one image: a second image of the same values is a second row with the next `Take` number (r001 Take 1, r002 Take 2). Leave it at 1 for a first exploration; add takes later to the rows that look promising (`add-takes`, or copy the row in the workbook and change Take) |
 | `model_strategy` | no | `single` (default: the Advisor's best fit for every row), `spread` (the top 2 models become a dimension), or `fixed:<model id>`. A row's `Model` cell overrides it |

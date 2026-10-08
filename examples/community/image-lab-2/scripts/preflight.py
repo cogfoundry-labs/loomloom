@@ -243,15 +243,18 @@ class Advisor:
 # --------------------------------------------------------------------------- #
 def run_preflight(exp_dir, now: float | None = None, advisor: Advisor | None = None,
                   ref_support: dict | None = None, write: bool = True, retry: bool = False,
-                  include_unknown: bool = False) -> dict:
+                  include_unknown: bool = False, only: list | None = None, one_per: str | None = None) -> dict:
+    """`only` (row ids) or `one_per` (a dimension name: the first ticked row of each of its values) narrows the batch to
+    a subset of the ticked rows, for example one image per creative direction as a calibration. Other ticked rows stay
+    ticked and unchanged; the next plain preflight takes them."""
     exp_dir = Path(exp_dir)
     if write:
         with lg.writer_lock(exp_dir, "preflight"):        # a run or another writer holds the ledger: do not write underneath it
-            return _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unknown)
-    return _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unknown)
+            return _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unknown, only, one_per)
+    return _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unknown, only, one_per)
 
 
-def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unknown) -> dict:
+def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unknown, only=None, one_per=None) -> dict:
     ledger = lg.load(exp_dir / "ledger.json")
     quick = not (exp_dir / "plan.json").exists()         # quick mode: no plan, rows carry a verbatim prompt
     plan = ({"brief": ledger["experiment"]["brief"], "intent": ledger["experiment"]["intent"], "dimensions": {}}
@@ -291,6 +294,30 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
     seen_sigs: dict = {}
     by_model: dict[str, int] = {}
 
+    subset = None
+    if only or one_per:
+        by_id = {r["id"]: r for r in ledger["rows"]}
+        subset = set()
+        for rid in only or []:
+            if rid not in by_id:
+                report["issues"].append({"id": rid, "problems": [f"--only: there is no row {rid}"]})
+            else:
+                subset.add(rid)
+        if one_per:
+            if one_per not in names:
+                report["issues"].append({"id": "--one-per", "problems": [f"there is no dimension {one_per!r} (the dimensions are {', '.join(names)})"]})
+            else:
+                taken: set = set()
+                for r0 in ledger["rows"]:
+                    v = r0["params"].get(one_per)
+                    if r0["status"] in ("Removed",) + tuple(SKIP_STATUSES) or not r0.get("selected") or v in taken:
+                        continue
+                    if r0["status"] == "Completed" and any(a["row_id"] == r0["id"] and a["status"] == "Completed" and matches(a, r0["params"])
+                                                           for a in ledger["attempts"]):
+                        continue
+                    taken.add(v)
+                    subset.add(r0["id"])
+
     imaged: dict = {}                     # (same values, take) -> the row that already has its image
     for r0 in ledger["rows"]:
         if r0["status"] != "Removed" and any(a["row_id"] == r0["id"] and a["status"] == "Completed" and matches(a, r0["params"])
@@ -311,6 +338,8 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
                 continue
         elif not row.get("selected"):
             continue                                           # not in the batch; status unchanged
+        if subset is not None and rid not in subset:
+            continue                                           # ticked, but outside this subset; stays ticked
         if not retry and row["status"] in SKIP_STATUSES:
             hint = ""
             if row["status"] in ("Queued", "Generating") and open_batches:
@@ -579,6 +608,8 @@ def format_report(r: dict) -> str:
     if r["unverified_rows"]:
         cost += f"  +  {len(r['unverified_rows'])} row(s) price unverified (not in the total)"
     L.append(f"Estimated cost:     {cost}")
+    if r["unverified_rows"]:
+        L.append("Price basis:        no observed price yet for these rows; pass --max-usd <N> to `run` (the first image sets the price)")
     L.append("Balance:            unread (the gateway will confirm)")
     if r.get("coverage") is not None:
         L.append(f"Pairwise coverage:  {r['coverage'] * 100:.0f}% of valid pairs (selected rows)")

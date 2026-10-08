@@ -1,6 +1,6 @@
 # Proposal: an Assistant Fit advisor for Image Lab 2
 
-Status: **proposal for review (revision 7), nothing built.** Date: 2026-10-08.
+Status: **revision 8: P0 and the P0b pilot are done (2026-10-08); L1 is built (`scripts/llm_fit.py`, `llm-advice`); the evaluations (P1a, P1b) are not run.** Date: 2026-10-08.
 Related: `proposal-creative-direction-stage.md` (its first test doubles as evidence here), `design-v2.md` section 11 (the image-model
 Advisor), the loomloom model-catalog RFC (`docs/rfc/0003-model-catalog-strategy.md`, work types for text models).
 Revision 2 folds in an outside review (ChatGPT) and my own analysis of it; revision 3 records your decisions; revision 4 raises the cap and adds the default-model rule; revision 7 makes Fable gateway-only and adds a gated gateway judge; section 12 lists what changed.
@@ -300,3 +300,36 @@ see reasoning-token billing) and a text-only option.
 
 **Revision 7 changes:** recorded your answers: the in-session run is the default model only (Sonnet 5.5); Fable 5 is gateway-only and gated; the cheap pair stays;
 a gateway judge scores the Direction sheets, with a quote you confirm; total about $5.8 against the $6 hard stop.
+
+**Revision 8 (2026-10-08): P0 and P0b results, measured through the gateway.**
+
+| Finding | Evidence |
+|---|---|
+| The listed prices are USD per million tokens | the probes' billed total matched the calculation (0.0005 billed, 0.0006 calculated) |
+| Usage comes back with every reply: prompt, completion and reasoning tokens, cached tokens, and the provider; **no cost field** | `references/llm-fit/probes.jsonl`, `pilot.jsonl` |
+| One tiny image costs about 1,000 prompt tokens on Gemini 3 Flash (about $0.0005) | the vision probe |
+| **GPT-6 Astra, one Direction call: about $0.37** (6,136 input tokens, 6,133 of them cached and billed at a lower rate; 7,233 output tokens, 921 of them reasoning; 151 s). The plan it wrote passed `check` with 4 directions | `pilot/openai__gpt-6-astra.md` |
+| My estimate was too low on output (3.5k expected, 7.2k real) and too high on input (8.7k estimated, 6.1k real: about 4.3 characters per token) | the same call |
+| **Claude Fable 5 returned no text on a long planning prompt** (8.9k input tokens): the stream ended cleanly with no error after about 63 s, twice, and once non-streaming (a 504 at 60.8 s that was not billed). Each empty call billed only the prompt ($0.0892). A tiny Fable 5 call works (3.7 s). Reading: it thinks silently for over 60 s and the gateway closes the connection | `pilot.jsonl` |
+| **Streaming gets past 60 s** for a model that writes from the start: Luna streamed for 72.8 s and 9,000 tokens | `pilot.jsonl` (stream-check) |
+| `GET /balance` returns `locked_balance_cny`, a live total of usage not yet settled to the account balance. It rose by exactly the cost of each call, so spend can be read within seconds; the console transaction list lags by 30 minutes or more | read before and after the tiny Fable 5 call (+0.00066) |
+
+Decisions: **Fable 5 is dropped from the long-output evaluations** (decided by you); the finding is recorded, and the advisor says "no reply within 60 s on a long planning prompt via the gateway" rather than a score. The remaining protocol is re-quoted from measured costs: Astra Direction x3 briefs x2 runs about $2.2 (2 runs makes the evidence strong); Plan on Astra x3 about $1.2 (estimate; drop first if a quote runs high); Luna and Gemini 3 Flash full protocol about $0.4; the gateway judge about $0.25; total about $4.1 (about $3.0 without Plan), against the $6 hard stop. Spend to date on this feature: about $0.56. Each batch is still quoted and confirmed by you before it runs.
+
+
+**P1a result (2026-10-08, free: the default model, Claude Sonnet 5.5, six fresh agents; briefs: adidas collage, skincare serum, children's book; 2 runs each).** Every reply passed all ten mechanical checks (`llm-advice --score`): a parseable plan that passes `check`, 3 to 10 directions, `batch_by` direction, traits on every direction, the copy-closing sentence, keep-outs, a clean dry run and the sheet sections. GPT-6 Astra's one reply scores the same. **The mechanical checks are saturated**: they show a model can produce a valid plan, not a good one, so they are recorded as `direction-validity` and do not feed any recommendation. Runs took 2.8 to 5 minutes each. The next evidence needs the blind quality rubric from a judge of another family (the gateway judge, about $0.25, quoted and confirmed first). One check was loosened after the first scoring (a keep-out may be a closing "no ..." list as well as a "Keep out:" sentence) and re-applied to all seven replies.
+
+**P1b result (2026-10-08): Creative Direction, blind-judged. Suggestive only.**
+
+| Model | Harness | Sheets judged | Judged score (0 to 1) | Mechanical | Cost per sheet |
+|---|---|---|---|---|---|
+| GPT-6 Astra | gateway | 4 (2 briefs; adidas failed, see below) | 0.99 | 1.0 | about $0.46 |
+| GPT-5.6 Luna | gateway | 6 | 0.98 | 0.98 | about $0.009 |
+| Claude Sonnet 5.5 (default model) | agent, free | 6 | 0.98 | 1.0 | session allowance |
+| Gemini 3 Flash | gateway | 6 | 0.92 | 0.88 | about $0.017 |
+
+- **Judge:** `alibaba/qwen3.7-flash` (a family none of the workers belong to), one call per sheet, blind labels. `x-ai/grok-4.6` was tried first and returned a 504 on every real sheet (it reasons silently past the gateway's 60 s limit; nothing billed). The judge's scores **crowd at 5** (114 of 132 scores), its quote was not found in the sheet for 5 of 22 judgments, and it was run once per sheet. It separates Gemini 3 Flash (faithfulness 3.7 of 5) from the rest; it **cannot separate Astra, Luna and the default model**.
+- **What the data supports:** on these three briefs, Luna, Astra and the default model produce Direction sheets the judge rates the same, and Luna costs about 1/50 of Astra per sheet; Gemini 3 Flash is the weakest on faithfulness to the brief. This is **suggestive, not strong** (a single judge at its ceiling; the default model ran in another harness, so it can never count as "strong" against gateway models).
+- **Astra's reliability on the longest brief (adidas):** one run hit the 10,000-token output cap and returned an unfinished plan ($0.58), the other returned a 504 before any text (nothing billed). It finished the other two briefs (150 to 180 s each). Fable 5 returned no text on any long call. Both are findings about reliability through the gateway, not about quality.
+- **Advisor output:** `llm-advice --model "Claude Sonnet 5.5"` now says Creative Direction: Strong, keep. Plan writing and Result review are not measured.
+- **Spend:** about $3.2 of the $6 hard stop, from the usage figures (probes and pilot $0.56, worker batch $2.09, judge trials and run $0.57).

@@ -1,11 +1,43 @@
-> **Image Lab 2 (work in progress).** This folder is a copy of Image Lab v0.1 being rebuilt
-> as v2: it talks to the CogFoundry gateway directly (no loomloom CLI), keeps a ledger of every
-> attempt, and adds an **experiment mode** (controlled variations, reference photos, an Excel
-> workbook where you tick what to generate) next to the original quick mode. The generator, retry,
-> quick mode and the workbook are built; see [`SKILL.md`](SKILL.md) for how to use it,
-> [`docs/design-v2.md`](docs/design-v2.md) for the design and status, and
-> [`references/plan-schema.md`](references/plan-schema.md) for the plan file. The text below is the
-> v0.1 README and the case studies it links were made with v0.1.
+# Image Lab 2 (work in progress)
+
+Image Lab 2 talks to the CogFoundry gateway directly (no loomloom CLI), keeps a ledger of every attempt, and adds an **experiment mode** next to the original
+quick mode: controlled variations, optional reference photos, and an Excel workbook where you tick which rows to generate. One image per row, a price shown
+before any spend, one approval per paid batch.
+
+## Quick start (Image Lab 2)
+
+Use a local checkout of this folder (Image Lab 2 is not published yet; the `npx skills add` line further down installs the published v0.1).
+
+```bash
+git clone https://github.com/cogfoundry-labs/loomloom
+cd loomloom/examples/community/image-lab-2
+pip install -r requirements.txt          # experiment mode: XlsxWriter, openpyxl, allpairspy (Pillow optional, for thumbnails)
+export LOOMLOOM_TOKEN_COGFOUNDRY=...     # an API key from https://console.cogfoundry.ai/api-keys
+```
+
+Then point your coding agent at [`SKILL.md`](SKILL.md) and name it in a request, for example:
+
+- quick mode: `8 options of this with Image Lab: "<finished prompt>"`
+- experiment mode: `with Image Lab, try three lighting styles and three camera angles of this product photo`
+- Creative Direction: `with Image Lab, explore four creative directions for this campaign brief: ...`
+
+The agent plans the experiment (`plan.json`, checked with `python scripts/image.py check` and `plan --dry-run`), builds `experiment.xlsx`, shows the price
+(`preflight`), and generates only after your one approval (`run --confirm <fingerprint>`). On Windows run Python with `PYTHONUTF8=1`.
+
+| Where | What |
+|---|---|
+| [`SKILL.md`](SKILL.md) | how the agent uses it: rules, quick mode, experiment mode |
+| [`skills/plan.md`](skills/plan.md), [`skills/direction.md`](skills/direction.md) | the planner and Creative Direction stages |
+| [`references/plan-schema.md`](references/plan-schema.md), [`references/examples/direction-plan.json`](references/examples/direction-plan.json) | the plan file and a complete four-direction example |
+| [`docs/design-v2.md`](docs/design-v2.md) | the design, decisions and status |
+| `scripts/`, `tests/` | the engine (`image.py`) and 300+ offline tests (`python -m unittest discover -s tests`; they spend nothing) |
+| `experiments/` | the control experiments that gated the build |
+
+`python scripts/image.py llm-advice` (free) reports how well your assistant's model suits each step, from the evidence collected so far; it is advice only.
+
+The rest of this file is the v0.1 README: its install line, "no loomloom CLI needed" framing and case studies describe v0.1, and its links to sibling folders (`../image-lab`, `../redesign-lab`) point inside the loomloom repository.
+
+---
 
 # Image Lab
 
@@ -13,7 +45,7 @@
 
 You bring a prompt. Image Lab classifies what kind of image it is, works out which of 9 models actually fit that brief, shows you the estimated total, and — once you approve — generates several alternatives across those models in parallel. You see what it really cost, then choose the image you want from a gallery it builds for you.
 
-Built as a Claude Code skill on top of [loomloom](https://github.com/cogfoundry-labs/loomloom) — but loomloom is optional here. v0.1 is plain parallel calls to a model gateway; loomloom only enters at v0.4, when the work becomes a real pipeline. If you just want several strong alternatives of one prompt, you don't need loomloom at all.
+(v0.1) Built as a Claude Code skill on top of [loomloom](https://github.com/cogfoundry-labs/loomloom) — but loomloom is optional here. v0.1 is plain parallel calls to a model gateway; loomloom only enters at v0.4, when the work becomes a real pipeline. If you just want several strong alternatives of one prompt, you don't need loomloom at all.
 
 > "Pick an image, not a model."
 
@@ -214,7 +246,7 @@ Adjusted the prompt and gone a second (or third) round? The **same page** just g
 | `references/arena-scores.yaml` | **The only hand-entered quality data:** real Arena.ai Elo + margin per model per category. Re-measuring means re-pulling this file, never editing a score. |
 | `references/model-catalog.yaml` | **Temporary adapter:** model ids, measured rates, real request shape. `TODO`: replace with a gateway endpoint. |
 | `references/exploration-page.md` | how the shareable page is built — every flag + its section-by-section layout |
-| `scripts/image.py` | `resolve` / `run` — the whole generation engine; standard-library Python, no SDK |
+| `scripts/image.py` | the engine: `resolve` / `run` (v0.1), and in v2 `quick`, `plan`, `preflight`, `retry`, `recover`, `refresh`, `check`, `controls`, `sheet`, `llm-advice`. Quick mode needs only the standard library; experiment mode needs `requirements.txt` |
 | `scripts/build-exploration-page.py` | builds/rebuilds the one case-study page for a session (`--session`), at a fixed address that grows to embed each new round; no spend |
 | `test-fixtures/sample-prompts.json` | prompts + expected intent/allocation, for exercising PLAN without spend |
 | `../image-lab/case-studies/<slug>/` | (v0.1 only; not copied here) curated, committed exploration pages from real runs |

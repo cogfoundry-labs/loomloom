@@ -265,7 +265,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 _OPENER = urllib.request.build_opener(_NoRedirect)
 
 
-def _req(method: str, path: str, tok: str, body: dict | None = None, retries: int = 1) -> tuple[int, dict, str]:
+def _req(method: str, path: str, tok: str, body: dict | None = None, retries: int = 1, timeout: int = 60) -> tuple[int, dict, str]:
     """Returns (status, json_or_empty, error_str). error_str is '' on success.
 
     Retries once (short pause) on a transient condition — but the failure
@@ -295,7 +295,7 @@ def _req(method: str, path: str, tok: str, body: dict | None = None, retries: in
     attempt = 0
     while True:
         try:
-            with _OPENER.open(req, timeout=60) as resp:
+            with _OPENER.open(req, timeout=timeout) as resp:
                 raw = resp.read().decode()
                 return resp.status, (json.loads(raw) if raw.strip() else {}), ""
         except urllib.error.HTTPError as e:

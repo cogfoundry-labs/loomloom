@@ -107,6 +107,26 @@ class Preflight(Base):
         self.assertEqual(pf.snapshot_fingerprint(snap), fp)       # the fingerprint covers the whole snapshot body
         self.assertEqual(self.run_pf()["fingerprint"], fp)          # deterministic
 
+    def test_one_per_dimension_prices_a_calibration_subset_and_leaves_the_rest_ticked(self):
+        self.build()
+        rep = self.run_pf(one_per="camera")
+        self.assertEqual((rep["ready"], len(rep["issues"])), (3, 0))          # three cameras, one row each
+        led = self.ledger()
+        self.assertTrue(all(r["selected"] for r in led["rows"]))               # the other ticked rows stay ticked
+        self.assertEqual(sum(r["status"] == "Ready" for r in led["rows"]), 3)
+        self.assertEqual(self.run_pf(one_per="camera")["fingerprint"], rep["fingerprint"])
+        self.assertNotEqual(self.run_pf()["fingerprint"], rep["fingerprint"])  # the plain preflight takes all nine
+
+    def test_only_takes_named_rows_and_refuses_unknown_names(self):
+        self.build()
+        first = self.ledger()["rows"][0]["id"]
+        rep = self.run_pf(only=[first])
+        self.assertEqual(rep["ready"], 1)
+        bad = self.run_pf(only=["r999"], one_per="colour")
+        problems = " ".join(p for i in bad["issues"] for p in i["problems"])
+        self.assertIn("no row r999", problems)
+        self.assertIn("no dimension 'colour'", problems)
+
     def test_reference_rows_prefer_the_verified_model_and_it_is_priced(self):
         self.build()
         rep = self.run_pf()

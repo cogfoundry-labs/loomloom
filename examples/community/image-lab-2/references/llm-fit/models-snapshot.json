@@ -1,0 +1,876 @@
+{
+ "fetched_at": "2026-10-08",
+ "note": "facts from the gateway's /models listing; quality is NOT in it. Prices are USD, unit not stated by the gateway (probably per million tokens).",
+ "models": [
+  {
+   "api_name": "deepseek/deepseek-v4-pro",
+   "company": "DeepSeek",
+   "name": "DeepSeek V4 Pro 0813",
+   "context_window": 1000000,
+   "max_tokens": 384000,
+   "input_price": 29.25,
+   "output_price": 87.75,
+   "cached_price": 2.93,
+   "currency": "USD",
+   "modality": "text",
+   "can_read_images": false,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "google/gemini-3-flash",
+   "company": "Google",
+   "name": "Gemini 3 Flash Preview",
+   "context_window": 1048576,
+   "max_tokens": 65535,
+   "input_price": 0.5,
+   "output_price": 3,
+   "cached_price": 0.05,
+   "currency": "USD",
+   "modality": "text+image+video",
+   "can_read_images": true,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1beta/models/*",
+    "/v1/models/*"
+   ]
+  },
+  {
+   "api_name": "alibaba/qwen3.7-flash",
+   "company": "Alibaba",
+   "name": "Qwen3.7 Flash",
+   "context_window": 1000000,
+   "max_tokens": 64000,
+   "input_price": 1.3,
+   "output_price": 5.2,
+   "cached_price": 0.26,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "tencent/hy3",
+   "company": "Tencent",
+   "name": "Hy3",
+   "context_window": 256000,
+   "max_tokens": 128000,
+   "input_price": 6.5,
+   "output_price": 26,
+   "cached_price": 1.63,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "google/gemini-3.8-flash",
+   "company": "Google",
+   "name": "Gemini 3.8 Flash",
+   "context_window": 100000,
+   "max_tokens": 64000,
+   "input_price": 0.75,
+   "output_price": 3.75,
+   "cached_price": 0.08,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1beta/models/*",
+    "/v1/models/*"
+   ]
+  },
+  {
+   "api_name": "google/gemini-3.7-flash",
+   "company": "Google",
+   "name": "Gemini 3.7 Flash",
+   "context_window": 100000,
+   "max_tokens": 64000,
+   "input_price": 0.75,
+   "output_price": 3.75,
+   "cached_price": 0.08,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1beta/models/*",
+    "/v1/models/*"
+   ]
+  },
+  {
+   "api_name": "google/gemma-4-31b-it",
+   "company": "Google",
+   "name": "Gemma 4 31B",
+   "context_window": 100000,
+   "max_tokens": 64000,
+   "input_price": 0.09,
+   "output_price": 0.34,
+   "cached_price": 0.05,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1beta/models/*",
+    "/v1/models/*"
+   ]
+  },
+  {
+   "api_name": "minimax/minimax-m3",
+   "company": "MiniMax",
+   "name": "MiniMax M3",
+   "context_window": 1000000,
+   "max_tokens": 1000000,
+   "input_price": 13.65,
+   "output_price": 54.6,
+   "cached_price": 2.73,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "z-ai/glm-5.3",
+   "company": "Z.ai",
+   "name": "GLM 5.3",
+   "context_window": 1000000,
+   "max_tokens": 128000,
+   "input_price": 52,
+   "output_price": 182,
+   "cached_price": 13,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "alibaba/qwen3.8-max",
+   "company": "Alibaba",
+   "name": "Qwen3.8 Max (0902)",
+   "context_window": 1000000,
+   "max_tokens": 64000,
+   "input_price": 78,
+   "output_price": 234,
+   "cached_price": 9.75,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "alibaba/qwen3.8-27b",
+   "company": "Alibaba",
+   "name": "Qwen3.8 27B",
+   "context_window": 1000000,
+   "max_tokens": 64000,
+   "input_price": 19.5,
+   "output_price": 78,
+   "cached_price": 3.9,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "google/gemini-3.1-pro-preview",
+   "company": "Google",
+   "name": "Gemini 3.1 Pro Preview",
+   "context_window": 1048576,
+   "max_tokens": 65535,
+   "input_price": 2,
+   "output_price": 12,
+   "cached_price": 0.2,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1beta/models/*",
+    "/v1/models/*"
+   ]
+  },
+  {
+   "api_name": "xiaomi/mimo-v2.5",
+   "company": "Xiaomi",
+   "name": "MiMo-V2.5",
+   "context_window": 1000000,
+   "max_tokens": 128000,
+   "input_price": 6.5,
+   "output_price": 13,
+   "cached_price": 0.13,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "deepseek/deepseek-v3.2",
+   "company": "DeepSeek",
+   "name": "Deepseek V3.2",
+   "context_window": 128000,
+   "max_tokens": 64000,
+   "input_price": 13,
+   "output_price": 19.5,
+   "cached_price": 2.6,
+   "currency": "USD",
+   "modality": "text",
+   "can_read_images": false,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "google/gemini-3.5-flash",
+   "company": "Google",
+   "name": "Gemini 3.5 Flash",
+   "context_window": 1048576,
+   "max_tokens": 65535,
+   "input_price": 1.5,
+   "output_price": 9,
+   "cached_price": 0.15,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1beta/models/*",
+    "/v1/models/*"
+   ]
+  },
+  {
+   "api_name": "google/gemini-3.1-flash-lite",
+   "company": "Google",
+   "name": "Gemini 3.1 Flash Lite",
+   "context_window": 1048576,
+   "max_tokens": 65535,
+   "input_price": 0.25,
+   "output_price": 1.5,
+   "cached_price": 0.03,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1beta/models/*",
+    "/v1/models/*"
+   ]
+  },
+  {
+   "api_name": "openai/gpt-5.4",
+   "company": "OpenAI",
+   "name": "GPT-5.4",
+   "context_window": 400000,
+   "max_tokens": 128000,
+   "input_price": 2.5,
+   "output_price": 15,
+   "cached_price": 0.25,
+   "currency": "USD",
+   "modality": "text+image",
+   "can_read_images": true,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "moonshot/kimi-k2.7-code",
+   "company": "Moonshot",
+   "name": "Kimi K2.7 Code",
+   "context_window": 256000,
+   "max_tokens": 32000,
+   "input_price": 42.25,
+   "output_price": 175.5,
+   "cached_price": 8.45,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "z-ai/glm-5.2",
+   "company": "Z.ai",
+   "name": "GLM 5.2",
+   "context_window": 1000000,
+   "max_tokens": 128000,
+   "input_price": 52,
+   "output_price": 182,
+   "cached_price": 13,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "bytedance/doubao-seed-2-1-pro",
+   "company": "ByteDance",
+   "name": "Seed 2.1 Pro",
+   "context_window": 256000,
+   "max_tokens": 256000,
+   "input_price": 39,
+   "output_price": 195,
+   "cached_price": 7.8,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "xiaomi/mimo-v2.5-pro",
+   "company": "Xiaomi",
+   "name": "MiMo-V2.5-Pro",
+   "context_window": 1000000,
+   "max_tokens": 128000,
+   "input_price": 19.5,
+   "output_price": 39,
+   "cached_price": 0.16,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "alibaba/qwen3.5-flash",
+   "company": "Alibaba",
+   "name": "Qwen3.5-Flash",
+   "context_window": 1000000,
+   "max_tokens": 64000,
+   "input_price": 1.3,
+   "output_price": 13,
+   "cached_price": 0,
+   "currency": "USD",
+   "modality": "text",
+   "can_read_images": false,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "bytedance/doubao-seed-character",
+   "company": "ByteDance",
+   "name": "Seed Character",
+   "context_window": 128000,
+   "max_tokens": 96000,
+   "input_price": 5.2,
+   "output_price": 13,
+   "cached_price": 1.04,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "anthropic/claude-fable-5",
+   "company": "Anthropic",
+   "name": "Claude Fable 5",
+   "context_window": 1000000,
+   "max_tokens": 128000,
+   "input_price": 10,
+   "output_price": 50,
+   "cached_price": 1,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "anthropic/claude-opus-4.8",
+   "company": "Anthropic",
+   "name": "Claude Opus 4.8",
+   "context_window": 1000000,
+   "max_tokens": 128000,
+   "input_price": 5,
+   "output_price": 25,
+   "cached_price": 0.5,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "anthropic/claude-sonnet-4.6",
+   "company": "Anthropic",
+   "name": "Claude Sonnet 4.6",
+   "context_window": 1000000,
+   "max_tokens": 64000,
+   "input_price": 3,
+   "output_price": 15,
+   "cached_price": 0.3,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "anthropic/claude-opus-5",
+   "company": "Anthropic",
+   "name": "Claude Opus 5",
+   "context_window": 1000000,
+   "max_tokens": 128000,
+   "input_price": 5,
+   "output_price": 25,
+   "cached_price": 0.5,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "anthropic/claude-sonnet-5",
+   "company": "Anthropic",
+   "name": "Claude Sonnet 5",
+   "context_window": 1000000,
+   "max_tokens": 64000,
+   "input_price": 2,
+   "output_price": 10,
+   "cached_price": 0.2,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "openai/gpt-5.6-sol",
+   "company": "OpenAI",
+   "name": "GPT-5.6 Sol",
+   "context_window": 400000,
+   "max_tokens": 128000,
+   "input_price": 5,
+   "output_price": 30,
+   "cached_price": 0.5,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "openai/gpt-5.6-luna",
+   "company": "OpenAI",
+   "name": "GPT-5.6 Luna",
+   "context_window": 400000,
+   "max_tokens": 128000,
+   "input_price": 0.2,
+   "output_price": 1.2,
+   "cached_price": 0.02,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "openai/gpt-5.6-terra",
+   "company": "OpenAI",
+   "name": "GPT-5.6 Terra",
+   "context_window": 400000,
+   "max_tokens": 128000,
+   "input_price": 2,
+   "output_price": 12,
+   "cached_price": 0.2,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "deepseek/deepseek-v4-flash",
+   "company": "DeepSeek",
+   "name": "DeepSeek V4 Flash 0731",
+   "context_window": 1000000,
+   "max_tokens": 384000,
+   "input_price": 9.75,
+   "output_price": 29.25,
+   "cached_price": 0.33,
+   "currency": "USD",
+   "modality": "text",
+   "can_read_images": false,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "openai/gpt-5.4-nano",
+   "company": "OpenAI",
+   "name": "GPT-5.4 Nano",
+   "context_window": 400000,
+   "max_tokens": 128000,
+   "input_price": 0.2,
+   "output_price": 1.25,
+   "cached_price": 0.02,
+   "currency": "USD",
+   "modality": "text+image",
+   "can_read_images": true,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "moonshot/kimi-k3",
+   "company": "Moonshot",
+   "name": "Kimi K3",
+   "context_window": 256000,
+   "max_tokens": 32000,
+   "input_price": 130,
+   "output_price": 650,
+   "cached_price": 13,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "z-ai/glm-5.3-flash",
+   "company": "Z.ai",
+   "name": "GLM 5.3 Flash",
+   "context_window": 1000000,
+   "max_tokens": 128000,
+   "input_price": 5.2,
+   "output_price": 18.2,
+   "cached_price": 1.5,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "bytedance/doubao-seed-2-1-turbo",
+   "company": "ByteDance",
+   "name": "Seed 2.1 Turbo",
+   "context_window": 256000,
+   "max_tokens": 256000,
+   "input_price": 19.5,
+   "output_price": 97.5,
+   "cached_price": 3.9,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "alibaba/qwen3.8-flash",
+   "company": "Alibaba",
+   "name": "Qwen3.8 Flash",
+   "context_window": 1000000,
+   "max_tokens": 64000,
+   "input_price": 6.5,
+   "output_price": 19.5,
+   "cached_price": 0.65,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "anthropic/claude-haiku-4.5:thinking",
+   "company": "Anthropic",
+   "name": "Claude Haiku 4.5",
+   "context_window": 200000,
+   "max_tokens": 64000,
+   "input_price": 1,
+   "output_price": 5,
+   "cached_price": 0.1,
+   "currency": "USD",
+   "modality": "text+image",
+   "can_read_images": true,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "openai/gpt-5.4-mini",
+   "company": "OpenAI",
+   "name": "GPT-5.4 Mini",
+   "context_window": 400000,
+   "max_tokens": 128000,
+   "input_price": 0.75,
+   "output_price": 4.5,
+   "cached_price": 0.08,
+   "currency": "USD",
+   "modality": "text+image",
+   "can_read_images": true,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "openai/gpt-6-astra",
+   "company": "OpenAI",
+   "name": "GPT-6 Astra",
+   "context_window": 400000,
+   "max_tokens": 128000,
+   "input_price": 10,
+   "output_price": 50,
+   "cached_price": 1,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1/responses"
+   ]
+  },
+  {
+   "api_name": "tencent/hy4-preview",
+   "company": "Tencent",
+   "name": " Hy4 preview",
+   "context_window": 1024000,
+   "max_tokens": 64000,
+   "input_price": 39,
+   "output_price": 117,
+   "cached_price": 1.95,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "google/gemini-2.5-flash",
+   "company": "Google",
+   "name": "Gemini 2.5 Flash",
+   "context_window": 1048576,
+   "max_tokens": 65535,
+   "input_price": 0.3,
+   "output_price": 2.5,
+   "cached_price": 0.08,
+   "currency": "USD",
+   "modality": "text+image",
+   "can_read_images": true,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1beta/models/*",
+    "/v1/models/*"
+   ]
+  },
+  {
+   "api_name": "google/gemini-2.5-pro",
+   "company": "Google",
+   "name": "Gemini 2.5 Pro",
+   "context_window": 1048576,
+   "max_tokens": 65535,
+   "input_price": 1.25,
+   "output_price": 10,
+   "cached_price": 0.13,
+   "currency": "USD",
+   "modality": "text+image",
+   "can_read_images": true,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1beta/models/*",
+    "/v1/models/*"
+   ]
+  },
+  {
+   "api_name": "x-ai/grok-4.5",
+   "company": "xAI",
+   "name": "Grok 4.5",
+   "context_window": 256000,
+   "max_tokens": 256000,
+   "input_price": 2,
+   "output_price": 6,
+   "cached_price": 0.3,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "x-ai/grok-4.6",
+   "company": "xAI",
+   "name": "Grok 4.6",
+   "context_window": 2000000,
+   "max_tokens": 30000,
+   "input_price": 2,
+   "output_price": 6,
+   "cached_price": 0.5,
+   "currency": "USD",
+   "modality": "unlisted",
+   "can_read_images": null,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "deepseek/deepseek-v3.1",
+   "company": "DeepSeek",
+   "name": "DeepSeek V3.1",
+   "context_window": 128000,
+   "max_tokens": 64000,
+   "input_price": 26,
+   "output_price": 78,
+   "cached_price": 10.4,
+   "currency": "USD",
+   "modality": "text+image",
+   "can_read_images": true,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "google/gemini-2.5-flash-lite",
+   "company": "Google",
+   "name": "Gemini 2.5 Flash Lite",
+   "context_window": 1000000,
+   "max_tokens": 64000,
+   "input_price": 0.1,
+   "output_price": 0.4,
+   "cached_price": 0.03,
+   "currency": "USD",
+   "modality": "text+image",
+   "can_read_images": true,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages",
+    "/v1beta/models/*",
+    "/v1/models/*"
+   ]
+  },
+  {
+   "api_name": "openai/gpt-4o-mini",
+   "company": "OpenAI",
+   "name": "GPT-4o mini",
+   "context_window": 128000,
+   "max_tokens": 16384,
+   "input_price": 0.15,
+   "output_price": 0.6,
+   "cached_price": 0.08,
+   "currency": "USD",
+   "modality": "text+image",
+   "can_read_images": true,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  },
+  {
+   "api_name": "meta/llama-4-scout",
+   "company": "Meta.AI",
+   "name": "Llama 4 Scout",
+   "context_window": 128000,
+   "max_tokens": 8000,
+   "input_price": 0.1,
+   "output_price": 0.3,
+   "cached_price": 0,
+   "currency": "USD",
+   "modality": "text",
+   "can_read_images": false,
+   "apis": [
+    "/v1/chat/completions",
+    "/v1/messages"
+   ]
+  }
+ ]
+}

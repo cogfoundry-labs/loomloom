@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "brief": "Poster for a public library's summer reading challenge for children aged 6 to 10: playful, welcoming, books at the heart of it. Headline: READ THE SUMMER. Portrait.",
+  "intent": "poster / flyer",
+  "fixed": {
+    "audience": "children aged 6 to 10 and their parents",
+    "objective": "get children to sign up for the summer reading challenge at the library",
+    "only text": "READ THE SUMMER",
+    "never": "no logos, no brand names, no other words"
+  },
+  "prompt": {
+    "text_prefix": "A poster for a public library's summer reading challenge for children aged 6 to 10. It feels playful and welcoming, and books are the heart of the picture. The poster has one headline, READ THE SUMMER, and it is the only text. Portrait.",
+    "text_suffix": "The only text on the poster is the headline READ THE SUMMER, spelled exactly. Do not add any other words, numbers, slogans, logos or taglines."
+  },
+  "batch_by": "direction",
+  "dimensions": {
+    "direction": [
+      {"value": "1 Your brief", "fragment": "A flat, friendly illustration: one tall, wobbly stack of colorful books on a sunny meadow under a wide blue sky, the headline in big rounded letters across the top.",
+       "traits": {"ground": "sky and meadow", "medium": "flat illustration", "layout": "tall stack centered, headline across the top", "type": "big rounded headline across the top", "density": "few shapes, open sky", "palette": "sky blue and grass green"}},
+      {"value": "2 Reading fort", "fragment": "A close photograph of the inside of a blanket fort in the evening: books spilling over a rug and cushions, a warm lamp glowing, fairy lights along the sheet roof, the headline small on a stitched cloth pennant hanging at the top. Keep out: no drawn or illustrated elements.",
+       "traits": {"ground": "fabric and rug interior", "medium": "photograph", "layout": "camera low among the books, pennant top right", "type": "small stitched pennant", "density": "many small objects", "palette": "amber and deep brown"}},
+      {"value": "3 Adventure map", "fragment": "A hand-drawn treasure map on cream parchment: each island is an open book, a dotted route links them across a teal sea, with a lot of empty sea and a quiet headline in a small ribbon at the bottom edge. Keep out: no photographs, no people.",
+       "traits": {"ground": "parchment and sea", "medium": "hand-drawn map", "layout": "bird's-eye view, islands scattered, empty sea", "type": "small ribbon at the bottom edge", "density": "sparse islands and a dotted line", "palette": "parchment cream and teal"}},
+      {"value": "4 Bold shapes", "fragment": "Cut-paper shapes on a solid tangerine field: big geometric open books and one star, the headline in huge blocky letters filling most of the frame. Keep out: no scenery, no gradients.",
+       "traits": {"ground": "solid color field", "medium": "cut paper graphic", "layout": "flat head-on, shapes pressed against the edges", "type": "huge blocky letters filling the frame", "density": "three big shapes", "palette": "tangerine and magenta"}}
+    ],
+    "layout": [
+      {"value": "stack centered", "fragment": "the stack stands in the middle and reaches two thirds of the poster height", "only_in": {"direction": ["1 Your brief"]}},
+      {"value": "stack leaning in a corner", "fragment": "the stack leans in at the lower right corner and the sky takes the rest", "only_in": {"direction": ["1 Your brief"]}},
+      {"value": "camera low in the books", "fragment": "the camera sits on the rug, a pile of books huge in the foreground and the lamp small behind", "only_in": {"direction": ["2 Reading fort"]}},
+      {"value": "camera looking in from the door", "fragment": "the camera looks in through the fort's door flap, the lit interior framed by the fabric", "only_in": {"direction": ["2 Reading fort"]}},
+      {"value": "one island in view", "fragment": "the view is close on one big island with the others tiny at the far edge", "only_in": {"direction": ["3 Adventure map"]}},
+      {"value": "whole map in view", "fragment": "the whole sea is in view with five small islands scattered and the route winding between them", "only_in": {"direction": ["3 Adventure map"]}},
+      {"value": "shapes at the edges", "fragment": "the shapes are cropped by the poster edges and the headline runs behind them", "only_in": {"direction": ["4 Bold shapes"]}},
+      {"value": "shapes in a column", "fragment": "the shapes stack in one column on the left and the letters take the right", "only_in": {"direction": ["4 Bold shapes"]}}
+    ],
+    "accent color": [
+      {"value": "sunny yellow", "fragment": "with sunny yellow as the accent color"},
+      {"value": "berry pink", "fragment": "with berry pink as the accent color"},
+      {"value": "grape purple", "fragment": "with grape purple as the accent color"}
+    ],
+    "headline style": [
+      {"value": "painted lettering", "fragment": "the headline in painted hand lettering with visible brush marks"},
+      {"value": "chunky block letters", "fragment": "the headline in thick, evenly weighted block letters"},
+      {"value": "quiet small letters", "fragment": "the headline in small, quiet, evenly spaced letters"}
+    ]
+  },
+  "visual_checks": [
+    "the headline is spelled READ THE SUMMER with no other text anywhere",
+    "books are clearly the heart of the picture",
+    "each direction is unmistakable from its description",
+    "the four directions look different at thumbnail size",
+    "the headline never hides the books"
+  ],
+  "model_strategy": "single",
+  "quality": "medium"
+}

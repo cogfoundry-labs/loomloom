@@ -154,6 +154,44 @@ class SpareRowBalanceTests(unittest.TestCase):
             self.assertLessEqual(max(counts.values()) - min(counts.values()), 4, (name, counts))
 
 
+class OnlyInTests(unittest.TestCase):
+    """A value scoped to some values of another dimension, instead of hand-written exclude pairs."""
+    def plan(self, scope):
+        plan = make_plan()
+        plan["dimensions"] = {"direction": ["Process", "Ritual", "Graphic"],
+                              "layout": [{"value": "hands close", "only_in": scope}, "centred", {"value": "flat grid", "only_in": {"direction": ["Graphic"]}}]}
+        return plan
+
+    def test_a_scoped_value_is_combined_only_with_its_directions(self):
+        plan = self.plan({"direction": ["Process"]})
+        self.assertEqual(mx.validate_plan(plan), [])
+        dims = {d: [mx.value_name(v) for v in vs] for d, vs in plan["dimensions"].items()}
+        valid = set(mx.enumerate_valid(dims, mx.excludes(plan)))
+        self.assertIn(("Process", "hands close"), valid)
+        self.assertNotIn(("Ritual", "hands close"), valid)
+        self.assertNotIn(("Process", "flat grid"), valid)
+        self.assertEqual(len(valid), 5)                      # 9 minus 2 ("hands close") minus 2 ("flat grid")
+
+    def test_only_in_must_name_real_values_of_another_dimension(self):
+        for scope, word in (({"direction": ["Nope"]}, "not a value"), ({"colour": ["x"]}, "not another dimension"),
+                            ({"layout": ["centred"]}, "not another dimension"), ({"direction": []}, "non-empty"), ([], "must be")):
+            errs = " ".join(mx.validate_plan(self.plan(scope)))
+            self.assertIn(word, errs, scope)
+
+
+class ExamplePlanTests(unittest.TestCase):
+    def test_the_shipped_direction_plan_is_valid_and_has_no_hand_written_excludes(self):
+        plan = mx.load_plan(Path(__file__).resolve().parent.parent / "references" / "examples" / "direction-plan.json")
+        self.assertEqual(plan.get("constraints", []), [])
+        dims = {d: [mx.value_name(v) for v in vs] for d, vs in plan["dimensions"].items()}
+        self.assertEqual(len(mx.enumerate_valid(dims, mx.excludes(plan))), 72)
+
+    def test_a_misspelled_catalog_dimension_gets_a_did_you_mean(self):
+        import experiment as ex
+        plan = make_plan(dimensions={"lightning": ["a", "b"], "camera": ["x", "y"]})
+        self.assertTrue(any("did you mean 'lighting'" in w for w in ex.preview_plan(plan)["warnings"]))
+
+
 class CoverByTests(unittest.TestCase):
     """A hierarchy dimension (campaign territories) whose values exclude different values of the others."""
     DIMS = {"territory": ["A", "B", "C"], "shot": ["w", "x", "y", "z"], "color": ["red", "blue", "mono"]}

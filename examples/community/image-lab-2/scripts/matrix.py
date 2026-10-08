@@ -186,6 +186,22 @@ def validate_plan(plan: dict) -> list[str]:
                 errs.append(f"dimension {d!r} value {v.get('value')!r}: a value that relaxes a rule must also be marked wildcard: true")
     for d, vals in dims.items():
         errs.extend(_traits_errors(d, vals))
+        for v in (vals if isinstance(vals, list) else []):
+            scope = v.get("only_in") if isinstance(v, dict) else None
+            if scope is None:
+                continue
+            label = f"dimension {d!r} value {v.get('value')!r}: only_in"
+            if not isinstance(scope, dict) or not scope:
+                errs.append(f"{label} must be {{dimension: [values]}}")
+                continue
+            for other, keep in scope.items():
+                names_o = [_safe_name(x) for x in dims[other]] if other in dims and isinstance(dims[other], list) else None
+                if other == d or names_o is None:
+                    errs.append(f"{label} names {other!r}, which is not another dimension of this plan")
+                elif not isinstance(keep, list) or not keep:
+                    errs.append(f"{label}.{other} must be a non-empty list of values of {other!r}")
+                else:
+                    errs.extend(f"{label}.{other} names {k!r}, which is not a value of {other!r}" for k in keep if k not in names_o)
     flagged = [(d, v["value"]) for d, vals in dims.items() if isinstance(vals, list)
                for v in vals if isinstance(v, dict) and isinstance(v.get("value"), str) and (v.get("relaxes") or v.get("wildcard") is True)]
     if len(flagged) > 1:
@@ -282,7 +298,19 @@ def consent_problem(plan: dict) -> str | None:
 
 
 def excludes(plan: dict) -> list[dict]:
-    return [c["exclude"] for c in plan.get("constraints", [])]
+    """The plan's `constraints`, plus the exclusions its values' `only_in` imply: a value with
+    `only_in: {"direction": ["2 Process"]}` is never combined with any other value of `direction`."""
+    out = [c["exclude"] for c in plan.get("constraints", [])]
+    dims = plan.get("dimensions") or {}
+    for d, vals in dims.items():
+        for v in vals:
+            scope = v.get("only_in") if isinstance(v, dict) else None
+            if not isinstance(scope, dict):
+                continue
+            for other, keep in scope.items():
+                if other in dims and other != d and isinstance(keep, list):
+                    out.extend({d: _safe_name(v), other: _safe_name(w)} for w in dims[other] if _safe_name(w) not in keep)
+    return out
 
 
 # --------------------------------------------------------------------------- #

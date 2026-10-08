@@ -24,6 +24,7 @@ All of these are also subcommands of image.py.
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import re
 import shutil
@@ -207,6 +208,10 @@ def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
     for d, vals in plan["dimensions"].items():
         if d == "aspect":
             continue
+        close = [] if d in cat else difflib.get_close_matches(d, list(cat), n=1, cutoff=0.6)
+        if close:
+            warns.append(f'{d}: not a dimension of the controls catalog, so its values get no starter wording; did you mean '
+                         f'{close[0]!r}? (`controls` lists the catalog). If {d!r} is your own dimension, give each value a `fragment`')
         groups: dict[str, list[str]] = {}
         for v in vals:
             name = v["value"] if isinstance(v, dict) else v
@@ -508,6 +513,30 @@ def register(sub, with_run: bool = True) -> None:
                    help="validate and show the size of the experiment; write nothing")
     q = sub.add_parser("preflight", help="read the workbook, validate, compile, price; write the snapshot")
     q.add_argument("--dir", required=True)
+    q.add_argument("--only", default=None, help="comma-separated row ids: price only these of the ticked rows")
+    q.add_argument("--one-per", default=None, metavar="DIMENSION",
+                   help="price one ticked row per value of this dimension (a calibration: for example --one-per direction)")
+    la = sub.add_parser("llm-advice", help="Assistant fit: is your assistant (the LLM your coding agent runs on) well suited for "
+                                            "Image Lab's steps? Advice only, from measured evidence; free")
+    la.add_argument("--model", help="the assistant's own model name, as the agent knows it")
+    la.add_argument("--can-read-images", choices=("yes", "no", "unknown"), default="unknown",
+                    help="whether the host can read image files (the result review needs it)")
+    la.add_argument("--offline", action="store_true", help="use the saved model snapshot instead of asking the gateway")
+    la.add_argument("--json", action="store_true")
+    la.add_argument("--probe-pricing", action="store_true",
+                    help="the pricing probe: two tiny PAID gateway calls; prints a quote first and needs --confirm <fingerprint>")
+    la.add_argument("--eval", action="store_true", help="the worker batch: Creative Direction on Luna, Gemini 3 Flash and GPT-6 Astra (3 briefs x 2 runs); quote first, needs --confirm <fingerprint>")
+    la.add_argument("--limit", type=int, default=None, help="with --judge: judge only the first N sheets (a cheap trial)")
+    la.add_argument("--judge-model", default=None, help="with --judge: the judge's gateway model id (default x-ai/grok-4.6)")
+    la.add_argument("--judge", action="store_true", help="the blind judge on the saved Direction replies (gateway, quoted first); needs --confirm <fingerprint>")
+    la.add_argument("--score", nargs="+", metavar="FILE", help="free: run the mechanical Creative Direction checks on saved replies")
+    la.add_argument("--stream-check", action="store_true",
+                    help="one long streamed reply from the cheap model (a few thousandths of a dollar); needs --confirm <fingerprint>")
+    la.add_argument("--long", action="store_true", help="with --stream-check: a reply of about 5000 words (past the gateway's 60 second cut), at most about $0.011")
+    la.add_argument("--check-model", default=None, help="with --stream-check: a tiny streamed check of this one model id (max 64 tokens)")
+    la.add_argument("--pilot", action="store_true",
+                    help="the cost pilot: one real Creative Direction call on each premium gateway model; prints a quote first and needs --confirm <fingerprint>")
+    la.add_argument("--confirm", default=None, help="the fingerprint the probe or pilot quote printed")
     t = sub.add_parser("retry", help="preflight for Failed/Partial rows (missing samples only)")
     t.add_argument("--dir", required=True)
     t.add_argument("--include-unknown", action="store_true",
@@ -641,6 +670,13 @@ def _handle(a) -> None:
                              "portrait": "  [written for portraits]"}.get(e.get("scope"), "")
                     print(f"  {val:<22} {flag}{rel}{per}{scope}")
                     print(f"      {e.get('fragment', '')}")
+    elif a.cmd == "llm-advice":
+        import llm_fit
+        try:
+            print(llm_fit.run(a))
+        except PermissionError as e:
+            print(f"llm-advice: {e}", file=sys.stderr)
+            sys.exit(2)
     elif a.cmd == "add-takes":
         try:
             res = add_takes(a.dir, [x.strip() for x in a.rows.split(",") if x.strip()], a.count)
@@ -684,7 +720,9 @@ def _handle(a) -> None:
             print(f"error: {e}", file=sys.stderr)
             sys.exit(2)
     elif a.cmd in ("preflight", "retry"):
-        rep = pf.run_preflight(a.dir, retry=(a.cmd == "retry"), include_unknown=getattr(a, "include_unknown", False))
+        only = [x.strip() for x in (getattr(a, "only", None) or "").split(",") if x.strip()]
+        rep = pf.run_preflight(a.dir, retry=(a.cmd == "retry"), include_unknown=getattr(a, "include_unknown", False),
+                               only=only, one_per=getattr(a, "one_per", None))
         print(rep["text"])
         sys.exit(0 if rep["ready"] else 2)
     else:
