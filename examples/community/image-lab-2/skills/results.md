@@ -17,12 +17,13 @@ to open it. `--inline` embeds the images into one shareable file, and is refused
 experiment (those stay local). Images are `round-N/<row>-<k>.<ext>` (read the `file` field in `ledger.json`; Seedream models give `.jpg`). Send them captioned with the row's
 dimension values (read `ledger.json`: `rows[].params`), give a table and the real cost.
 `run` regenerates the workbook with Status, Images (a link) and Cost.
-If the plan has `visual_checks` (`plan.json`), **look at every generated image** and add a
-Checks column to the table: for each image, which of the plan's checks it fails ("text
-present", "no empty space for the headline", "the label changed"). Image models follow "no
-text" and "leave space here" wording only loosely and nothing in the pipeline can see that,
-so these checks are the user's only signal; name failing images plainly, and suggest
-rewording or a retry for them. Do not claim a check passed unless you looked.
+**Report in two parts, never mixed.**
+1. **Execution result** (facts from `run` and the ledger): how many images were generated, which failed or were `Blocked`, which are `Unknown`, and the real cost against the quote.
+2. **Visual checks** (only if the plan has `visual_checks`): look at **every** generated image. For each image and each check give **pass**, **fail** or **can't tell**, with a
+   reason of a few words ("reads SUMER, one M"). For a text check write what you read, letter by letter, **on the full-size image or a crop of the text** (a thumbnail grid hides errors such as a lowercase i). Say plainly that this is **your reading of the image (a model's
+   review), not an independent verification**; the user's own look is the check that counts. Image models follow "no text" and "leave space here" wording only loosely and
+   nothing in the pipeline can see that, so name failing images and suggest rewording or a retry. Never say a check passed unless you looked at that image.
+   A **subjective** requirement (feels premium, distinctive, warm) is not pass or fail: give one line on what you see and let the user judge.
 
 For a quick look at the images grouped by one dimension (for example one grid per creative direction) run
 `python scripts/image.py montage --dir ./out/<name> --by direction` (free, needs Pillow); `--blind` writes one shuffled grid with neutral labels and a key file.

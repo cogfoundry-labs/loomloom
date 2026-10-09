@@ -35,6 +35,35 @@ INTENTS = ("launch / announcement image", "profile / avatar", "social post", "bl
 MAX_DIMS, MAX_VALUES, MIN_VALUES, MAX_VALID = 4, 4, 2, 150
 
 
+ROUTES_FILE = Path(__file__).resolve().parent.parent / "tests" / "planner-eval" / "route-cases.json"
+ROUTES = ("quick", "variation", "direction", "ask")
+
+
+def load_route_cases(path=None) -> dict:
+    data = json.loads(Path(path or ROUTES_FILE).read_text(encoding="utf-8"))
+    return {c["id"]: c for c in data["cases"]}
+
+
+def routing_text() -> str:
+    """The shipped routing guidance exactly as an agent reads it: SKILL.md step 0 and the quickstart's section 1."""
+    root = Path(__file__).resolve().parent.parent
+    skill = (root / "SKILL.md").read_text(encoding="utf-8")
+    quick = (root / "references" / "quickstart.md").read_text(encoding="utf-8")
+    a = skill[skill.index("**0. Route.**"):skill.index("**1. Brief.**")]
+    b = quick[quick.index("## 1. Pick the route"):quick.index("## 2. The loop")]
+    return a.strip() + "\n\n" + b.strip()
+
+
+def check_route(case_id: str, answer: str, cases: dict | None = None) -> str | None:
+    """None when `answer` is the expected route for the case, else why not."""
+    cases = cases if cases is not None else load_route_cases()
+    got = re.sub(r"[^a-z]", "", str(answer).lower())
+    if got not in ROUTES:
+        return f"{case_id}: {answer!r} is not one of {', '.join(ROUTES)}"
+    want = cases[case_id]["route"]
+    return None if got == want else f"{case_id}: routed to {got}; expected {want} ({cases[case_id]['why']})"
+
+
 def load_briefs(path=None) -> dict:
     data = json.loads(Path(path or BRIEFS_FILE).read_text(encoding="utf-8"))
     return {b["id"]: b for b in data["briefs"]}
@@ -170,9 +199,23 @@ def main(argv=None) -> int:
     ap.add_argument("--plan")
     ap.add_argument("--all")
     ap.add_argument("--briefs", default=None, help="a different briefs.json")
+    ap.add_argument("--routes", default=None, metavar="FILE", help="score a {case id: route} JSON file against tests/planner-eval/route-cases.json")
+    ap.add_argument("--routing-text", action="store_true", help="print the shipped routing guidance an agent reads")
     a = ap.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if a.routing_text:
+        print(routing_text())
+        return 0
+    if a.routes:
+        cases = load_route_cases()
+        answers = json.loads(Path(a.routes).read_text(encoding="utf-8"))
+        bad = 0
+        for cid in cases:
+            f = check_route(cid, answers.get(cid, ""), cases)
+            print(f"{'PASS' if f is None else 'FAIL'}  {cid}" + (f"  - {f}" if f else ""))
+            bad += f is not None
+        return 1 if bad else 0
     briefs = load_briefs(a.briefs)
     if a.list:
         for bid, b in briefs.items():

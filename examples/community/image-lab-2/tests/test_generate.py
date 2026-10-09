@@ -365,7 +365,25 @@ class GenerateTests(Base):
         rep = pf.run_preflight(self.exp, advisor=ADVISOR)
         self.assertEqual(rep["ready"], 0)                                          # nothing is billed twice
         self.assertTrue(any("already has its image" in w and "add-takes" in w for w in rep["warnings"]))
+        # one line for all of them, however many rows: the text no longer names each row's file
+        lines = [w for w in pf.group_messages(rep["warnings"]) if "already has its image" in w]
+        self.assertEqual(len(lines), 1)
+        self.assertIn("r001, r002", lines[0])
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SpendingLimitReport(unittest.TestCase):
+    BASE = {"batch": 1, "out_dir": "round-1", "samples": 4, "by_status": {"Completed": 4}, "estimated_usd_known": 0.05, "actual_usd": 0.06,
+            "by_model_usd": {"m": 0.06}, "stopped": None, "unfinished": [], "unknown": [], "failed": []}
+
+    def test_the_result_says_the_limit_is_not_a_hard_cap_and_reports_an_overshoot(self):
+        text = gen.format_result({**self.BASE, "max_usd": 0.05})
+        self.assertIn("limits NEW submissions; it is not a hard cap", text)
+        self.assertIn("Actual cost is $0.0100 over it", text)
+
+    def test_no_overshoot_no_overshoot_line_and_no_limit_no_limit_line(self):
+        self.assertNotIn("over it", gen.format_result({**self.BASE, "max_usd": 0.10}))
+        self.assertNotIn("Spending limit", gen.format_result({**self.BASE, "max_usd": None}))

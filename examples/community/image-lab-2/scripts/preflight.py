@@ -332,6 +332,10 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
         if alt.stat().st_mtime > saved:
             report["warnings"].append(f"{alt.name} is newer than experiment.xlsx and is NOT read: edits made in it are "
                                       f"ignored. Copy your edits into experiment.xlsx (or replace it) and save.")
+    built = ledger["experiment"].get("plan_hash")
+    if built and not quick and built != lg.plan_hash(plan):
+        report["info"].append("plan.json was changed after the experiment was built (wording, checks or other plan content): the prompts below are rebuilt from the "
+                              "changed plan, and rows that already have their image keep it. Adding or removing dimension values or directions needs a new experiment.")
     open_batches = {b["no"]: b["fingerprint"] for b in ledger["batches"] if not b.get("ended_at")}
 
     strategy = plan.get("model_strategy", "single")
@@ -419,9 +423,8 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
             if have_n:
                 got = next((a for a in reversed(done_here) if matches(a, row["params"])), None)
                 if got:
-                    report["warnings"].append(f"{rid}: already has its image ({got.get('file', 'see the results')}), so it is "
-                                              f"skipped. For another image of the same values add a take: "
-                                              f"`image.py add-takes --dir <experiment> --rows {rid}`")
+                    report["warnings"].append(f"{rid}: already has its image, so it is skipped. For another image of the same values add a take "
+                                              f"(`image.py add-takes --dir <experiment> --rows <row id>`); the files are in the ledger and the Image column")
                 else:
                     reasons = ", ".join(f"{v} {k}" for k, v in why0.items()) or "a sample"
                     hint = (" Run `image.py recover --dir <experiment>` (free) to fetch the image that was billed."
@@ -600,7 +603,7 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
 
     created = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now)) if now else lg.now()
     snapshot = {"created_at": created, "estimated_usd_known": round(known_total, 6),
-                "unverified_rows": unverified, "rows": snapshot_rows}
+                "unverified_rows": unverified, "rows": snapshot_rows, "retry": bool(retry)}
     fp = snapshot["fingerprint"] = snapshot_fingerprint(snapshot)
     if write:                                   # write=False: estimate only, no files touched
         if snapshot_rows:
@@ -685,6 +688,9 @@ def format_report(r: dict) -> str:
             L.extend(f"  {w}" for w in group_messages(r[key]))
     if r["fingerprint"]:
         L.append(f"\nFingerprint: {r['fingerprint']}   (snapshots/{r['fingerprint']}.json)")
+        n = r["images"]
+        L.append(f"Approving this fingerprint authorizes exactly {n} image{'' if n == 1 else 's'} and nothing else; any other ticked row, or any change, "
+                 f"needs its own preflight and approval.")
     else:
         L.append("\nNothing is ready to generate.")
     return "\n".join(L)

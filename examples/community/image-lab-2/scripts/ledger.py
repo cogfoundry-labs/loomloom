@@ -10,6 +10,7 @@ Blocked, Unknown, Removed. Selection (`selected`) is a separate property.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import os
 import threading
@@ -221,11 +222,17 @@ def writer_lock(exp_dir, who: str):
 # --------------------------------------------------------------------------- #
 # construction
 # --------------------------------------------------------------------------- #
+def plan_hash(plan: dict) -> str:
+    """A hash of a plan's content, ignoring consent_acknowledged (which `acknowledge-person` writes after the build)."""
+    body = {k: v for k, v in plan.items() if k != "consent_acknowledged"}
+    return hashlib.sha256(json.dumps(body, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:12]
+
+
 def new_ledger(plan: dict, names: list[str], rows: list[tuple], selected: bool = True) -> dict:
     ledger = {
         "schema_version": SCHEMA_VERSION,
         "experiment": {"brief": plan["brief"], "intent": plan["intent"], "created_at": now(),
-                       "next_row": 1, "dimensions": list(names)},
+                       "next_row": 1, "dimensions": list(names), "plan_hash": plan_hash(plan)},
         "rows": [], "batches": [], "attempts": [],
     }
     for combo in rows:

@@ -32,6 +32,8 @@ price, the total, and a fingerprint. For the score table use
 
 **4. Approve:** `AskUserQuestion` with Generate / Adjust / Stop, naming the real mix and
 total ("Generate 4: Sunburst x2 + Nano Banana 2 x2, about $0.14?"). Adjust goes back to 3.
+Say what Quick gives, in one line: the options differ by **model and random seed, not by composition or look**, because the prompt is used verbatim. If the user wanted
+deliberate differences, offer Variation ("vary the lighting and camera") or Creative Direction ("explore different ideas") instead of generating.
 
 **5. Generate**, in the background, with a progress file:
 
