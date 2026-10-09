@@ -67,6 +67,8 @@ def check_intent(plan: dict) -> None:
 
 
 PLANNER_MAX_DIMS, PLANNER_MAX_VALUES, PLANNER_MAX_VALID = 4, 4, 150      # the planner skill's limits (skills/plan.md); a dry-run warning, not a refusal
+WORKLOAD_WARN_IMAGES, WORKLOAD_WARN_USD, UNVERIFIED_WARN_IMAGES = 60, 2.0, 24   # advisory: a big first batch, a big known cost, or many images with no verified price
+DIRECTIONS_MIN, DIRECTIONS_MAX, DIRECTION_MIN_IMAGES = 3, 10, 4                  # the Creative Direction method (skills/direction.md); a warning, not a refusal
 
 
 def build_experiment(plan_path, out_dir, target: int = 30, dry_run: bool = False) -> dict:
@@ -192,6 +194,9 @@ def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
             basis = f"{mode} calls, per model (spread)"
         elif usd is not None:
             known = round(usd * n_images, 4)
+    indicative = None                                       # a hint for the plan confirmation when no price is verified yet (never part of a quote)
+    if best and unpriced and "model" not in dims:
+        indicative = pf.indicative([pf.price_key(best["model"], size["token"], quality, mode)] * unpriced)
     # plan-level problems a planner should fix or disclose before the user confirms, grouped per dimension
     warns = []
     by = plan.get("batch_by")
@@ -206,6 +211,24 @@ def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
         wide = [d for d, v in plan["dimensions"].items() if len(v) > PLANNER_MAX_VALUES]
         if wide:
             warns.append(f"dimension(s) {', '.join(wide)} have more than {PLANNER_MAX_VALUES} values; 3 or 4 visibly different values is the workable size")
+    # workload and cost risk, for every plan (creative directions are exempt only from the dimension-shape limits above, never from these)
+    if n_images > WORKLOAD_WARN_IMAGES:
+        warns.append(f"the first batch is {n_images} images ({len(result['rows'])} rows x {takes} take(s)): a large spend to approve at once. "
+                     f"Consider a smaller --target, or price a calibration first (`preflight --one-per <dimension>`)")
+    if known > WORKLOAD_WARN_USD:
+        warns.append(f"the known cost of the first batch is ${known:.2f}; it will be quoted and need its own approval, but check it is what the user expects")
+    if unpriced and n_images > UNVERIFIED_WARN_IMAGES:
+        warns.append(f"{unpriced} of the {n_images} images have no verified price, so the quote cannot yet say what they cost. Price a small calibration first "
+                     f"and pass --max-usd to `run`")
+    if by and isinstance(plan["dimensions"].get(by), list):
+        n_dir = len(plan["dimensions"][by])
+        if n_dir > DIRECTIONS_MAX or n_dir < DIRECTIONS_MIN:
+            warns.append(f"{n_dir} values in {by!r}: Creative Direction works with {DIRECTIONS_MIN} to {DIRECTIONS_MAX} directions "
+                         f"(two only when the user asked for two); more makes the first batch large and the directions hard to tell apart")
+        thin = [v for v, x in (result.get("strata") or {}).items() if 0 < x["rows"] < DIRECTION_MIN_IMAGES]
+        if thin:
+            warns.append(f"{', '.join(map(str, thin))} would get fewer than {DIRECTION_MIN_IMAGES} images in the first batch, too few to judge a direction by; "
+                         f"raise --target or reduce the directions")
     limited = sorted(m for m in adv.catalog if adv.prompt_limit(m) and worst_chars > adv.prompt_limit(m))
     if limited and plan.get("model_strategy", "single") != "single":    # with one auto-picked model the limited ones are never chosen anyway
         warns.append(f"the longest prompt is about {worst_chars:,} characters; {', '.join(limited)} accept at most "
@@ -289,7 +312,7 @@ def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
             "recommended": len(result["rows"]), "target": target, "takes": takes, "dims": dims, "dry_run": True, "workbook": None,
             "estimate": {"known_usd": known, "unverified_rows": list(range(unpriced))},
             "model": best["model"] if best else None, "warnings": warns,
-            "price_each": each, "price_basis": basis, "sample_prompt": sample, "mode": mode,
+            "price_each": each, "price_basis": basis, "indicative": indicative, "sample_prompt": sample, "mode": mode,
             "wording": wording, "sizes": sizes, "visual_checks": plan.get("visual_checks", []),
             "traits": [(d, mx.value_name(v), dict(v["traits"])) for d, vals in plan["dimensions"].items() for v in vals
                        if isinstance(v, dict) and isinstance(v.get("traits"), dict)],
@@ -325,6 +348,9 @@ def format_plan_summary(s: dict) -> str:
          f"Recommended batch:   {s['recommended']} configurations × {s['takes']} takes = {s['recommended'] * s['takes']} images "
          f"(one row per image)"),
         f"Estimated cost:      {cost}",
+        *([(f"Indicative:          about ${s['indicative']['low']:.2f}" + ("" if s["indicative"]["low"] == s["indicative"]["high"] else f" to ${s['indicative']['high']:.2f}")
+            + f" for these {s['indicative']['rows']} image(s), from prices measured {s['indicative']['measured']} (a hint, not a quote). "
+            f"A safe limit: --max-usd {s['indicative']['max_usd']:.2f}")] if s.get("indicative") else []),
         f"Covers:              {covers}",
         (f"Why {s['recommended']}:".ljust(21) + f"every pair of values appears at least once ({r['covering_min']} needed); "
          f"the rest is spare") if not r.get("strata") else
@@ -649,11 +675,79 @@ def after_run(d: Path) -> dict:
     return out
 
 
+DRIFT_FIELDS = ("model", "prompt", "size", "aspect_ratio", "qty", "mode", "quality")     # what the fingerprint covers per row, except the price estimate
+
+
+def visual_checks_note(exp_dir) -> str | None:
+    """The plan's visual_checks, labelled: the run verifies none of them, and whoever reviews the images must say whose reading it is."""
+    try:
+        checks = json.loads((Path(exp_dir) / "plan.json").read_text(encoding="utf-8")).get("visual_checks") or []
+    except (OSError, ValueError):
+        return None
+    if not checks:
+        return None
+    head = ("VISUAL CHECKS: the run verifies none of these. Review every image against them (pass, fail or can't tell, with a short reason) and say whether it is a model's "
+            "reading or the user's own look; a subjective requirement is the user's call. Read text on the full-size image or a crop of it: thumbnails hide letter errors.")
+    return head + chr(10) + chr(10).join(f"  {i}. {c}" for i, c in enumerate(checks, 1))
+
+
+def snapshot_drift(exp_dir, fingerprint: str) -> list[str]:
+    """What differs between the approved snapshot and what a fresh preflight of the current workbook would approve: by content, never by file time
+    (re-saving an unchanged workbook is no difference; a change is one even if the file time did not move). Rows that already ran are not compared.
+    `run` still executes only the approved snapshot; this only says which later edits are not in it."""
+    exp = Path(exp_dir)
+    try:
+        snap = json.loads((exp / "snapshots" / f"{fingerprint}.json").read_text(encoding="utf-8"))
+        status = {r["id"]: r["status"] for r in lg.load(exp / "ledger.json")["rows"]}
+    except (OSError, ValueError, KeyError):
+        return []
+    if snap.get("retry"):
+        return []                                           # a retry snapshot is not comparable with a plain preflight
+    try:
+        now = {r["id"]: r for r in pf.run_preflight(exp, write=False)["snapshot"]["rows"]}
+    except Exception as e:                                  # noqa: BLE001  a comparison that cannot be made must not block an approved run
+        return [f"could not compare the approved snapshot with the current workbook ({str(e)[:100]}); the run uses the approved snapshot"]
+    out = []
+    for row in snap["rows"]:
+        if status.get(row["id"]) not in ("Draft", "Ready"):
+            continue                                        # already running or done: a resume, not a new run
+        cur = now.get(row["id"])
+        if cur is None:
+            out.append(f"{row['id']}: a fresh preflight of the current workbook would not include it (unticked, removed or blocked), but it is in the "
+                       f"approved snapshot and will still run")
+            continue
+        changed = [k for k in DRIFT_FIELDS if row.get(k) != cur.get(k)]
+        if [(r.get("file"), r.get("sha256")) for r in row.get("references", [])] != [(r.get("file"), r.get("sha256")) for r in cur.get("references", [])]:
+            changed.append("references")
+        if changed:
+            out.append(f"{row['id']}: {', '.join(changed)} differ from the current workbook; the run uses the approved values")
+    return out
+
+
+def unapproved_ticked(exp_dir, fingerprint: str) -> list[str]:
+    """Ticked rows that were not part of this snapshot and have not run: they still need their own quote and approval."""
+    exp = Path(exp_dir)
+    try:
+        in_snapshot = {r["id"] for r in json.loads((exp / "snapshots" / f"{fingerprint}.json").read_text(encoding="utf-8"))["rows"]}
+        ledger = lg.load(exp / "ledger.json")
+    except (OSError, ValueError, KeyError):
+        return []
+    return [r["id"] for r in ledger["rows"] if r.get("selected") and r["id"] not in in_snapshot and r["status"] in ("Draft", "Ready")]
+
+
 def cmd_run_batch(a) -> None:
     import generate as gen
     if not a.dir or not a.confirm:
         print("run needs --dir and --confirm <fingerprint> (the fingerprint preflight printed).", file=sys.stderr)
         sys.exit(2)
+    drift = snapshot_drift(a.dir, a.confirm)
+    if drift:
+        print("NOTE: this run executes the approved snapshot only. The current workbook differs from it (these edits are not part of the approval):", file=sys.stderr)
+        for line in drift[:8]:
+            print(f"  {line}", file=sys.stderr)
+        if len(drift) > 8:
+            print(f"  ... and {len(drift) - 8} more", file=sys.stderr)
+        print("  To include them, run `preflight` again and approve the new quote.", file=sys.stderr, flush=True)
     try:
         res = gen.run_batch(a.dir, a.confirm, concurrency=a.concurrency, max_usd=a.max_usd,
                             progress_file=a.progress_file, again=a.again,
@@ -662,6 +756,14 @@ def cmd_run_batch(a) -> None:
         print(f"REFUSED (nothing was spent): {e}", file=sys.stderr)
         sys.exit(2)
     print(gen.format_result(res))
+    vc = visual_checks_note(a.dir)
+    if vc:
+        print()
+        print(vc)
+    left = unapproved_ticked(a.dir, a.confirm)
+    if left:
+        print(f"Not part of this approval: {len(left)} other ticked row(s) ({', '.join(left[:6])}{' ...' if len(left) > 6 else ''}) were not in the approved "
+              f"snapshot and have not run. Run `preflight` to quote them; they need their own approval.")
     after_run(Path(a.dir))
     sys.exit(0 if not (res["failed"] or res["unknown"] or res["unfinished"]) else 1)
 

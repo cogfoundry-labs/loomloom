@@ -22,7 +22,7 @@ Then point your coding agent at [`SKILL.md`](SKILL.md) and name it in a request,
 - Creative Direction: `with Image Lab, explore four creative directions for this campaign brief: ...`
 
 The agent plans the experiment (`plan.json`, checked with `python scripts/image.py check` and `plan --dry-run`), builds `experiment.xlsx`, shows the price
-(`preflight`), and generates only after your one approval (`run --confirm <fingerprint>`). On Windows run Python with `PYTHONUTF8=1`.
+(`preflight`), and generates only after you approve that batch (`run --confirm <fingerprint>`; each paid batch, such as a calibration and then the rest, is quoted and approved on its own). On Windows run Python with `PYTHONUTF8=1`.
 
 | Where | What |
 |---|---|

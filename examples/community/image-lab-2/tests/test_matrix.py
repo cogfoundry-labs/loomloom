@@ -209,6 +209,46 @@ class PlannerLimitWarnings(unittest.TestCase):
         self.assertIn("more than 4 values", " ".join(self.warns(plan)))
 
 
+class WorkloadWarnings(unittest.TestCase):
+    """Workload and cost risk is warned about for every plan; creative directions are exempt only from the dimension-shape limits."""
+    def warns(self, plan, target=30):
+        import experiment as ex
+        return " | ".join(ex.preview_plan(plan, target)["warnings"])
+
+    def grid(self, **over):
+        return make_plan(dimensions={"environment": [f"e{i}" for i in range(4)], "camera": [f"c{i}" for i in range(4)], "light": [f"l{i}" for i in range(4)]}, **over)
+
+    def test_a_large_first_batch_warns_in_a_variation_plan_and_a_small_one_does_not(self):
+        self.assertIn("the first batch is", self.warns(self.grid(takes=3)))                 # about 30 rows x 3 takes
+        self.assertNotIn("the first batch is", self.warns(self.grid(), target=12))
+
+    def test_a_creative_direction_plan_gets_the_same_workload_warning_despite_its_dimension_exemption(self):
+        plan = self.grid(takes=3)
+        plan["batch_by"] = "environment"
+        w = self.warns(plan)
+        self.assertIn("the first batch is", w)
+        self.assertNotIn("variable dimensions", w)                                           # the shape limits still do not apply
+
+    def test_many_images_with_no_verified_price_say_the_quote_cannot_yet_price_them(self):
+        w = self.warns(self.grid(quality="high", takes=2))
+        self.assertIn("no verified price", w)
+        self.assertIn("--max-usd", w)
+
+    def test_the_number_of_directions_and_the_images_each_gets_are_checked(self):
+        many = make_plan(dimensions={"direction": [f"d{i}" for i in range(12)], "mood": ["a", "b", "c"]}, batch_by="direction")
+        self.assertIn("12 values in 'direction': Creative Direction works with 3 to 10", self.warns(many, target=60))
+        two = make_plan(dimensions={"direction": ["a", "b"], "mood": ["x", "y", "z"]}, batch_by="direction")
+        self.assertIn("2 values in 'direction'", self.warns(two))
+        ten = make_plan(dimensions={"direction": [f"d{i}" for i in range(10)], "mood": ["a", "b", "c", "d"]}, batch_by="direction")
+        self.assertIn("fewer than 4 images in the first batch", self.warns(ten, target=30))   # 30 images over 10 directions is 3 each
+        self.assertNotIn("fewer than 4 images", self.warns(ten, target=40))
+
+    def test_a_normal_plan_is_quiet(self):
+        w = self.warns(make_plan(), target=12)
+        for needle in ("the first batch is", "known cost", "no verified price", "values in"):
+            self.assertNotIn(needle, w)
+
+
 class LongPromptWarning(unittest.TestCase):
     def warns(self, **over):
         import experiment as ex

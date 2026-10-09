@@ -1,0 +1,29 @@
+{
+  "note": "Routing cases for SKILL.md step 0 and references/quickstart.md section 1. Routes: quick, variation, direction, ask (open-ended brief, the user did not say whether to explore). An agent answers each case with one route word.",
+  "cases": [
+    {"id": "plain-prompt", "request": "Generate that with Image Lab, 4 options: a red apple on a white table, studio photo.", "route": "quick",
+     "why": "one finished prompt, no photo, no variation"},
+    {"id": "different-product-shots", "request": "Give me 8 different product shots of a ceramic mug on a wooden table.", "route": "quick",
+     "why": "'different' alone is weak evidence; a concrete scene, no photo, 8 is allowed"},
+    {"id": "concrete-scene", "request": "A photo of a golden retriever on a beach at sunset, 2 options with Image Lab.", "route": "quick",
+     "why": "a concrete scene, a small count"},
+    {"id": "photo-as-reference", "request": "Here is a photo of our water bottle. Make me 4 options of it standing on a marble counter, with Image Lab.", "route": "variation",
+     "why": "Quick takes no reference photo, so the reference needs the plan route even without variables"},
+    {"id": "controlled-variables", "request": "With Image Lab, show our bottle (photo attached) in three lighting setups and two camera angles.", "route": "variation",
+     "why": "an explicit comparison of variables, plus a photo"},
+    {"id": "more-than-eight", "request": "I need 12 options of this prompt with Image Lab: 'a flat illustration of a rainy city street, muted palette'.", "route": "variation",
+     "why": "Quick makes 1, 2, 4 or 8 images"},
+    {"id": "vary-style", "request": "Take this prompt and vary the style and the mood across a few images so I can see which works: 'a cozy reading nook'.", "route": "variation",
+     "why": "an explicit request to vary named variables"},
+    {"id": "explore-campaign", "request": "With Image Lab, explore creative directions for our autumn campaign: a small-batch coffee roaster, headline SLOW MORNINGS, portrait.", "route": "direction",
+     "why": "an explicit request to explore directions"},
+    {"id": "different-concepts", "request": "Come up with several different visual concepts for a poster for our library's summer reading challenge, headline READ THE SUMMER.", "route": "direction",
+     "why": "different concepts for a brief"},
+    {"id": "explore-with-photo", "request": "Using the attached product photo, explore a few campaign ideas for Instagram for this sneaker, with Image Lab.", "route": "direction",
+     "why": "exploration wins; the photo becomes a reference inside it"},
+    {"id": "open-launch", "request": "We are launching a new running shoe aimed at young city runners. The mood is fast and confident. Make the launch visual with Image Lab.", "route": "ask",
+     "why": "an open-ended brief, no word about exploring or controlling anything"},
+    {"id": "open-app-hero", "request": "I need a hero image for our new meditation app's website with Image Lab.", "route": "ask",
+     "why": "creatively open-ended, several valid interpretations, no stated intent"}
+  ]
+}

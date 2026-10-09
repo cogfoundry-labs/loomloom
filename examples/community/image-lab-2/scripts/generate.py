@@ -567,7 +567,7 @@ class Run:
             "batch": self.batch["no"], "fingerprint": self.batch["fingerprint"], "out_dir": str(self.out_dir),
             "estimated_usd_known": self.batch["estimated_usd"], "actual_usd": actual,
             "samples": len(atts), "by_status": by_status, "by_model_usd": by_model,
-            "stopped": self.stop_reason,
+            "stopped": self.stop_reason, "max_usd": self.max_usd,
             "unfinished": [a["sample_id"] for a in unresolved],
             "unknown": [{"sample": a["sample_id"], "submitted_at": a.get("submitted_at"),
                          "request_hash": a.get("request_hash"), "error": a.get("error")}
@@ -744,6 +744,10 @@ def format_result(r: dict) -> str:
          f"Actual cost: ${r['actual_usd']:.4f}   (estimated ${r['estimated_usd_known']:.4f} known)"]
     for m, usd in sorted(r["by_model_usd"].items()):
         L.append(f"  {m}: ${usd:.4f}")
+    if r.get("max_usd") is not None:
+        over = r["actual_usd"] - r["max_usd"]
+        L.append(f"Spending limit: --max-usd ${r['max_usd']:g} limits NEW submissions; it is not a hard cap, because requests already in flight when it is "
+                 f"reached can still bill." + (f" Actual cost is ${over:.4f} over it." if over > 1e-9 else ""))
     if r["stopped"]:
         L.append(f"\nSTOPPED: {r['stopped']}")
     if r["unfinished"]:

@@ -175,7 +175,7 @@ def plan_summary(plan: dict, names: list[str]) -> list[str]:
 
 READ_ME = [
     "How to use this workbook",
-    "Tick Selected for the rows you want generated. Only ticked rows are generated.",
+    "Tick Selected for the rows you want in the next batch. Ticking starts nothing: your assistant prices the batch and generation starts only after you approve that quote. Rows that already have an image are skipped, and anything you save after approving a batch is not part of that run; it is in the next quote.",
     "You can change the dimension values, Model, Take, Reference and Notes. Save the file before you ask Image Lab to generate.",
     "ID, Prompt, Status, Image, File and Cost are written by Image Lab and ignored when it reads your edits. IDs are read-only: do not edit them.",
     "A row is exactly one image. Take numbers the images of the same values: r001 Take 1 and r002 Take 2 with identical values produce two images. To add one, run `image.py add-takes --dir <experiment> --rows r001`, or copy the row, change Take and save (the copy gets a new ID).",

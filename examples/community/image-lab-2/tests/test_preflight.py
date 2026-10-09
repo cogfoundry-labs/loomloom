@@ -93,6 +93,130 @@ class Plan(Base):
             self.assertEqual(cams, {"eye-level front", "three-quarter high", "low angle"})   # each model covered
 
 
+class ApprovalScope(Base):
+    def test_preflight_says_what_the_fingerprint_authorizes(self):
+        self.build()
+        text = pf.format_report(self.run_pf())
+        self.assertIn("authorizes exactly 9 images and nothing else", text)
+
+    def test_resaving_an_unchanged_workbook_is_not_a_difference_whatever_its_file_time_says(self):
+        import os
+        self.build()
+        fp = self.run_pf()["fingerprint"]
+        wb = self.exp / "experiment.xlsx"
+        later = wb.stat().st_mtime + 3600
+        os.utime(wb, (later, later))                                              # "saved" an hour later with the same content
+        self.assertEqual(ex.snapshot_drift(self.exp, fp), [])
+
+    def test_a_changed_value_is_reported_by_row_and_field_even_if_the_file_time_did_not_move(self):
+        import os
+        self.build()
+        fp = self.run_pf()["fingerprint"]
+        led = self.ledger()
+        first = led["rows"][0]
+        dim = next(iter(first["params"]))
+        other = next(r["params"][dim] for r in led["rows"] if r["params"][dim] != first["params"][dim])
+        first["params"][dim] = other
+        lg.save(self.exp / "ledger.json", led)
+        wb = self.exp / "experiment.xlsx"
+        wb.unlink()                                                               # the ledger is the source in this test
+        drift = ex.snapshot_drift(self.exp, fp)
+        self.assertTrue(any(line.startswith(first["id"] + ":") and "prompt" in line for line in drift), drift)
+        self.assertEqual(len(drift), 1)                                           # only the edited row is named
+
+    def test_a_row_unticked_after_approval_is_named_because_it_will_still_run(self):
+        self.build()
+        fp = self.run_pf()["fingerprint"]
+        rid = self.ledger()["rows"][0]["id"]
+
+        def untick(led):
+            for r in led["rows"]:
+                if r["id"] == rid:
+                    r["selected"] = False
+        self.edit_ledger(untick)
+        drift = ex.snapshot_drift(self.exp, fp)
+        self.assertEqual(len(drift), 1)
+        self.assertIn("will still run", drift[0])
+
+    def test_rows_that_already_ran_and_retry_snapshots_are_not_compared_and_unknown_fingerprints_are_quiet(self):
+        self.build()
+        fp = self.run_pf()["fingerprint"]
+        def already_ran_and_edited(led):
+            led["rows"][0]["status"] = "Completed"
+            led["rows"][0]["params"][next(iter(led["rows"][0]["params"]))] = "zzz"
+        self.edit_ledger(already_ran_and_edited)
+        self.assertEqual(ex.snapshot_drift(self.exp, fp), [])                     # a resume: the row already ran
+        self.assertEqual(ex.snapshot_drift(self.exp, "nosuchfingerprint"), [])
+
+    def test_the_visual_checks_are_printed_after_a_run_as_unverified_and_absent_when_the_plan_has_none(self):
+        checks = ["the text reads exactly what was asked", "no extra text anywhere"]
+        self.build(dict(copy.deepcopy(PLAN), visual_checks=checks))
+        note = ex.visual_checks_note(self.exp)
+        self.assertIn("the run verifies none of these", note)
+        self.assertIn("a model's reading or the user's own look", note)
+        for i, check in enumerate(checks, 1):
+            self.assertIn(f"{i}. {check}", note)
+        plan = json.loads((self.exp / "plan.json").read_text(encoding="utf-8"))
+        plan.pop("visual_checks")
+        (self.exp / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+        self.assertIsNone(ex.visual_checks_note(self.exp))
+        self.assertIsNone(ex.visual_checks_note(self.tmp / "nowhere"))
+
+    def test_ticked_rows_outside_the_approved_snapshot_are_listed_as_not_approved(self):
+        self.build()
+        rows = [r["id"] for r in self.ledger()["rows"]]
+        rep = self.run_pf(only=rows[:2])                                          # a calibration-sized subset: 2 of 9 rows
+        left = ex.unapproved_ticked(self.exp, rep["fingerprint"])
+        self.assertEqual(sorted(left), sorted(rows[2:]))
+        self.assertEqual(ex.unapproved_ticked(self.exp, self.run_pf()["fingerprint"]), [])       # the full preflight covers all nine
+        self.assertEqual(ex.unapproved_ticked(self.exp, "nosuchfingerprint"), [])
+
+
+class EndToEndFindings(Base):
+    """Findings of the end-to-end test of the latest workflow."""
+    def test_the_singular_is_used_for_one_image(self):
+        self.build()
+        rep = self.run_pf(only=[self.ledger()["rows"][0]["id"]])
+        self.assertIn("authorizes exactly 1 image and nothing else", pf.format_report(rep))
+
+    def test_a_plan_changed_after_the_build_is_reported_and_an_unchanged_one_is_not(self):
+        self.build()
+        self.assertFalse([i for i in self.run_pf()["info"] if "plan.json was changed" in i])
+        plan = json.loads((self.exp / "plan.json").read_text(encoding="utf-8"))
+        plan["visual_checks"] = ["a changed check"]
+        (self.exp / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+        info = " ".join(self.run_pf()["info"])
+        self.assertIn("plan.json was changed after the experiment was built", info)
+        self.assertIn("keep it", info)
+
+    def test_acknowledging_a_person_notice_is_not_a_plan_change(self):
+        self.build()
+        plan = json.loads((self.exp / "plan.json").read_text(encoding="utf-8"))
+        plan["consent_acknowledged"] = "2026-10-10T12:00:00"
+        (self.exp / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+        self.assertFalse([i for i in self.run_pf()["info"] if "plan.json was changed" in i])
+
+    def test_an_old_ledger_without_a_plan_hash_says_nothing(self):
+        self.build()
+
+        def strip(led):
+            led["experiment"].pop("plan_hash", None)
+        self.edit_ledger(strip)
+        self.assertFalse([i for i in self.run_pf()["info"] if "plan.json was changed" in i])
+
+    def test_the_dry_run_gives_an_indicative_price_when_no_price_is_verified(self):
+        import experiment as exp_mod
+        plan = copy.deepcopy(PLAN)
+        plan["quality"] = "medium"
+        plan["references"] = []
+        s = exp_mod.preview_plan(plan, 9)
+        if s["estimate"]["unverified_rows"]:
+            text = exp_mod.format_plan_summary(s)
+            self.assertIn("Indicative:", text)
+            self.assertIn("a hint, not a quote", text)
+            self.assertIn("$0.0000 known", text)                     # the hint is never folded into the known total
+
+
 class IndicativePrice(unittest.TestCase):
     HINTS = {"measured": __import__("datetime").date.today().isoformat(), "usd_per_image": {"m|1024x1536|q=medium": 0.01, "m|1152x1440|q=medium": 0.02, "m|1024x1536|q=high": 0.09}}
 

@@ -6,7 +6,7 @@ description: Generate image alternatives with a price shown before any spend, in
 
 # Image Lab 2
 
-**See the price. Approve once. Generate in parallel. Keep a record of everything.**
+**See the price. Approve each paid batch. Generate in parallel. Keep a record of everything.**
 
 Two modes share one engine (`scripts/image.py`), one ledger and one gate:
 
@@ -36,18 +36,31 @@ for quick mode; `skills/plan.md` and `skills/direction.md` (about 17 KB each) on
 
 ## Rules that always apply
 
-1. **One approval per paid batch.** Nothing is spent before the user approves the numbers
-   you show. `run` needs `--confirm <fingerprint>` and refuses anything else. The
-   fingerprint binds the approval to an immutable snapshot (`snapshots/<fp>.json`);
-   `run` reads only that snapshot, never the workbook, so edits after approval cannot
-   change what runs. After any edit, preflight again and ask again.
+1. **Each paid batch is approved once, and each approval authorizes exactly one execution snapshot.** An experiment can have several paid batches (a calibration,
+   then the rest, then a retry), and each needs its own quote and its own approval. Nothing is spent before the user approves the numbers you show. `run` needs
+   `--confirm <fingerprint>` and refuses anything else. The fingerprint binds the approval to an immutable snapshot (`snapshots/<fp>.json`); `run` reads only that
+   snapshot, never the workbook. **What the fingerprint covers**, for every row: its id (which images), the compiled prompt, model, size, quantity, mode, quality and the
+   hash of each reference file, plus the known total and the unverified rows. It does not cover file times.
+   - **The one spend gate:** `run --confirm <fingerprint>` (and a repeat with `--again`) is the only command that spends. `retry`, `add-takes` and `recover` never spend by
+     themselves: `retry` prepares a new quote for failed rows (a new snapshot that needs its own approval); `add-takes` adds ticked rows that need their own preflight and approval;
+     `recover` only re-downloads images that were already billed, from their recorded URL, and sends no new request. They are steps toward a batch, never a way around the approval.
+   - **Editing and locking:** after the plan confirmation the user may keep editing the workbook; a `preflight` freezes a snapshot and the user's yes approves that one.
+     A change after that, even dropping a single image, never alters the approved snapshot: preflight again, quote again, approve again.
+   - **A calibration batch is approved on its own.** Approving one image per direction does not approve the rest of the experiment.
+   - **The main batch is quoted and approved again,** after the user has seen the calibration.
+   - **Anything that changes what would run needs a new `preflight` and approval:** a changed direction, selected rows, model, size or prompt.
+   - **An approved snapshot never changes**, whatever is saved in Excel afterwards. Edits made after an approval are not in that run. Before it starts, `run` compares the snapshot with a fresh preflight of the
+     current workbook **by content** (not file time: re-saving an unchanged workbook is no difference) and names each row and field that differs; after it, it lists the ticked rows that were not approved.
+   - **Say the scope when you ask:** "This approves exactly these N images (about $X, fingerprint ...). It does not approve anything else; the other M ticked rows will be quoted separately."
+   - **Two different "yes" answers:** a *plan confirmation* (the plan or Direction Sheet is what the user wants; spends nothing; "the one confirmation" in
+     `skills/plan.md` and `skills/direction.md`) is not a *spend approval* (a fingerprint).
 2. **Show the price honestly.** Quote the *known* total and say how many rows have an
    unverified price (those are not in the total). Never invent a number. The balance
    is "unread"; the gateway confirms.
 3. **Unknown is never retried automatically.** If a submit gets no confirmed reply the
    attempt is `Unknown`: it may or may not be billed. Tell the user, give the submit
    time and request hash from the result, and let them check the console usage log.
-   Only retry it if they ask (`retry --include-unknown`).
+   Only after the user has checked the usage log and accepted the billing risk, `retry --include-unknown` prepares a new quote, which needs its own approval.
 4. **Never overwrite the user's cells.** The workbook is regenerated from the ledger
    (`experiment.prev.xlsx` is kept). If Excel has the file open you get
    `experiment.refresh-<time>.xlsx`; tell the user.
@@ -56,11 +69,10 @@ for quick mode; `skills/plan.md` and `skills/direction.md` (about 17 KB each) on
    edit the workbook, and you preflight after the run ends. A crashed run's lock expires after 5 minutes.
 6. **Quality and price.** For models with a `quality` setting, `auto` can bill two different prices for the same
    request (measured $0.030 vs $0.055). Set `quality` in the plan for a predictable cost; an explicit quality is
-   unpriced until one image bills, so the preflight says `unverified` and `run` needs `--max-usd`. After the
-   first images the guard counts in-flight samples at the highest real price seen.
-7. **Spend limits.** `run` stops submitting past `--max-usd` (default 1.25x the known
-   estimate; required when a row has no verified price). It cannot stop tasks already
-   in flight, so say so if the user asks for a hard cap.
+   unpriced until one image bills, so the preflight says `unverified` and `run` needs `--max-usd`.
+7. **Spend limits.** `--max-usd` (default 1.25x the known estimate; required when a row has no verified price) limits **new submissions**: in-flight samples
+   are counted at the highest real price seen, but a sample with no known price counts as zero until it bills, and requests already in flight still bill. So the final cost
+   can pass it. It is **not a hard cap**: never describe it as one. The result reports the limit and any overshoot.
 8. A fingerprint that already ran needs `--again`: a repeat is a new spend, so ask first.
 
 ## Quick mode
@@ -74,12 +86,25 @@ gallery page, adjust) are in [`skills/quick.md`](skills/quick.md). The rules bel
 BRIEF -> PLAN -> WORKBOOK -> PREFLIGHT -> APPROVE -> GENERATE -> RESULTS -> retry / next batch
 ```
 
-**0. Route.** Quick mode, the planner, or Creative Direction? Explicit user words win: "generate exactly this" or a plain single-image prompt
-is quick mode; words like explore, directions, concepts, campaign or ideas go to **Creative Direction** (`skills/direction.md`) without a question. When the
-brief is creatively open-ended (campaign or brand language, several valid interpretations) and the user used none of those words, **ask once**: *Generate as
-written* or *Explore creative directions* (recommend exploring, with one line why). Do not decide by prompt length. A reference photo or "vary X" is the planner
-(`skills/plan.md`), plus Creative Direction when the brief is open-ended. Creative Direction produces 3 to 10 directions (default 4) with the user's idea as
-Direction 1 and the user's copy unchanged, then hands a Direction Sheet to the plan stage.
+**0. Route.** Three modes, three different questions. Decide on the user's **intent and constraints**, not on single words or prompt length; first match wins:
+
+| | Question it answers | What the user buys |
+|---|---|---|
+| **Quick** | the same prompt: how do I get a few good options fast? | speed and convenience |
+| **Variation** | which variables change the picture, and how? | a controlled experiment |
+| **Creative Direction** | what different visual ideas can this brief become? | creative exploration |
+
+1. The user asks to **explore creative directions** (explore, concepts, directions, campaign ideas, different ideas or looks for a brief) -> **Creative Direction**
+   (`skills/direction.md`), no question needed. A reference photo can be part of it. It produces 3 to 10 directions (default 4) with the user's idea as Direction 1 and the
+   user's copy unchanged, then hands a Direction Sheet to the plan stage.
+2. The user asks to **control or compare variables** ("try these lighting setups", "vary the camera"), **or the request needs something Quick cannot do**: a reference photo
+   (Quick takes none) or more than 8 images (Quick makes 1, 2, 4 or 8) -> **Variation** (`skills/plan.md`). A photo used only as a reference is still this route today.
+3. The brief is **creatively open-ended** (campaign or brand language, several valid interpretations) but the user did not say whether to explore -> **ask once**:
+   *Generate as written* or *Explore creative directions* (recommend exploring, with one line why).
+4. Anything else -> **Quick**: one finished prompt, or a plain request for a few options of a concrete scene.
+
+A word such as "different" is weak evidence: "8 different product shots" with no photo is Quick, and the approval message says what Quick gives (see `skills/quick.md`).
+Say which route you chose in one line.
 
 **1. Brief.** Ask only what you cannot infer: what is being made, for what use, and
 whether there is a reference photo. Put reference files in a `refs/` folder next to the
@@ -107,12 +132,13 @@ user has said yes in chat.
 `python scripts/image.py check --plan plan.json` and
 `python scripts/image.py plan --plan plan.json --out ./out/<name> --dry-run` (writes nothing,
 prints the size of the experiment and what to fix), then show the user the plan in plain
-words and get **one** confirmation of it, including the person notice if one applies. Do not
+words and get **one plan confirmation** of it (not a spend approval), including the person notice if one applies. Do not
 ask per dimension. Camera wording with a reference photo needs care: strong wording makes the
 model copy-tilt the product (use `fragment_with_reference`).
 
 **3. Build the experiment** (spends nothing; it refuses a folder that already holds an experiment, so use a new
-`--out`, or edit `experiment.xlsx` and `preflight` to change an existing one):
+`--out`, or change an existing one: edit `experiment.xlsx` for values, rows, Model and Take, or `./out/<name>/plan.json` for wording and checks, then `preflight`; rows that
+already have an image keep it, and new dimension values or directions need a new experiment):
 
 ```
 python scripts/image.py plan --plan ./plan.json --out ./out/<name>
@@ -141,8 +167,9 @@ For a **calibration** (one image per creative direction before the full batch) a
 (`preflight --dir ./out/<name> --one-per direction`); `--only r001,r009` prices named rows. The other ticked rows stay ticked, and a plain
 preflight afterwards takes the rest. On a fresh clone there is no observed price yet, so rows show as unverified (nothing is added to the known total) and `run` needs `--max-usd`; preflight prints an "Indicative" range from `references/price-hints.json` and a safe limit to use. That range is a hint, not a quote: say so, and name the safe limit when you ask for approval.
 
-**5. Approve** with `AskUserQuestion` (Generate / Edit the workbook / Stop), naming
-images, models and the known total.
+**5. Approve** this batch with `AskUserQuestion` (Generate / Edit the workbook / Stop), naming
+images, models and the known total, and **its scope** (rule 1): exactly these images, nothing else. For creative directions the first batch is the calibration, one image per
+direction, and its approval says so.
 
 **6 to 8. Generate, results, retry.** After the user's approval: `run --dir ./out/<name> --confirm <fingerprint> --max-usd <N>` in the background with a progress
 file (about 30 s updates), then results (contact sheet, the plan's `visual_checks` against every image, real cost), then retry, recover and next batch. The commands, the
@@ -163,12 +190,8 @@ file (about 30 s updates), then results (contact sheet, the plan's `visual_check
 
 ## Status
 
-Built through M6 (design `docs/design-v2.md`): generator, the experiment contact sheet (`scripts/sheet.py`), retry, quick mode, references (one
-per row), person-notice enforcement, reference-support states promoted by real use, the
-planner stage (`skills/plan.md`), Creative Direction (`skills/direction.md`, M6), the controls vocabulary (`references/controls-catalog.json`,
-only lighting and camera are blind-tested) and a planner evaluation set
-(`tests/planner-eval/`, `scripts/planner_eval.py`). The planner was run by fresh agents twice (design item 41); the newest
-rules (`visual_checks`, the revised person notice) have not been exercised by a fresh agent yet.
+Usable from a checkout; not published. Design, decisions and open items: `docs/design-v2.md`. The planner and Creative Direction stages have been run by fresh agents
+(three cold-start tests) and measured on several models (`docs/proposal-llm-fit-advisor.md`, `references/llm-fit/`).
 
 ## Attribution
 
