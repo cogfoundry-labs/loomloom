@@ -1,7 +1,7 @@
 ---
 name: image-lab-2
 license: Apache-2.0
-description: Generate image alternatives with a price shown before any spend, in two modes. Quick mode turns one finished prompt into several alternatives spread across the 2-3 image models that best fit the brief. Experiment mode runs a controlled set of variations (camera, lighting, environment, style, aspect) of a brief, optionally from a reference photo, tracked in an Excel workbook where the user ticks which rows to generate. Both show the estimated total first, need one approval per paid batch, generate in parallel, and keep a ledger of every attempt. Use when someone wants several options of one image prompt, wants to compare image models, wants to explore variations of a product or scene systematically, wants to start from a reference image, or wants a cost estimate before generating. Triggers include "generate that with Image Lab", "8 options of this with Image Lab", "run Image Lab on this photo", "with Image Lab, try different lighting and camera angles". It needs to be named: a bare "generate an image" belongs to native image generation, not here.
+description: "Generate image alternatives with the price shown before any spend. Quick: one finished prompt becomes several alternatives across the 2-3 best-fit image models. Variation: controlled variations (camera, lighting, environment, style, aspect) of a brief, optionally from a reference photo, in an Excel workbook where the user ticks which rows to generate. Creative Direction: several different directions for an open brief, one image each first. Every paid batch shows its estimated total, needs one approval and is recorded in a ledger. Use when someone wants several options of one image prompt, wants to compare image models, explore variations or creative directions, start from a reference image, or know the cost before generating. Triggers include \"generate that with Image Lab\", \"8 options of this with Image Lab\", \"run Image Lab on this photo\", \"with Image Lab, try different lighting and camera angles\". It has to be named: a bare \"generate an image\" belongs to native image generation."
 ---
 
 # Image Lab 2
@@ -11,7 +11,7 @@ description: Generate image alternatives with a price shown before any spend, in
 Three modes share one engine (`scripts/image.py`), one ledger and one gate. **Quick**: one finished prompt, spread across the best-fit models, no plan. **Variation** and
 **Creative Direction** (together "experiment mode"): a `plan.json` becomes `experiment.xlsx`, where the user ticks the rows to generate.
 
-Setup: run commands from this folder (`python scripts/image.py <command>`); `pip install -r requirements.txt` (experiment mode; quick mode needs nothing); a gateway key in
+Setup: run commands from this folder (the one holding this file; for an installed skill, for example `~/.claude/skills/image-lab-2/`) (`python scripts/image.py <command>`); `pip install -r requirements.txt` (experiment mode; quick mode needs nothing); a gateway key in
 `LOOMLOOM_TOKEN_COGFOUNDRY` (https://console.cogfoundry.ai/api-keys), needed only for `run`; the loomloom CLI is **not** used. On Windows set `PYTHONUTF8=1` (bash:
 `PYTHONUTF8=1 python ...`; PowerShell: `$env:PYTHONUTF8=1`). Without `AskUserQuestion` or `SendUserFile`, ask in plain chat and give file paths.
 
@@ -126,6 +126,6 @@ file (about 30 s updates), then results (contact sheet, the plan's `visual_check
 
 ## Status and attribution
 
-Usable from a checkout; not published. Design, decisions and open items: `docs/design-v2.md`; measured evidence: `docs/proposal-llm-fit-advisor.md`, `references/llm-fit/`.
+A beta: install it with `npx skills add cogfoundry-labs/loomloom --skill image-lab-2 -a claude-code -g -y`, or run it from a checkout. Design, decisions and open items: `docs/design-v2.md`; measured evidence: `docs/proposal-llm-fit-advisor.md`, `references/llm-fit/`.
 `ai-image-prompts-skill` (YouMind, MIT) is a natural prompt source for quick mode, used unmodified (keep its attribution footer on a hand-off message); `runcomfy-com/skills`
 (MIT) inspired intent-based model selection. A community example on [loomloom](https://github.com/cogfoundry-labs/loomloom); Image Lab 2 talks to the CogFoundry gateway directly.
