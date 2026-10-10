@@ -31,7 +31,7 @@ dimension values (read `ledger.json`: `rows[].params`), give a table and the rea
    **Or have a vision model read the images** (about $0.002 per image on the default model, so a few cents for a batch; it never generates or changes an image):
    `python scripts/image.py review --dir ./out/<name> [--rows r001,r002] [--only-unreviewed]` prints a quote with a fingerprint; after the user approves exactly that
    quote, run it again with `--confirm <fingerprint>`. It is a separate approval from the generation. A call that fails is reported and never retried. Its verdicts are marked
-   `source: model`: say so. Treat it as a first pass, not a verification: on a live test it read a garbled small-type line as correct and failed a check that did not apply to the image, so
+   `source: model` and are kept beside the verdict of the assistant or the user as a second reading (`model_review`), never replacing it: say so. Treat it as a first pass, not a verification: on a live test it read a garbled small-type line as correct and failed a check that did not apply to the image, so
    look at every failure and every doubtful image yourself, and phrase each plan check so it can be judged from one image.
 
 For a quick look at the images grouped by one dimension (for example one grid per creative direction) run

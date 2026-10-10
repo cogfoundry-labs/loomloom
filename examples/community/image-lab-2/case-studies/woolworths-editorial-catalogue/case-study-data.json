@@ -99,7 +99,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "All five text elements correct; an extra word on a store sign (Fruit & Veg)"
+              "reason": "an extra word on a store sign (Fruit & Veg)"
             },
             {
               "n": 2,
@@ -113,8 +113,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "a large green plate in the foreground and the green logo: a judgement call"
             },
             {
               "n": 5,
@@ -123,8 +123,43 @@
             },
             {
               "n": 6,
-              "verdict": "pass",
+              "verdict": "na",
               "reason": ""
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text appears, including \"01 / THE LIFESTYLE\" and \"FRESH FOOD / QUALITY / EVERYDAY VALUE,\" and the headline wording is not exactly the required set."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object, large and prominent in the foreground."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and their poses appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with natural lighting and limited brand green beyond the produce and trolley accents."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and stacked on the left, not centered or bannered across the top."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 1, so the other direction-specific thumbnail comparisons do not apply."
             }
           ]
         }
@@ -180,8 +215,43 @@
             },
             {
               "n": 6,
-              "verdict": "pass",
+              "verdict": "na",
               "reason": ""
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Visible text includes extra copy and only part of the required headline set is readable."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is large, sharp, and the clear hero object in directions 1-4 style."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither subject looks at the camera and their bodies and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Australian Woolworths supermarket with only limited brand green accents."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image matches direction 1, so the other directional comparisons do not apply."
             }
           ]
         }
@@ -227,8 +297,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "a large green plate and two green logo boards behind: a judgement call"
             },
             {
               "n": 5,
@@ -237,8 +307,43 @@
             },
             {
               "n": 6,
-              "verdict": "pass",
+              "verdict": "na",
               "reason": ""
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "There is extra text beyond the allowed wording, including the Woolworths logo and repeated headline text."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object and is large, sharp, and unobstructed."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera, and both appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket, with brand green used sparingly."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 1, so the direction-2 to direction-5 comparison does not apply."
             }
           ]
         }
@@ -270,7 +375,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; an extra product label (Aurora Australian Extra Virgin Olive Oil)"
+              "reason": "an extra product label (Aurora Australian Extra Virgin Olive Oil)"
             },
             {
               "n": 2,
@@ -294,8 +399,43 @@
             },
             {
               "n": 6,
-              "verdict": "pass",
+              "verdict": "na",
               "reason": ""
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra readable text appears, including AURORA and product labeling."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear foreground hero and is not hidden by the people or text."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "No one looks at the camera and the figures appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real supermarket with only limited brand green beyond the produce."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 1, so the direction-comparison requirement does not apply."
             }
           ]
         }
@@ -351,8 +491,43 @@
             },
             {
               "n": 6,
-              "verdict": "pass",
+              "verdict": "na",
               "reason": ""
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The image includes extra visible text beyond the allowed set, including product packaging and a missing exact match to the required signature wording."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is large, sharp, and clearly the hero object in a direction 1 style composition."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the visible pose and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with ordinary aisles and only limited brand green accents."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 1, so the comparison requirements for directions 2 to 5 do not apply."
             }
           ]
         }
@@ -408,8 +583,43 @@
             },
             {
               "n": 6,
-              "verdict": "pass",
+              "verdict": "na",
               "reason": ""
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra visible text appears, including the Woolworths logo wording and the additional phrase.\"Fresh food. Quality. Everyday Australian life.\""
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear foreground hero and is large and sharp."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the visible limbs and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket, with brand green used sparingly and not a futuristic setting."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 1, so the direction-specific comparison requirements for 2 to 5 do not apply."
             }
           ]
         }
@@ -465,12 +675,63 @@
             },
             {
               "n": 6,
-              "verdict": "pass",
+              "verdict": "na",
               "reason": ""
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The visible text includes extra words beyond the allowed set, including the headline punctuation and spacing differences."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object in the foreground and is larger/sharper than the people."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the visible hands and bodies appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with only rare brand green accents, not a luxury or futuristic space."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 1, so the direction-comparison requirements for 2 to 5 do not apply."
             }
           ]
         }
       }
+    ],
+    "checks": [
+      "the only text is FRESH. EVERY DAY., 01 / THE LIFESTYLE, Fresh food. Quality. Everyday Australian life., FRESH FOOD / QUALITY / EVERYDAY VALUE and a Woolworths signature, spelled exactly, with no other words",
+      "in directions 1 to 4 the trolley is the clear hero object (large, sharp, never hidden by text or people); in direction 5 it is present but the people lead",
+      "nobody looks at the camera and hands and bodies are anatomically correct",
+      "it reads as a real Australian Woolworths, not a luxury or futuristic space, and the brand green stays rare (the green of produce does not count)",
+      "the headline is left-aligned, not centered and not confined to a banner along the top",
+      "direction 2 shows the trolley front filling the lower half, direction 3 a large trolley with a quiet upper third, direction 4 a true side profile, direction 5 the couple leading; the five look different at thumbnail size"
+    ],
+    "check_labels": [
+      "Only the allowed text, spelled exactly",
+      "The trolley is the hero (the couple, in the wildcard direction)",
+      "Nobody looks at the camera; bodies and hands look right",
+      "A real Australian Woolworths, brand green kept rare",
+      "Headline left-aligned, not centred, not a top banner",
+      "The direction's own look"
     ],
     "caveats": [
       {
@@ -479,7 +740,7 @@
       },
       {
         "title": "Most images carry extra readable words.",
-        "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none. That is a small sample, but it is a clear difference."
+        "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none in the assistant's reading (the automatic second reader disagrees: see How the images were checked). That is a small sample, but it is a clear difference."
       },
       {
         "title": "A new line slightly relaxes the brief.",
@@ -591,7 +852,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; an extra product label (Australian Extra Virgin Olive Oil)"
+              "reason": "an extra product label (Australian Extra Virgin Olive Oil)"
             },
             {
               "n": 2,
@@ -605,8 +866,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
             },
             {
               "n": 5,
@@ -616,7 +877,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the trolley's front fills the lower half of the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text appears, including Woolworths, FRESH FOOD, QUALITY, EVERYDAY VALUE, and the tagline."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object and is large, sharp, and unobstructed."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the bodies and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket, with only limited brand green beyond the produce."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 2, with the trolley front filling the lower half and a distinct thumbnail composition."
             }
           ]
         }
@@ -648,7 +944,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; garbled print on the paper bag"
+              "reason": "garbled print on the paper bag"
             },
             {
               "n": 2,
@@ -662,8 +958,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
             },
             {
               "n": 5,
@@ -673,7 +969,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the trolley's front fills the lower half of the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The image includes extra text and the bottom line does not match the required exact wording."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object and is large, sharp, and unobstructed."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the visible bodies and hands appear anatomically correct."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket rather than a luxury or futuristic space, with green used sparingly."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 2 with the trolley front filling the lower half, distinct from the other directions."
             }
           ]
         }
@@ -719,8 +1050,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
             },
             {
               "n": 5,
@@ -730,7 +1061,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the trolley's front fills the lower half of the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Several required lines are missing and extra text appears, including the Woolworths logo and only part of the tagline set."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object and fills the foreground prominently."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the figures appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Australian supermarket scene, with green used sparingly as brand accents."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 2 with the trolley front dominating the lower half."
             }
           ]
         }
@@ -762,7 +1128,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; a garbled egg-carton label"
+              "reason": "a garbled egg-carton label"
             },
             {
               "n": 2,
@@ -776,8 +1142,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
             },
             {
               "n": 5,
@@ -787,7 +1153,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the trolley's front fills the lower half of the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The image includes extra text and the line reads EVERYDAY VALUE, not the required exact wording."
+            },
+            {
+              "n": 2,
+              "verdict": "fail",
+              "reason": "The trolley is prominent but partially obscured by the people and not clearly the sole hero object."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the bodies and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket, with only limited brand green and no futuristic setting."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned in the lower left and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This side-front composition matches direction 2 and differs from the other listed directions."
             }
           ]
         }
@@ -819,7 +1220,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; a large in-scene Woolworths sign adds a second brand mark"
+              "reason": "a large in-scene Woolworths sign adds a second brand mark"
             },
             {
               "n": 2,
@@ -833,8 +1234,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "a large green plate, the logo, and a second large Woolworths sign behind: a judgement call"
             },
             {
               "n": 5,
@@ -844,7 +1245,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the trolley's front fills the lower half of the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The image contains extra text and the signature/line copy do not match exactly."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object and fills much of the lower foreground."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "No one looks at the camera and the figures appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with only limited green brand elements."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 2 with the trolley front dominating the lower half."
             }
           ]
         }
@@ -876,7 +1312,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; extra sign words (Australian Fresher Together)"
+              "reason": "extra sign words (Australian Fresher Together)"
             },
             {
               "n": 2,
@@ -890,8 +1326,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
             },
             {
               "n": 5,
@@ -901,7 +1337,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the trolley's front fills the lower half of the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text appears, including AUSTRALIAN FRESHER TOGETHER and FRESH FOOD / QUALITY / EVERYDAY VALUE, and the headline has three periods as separate words."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object, large and sharp in the foreground, not hidden by people."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera, and their poses and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real supermarket with only limited brand green, not a futuristic luxury space."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned in the lower left, not centered or trapped in a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 2 with the trolley front filling the lower half, and it is distinct at thumbnail scale."
             }
           ]
         }
@@ -947,8 +1418,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
             },
             {
               "n": 5,
@@ -958,11 +1429,62 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the trolley's front fills the lower half of the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text appears and the headline reads as separate lines, not exactly the full allowed text only."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object in the foreground and is large and sharp."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and their poses and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket and the brand green is present but not dominant."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and placed as a separate block, not centered or trapped in a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 2 with the trolley front filling the lower half and differs from the other direction options."
             }
           ]
         }
       }
+    ],
+    "checks": [
+      "the only text is FRESH. EVERY DAY., 01 / THE LIFESTYLE, Fresh food. Quality. Everyday Australian life., FRESH FOOD / QUALITY / EVERYDAY VALUE and a Woolworths signature, spelled exactly, with no other words",
+      "in directions 1 to 4 the trolley is the clear hero object (large, sharp, never hidden by text or people); in direction 5 it is present but the people lead",
+      "nobody looks at the camera and hands and bodies are anatomically correct",
+      "it reads as a real Australian Woolworths, not a luxury or futuristic space, and the brand green stays rare (the green of produce does not count)",
+      "the headline is left-aligned, not centered and not confined to a banner along the top",
+      "direction 2 shows the trolley front filling the lower half, direction 3 a large trolley with a quiet upper third, direction 4 a true side profile, direction 5 the couple leading; the five look different at thumbnail size"
+    ],
+    "check_labels": [
+      "Only the allowed text, spelled exactly",
+      "The trolley is the hero (the couple, in the wildcard direction)",
+      "Nobody looks at the camera; bodies and hands look right",
+      "A real Australian Woolworths, brand green kept rare",
+      "Headline left-aligned, not centred, not a top banner",
+      "The direction's own look"
     ],
     "caveats": [
       {
@@ -971,7 +1493,7 @@
       },
       {
         "title": "Most images carry extra readable words.",
-        "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none. That is a small sample, but it is a clear difference."
+        "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none in the assistant's reading (the automatic second reader disagrees: see How the images were checked). That is a small sample, but it is a clear difference."
       },
       {
         "title": "A new line slightly relaxes the brief.",
@@ -1083,12 +1605,12 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "The original Direction 3 wording: the couple dominates and the trolley is mid-size. Garbled print on the cart box"
+              "reason": "garbled print on the cart box"
             },
             {
               "n": 2,
               "verdict": "fail",
-              "reason": "the couple dominates and the trolley is mid-size"
+              "reason": "the couple dominates the frame and the trolley is mid-size"
             },
             {
               "n": 3,
@@ -1108,7 +1630,42 @@
             {
               "n": 6,
               "verdict": "fail",
-              "reason": "direction 3 should show a large trolley with a quiet upper third"
+              "reason": "the original wording: the trolley is mid-size and the couple large, not a large trolley under a quiet upper third"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text is visible, including Woolworths, 01 / THE LIFESTYLE, Fresh food. Quality. Everyday Australian life., and FRESH FOOD / QUALITY / EVERYDAY VALUE."
+            },
+            {
+              "n": 2,
+              "verdict": "fail",
+              "reason": "The trolley is present but the people are more prominent and the trolley is partly obscured by them and the crop."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the bodies and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with only limited brand green, mostly confined to signage and produce."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not centered or trapped in a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 3 with a large trolley, a calmer upper area, and a different thumbnail read from the other directions."
             }
           ]
         }
@@ -1140,7 +1697,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; extra sign words (Fruit & Veg, A better tomorrow together, Good food brighter days)"
+              "reason": "extra sign words (Fruit & Veg, A better tomorrow together, Good food brighter days)"
             },
             {
               "n": 2,
@@ -1165,7 +1722,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra words appear, including Fruit & Veg, A better tomorrow together, and Good food brighter days."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is large, sharp, and clearly the hero object in this direction."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Nobody looks at the camera and the visible bodies and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket and the brand green is used sparingly."
+            },
+            {
+              "n": 5,
+              "verdict": "fail",
+              "reason": "The headline is left-aligned, but it is also confined to a top-left block and not clearly free-form editorial."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 3 with a large trolley and a quiet upper third."
             }
           ]
         }
@@ -1197,7 +1789,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; an extra sign (A fresher brighter tomorrow)"
+              "reason": "an extra sign (A fresher brighter tomorrow)"
             },
             {
               "n": 2,
@@ -1222,7 +1814,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text appears, including 'A fresher brighter tomorrow' and the seen line breaks omit punctuation/spacing exactly as required."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object in a large, sharp foreground position."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the bodies/hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket, with green used sparingly mainly for branding and produce."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 3 with a large trolley and quieter upper third, distinct from the other directions."
             }
           ]
         }
@@ -1254,7 +1881,7 @@
             {
               "n": 1,
               "verdict": "pass",
-              "reason": ""
+              "reason": "one small garbled label, no extra readable words"
             },
             {
               "n": 2,
@@ -1279,7 +1906,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text appears beyond the allowed phrases, including the large headline and lower-right copy."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is large, sharp, and clearly the hero object in the foreground."
+            },
+            {
+              "n": 3,
+              "verdict": "cant_tell",
+              "reason": "Neither person looks at the camera, but full anatomical correctness cannot be confirmed from this image."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Australian Woolworths supermarket with green used sparingly mostly in branding and produce."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not centered or trapped in a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 3 with a large trolley and a quiet upper third, distinct from the other directions."
             }
           ]
         }
@@ -1336,7 +1998,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "There is extra text beyond the allowed list, including the visible trolley branding and the wordmark."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear foreground hero and is large and sharp."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the bodies/hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with limited brand green, not a luxury or futuristic space."
+            },
+            {
+              "n": 5,
+              "verdict": "fail",
+              "reason": "The headline is left-aligned but it is not the only text and some copy is placed in a lower-right block rather than a single editorial system."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 3 with a large trolley, quiet upper third, and people walking away while turned toward each other."
             }
           ]
         }
@@ -1368,7 +2065,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; a garbled Woolworths sign in the background"
+              "reason": "a garbled Woolworths sign in the background"
             },
             {
               "n": 2,
@@ -1393,7 +2090,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text appears, including a Woolworths signature and the lower-right slogan, and the required exact set is not the only text."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is large, sharp, and clearly the hero object in the foreground."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the bodies/hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with only limited brand green beyond produce."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not trapped in a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 3, so the other direction-specific comparisons do not apply."
             }
           ]
         }
@@ -1425,7 +2157,7 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "The rewritten wording: trolley large at the lower left. The headline sits on a dark panel; garbled print on a bag"
+              "reason": "garbled print on a bag"
             },
             {
               "n": 2,
@@ -1445,12 +2177,47 @@
             {
               "n": 5,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the headline sits on a dark panel that looks stuck on"
             },
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "pass",
+              "reason": "All readable text matches the listed phrases and no extra words are visible."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object in the foreground and is large and unobscured."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and both figures appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with only limited brand green beyond produce and signage."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not centered or trapped in a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 3 with a large trolley and quieter upper third, distinct from the other directions."
             }
           ]
         }
@@ -1482,7 +2249,7 @@
             {
               "n": 1,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the 01 / THE LIFESTYLE identifier is faint"
             },
             {
               "n": 2,
@@ -1507,11 +2274,62 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The image contains extra text beyond the allowed set, including duplicated headline text and additional words."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "In this direction the trolley is the clear hero object and remains large and prominent."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Nobody looks at the camera and the visible figures appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket and the green brand accents are limited."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 3, so the other direction-specific thumbnail comparisons do not apply."
             }
           ]
         }
       }
+    ],
+    "checks": [
+      "the only text is FRESH. EVERY DAY., 01 / THE LIFESTYLE, Fresh food. Quality. Everyday Australian life., FRESH FOOD / QUALITY / EVERYDAY VALUE and a Woolworths signature, spelled exactly, with no other words",
+      "in directions 1 to 4 the trolley is the clear hero object (large, sharp, never hidden by text or people); in direction 5 it is present but the people lead",
+      "nobody looks at the camera and hands and bodies are anatomically correct",
+      "it reads as a real Australian Woolworths, not a luxury or futuristic space, and the brand green stays rare (the green of produce does not count)",
+      "the headline is left-aligned, not centered and not confined to a banner along the top",
+      "direction 2 shows the trolley front filling the lower half, direction 3 a large trolley with a quiet upper third, direction 4 a true side profile, direction 5 the couple leading; the five look different at thumbnail size"
+    ],
+    "check_labels": [
+      "Only the allowed text, spelled exactly",
+      "The trolley is the hero (the couple, in the wildcard direction)",
+      "Nobody looks at the camera; bodies and hands look right",
+      "A real Australian Woolworths, brand green kept rare",
+      "Headline left-aligned, not centred, not a top banner",
+      "The direction's own look"
     ],
     "caveats": [
       {
@@ -1520,7 +2338,7 @@
       },
       {
         "title": "Most images carry extra readable words.",
-        "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none. That is a small sample, but it is a clear difference."
+        "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none in the assistant's reading (the automatic second reader disagrees: see How the images were checked). That is a small sample, but it is a clear difference."
       },
       {
         "title": "A new line slightly relaxes the brief.",
@@ -1657,7 +2475,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a true side profile, walking across the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The image includes extra visible text beyond the allowed set, including the Woolworths logo and headline block, and the exact allowed set is not fully matched."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is large, sharp, and the clear hero object in a side-profile view."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and their poses appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with restrained brand green accents rather than a luxury or futuristic space."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This is clearly the direction 4 side-profile composition, distinct from the other listed directions."
             }
           ]
         }
@@ -1714,7 +2567,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a true side profile, walking across the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text appears and the required exact line 01 / THE LIFESTYLE is not the only other text."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is large, sharp, and clearly the hero object in this side-profile composition."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and their poses and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with restrained brand green, not a futuristic luxury space."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and placed as a standalone editorial block, not centered or in a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This is direction 4, and the image clearly shows a true side profile distinct from the other directions."
             }
           ]
         }
@@ -1771,7 +2659,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a true side profile, walking across the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The image includes extra text and the bottom-right line is not exactly the required wording, and the Woolworths signature is not spelled exactly as specified."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is large, sharp, and clearly the hero object in the scene."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Nobody looks at the camera and the figures appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with only rare brand green accents, not a luxury or futuristic space."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This is a true side-profile composition matching direction 4 and looks distinct at thumbnail size."
             }
           ]
         }
@@ -1828,7 +2751,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a true side profile, walking across the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "There is extra text beyond the allowed set, including the Woolworths wordmark and the bottom-line copy."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object, large and sharp in the foreground."
+            },
+            {
+              "n": 3,
+              "verdict": "fail",
+              "reason": "The man points toward the shelves and the trolley handle area, while bodies/poses look imperfect enough to fail the anatomical check."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with normal retail fixtures and little brand-green exposure outside the produce."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 4, so the other direction-specific thumbnail comparison does not apply."
             }
           ]
         }
@@ -1885,7 +2843,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a true side profile, walking across the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text appears, including 01 // THE LIFESTYLE, Fresh food. Quality. Everyday Australian life., and FRESH FOOD / QUALITY / EVERYDAY VALUE."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is the clear hero object in a sharp, large side-profile composition."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and their poses appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket scene, with luxury styling avoided and green used sparingly."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "It matches direction 4 with a true side profile and the couple turned toward each other."
             }
           ]
         }
@@ -1942,11 +2935,62 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "a true side profile, walking across the frame"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The image also contains extra text: Woolworths, 01 / THE LIFESTYLE, Fresh food. Quality. Everyday Australian life., and FRESH FOOD / QUALITY / EVERYDAY VALUE."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "The trolley is large, sharp, and the clear hero object in the scene."
+            },
+            {
+              "n": 3,
+              "verdict": "cant_tell",
+              "reason": "No obvious camera look, but anatomical correctness cannot be fully verified from the image alone."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Australian supermarket with only limited brand green used."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 4, so the other direction comparisons do not apply."
             }
           ]
         }
       }
+    ],
+    "checks": [
+      "the only text is FRESH. EVERY DAY., 01 / THE LIFESTYLE, Fresh food. Quality. Everyday Australian life., FRESH FOOD / QUALITY / EVERYDAY VALUE and a Woolworths signature, spelled exactly, with no other words",
+      "in directions 1 to 4 the trolley is the clear hero object (large, sharp, never hidden by text or people); in direction 5 it is present but the people lead",
+      "nobody looks at the camera and hands and bodies are anatomically correct",
+      "it reads as a real Australian Woolworths, not a luxury or futuristic space, and the brand green stays rare (the green of produce does not count)",
+      "the headline is left-aligned, not centered and not confined to a banner along the top",
+      "direction 2 shows the trolley front filling the lower half, direction 3 a large trolley with a quiet upper third, direction 4 a true side profile, direction 5 the couple leading; the five look different at thumbnail size"
+    ],
+    "check_labels": [
+      "Only the allowed text, spelled exactly",
+      "The trolley is the hero (the couple, in the wildcard direction)",
+      "Nobody looks at the camera; bodies and hands look right",
+      "A real Australian Woolworths, brand green kept rare",
+      "Headline left-aligned, not centred, not a top banner",
+      "The direction's own look"
     ],
     "caveats": [
       {
@@ -1955,7 +2999,7 @@
       },
       {
         "title": "Most images carry extra readable words.",
-        "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none. That is a small sample, but it is a clear difference."
+        "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none in the assistant's reading (the automatic second reader disagrees: see How the images were checked). That is a small sample, but it is a clear difference."
       },
       {
         "title": "A new line slightly relaxes the brief.",
@@ -2067,12 +3111,12 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; extra words on a store sign (The fresh food people) and a bag (Australian Baby Spinach)"
+              "reason": "extra words on a store sign (The fresh food people) and a bag (Australian Baby Spinach)"
             },
             {
               "n": 2,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
             },
             {
               "n": 3,
@@ -2081,8 +3125,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "a large green logo on the wall behind and the trolley's green plate: a judgement call"
             },
             {
               "n": 5,
@@ -2092,7 +3136,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra readable text appears, including 'The fresh food people' and 'AUSTRALIAN BABY SPINACH'."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "In direction 5, the people are the clear focus and the trolley is present but secondary."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and the visible bodies and hands appear anatomically correct."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with only limited brand green, aside from produce."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 5 only, so the comparison across directions 1 to 5 does not apply."
             }
           ]
         }
@@ -2129,7 +3208,7 @@
             {
               "n": 2,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
             },
             {
               "n": 3,
@@ -2138,8 +3217,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "the trolley's large green plate and a green logo sign: a judgement call"
             },
             {
               "n": 5,
@@ -2149,7 +3228,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text appears, including the bottom-right slogan and the Woolworths logo text is not a signature as specified."
+            },
+            {
+              "n": 2,
+              "verdict": "na",
+              "reason": "This is direction 5, where the people lead and the trolley is only present."
+            },
+            {
+              "n": 3,
+              "verdict": "cant_tell",
+              "reason": "Nobody looks at the camera, but full anatomical correctness cannot be confirmed from this single image."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It clearly reads as a real Woolworths supermarket with natural produce lighting and limited brand green."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned on the upper left and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This matches direction 5 with the couple leading, and it is visually distinct from the other directions."
             }
           ]
         }
@@ -2181,12 +3295,12 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; an extra sign word (Fruit & Veg); the supporting line wraps to two lines"
+              "reason": "an extra sign word (Fruit & Veg); the supporting line wraps to two lines"
             },
             {
               "n": 2,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
             },
             {
               "n": 3,
@@ -2206,7 +3320,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra text is present and the Woolworths signature is not spelled exactly as specified."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "For direction 5, the people lead and the trolley is present but secondary."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Nobody looks at the camera and the visible hands and bodies appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Australian Woolworths supermarket with limited brand green beyond the produce."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This direction shows the couple leading, and the composition is distinct at thumbnail size."
             }
           ]
         }
@@ -2243,7 +3392,7 @@
             {
               "n": 2,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
             },
             {
               "n": 3,
@@ -2252,8 +3401,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "the trolley's green plate is large in the lower left: a judgement call"
             },
             {
               "n": 5,
@@ -2263,7 +3412,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "Extra readable text appears beyond the allowed set, including \"FOR A BRIGHTER TOMORROW\"."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "In direction 5 the couple leads and the trolley is present but secondary."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Nobody looks at the camera and the visible bodies and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with natural lighting and only limited brand green."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "na",
+              "reason": "This image is direction 5, so the other direction-specific thumbnail comparisons do not apply."
             }
           ]
         }
@@ -2300,7 +3484,7 @@
             {
               "n": 2,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
             },
             {
               "n": 3,
@@ -2320,7 +3504,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The visible text does not match the required exact set and includes line breaks plus a missing signature spelling cannot be verified exactly."
+            },
+            {
+              "n": 2,
+              "verdict": "na",
+              "reason": "This image is direction 5, where the people lead rather than the trolley being the clear hero object."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Neither person looks at the camera and their poses appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with only limited brand green accents and no futuristic setting."
+            },
+            {
+              "n": 5,
+              "verdict": "fail",
+              "reason": "The headline is left-aligned but it is confined to the left side rather than clearly not confined to a top banner as specified."
+            },
+            {
+              "n": 6,
+              "verdict": "cant_tell",
+              "reason": "Only one direction is shown, so the thumbnail-level differences among all five directions cannot be assessed."
             }
           ]
         }
@@ -2352,12 +3571,12 @@
             {
               "n": 1,
               "verdict": "fail",
-              "reason": "Text correct; an extra sign word (BAKERY)"
+              "reason": "an extra sign word (BAKERY)"
             },
             {
               "n": 2,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
             },
             {
               "n": 3,
@@ -2366,8 +3585,8 @@
             },
             {
               "n": 4,
-              "verdict": "pass",
-              "reason": ""
+              "verdict": "cant_tell",
+              "reason": "a green logo sign behind and the trolley's green plate: a judgement call"
             },
             {
               "n": 5,
@@ -2377,7 +3596,42 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "The image also contains a Woolworths logo, but the text otherwise matches; however the brief requires only the listed text with no other words, and there is extra visible branding."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "In direction 5 the couple lead the scene while the trolley is present behind them."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Nobody looks at the camera and the visible body proportions and hands appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Woolworths supermarket with ordinary bakery aisles and limited brand green."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline sits left-aligned and is not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "This clearly looks like direction 5, with the couple leading and the trolley secondary."
             }
           ]
         }
@@ -2414,7 +3668,7 @@
             {
               "n": 2,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
             },
             {
               "n": 3,
@@ -2434,11 +3688,62 @@
             {
               "n": 6,
               "verdict": "pass",
-              "reason": ""
+              "reason": "the couple leads"
+            }
+          ]
+        },
+        "model_review": {
+          "reviewer": "openai/gpt-5.4-mini",
+          "checks": [
+            {
+              "n": 1,
+              "verdict": "fail",
+              "reason": "There is extra text beyond the allowed set, including the top-right Woolworths logo and bottom-right FRESH FOOD / QUALITY / EVERYDAY VALUE."
+            },
+            {
+              "n": 2,
+              "verdict": "pass",
+              "reason": "This is direction 5: the couple lead and the trolley is present rather than the clear hero."
+            },
+            {
+              "n": 3,
+              "verdict": "pass",
+              "reason": "Nobody looks at the camera and the visible hands and bodies appear anatomically plausible."
+            },
+            {
+              "n": 4,
+              "verdict": "pass",
+              "reason": "It reads as a real Australian Woolworths supermarket with natural lighting and limited brand green."
+            },
+            {
+              "n": 5,
+              "verdict": "pass",
+              "reason": "The headline is left-aligned and not confined to a top banner."
+            },
+            {
+              "n": 6,
+              "verdict": "pass",
+              "reason": "The couple-leading composition and bakery-side scene fit direction 5 and differ from the other listed directions."
             }
           ]
         }
       }
+    ],
+    "checks": [
+      "the only text is FRESH. EVERY DAY., 01 / THE LIFESTYLE, Fresh food. Quality. Everyday Australian life., FRESH FOOD / QUALITY / EVERYDAY VALUE and a Woolworths signature, spelled exactly, with no other words",
+      "in directions 1 to 4 the trolley is the clear hero object (large, sharp, never hidden by text or people); in direction 5 it is present but the people lead",
+      "nobody looks at the camera and hands and bodies are anatomically correct",
+      "it reads as a real Australian Woolworths, not a luxury or futuristic space, and the brand green stays rare (the green of produce does not count)",
+      "the headline is left-aligned, not centered and not confined to a banner along the top",
+      "direction 2 shows the trolley front filling the lower half, direction 3 a large trolley with a quiet upper third, direction 4 a true side profile, direction 5 the couple leading; the five look different at thumbnail size"
+    ],
+    "check_labels": [
+      "Only the allowed text, spelled exactly",
+      "The trolley is the hero (the couple, in the wildcard direction)",
+      "Nobody looks at the camera; bodies and hands look right",
+      "A real Australian Woolworths, brand green kept rare",
+      "Headline left-aligned, not centred, not a top banner",
+      "The direction's own look"
     ],
     "caveats": [
       {
@@ -2447,7 +3752,7 @@
       },
       {
         "title": "Most images carry extra readable words.",
-        "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none. That is a small sample, but it is a clear difference."
+        "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none in the assistant's reading (the automatic second reader disagrees: see How the images were checked). That is a small sample, but it is a clear difference."
       },
       {
         "title": "A new line slightly relaxes the brief.",

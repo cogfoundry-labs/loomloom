@@ -3,7 +3,7 @@ vision model read them for you.
 
 Every image is judged against the plan's `visual_checks` (at most six requirements that models follow only loosely: exact spelling, a
 visible product, no extra words). A verdict is `pass`, `fail` or `cant_tell` per check, with a short reason, plus a one-line note. The
-verdicts live in the ledger (`row["review"]`), so they survive a refresh, show in the workbook's Review column, label the montage tiles
+verdicts live in the ledger (`row["review"]`; a model's reading is also kept as `row["model_review"]` and never replaces the verdict of the assistant or the user), so they survive a refresh, show in the workbook's Review column, label the montage tiles
 and become the captions of a case study.
 
     python scripts/image.py review --dir <experiment> --record verdicts.json [--by "Claude Sonnet 5.5"] [--source agent|user]     free
@@ -178,7 +178,15 @@ def apply_reviews(ledger: dict, exp: Path, reviews: dict, n_checks: int, *, sour
         if a is None:
             warnings.append(f"{rid}: no finished image yet, skipped")
             continue
-        row["review"] = normalize(raw, n_checks, source=source, reviewer=reviewer, image=a["file"], where=rid)
+        rev = normalize(raw, n_checks, source=source, reviewer=reviewer, image=a["file"], where=rid)
+        if source == "model":
+            # a model's reading is a second opinion: it is kept beside the verdict of the assistant or the user and never replaces it.
+            # With no such verdict yet (or only an earlier model reading), it is the row's review too.
+            row["model_review"] = rev
+            if not row.get("review") or row["review"].get("source") == "model":
+                row["review"] = rev
+        else:
+            row["review"] = rev
     return warnings
 
 
@@ -294,7 +302,7 @@ def quote(exp_dir, models: list[dict], model: str | None = None, rows: list[str]
         a, p = latest_image(exp, ledger, row["id"])
         if p is None:
             continue
-        rev = row.get("review")
+        rev = row.get("model_review")                      # "unreviewed" for a model run means: no current model reading (an assistant's verdict does not count)
         if only_unreviewed and rev and rev.get("checks") and not is_stale(rev, exp, ledger, row["id"]):
             skipped.append(row["id"])
             continue
@@ -380,7 +388,7 @@ def add_args(ap) -> None:
     ap.add_argument("--by", default=None, help="who made the verdicts you record (default: the assistant)")
     ap.add_argument("--source", choices=("agent", "user"), default="agent", help="for --record: whose reading it is (default agent)")
     ap.add_argument("--rows", default=None, help="comma-separated row ids to review (default: every row with a finished image)")
-    ap.add_argument("--only-unreviewed", action="store_true", help="skip rows that already have a current review")
+    ap.add_argument("--only-unreviewed", action="store_true", help="skip rows that already have a current model reading")
     ap.add_argument("--model", default=None, help=f"the vision model (default {DEFAULT_MODEL})")
     ap.add_argument("--check", action="append", default=None, help="an extra requirement to check (repeatable); a quick folder has none of its own")
     ap.add_argument("--max-usd", type=float, default=None, help="never reserve past this much for the run (default: the quote's ceiling)")

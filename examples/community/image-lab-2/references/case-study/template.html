@@ -325,11 +325,53 @@
   .direction { padding: 8px 0 44px; }
   .direction .lead { max-width: 70ch; }
   .dir-wild { margin: 0 0 16px; }
-  .dir-facts { grid-template-columns: 1fr 2fr 1fr; }
+  .dir-facts { grid-template-columns: 1fr 2fr 1.2fr 1fr; }
   .dir-facts .fact p { font-family: var(--serif); font-size: 15px; color: var(--ink); }
   .gallery-noteline { font-size: 15px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; min-height: 1.5em; }
   .caveats .tool-list .tname { font-family: var(--sans); font-size: 15px; }
-  @media (max-width: 640px) { .dir-facts { grid-template-columns: 1fr; } }
+  .thumb[hidden] { display: none; }
+  .thumb-flag {
+    position: absolute; left: 0; top: 0; z-index: 1; padding: 2px 6px; font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+  .f-ok { background: var(--accent-fill); color: var(--on-accent-fill); }
+  .f-fail { background: #b3261e; color: #fff; }
+  .f-unsure { background: #8a6d00; color: #fff; }
+  .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 22px 0 0; }
+  .filters .filters-lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin-right: 2px; }
+  .chip {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; cursor: pointer;
+    background: none; border: 1px solid var(--rule-strong); color: var(--ink); padding: 5px 11px;
+  }
+  .chip:hover { background: var(--ink); color: var(--bg); }
+  .chip.on { background: var(--ink); color: var(--bg); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .review { margin: 18px 0 0; padding: 16px 18px; background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--accent); }
+  .review[hidden] { display: none; }
+  .rv-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; margin: 0 0 6px; }
+  .rv-title { font-family: var(--sans); font-weight: 900; text-transform: uppercase; font-size: 1rem; letter-spacing: -.01em; }
+  .rv-by { font-family: var(--mono); font-size: 11px; letter-spacing: .03em; text-transform: uppercase; color: var(--faint); }
+  .rv-list { list-style: none; margin: 8px 0 0; padding: 0; }
+  .rv-list li { display: grid; grid-template-columns: 56px 1.4em 1fr; gap: 8px; align-items: start; padding: 7px 0; border-top: 1px solid var(--rule); font-size: 15px; line-height: 1.45; }
+  .rv-list li:first-child { border-top: none; }
+  .rv-mark { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-align: center; padding: 2px 4px; margin-top: 2px; }
+  .rv-pass .rv-mark { background: var(--accent-fill); color: var(--on-accent-fill); }
+  .rv-fail .rv-mark { background: #b3261e; color: #fff; }
+  .rv-unsure .rv-mark { background: #8a6d00; color: #fff; }
+  .rv-n { font-family: var(--mono); font-size: 12px; color: var(--faint); padding-top: 3px; }
+  .rv-reason { display: block; font-size: 14px; color: var(--muted); }
+  .rv-agree, .rv-differ { display: inline-block; margin-top: 2px; font-family: var(--mono); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); }
+  .rv-differ { color: #b3261e; font-weight: 700; }
+  .rv-skip { font-family: var(--mono); font-size: 11px; letter-spacing: .03em; color: var(--faint); margin: 10px 0 0; }
+  .rv-model-btn { margin: 14px 0 0; }
+  .rv-model-wrap[hidden], .rv-list[hidden], .rv-skip[hidden] { display: none; }
+  .method .method-checks { counter-reset: chk; list-style: none; margin: 0 0 18px; padding: 0; }
+  .method .method-checks li { counter-increment: chk; display: flex; gap: 12px; padding: 9px 0; border-top: 1px solid var(--rule); font-size: 15px; line-height: 1.5; }
+  .method .method-checks li:first-child { border-top: none; }
+  .method .method-checks li::before { content: counter(chk); flex-shrink: 0; font-family: var(--mono); font-weight: 700; font-size: 12px; color: var(--accent); padding-top: 3px; }
+  .method .method-legend { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.9; margin: 0 0 18px; }
+  .method .method-legend .rv-mark { display: inline-block; margin: 0 6px 0 0; }
+  @media (max-width: 640px) { .dir-facts { grid-template-columns: 1fr; } .rv-list li { grid-template-columns: 52px 1.2em 1fr; } }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 <script>document.documentElement.className += " js";</script>
@@ -398,16 +440,65 @@
       var o = btn.getAttribute("data-label-text") || btn.textContent;
       btn.textContent = "Copied"; setTimeout(function () { btn.textContent = o; }, 1400);
     }
+    // a filter chip can hide some thumbnails: browsing and the "n / N" counter follow the ones that are shown
+    function visible() { return thumbs.filter(function (x) { return !x.hidden; }); }
+    function posText() { var v = visible(); return (v.indexOf(thumbs[cur]) + 1) + " / " + v.length; }
     function updateNav() {
-      [heroPrev, lbPrev].forEach(function (b) { if (b) b.disabled = cur <= 0; });
-      [heroNext, lbNext].forEach(function (b) { if (b) b.disabled = cur >= thumbs.length - 1; });
+      var v = visible(), k = v.indexOf(thumbs[cur]);
+      [heroPrev, lbPrev].forEach(function (b) { if (b) b.disabled = k <= 0; });
+      [heroNext, lbNext].forEach(function (b) { if (b) b.disabled = k < 0 || k >= v.length - 1; });
+    }
+    // the review panel under the picture: the assistant's verdict on each check that applies to this image, and, on request, a model's second reading
+    var showModel = false;
+    var RV_CLASS = { p: "pass", f: "fail", u: "unsure", n: "na" };
+    var RV_WORD = { p: "pass", f: "fail", u: "unsure", n: "n/a" };
+    function rvRows(rev, other, labels) {
+      var html = "", skipped = [];
+      rev.v.forEach(function (c, i) {
+        if (c[0] === "n") { skipped.push(i + 1); return; }
+        var cmp = "";
+        if (other && other.v[i]) {
+          cmp = other.v[i][0] === c[0] ? '<span class="rv-agree">agrees with the assistant</span>'
+            : '<span class="rv-differ">the assistant said ' + RV_WORD[other.v[i][0]] + "</span>";
+        }
+        html += '<li class="rv-' + RV_CLASS[c[0]] + '"><span class="rv-mark">' + RV_WORD[c[0]].toUpperCase() + '</span><span class="rv-n">' + (i + 1)
+          + '</span><span class="rv-text">' + esc(labels[i] || ("Check " + (i + 1))) + (c[1] ? '<span class="rv-reason">' + esc(c[1]) + "</span>" : "") + cmp + "</span></li>";
+      });
+      return { html: html, skipped: skipped };
+    }
+    function renderReview(raw) {
+      var panel = document.getElementById("hero-review");
+      if (!panel) return;
+      var data = null;
+      try { data = raw ? JSON.parse(raw) : null; } catch (e) {}
+      if (!data || !data.p) { panel.hidden = true; return; }
+      panel.hidden = false;
+      var labels = [];
+      try { labels = JSON.parse(panel.dataset.labels || "[]"); } catch (e) {}
+      var main = rvRows(data.p, null, labels);
+      document.getElementById("rv-by").textContent = "Read by " + data.p.by;
+      document.getElementById("rv-list").innerHTML = main.html;
+      var skip = document.getElementById("rv-skip");
+      skip.hidden = !main.skipped.length;
+      skip.textContent = main.skipped.length ? "Does not apply to this image: check " + main.skipped.join(", ") : "";
+      var wrap = document.getElementById("rv-model-wrap");
+      if (!wrap) return;
+      if (!data.m) { wrap.hidden = true; return; }
+      wrap.hidden = false;
+      var m = rvRows(data.m, data.p, labels);
+      document.getElementById("rv-model").innerHTML = m.html;
+      document.getElementById("rv-model-by").textContent = "Read by " + data.m.by + " (automatic, one pass)";
+      var list = document.getElementById("rv-model"), by = document.getElementById("rv-model-by"), btn = document.getElementById("rv-model-btn");
+      list.hidden = by.hidden = !showModel;
+      btn.setAttribute("aria-expanded", showModel ? "true" : "false");
+      btn.textContent = (showModel ? "Hide" : "Show") + " the second reading (" + (btn.dataset.model || "a model") + ")";
     }
     function fillLB(d) {
       if (!lb) return;
       lbImg.src = d.asset;
       lbImg.alt = "Alternative " + d.label;
       lbMeta.innerHTML = rebuildMeta(d);
-      lbPos.textContent = (cur + 1) + " / " + thumbs.length;
+      lbPos.textContent = posText();
       lbRaw.href = d.asset;
     }
     function show(t, keepHash) {
@@ -426,7 +517,8 @@
       meta.innerHTML = rebuildMeta(d);
       var noteEl = document.getElementById("hero-note");
       if (noteEl) noteEl.textContent = d.note || "";
-      if (posEl) posEl.textContent = (i + 1) + " / " + thumbs.length;
+      renderReview(d.review);
+      if (posEl) posEl.textContent = posText();
       if (altLinkBtn) {
         altLinkBtn.textContent = "Copy link to alternative " + d.label;
         altLinkBtn.setAttribute("data-label-text", altLinkBtn.textContent);
@@ -436,8 +528,8 @@
       if (!keepHash) { try { history.replaceState(null, "", "#" + d.label); } catch (e) {} }
     }
     function step(dir) {
-      var i = cur + dir;
-      if (i >= 0 && i < thumbs.length) show(thumbs[i]);
+      var v = visible(), k = v.indexOf(thumbs[cur]) + dir;
+      if (k >= 0 && k < v.length) show(v[k]);
     }
     function openLB() {
       if (!lb) return;
@@ -456,6 +548,19 @@
     }
 
     thumbs.forEach(function (t) { t.addEventListener("click", function () { show(t); }); });
+    var chips = Array.prototype.slice.call(document.querySelectorAll("#round-body .chip"));
+    chips.forEach(function (c) {
+      c.addEventListener("click", function () {
+        chips.forEach(function (x) { x.classList.toggle("on", x === c); x.setAttribute("aria-pressed", x === c ? "true" : "false"); });
+        var f = c.dataset.filter;
+        thumbs.forEach(function (x) { x.hidden = !(f === "all" || x.dataset.flag === f); });
+        var v = visible();
+        if (v.length && v.indexOf(thumbs[cur]) < 0) show(v[0], true);
+        else { if (posEl) posEl.textContent = posText(); updateNav(); }
+      });
+    });
+    var modelBtn = document.getElementById("rv-model-btn");
+    if (modelBtn) modelBtn.addEventListener("click", function () { showModel = !showModel; renderReview(thumbs[cur].dataset.review); });
     if (heroPrev) heroPrev.addEventListener("click", function () { step(-1); });
     if (heroNext) heroNext.addEventListener("click", function () { step(1); });
     var openBtn = document.getElementById("hero-open");
@@ -486,6 +591,7 @@
     cur = Math.max(0, thumbs.findIndex(function (x) { return x.classList.contains("active"); }));
     selectFromHash(true);
     handleHashChange = function () { selectFromHash(true); };
+    renderReview(thumbs[cur].dataset.review);
     updateNav();
   }
 
