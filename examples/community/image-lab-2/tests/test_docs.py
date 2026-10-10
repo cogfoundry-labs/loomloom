@@ -10,6 +10,11 @@ import matrix as mx  # noqa: E402
 
 DOCS = ["README.md", "SKILL.md", "references/quickstart.md", "skills/plan.md", "skills/direction.md", "skills/quick.md", "skills/results.md",
         "references/plan-schema.md"]
+def flat(rel: str) -> str:
+    """A doc's text with every run of whitespace collapsed, so a test checks the words and not where a line happens to wrap."""
+    return re.sub(r"\s+", " ", (ROOT / rel).read_text(encoding="utf-8"))
+
+
 PATH = re.compile(r"`((?:references|skills|scripts|docs|tests)/[A-Za-z0-9_./\-]+\.[A-Za-z0-9]+)`")
 LINK = re.compile(r"\]\(([^)\s#]+)(?:#[^)]*)?\)")
 
@@ -47,13 +52,13 @@ class Quickstart(unittest.TestCase):
             self.assertEqual(mx.validate_plan(mx.load_plan(ROOT / "references" / "examples" / name)), [])
 
     def test_it_stays_short_enough_to_read_in_one_go(self):
-        self.assertLess(len((ROOT / "references" / "quickstart.md").read_text(encoding="utf-8")), 9500)
+        self.assertLess(len((ROOT / "references" / "quickstart.md").read_text(encoding="utf-8")), 9300)
 
     def test_skill_md_points_a_first_timer_at_the_quickstart(self):
         text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("## Start here", text)
         self.assertIn("references/quickstart.md", text)
-        self.assertLess(len(text), 18000)
+        self.assertLess(len(text), 15500)
 
 
 class Routing(unittest.TestCase):
@@ -86,8 +91,7 @@ class Routing(unittest.TestCase):
 class ApprovalSemantics(unittest.TestCase):
     """Each paid batch is approved once and authorizes exactly one snapshot; the docs must say so in the same words everywhere."""
     def test_the_principle_the_scope_message_and_the_two_yeses_are_in_the_skill_and_the_quickstart(self):
-        skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
-        quick = (ROOT / "references" / "quickstart.md").read_text(encoding="utf-8")
+        skill, quick = flat("SKILL.md"), flat("references/quickstart.md")
         for needle in ("each approval authorizes exactly one execution snapshot", "A calibration batch is approved on its own", "plan confirmation", "spend approval",
                        "It does not approve anything else"):
             self.assertIn(needle, skill, needle)
@@ -95,8 +99,7 @@ class ApprovalSemantics(unittest.TestCase):
             self.assertIn(needle, quick, needle)
 
     def test_the_fingerprint_coverage_the_single_spend_gate_and_the_limit_caveat_are_stated(self):
-        skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
-        quick = (ROOT / "references" / "quickstart.md").read_text(encoding="utf-8")
+        skill, quick = flat("SKILL.md"), flat("references/quickstart.md")
         for needle in ("What the fingerprint covers", "the compiled prompt, model, size, quantity", "It does not cover file times", "The one spend gate",
                        "`retry`, `add-takes` and `recover` never spend by", "**by content**", "**not a hard cap**"):
             self.assertIn(needle, skill, needle)
@@ -104,9 +107,7 @@ class ApprovalSemantics(unittest.TestCase):
             self.assertIn(needle, quick, needle)
 
     def test_the_editing_boundary_and_the_two_part_results_report_are_written_down(self):
-        skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
-        results = (ROOT / "skills" / "results.md").read_text(encoding="utf-8")
-        quick = (ROOT / "references" / "quickstart.md").read_text(encoding="utf-8")
+        skill, results, quick = flat("SKILL.md"), flat("skills/results.md"), flat("references/quickstart.md")
         self.assertIn("after the plan confirmation the user may keep editing the workbook", skill)
         self.assertIn("even dropping a single image, never alters the approved snapshot", skill)
         for needle in ("Report in two parts, never mixed", "Execution result", "**Visual checks**", "pass**, **fail** or **can't tell**",
@@ -115,9 +116,7 @@ class ApprovalSemantics(unittest.TestCase):
         self.assertIn("Subjective qualities", quick)
 
     def test_the_end_to_end_findings_are_documented(self):
-        skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
-        results = (ROOT / "skills" / "results.md").read_text(encoding="utf-8")
-        quick = (ROOT / "references" / "quickstart.md").read_text(encoding="utf-8")
+        skill, results, quick = flat("SKILL.md"), flat("skills/results.md"), flat("references/quickstart.md")
         self.assertIn("./out/<name>/plan.json", skill)                                   # where to change wording after the build
         self.assertIn("To change **wording** after the build", quick)
         self.assertIn("a thumbnail grid hides errors", results)

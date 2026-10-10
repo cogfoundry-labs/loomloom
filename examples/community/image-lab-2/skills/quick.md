@@ -62,7 +62,7 @@ python scripts/build-exploration-page.py --session ./out --inline \
   --invocation "<the user's message>" [--selected R001-2]
 ```
 
-Labels on the page are the uppercase sample ids (`R001-1`). Publish `index.inline.html`
+Labels on the page are the uppercase sample ids (`R001-1`). The one-file copy carries recompressed JPEGs (long side 1280; the full-size PNGs stay in `assets/`) and prints a warning if it is still over the 16 MB an artifact may weigh; then publish the folder instead. Publish `index.inline.html`
 as an artifact. Full flags: `references/exploration-page.md`.
 
 **8. Adjust?** Pick a favourite / adjust the prompt for another round / stop. Another

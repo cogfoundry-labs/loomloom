@@ -704,7 +704,9 @@ def snapshot_drift(exp_dir, fingerprint: str) -> list[str]:
     if snap.get("retry"):
         return []                                           # a retry snapshot is not comparable with a plain preflight
     try:
-        now = {r["id"]: r for r in pf.run_preflight(exp, write=False)["snapshot"]["rows"]}
+        fresh = pf.run_preflight(exp, write=False)
+        now = {r["id"]: r for r in fresh["snapshot"]["rows"]}
+        issues = {i["id"]: "; ".join(i["problems"]) for i in fresh.get("issues", []) if isinstance(i, dict) and "problems" in i}
     except Exception as e:                                  # noqa: BLE001  a comparison that cannot be made must not block an approved run
         return [f"could not compare the approved snapshot with the current workbook ({str(e)[:100]}); the run uses the approved snapshot"]
     out = []
@@ -712,6 +714,10 @@ def snapshot_drift(exp_dir, fingerprint: str) -> list[str]:
         if status.get(row["id"]) not in ("Draft", "Ready"):
             continue                                        # already running or done: a resume, not a new run
         cur = now.get(row["id"])
+        if cur is None and row["id"] in issues:
+            out.append(f"{row['id']}: a fresh preflight of the current workbook raises an issue with it ({issues[row['id']][:150]}); "
+                       f"the run uses the approved snapshot and may be refused")
+            continue
         if cur is None:
             out.append(f"{row['id']}: a fresh preflight of the current workbook would not include it (unticked, removed or blocked), but it is in the "
                        f"approved snapshot and will still run")

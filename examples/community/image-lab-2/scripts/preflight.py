@@ -81,6 +81,7 @@ def snapshot_fingerprint(snap: dict) -> str:
 
 
 MAX_REFERENCE_BYTES = 20 * 1024 * 1024
+BATCH_ROWS_LISTED = 12                                      # list the rows of a batch in the report up to this many (a calibration, a take, a retry)
 
 
 def price_key(model: str, token, quality, mode: str) -> str:
@@ -346,6 +347,7 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
     changed = {m for m, v in ref_support.items() if (v.get("identity") or {}).get("result") == "changed"}
     ref_models = (ref_models - changed) or ref_models        # never auto-pick a model that altered the product
     rows_out, snapshot_rows, prompts = [], [], {}
+    batch_rows: list[tuple] = []                  # (row id, its values, take) for each row in this snapshot
     unverified, known_total = [], 0.0
     unverified_keys: list[str] = []
     models_used, refs_used = set(), set()
@@ -579,6 +581,8 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
         for n in notes:
             report["info"].append(f"{rid}: {n}")
         by_model[chosen] = by_model.get(chosen, 0) + qty
+        vals = [str(row["params"].get(d, "")) for d in names]
+        batch_rows.append((rid, vals if any(vals) else [chosen], take))     # a quick-mode row has no dimensions: what tells its rows apart is the model
         snapshot_rows.append({
             "id": rid, "model": chosen, "prompt": comp["prompt"], "size": size["token"],
             "aspect_ratio": size.get("aspect_ratio"), "qty": qty, "mode": mode,
@@ -615,6 +619,7 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
         "images": sum(r["qty"] for r in snapshot_rows), "models": sorted(models_used),
         "references": sorted(refs_used), "known_usd": round(known_total, 6), "unverified_rows": unverified,
         "retry": retry, "by_model": by_model, "indicative": indicative(unverified_keys), "subset": subset is not None,
+        "batch_rows": [{"id": i, "values": v, "take": t} for i, v, t in batch_rows], "dimensions": list(names),
         "fingerprint": fp if snapshot_rows else None, "snapshot": snapshot,
         "prompts": prompts, "workbook_written": wrote_workbook,
     })
@@ -663,6 +668,10 @@ def format_report(r: dict) -> str:
     L.append(f"Images:             {r['images']}   Models: {len(r['models'])}   Reference assets: {len(r['references'])}")
     for m, n in sorted(r.get("by_model", {}).items()):
         L.append(f"  {m}: {n} image(s)")
+    if r.get("batch_rows") and len(r["batch_rows"]) <= BATCH_ROWS_LISTED:
+        L.append("Rows in this batch (this is what an approval covers):")
+        for br in r["batch_rows"]:
+            L.append(f"  {br['id']}" + (f" (Take {br['take']})" if br.get("take", 1) != 1 else "") + ": " + " / ".join(v for v in br["values"] if v))
     cost = f"${r['known_usd']:.4f} known"
     if r["unverified_rows"]:
         cost += f"  +  {len(r['unverified_rows'])} row(s) price unverified (not in the total)"

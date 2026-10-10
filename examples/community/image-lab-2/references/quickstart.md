@@ -37,11 +37,12 @@ For creative directions, price **one image per direction first**: `preflight --d
 Copy the example and change it. The fields that matter:
 
 - `brief`, `intent` (one of the ten names in `references/generation-policy.md`; pick by what the image is *for*), `fixed` (what must never change, one phrase each).
-- `dimensions`: name -> list of values. A value is a string (the starter wording from `python scripts/image.py controls` is used) or `{"value": ..., "fragment": "what the picture looks like"}`.
-  Give a `fragment` for anything not in `controls`; the dry run says which values have no wording.
-- `constraints`: `{"exclude": {dimension: value, ...}}` for combinations that make no sense. `aspect` takes ratios (`16:9`) and no wording.
+- `dimensions`: name -> list of values. A value is a string (the starter wording from `python scripts/image.py controls` is used) or `{"value": ..., "fragment": "what the picture looks like"}`;
+  give a `fragment` for anything not in `controls`. `aspect` takes ratios (`16:9`) and no wording.
+- `constraints`: `{"exclude": {dimension: value, ...}}` for combinations that make no sense.
 - `visual_checks` (at most 6): things you can **see and check on each image** that models follow only loosely (spelling, text present or absent, headline space, the product visible).
-  After the first batch you review every image against them (text on the full-size image, not a thumbnail) and report pass, fail or can't tell, as your own reading. Subjective qualities (premium, distinctive) are for the user's eyes, not pass or fail.
+  After the first batch you review every image against them (text on the full-size image, not a thumbnail) and report pass, fail or can't tell, as your own reading.
+  Subjective qualities (premium, distinctive) are for the user's eyes, not pass or fail.
 - `quality` (for example `medium`) so the cost is predictable; `model_strategy: "single"`.
 - A reference photo goes under `references[]` (a relative file path, `role`, `contains_person`); a **person** needs the notice and the user's yes (SKILL.md, step 1).
 
@@ -62,30 +63,28 @@ You do not need to memorize these; `check` and the dry run refuse or warn:
 
 ## 5. For Creative Direction, add these judgments
 
-- Direction 1 is the user's own brief, every instruction kept; the user's copy is the same in every direction. The closing sentence (`prompt.text_suffix`) lists **every**
-  piece of text the user gave (a headline **and** a date line, say) and says "do not add any other words"; the example lists one headline, so extend it.
-- A shared lever (accent color, headline style) must make sense in **every** direction. Do not offer "small quiet letters" when one direction is defined by huge letters, or an accent that
-  one direction already fixes: scope the value with `only_in` or leave the lever out. The checker cannot see this contradiction; reread each direction against each lever.
-- The other directions change the **picture** (medium, setting, light, composition, type scale), not just the adjectives, and keep every hard constraint of the brief.
-  Only the one wildcard may relax a rule.
-- Give each direction its own spatial layout values (`only_in`), its own palette, and a keep-out sentence (what it must not contain).
-- Show the user one message: what you took from the brief (said / inferred / assumed / open gaps), the direction cards, the dry-run numbers, and that the first spend is
-  one image per direction. Ask for one **plan confirmation** (spends nothing).
+- Direction 1 is the user's own brief, every instruction kept; the user's copy is the same in every direction. The closing sentence (`prompt.text_suffix`) lists **every** piece of
+  text the user gave (a headline **and** a date line, say) and says "do not add any other words"; the example lists one headline, so extend it.
+- The other directions change the **picture** (medium, setting, light, composition, type scale), not just the adjectives, keep every hard constraint, and only the one wildcard may
+  relax a rule. Give each its own spatial layout values (`only_in`), its own palette and a keep-out sentence.
+- A shared lever (accent color, headline style) must make sense in **every** direction: not "small quiet letters" when one direction is defined by huge letters. Scope the value with
+  `only_in` or leave the lever out; the checker cannot see this contradiction, so reread each direction against each lever.
+- Show one message: what you took from the brief (said / inferred / assumed / open gaps), the direction cards, the dry-run numbers, and that the first spend is one image per
+  direction. Ask for one **plan confirmation** (spends nothing).
 
 ## 6. Approval: one per paid batch, one snapshot each
 
-Two different yeses: a **plan confirmation** (this plan or Direction Sheet is what the user wants; spends nothing) and a **spend approval** (one fingerprint). Do not mix them.
+The rules are in `SKILL.md`, rule 1. In short: two different yeses, a **plan confirmation** (spends nothing) and a **spend approval** (one fingerprint); do not mix them.
 
-Before each paid batch, one message: what will be made, the models and size, the images, the price **with its basis** (a known total, or "unverified" plus the indicative range and `--max-usd`
-the preflight prints), the limits, and **the scope**: "This approves exactly these N images (about $X, fingerprint ...). It does not approve anything else." Then `run --confirm <fingerprint>`
-only after a clear yes.
+Before each paid batch, one message: what will be made, the models and size, the images, the price **with its basis** (a known total, or "unverified" plus the indicative range and
+`--max-usd` the preflight prints), the limits, and **the scope**: "This approves exactly these N images (about $X, fingerprint ...). It does not approve anything else." Then
+`run --confirm <fingerprint>` only after a clear yes.
 
-- A **calibration** (`--one-per direction`) is its own batch with its own approval; the **main batch** is quoted again (a plain `preflight`) and approved again after the user has seen the images.
-- A changed direction, selected rows, model, size or prompt is a new quote, a new fingerprint, a new approval. An approved snapshot never changes: Excel edits saved afterwards are not in that run,
-  and `run` names each row and field that differs (by content, not file time).
-- To change **wording** after the build (a direction that came out wrong), edit `out/<name>/plan.json` and `preflight`; rows that already have their image keep it. New values or directions need a new experiment.
-- `run --confirm` is the **only** command that spends. `retry`, `add-takes` and `recover` never spend by themselves (new quote and approval, or only re-downloading images already billed).
-  `--max-usd` limits new submissions; it is **not a hard cap**, because requests already in flight still bill.
+- A **calibration** (`--one-per direction`) is its own batch; the main batch is quoted and approved again after the user has seen the images. Any change is a new preflight.
+- An approved snapshot never changes: Excel edits saved afterwards are not in that run, and `run` names each row and field that differs (by content, not file time).
+- To change **wording** after the build, edit `out/<name>/plan.json` and `preflight`; rows that already have their image keep it. New values or directions need a new experiment.
+- `run --confirm` is the **only** command that spends (`retry`, `add-takes` and `recover` lead to a new quote and approval, or only re-download billed images). `--max-usd` limits new
+  submissions; it is **not a hard cap**.
 
 ## 7. Read more only when you need to
 
