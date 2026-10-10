@@ -1,4 +1,5 @@
 """The docs an agent reads first must point at files that exist (links and paths), and the quickstart's examples must be valid."""
+import json
 import re
 import sys
 import unittest
@@ -131,6 +132,65 @@ class ApprovalSemantics(unittest.TestCase):
             self.assertNotIn("The one confirmation", text, rel)
             self.assertNotIn("your one approval", text, rel)
             self.assertNotIn("cannot stop tasks already", text, rel)
+
+
+class SkillFrontMatterTests(unittest.TestCase):
+    """The skills installer silently drops a skill whose front matter is not valid YAML: `npx skills add ... --list` found `image-lab-2` only after its
+    description (which had a `: ` in an unquoted line) was quoted. The Agent Skills format also caps the description at 1,024 characters."""
+
+    FIELD = re.compile(r"^([a-z-]+):[ \t]*(.*)$", re.M)
+
+    @staticmethod
+    def problems(front_matter: str, folder: str) -> list:
+        """What would make an installer skip or reject this skill (empty = fine)."""
+        fields = dict(SkillFrontMatterTests.FIELD.findall(front_matter))
+        out = []
+        if front_matter.count("\n") + 1 != len(fields):
+            out.append("not one `key: value` per line")
+        name = fields.get("name", "")
+        if name != folder or not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name) or len(name) > 64:
+            out.append(f"name must be the folder name ({folder}), lowercase words joined by hyphens, at most 64 characters")
+        if not fields.get("license"):
+            out.append("no license")
+        raw = fields.get("description", "")
+        if raw.startswith('"'):
+            try:
+                desc = json.loads(raw)                  # a double-quoted scalar is valid YAML as long as it is valid JSON
+            except ValueError:
+                return out + ["the quoted description is not valid (an unescaped quote?)"]
+        else:
+            desc = raw
+            if ": " in raw or " #" in raw or re.match(r"[\[\]{}&*!|>'%@`]", raw):
+                out.append("an unquoted description cannot contain a colon and a space (or ' #'): quote it")
+        if not desc:
+            out.append("no description")
+        if len(desc) > 1024:
+            out.append(f"the description is {len(desc)} characters; the Agent Skills format allows at most 1,024")
+        return out
+
+    def test_skill_md_front_matter_is_valid_and_within_the_format_limits(self):
+        text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        m = re.match(r"---\r?\n(.*?)\r?\n---", text, re.S)
+        self.assertTrue(m, "SKILL.md has no front matter")
+        self.assertEqual(self.problems(m.group(1), ROOT.name), [])
+        desc = json.loads(dict(self.FIELD.findall(m.group(1)))["description"])
+        for word in ("Quick", "Variation", "Creative Direction", "Image Lab"):
+            self.assertIn(word, desc)
+        try:
+            import yaml
+        except ImportError:                              # PyYAML is not required: the checks above cover what broke
+            return
+        self.assertEqual(yaml.safe_load(m.group(1))["description"], desc)
+
+    def test_the_check_rejects_the_description_that_broke_the_installer_and_an_overlong_one(self):
+        head = "name: image-lab-2\nlicense: Apache-2.0\ndescription: "
+        broken = head + 'It needs to be named: a bare "generate an image" belongs elsewhere.'
+        self.assertTrue(any("colon and a space" in p for p in self.problems(broken, "image-lab-2")))
+        self.assertTrue(any("1,024" in p for p in self.problems(head + json.dumps("x" * 1025), "image-lab-2")))
+        ok = head + json.dumps("It needs to be named: yes.")
+        self.assertEqual(self.problems(ok, "image-lab-2"), [])
+        self.assertTrue(self.problems(ok, "other-folder"))                       # the name must be the folder's name
+        self.assertTrue(self.problems(ok.replace("Apache-2.0", ""), "image-lab-2"))
 
 
 if __name__ == "__main__":

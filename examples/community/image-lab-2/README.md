@@ -58,7 +58,14 @@ pip install -r requirements.txt
 export LOOMLOOM_TOKEN_COGFOUNDRY=...        # PowerShell: $env:LOOMLOOM_TOKEN_COGFOUNDRY = "..."
 ```
 
-**Give it to your agent.** Claude Code: copy or symlink this folder to `~/.claude/skills/image-lab-2/` (not yet verified by an install test). Other agents: point them at [`SKILL.md`](SKILL.md). On Windows run Python with `PYTHONUTF8=1`.
+**Give it to your agent.** Claude Code, with the skills installer:
+
+```bash
+npx skills add cogfoundry-labs/loomloom --skill image-lab-2 -a claude-code -g -y
+pip install -r requirements.txt     # run it in the installed folder (for Claude Code, ~/.claude/skills/image-lab-2/): the installer does not install Python packages
+```
+
+Or use the checkout above: copy or symlink this folder to `~/.claude/skills/image-lab-2/`. Other agents: point them at [`SKILL.md`](SKILL.md). On Windows run Python with `PYTHONUTF8=1`.
 
 Then ask in plain words:
 
@@ -68,7 +75,7 @@ Then ask in plain words:
 
 ## Status and limitations
 
-- Usable from a checkout; **not published**. `npx skills add` installs the older v0.1, not this version.
+- A **beta**. The installer lists and copies this skill; a full first run from an installed copy has not been done yet. `image-lab` (v0.1, quick mode only) is a separate skill: if both are installed, a request that only says "Image Lab" can trigger either, so say "Image Lab 2".
 - Tested on Windows 11 with desktop Excel. Mac and Linux are untested.
 - Reference photos of people were tested as a flow (the notice, the acknowledgement), not on a range of real portraits.
 - `--max-usd` limits how much new work is submitted; it is **not a hard cap** on what the gateway may bill.
