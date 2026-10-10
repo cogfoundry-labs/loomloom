@@ -340,6 +340,16 @@ class Preflight(Base):
         self.assertEqual(pf.snapshot_fingerprint(snap), fp)       # the fingerprint covers the whole snapshot body
         self.assertEqual(self.run_pf()["fingerprint"], fp)          # deterministic
 
+    def test_a_calibration_says_what_it_shares_and_what_it_does_not_test(self):
+        self.build()
+        rep = self.run_pf(one_per="camera")
+        note = next(i for i in rep["info"] if i.startswith("Calibration:"))
+        self.assertIn("one image per camera, from the first ticked row of each", note)
+        self.assertRegex(note, r"share these values \(lighting = [^)]+\)")
+        self.assertIn("tests none of the others", note)
+        plain = self.run_pf()
+        self.assertFalse(any(i.startswith("Calibration:") for i in plain["info"]))     # a plain preflight is not a calibration
+
     def test_one_per_dimension_prices_a_calibration_subset_and_leaves_the_rest_ticked(self):
         self.build()
         rep = self.run_pf(one_per="camera")

@@ -134,6 +134,13 @@ class ApprovalSemantics(unittest.TestCase):
             self.assertNotIn("cannot stop tasks already", text, rel)
 
 
+class RequirementsTests(unittest.TestCase):
+    def test_every_package_the_skill_needs_is_a_real_requirement(self):
+        lines = [l.split("#")[0].strip() for l in (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()]
+        names = {re.split(r"[<>=!~ ]", l, maxsplit=1)[0].lower() for l in lines if l}
+        self.assertTrue({"xlsxwriter", "openpyxl", "allpairspy", "pillow"} <= names, names)      # Pillow draws the workbook thumbnails: it is not optional
+
+
 class SkillFrontMatterTests(unittest.TestCase):
     """The skills installer silently drops a skill whose front matter is not valid YAML: `npx skills add ... --list` found `image-lab-2` only after its
     description (which had a `: ` in an unquoted line) was quoted. The Agent Skills format also caps the description at 1,024 characters."""

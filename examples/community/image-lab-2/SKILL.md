@@ -13,7 +13,7 @@ Three modes share one engine (`scripts/image.py`), one ledger and one gate. **Qu
 
 Setup: run commands from this folder (the one holding this file; for an installed skill, for example `~/.claude/skills/image-lab-2/`) (`python scripts/image.py <command>`); `pip install -r requirements.txt` (experiment mode; quick mode needs nothing); a gateway key in
 `LOOMLOOM_TOKEN_COGFOUNDRY` (https://console.cogfoundry.ai/api-keys), needed only for `run`; the loomloom CLI is **not** used. On Windows set `PYTHONUTF8=1` (bash:
-`PYTHONUTF8=1 python ...`; PowerShell: `$env:PYTHONUTF8=1`). Without `AskUserQuestion` or `SendUserFile`, ask in plain chat and give file paths.
+`PYTHONUTF8=1 python ...`; PowerShell: `$env:PYTHONUTF8=1`). Keep plans and experiments in a folder of your own (`./image-lab-out/`), never inside the skill folder: an update replaces it. Read `./out/<name>` below as that folder. Without `AskUserQuestion` or `SendUserFile`, ask in plain chat and give file paths.
 
 ## Start here
 

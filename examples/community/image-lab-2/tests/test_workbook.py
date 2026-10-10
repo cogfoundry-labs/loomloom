@@ -13,6 +13,12 @@ import ledger as lg  # noqa: E402
 import matrix as mx  # noqa: E402
 import workbook as wbk  # noqa: E402
 
+try:
+    from PIL import Image as _PILImage
+except ImportError:                                   # pragma: no cover
+    _PILImage = None
+NEEDS_PILLOW = unittest.skipIf(_PILImage is None, "Pillow is not installed (pip install -r requirements.txt)")
+
 PLAN = json.loads((HERE / "fixtures" / "plan-mighty.json").read_text(encoding="utf-8"))
 NAMES = ["camera", "lighting"]
 
@@ -106,6 +112,20 @@ class WriteRead(Base):
         self.assertIn("refresh-", out.name)
         self.assertTrue(out.exists() and out.is_file())
 
+    def test_a_workbook_built_without_pillow_says_why_it_has_no_pictures(self):
+        import contextlib
+        import io
+        links = {"r001": ["external:round-1/a.png"]}
+        err = io.StringIO()
+        with mock.patch.object(wbk, "_have_pillow", return_value=False), contextlib.redirect_stderr(err):
+            wbk.write_workbook(self.path, self.ledger, PLAN, image_links=links)
+        self.assertIn("Pillow is not installed", err.getvalue())
+        self.assertIn("pip install -r requirements.txt", err.getvalue())
+        quiet = io.StringIO()
+        with mock.patch.object(wbk, "_have_pillow", return_value=False), contextlib.redirect_stderr(quiet):
+            wbk.write_workbook(self.path, self.ledger, PLAN)                           # no images yet: nothing to explain
+        self.assertEqual(quiet.getvalue(), "")
+
     def test_backup_previous(self):
         prev = wbk.backup_previous(self.path)
         self.assertEqual(prev.name, "experiment.prev.xlsx")
@@ -188,6 +208,7 @@ class Refresh(Base):
         self.assertEqual(ws["H2"].value, "hello prompt")             # system Prompt column written
 
 
+@NEEDS_PILLOW
 class Thumbnails(unittest.TestCase):
     """Auto filter, in-cell thumbnails with a click link, and the hover preview."""
 
@@ -328,6 +349,7 @@ class Thumbnails(unittest.TestCase):
         self.assertIn("File", head)
 
 
+@NEEDS_PILLOW
 class ReviewFixTests(Base):
     """Regressions for the review of workbook.py (2026-10-08)."""
 

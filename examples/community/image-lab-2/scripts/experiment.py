@@ -71,12 +71,35 @@ WORKLOAD_WARN_IMAGES, WORKLOAD_WARN_USD, UNVERIFIED_WARN_IMAGES = 60, 2.0, 24   
 DIRECTIONS_MIN, DIRECTIONS_MAX, DIRECTION_MIN_IMAGES = 3, 10, 4                  # the Creative Direction method (skills/direction.md); a warning, not a refusal
 
 
+SKILL_ROOT = Path(__file__).resolve().parent.parent
+
+
+def inside_installed_skill(path, root=None) -> bool:
+    """True when `path` is inside the skill's own folder and that folder is an installed copy (.../skills/<name>), where an update replaces it."""
+    root = Path(root or SKILL_ROOT).resolve()
+    if root.parent.name != "skills":
+        return False
+    try:
+        Path(path).resolve().relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def warn_inside_skill(out) -> None:
+    if inside_installed_skill(out):
+        print(f"note: {out} is inside the skill's own folder ({SKILL_ROOT}). Updating the skill replaces that folder, and your experiment with it. "
+              f"Keep your work in a folder of your own, for example ./image-lab-out/<name>.", file=sys.stderr)
+
+
 def build_experiment(plan_path, out_dir, target: int = 30, dry_run: bool = False) -> dict:
     """Validate a plan, enumerate, recommend a covering batch and (unless `dry_run`) write
     plan.json, ledger.json and experiment.xlsx. A dry run touches no file: it is how a planner
     checks a draft plan and shows the user the size of the experiment before confirming it."""
     plan_path, out = Path(plan_path), Path(out_dir)
     plan = mx.load_plan(plan_path)
+    if not dry_run:
+        warn_inside_skill(out)
     check_intent(plan)
     if dry_run:                                      # nothing is written or sent, so no consent is needed yet
         return preview_plan(plan, target, plan_path.parent)
@@ -341,7 +364,7 @@ def format_plan_summary(s: dict) -> str:
     r, est = s["result"], s["estimate"]
     cost = f"${est['known_usd']:.4f} known"
     if est["unverified_rows"]:
-        cost += f" · {len(est['unverified_rows'])} rows price unverified"
+        cost += f" · {len(est['unverified_rows'])} rows price unverified (not in the total)"
     dims = s["dims"]
     covers = " × ".join(f"{len(v)} {d}" for d, v in dims.items())
     lines = [
@@ -432,6 +455,7 @@ def build_quick(prompt: str, intent: str | None, count: int, out_dir, models: li
     if count not in pf.il.COUNTS:
         raise mx.PlanError(f"count must be one of {', '.join(map(str, pf.il.COUNTS))}")
     out = Path(out_dir)
+    warn_inside_skill(out)
     out.mkdir(parents=True, exist_ok=True)
     with lg.writer_lock(out, "quick"):
         return _build_quick(prompt, intent, count, out, models, aspect)

@@ -240,7 +240,10 @@ def format_report(rep: dict, source: str = "", fetched: str = "") -> str:
     if not rep["measured_records"]:
         L.append("No recommendation is made without measured evidence. Keep your assistant unless it cannot read images.")
     L.append(f"Model facts from {source or 'unknown'}" + (f" ({fetched})" if fetched else "") + "; prices are USD per million tokens (confirmed against billed usage, 2026-10-08).")
-    L.append("Advice only: nothing was sent anywhere and nothing was changed.")
+    if (source or "").startswith("the gateway"):
+        L.append("Advice only: nothing was generated or changed and no money was spent. The one request made was a free read of the gateway's model list.")
+    else:
+        L.append("Advice only: nothing was sent anywhere and nothing was changed.")
     return "\n".join(L)
 
 
@@ -271,12 +274,18 @@ def probe_quote(models: list[dict]) -> dict:
 
 
 def _tiny_image_data_uri() -> str:
+    """A 64x80 solid red PNG built with the standard library: the probe needs an image to count tokens for, not a particular one."""
     import base64
-    import io
-    from PIL import Image
-    buf = io.BytesIO()
-    Image.new("RGB", (64, 80), (200, 40, 40)).save(buf, "JPEG", quality=70)
-    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+    import struct
+    import zlib
+    w, h = 64, 80
+    raw = b"".join(b"\x00" + bytes((200, 40, 40)) * w for _ in range(h))
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+
+    png = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+    return "data:image/png;base64," + base64.b64encode(png).decode()
 
 
 def run_probes(quote: dict, confirm: str, models: list[dict], post=None, now=time.time) -> list[dict]:

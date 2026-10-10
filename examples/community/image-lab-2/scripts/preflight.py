@@ -377,6 +377,13 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
                         continue
                     taken.add(v)
                     subset.add(r0["id"])
+                chosen = [by_id[r] for r in subset if r in by_id]
+                if len(chosen) > 1:
+                    same = [f"{d} = {chosen[0]['params'][d]}" for d in names
+                            if d != one_per and chosen[0]["params"].get(d) and len({str(r["params"].get(d)) for r in chosen}) == 1]
+                    report["info"].append(f"Calibration: one image per {one_per}, from the first ticked row of each, so the {len(chosen)} images share"
+                                          + (f" these values ({'; '.join(same)})" if same else " their other values")
+                                          + f". It compares the {one_per} values and tests none of the others.")
 
     imaged: dict = {}                     # (same values, take) -> the row that already has its image
     for r0 in ledger["rows"]:

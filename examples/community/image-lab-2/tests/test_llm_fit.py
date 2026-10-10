@@ -72,6 +72,14 @@ class Advice(unittest.TestCase):
     def setUp(self):
         self.models = lf.parse_models(PAYLOAD)
 
+    def test_the_closing_line_says_what_was_really_done(self):
+        rep = lf.advise("Claude Sonnet 5.5", self.models, [], "yes")
+        live = lf.format_report(rep, "the gateway, live", "2026-10-11 09:00")
+        self.assertIn("The one request made was a free read of the gateway's model list", live)
+        self.assertNotIn("nothing was sent anywhere", live)                     # a live listing is a request to the gateway
+        saved = lf.format_report(rep, "the saved snapshot", "2026-10-08")
+        self.assertIn("nothing was sent anywhere", saved)
+
     def test_with_no_evidence_nothing_is_recommended(self):
         rep = lf.advise("Claude Sonnet 5.5", self.models, [], "yes")
         self.assertTrue(all("no recommendation yet" in r["recommendation"] for r in rep["rows"]))
@@ -144,6 +152,22 @@ class Advice(unittest.TestCase):
             p.write_text(json.dumps(rec("a", "plan", 0.9)) + "\nnot json\n\n" + json.dumps(rec("b", "plan", 0.8)) + "\n", encoding="utf-8")
             self.assertEqual(len(lf.load_records(p)), 2)
             self.assertEqual(lf.load_records(Path(d) / "missing.jsonl"), [])
+
+
+class TinyImageProbe(unittest.TestCase):
+    def test_the_probe_image_is_a_real_png_built_without_pillow(self):
+        import base64
+        uri = lf._tiny_image_data_uri()
+        self.assertTrue(uri.startswith("data:image/png;base64,"))
+        raw = base64.b64decode(uri.split(",", 1)[1])
+        self.assertEqual(raw[:8], b"\x89PNG\r\n\x1a\n")
+        try:
+            from PIL import Image
+        except ImportError:
+            return
+        import io
+        with Image.open(io.BytesIO(raw)) as im:
+            self.assertEqual((im.format, im.size), ("PNG", (64, 80)))
 
 
 class Probes(unittest.TestCase):
