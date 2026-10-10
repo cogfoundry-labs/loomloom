@@ -77,7 +77,7 @@ Then ask in plain words:
 ## Safety, in short
 
 - Each paid batch is approved once, and an approval authorizes exactly one snapshot. Plan confirmation (no spend) is not spend approval.
-- `run --confirm` is the only command that spends. `retry`, `add-takes` and `recover` only prepare a quote.
+- `run --confirm` is the only command that spends on images. `retry`, `add-takes` and `recover` only prepare a quote. A vision-model `review --confirm` (a few cents to read the finished images against the plan's checks) is its own, separately approved spend.
 - A result whose outcome is Unknown (it may have been billed) is never retried automatically.
 - The ledger records every attempt and its cost; the workbook is a view of it and can be regenerated.
 
@@ -94,6 +94,7 @@ Then ask in plain words:
 | [`references/quickstart.md`](references/quickstart.md) | your first plan on one page, with complete example plans (`references/examples/`) |
 | [`references/plan-schema.md`](references/plan-schema.md) | the plan file |
 | [`docs/design-v2.md`](docs/design-v2.md) | the design, decisions and status |
+| [`references/case-study/README.md`](references/case-study/README.md) | turn a finished run into a shareable case-study page |
 | [`docs/v0.1-readme.md`](docs/v0.1-readme.md) | the README of Image Lab v0.1 (quick mode only, the published install, its case studies) |
 
 **For the agent**

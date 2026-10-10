@@ -4,7 +4,7 @@
  "usd_per_image": {
   "openai/gpt-image-2.5-sunburst|1024x1536|q=medium": 0.011145,
   "openai/gpt-image-2.5-sunburst|1024x1280|q=medium": 0.014752,
-  "openai/gpt-image-2.5-sunburst|1152x1440|q=medium": 0.0162,
+  "openai/gpt-image-2.5-sunburst|1152x1440|q=medium": 0.0186,
   "openai/gpt-image-2.5-sunburst|1024x1024|q=medium|reference": 0.02195
  }
 }

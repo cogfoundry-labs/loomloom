@@ -123,7 +123,7 @@ class Merge(Base):
             ws["B3"] = False                     # untick r002
             ws["C2"] = "low angle"               # change r001's camera
             ws["F2"] = 3                         # Take of r001
-            ws["L2"] = "keep"                    # Notes of r001
+            ws["M2"] = "keep"                    # Notes of r001 (after the system-owned Review column)
         self.edit(fn)
         rows, warnings = self.merged()
         self.assertEqual(warnings, [])

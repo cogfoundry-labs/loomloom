@@ -163,6 +163,28 @@ class EvaluationFindingsTests(Base):
         s2 = ex.build_experiment(src, self.tmp / "o", dry_run=True)
         self.assertFalse(any("not found" in w for w in s2["warnings"]))
 
+    def test_the_dry_run_prices_rows_at_the_size_the_plans_aspect_asks_for(self):
+        sb = "openai/gpt-image-2.5-sunburst"
+        obs = {f"{sb}|1024x1536|q=medium": 0.0109, f"{sb}|1152x1440|q=medium": 0.0186}
+        base = {"schema_version": 1, "brief": "a poster", "intent": "poster / flyer", "quality": "medium", "model_strategy": "single",
+                "dimensions": {"camera": ["eye-level front", "low angle"], "lighting": ["soft daylight", "golden hour"]}}
+        def write_plan(d):
+            path = self.tmp / "p.json"
+            path.write_text(json.dumps(d), encoding="utf-8")
+            return path
+
+        with mock.patch.object(pf_mod.il, "load_price_observations", lambda: obs):
+            default = ex.preview_plan(mx.load_plan(write_plan(base)), 4)
+            four_five = ex.preview_plan(mx.load_plan(write_plan({**base, "dimensions": {**base["dimensions"], "aspect": ["4:5"]}})), 4)
+            mixed = ex.preview_plan(mx.load_plan(write_plan({**base, "dimensions": {**base["dimensions"], "aspect": ["4:5", "16:9"]}})), 4)
+        self.assertEqual(default["price_each"], 0.0109)                      # no aspect: the intent's own size
+        self.assertEqual(four_five["price_each"], 0.0186)                    # the 4:5 size is billed differently (measured 0.0186, not 0.0109)
+        self.assertEqual(four_five["estimate"]["known_usd"], round(0.0186 * 4, 4))
+        self.assertIn("per size", mixed["price_basis"])                     # 4:5 is priced, 16:9 has no observed price: only the priced rows are in the total
+        self.assertIsNone(mixed["price_each"])
+        self.assertGreater(len(mixed["estimate"]["unverified_rows"]), 0)
+        self.assertGreater(mixed["estimate"]["known_usd"], 0)
+
     def test_fixed_items_reach_the_reference_prompt(self):
         plan = golden("product-photo")
         out = cp.compile_prompt(plan, {"camera": "eye-level front", "lighting": "soft daylight"}, "reference",

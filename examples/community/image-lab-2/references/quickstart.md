@@ -83,7 +83,7 @@ Before each paid batch, one message: what will be made, the models and size, the
 - A **calibration** (`--one-per direction`) is its own batch; the main batch is quoted and approved again after the user has seen the images. Any change is a new preflight.
 - An approved snapshot never changes: Excel edits saved afterwards are not in that run, and `run` names each row and field that differs (by content, not file time).
 - To change **wording** after the build, edit `out/<name>/plan.json` and `preflight`; rows that already have their image keep it. New values or directions need a new experiment.
-- `run --confirm` is the **only** command that spends (`retry`, `add-takes` and `recover` lead to a new quote and approval, or only re-download billed images). `--max-usd` limits new
+- `run --confirm` is the **only** command that spends on images (a vision-model `review --confirm` is its own small, separately approved spend) (`retry`, `add-takes` and `recover` lead to a new quote and approval, or only re-download billed images). `--max-usd` limits new
   submissions; it is **not a hard cap**.
 
 ## 7. Read more only when you need to

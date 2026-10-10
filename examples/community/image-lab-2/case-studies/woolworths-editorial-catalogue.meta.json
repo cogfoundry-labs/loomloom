@@ -1,0 +1,92 @@
+{
+  "slug": "woolworths-editorial-catalogue",
+  "title": "Woolworths Editorial Catalogue",
+  "page_title": "Woolworths Editorial Catalogue: five creative directions",
+  "summary": "One brief. Five creative directions. Thirty-five images from one model: what each direction gave, and what it cost.",
+  "eyebrow": "Image Lab 2 &middot; Creative Direction &middot; poster / flyer",
+  "wordmark": "Image Lab 2",
+  "group_by": "direction",
+  "prompt_file": "woolworths-editorial-catalogue.prompt.txt",
+  "trigger": "use Image Lab 2, and explore creative directions",
+  "generated_on": "2026-10-10",
+  "project_url": "https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/image-lab-2",
+  "groups": {
+    "1 Your brief": {
+      "name": "Your brief",
+      "idea": "Your composition, as written: a low-to-medium camera at about 32 to 35mm, the trolley large in the lower foreground, the couple in the midground and a long aisle receding behind them. The headline stack sits at the upper left with the full catalogue system around it.",
+      "gives_up": "Nothing. It is the baseline the other four are measured against.",
+      "outcome": "Matches the brief closely and the trolley is the hero in all seven. One image (r054) has a garbled supporting line, which is why the closing line was added later.",
+      "wildcard": false
+    },
+    "2 Produce close": {
+      "name": "Produce close",
+      "idea": "A close, low shot at the height of the trolley wheels: the front of the trolley fills the lower half of the frame, the woman is seen from the waist up behind the handle, and the headline is compact and low at the left.",
+      "gives_up": "The aisle and the sense of the store's scale.",
+      "outcome": "Consistent, with the trolley clearly the hero and a different headline position from Direction 1. The couple's pose is similar to Direction 1, so it is the closest pair. It carries the most garbled print on products, and green is not rare here: the trolley plate, the logo and the green full stops all add it.",
+      "wildcard": false
+    },
+    "3 Architectural aisle": {
+      "name": "Architectural aisle",
+      "idea": "A wide, calm view from a little higher, treating the aisle as architecture: a ceiling grid fills the upper third, fine rules echo the perspective lines, the trolley stays large in the lower left and the couple walks away just beyond it.",
+      "gives_up": "Some intimacy and close detail.",
+      "outcome": "The first version (r109) let the couple dominate and the trolley came out mid-size, so the wording was rewritten to keep the trolley large. Every image since has a large trolley, a back view and a ceiling grid. The couple is still about half the frame height, larger than intended. It has the most signage text of any direction.",
+      "wildcard": false
+    },
+    "4 Side profile": {
+      "name": "Side profile",
+      "idea": "The trolley shot like a car in a profile photograph: the camera low and square to the side, the trolley across the lower half of the frame and the couple walking along a polished floor, in slightly lower-key light with a tall thin rule beside the headline.",
+      "gives_up": "The depth down the aisle.",
+      "outcome": "The strongest and the cleanest: a true side profile every time, and all six images have correct text with no extra words, even though none used the later closing line.",
+      "wildcard": false
+    },
+    "5 Australian ritual": {
+      "name": "Australian ritual",
+      "idea": "The wildcard. It relaxes one rule of the brief, that the trolley is treated like a luxury car and is the hero object. Here the shopping ritual is the hero: a candid, documentary-feeling moment in the produce and bakery sections, in soft morning light, with the trolley present at the edge of the frame.",
+      "gives_up": "The trolley as the hero object. Everything else in the brief still holds: the real store, the same people, all the copy, 4:5, nobody looking at the camera.",
+      "outcome": "It reads like a real catalogue cover and is the brightest direction. Store signage words (\"BAKERY\", \"Fruit & Veg\") recur in the images made without the closing line, and green is more present than the brief's \"rare\".",
+      "wildcard": true
+    }
+  },
+  "row_tags": {
+    "r272": "new line",
+    "r273": "new line",
+    "r274": "new line",
+    "r275": "new line"
+  },
+  "batches": {
+    "1": {
+      "title": "Calibration",
+      "note": "5 planned, one per direction; 3 finished. 2 were rejected by a gateway error (HTTP 520) and not charged."
+    },
+    "2": {
+      "title": "Retry and a new take",
+      "note": "3 images: the 2 rejected rows again, plus a second Direction 3 take with rewritten wording."
+    },
+    "3": {
+      "title": "The planned mix",
+      "note": "25 images: the rest of the planned first batch, five more in each direction."
+    },
+    "4": {
+      "title": "One new line",
+      "note": "4 images with the same settings as four earlier ones, plus one new line in the shared closing: no other readable print in the scene."
+    }
+  },
+  "caveats": [
+    {
+      "title": "The logo is the model's approximation.",
+      "text": "The Woolworths symbol and wordmark in every image were drawn by the image model, not taken from an official asset. Check them against the real mark before any real use. These are AI-generated images from a campaign brief, not official Woolworths material."
+    },
+    {
+      "title": "Most images carry extra readable words.",
+      "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none. That is a small sample, but it is a clear difference."
+    },
+    {
+      "title": "A new line slightly relaxes the brief.",
+      "text": "The brief asks for subtle Woolworths-green wayfinding and signage. The line that removed the extra words makes signs show only the Woolworths symbol and no words, so the signs stay but carry no text."
+    },
+    {
+      "title": "It is not a benchmark.",
+      "text": "One model, one random draw per row, and the directions differ on purpose. Use it to see what each direction gives, not to rank models."
+    }
+  ]
+}

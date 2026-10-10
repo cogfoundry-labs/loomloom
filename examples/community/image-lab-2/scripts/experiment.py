@@ -168,35 +168,38 @@ def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
     takes = plan.get("takes", 1)
     n_images = len(result["rows"]) * takes
     known, unpriced, each, basis = 0.0, 0, None, None
+    indicative = None                                       # a hint for the plan confirmation when no price is verified yet (never part of a quote)
     if best:
-        size = adv.size_for(best["model"], None)
         quality = plan.get("quality") if plan.get("quality") not in (None, "auto") else None
-        usd, src = adv.price(best["model"], size, mode, support, quality)
         if quality and best["model"] in adv.catalog and quality not in il_shape_q(adv.catalog[best["model"]]):
             raise mx.PlanError(f"{best['model']} has no quality setting {quality!r}")
-        if usd is None:
-            unpriced = n_images
+        # Price every row at the size it will really be sent at: the plan's `aspect` picks the size, and a size is billed
+        # differently (one plan was quoted $0.0109 at the intent's default size and billed $0.0186 at its 4:5 size).
+        per: dict = {}                                       # (model, aspect) -> images
+        for combo in result["rows"]:
+            rd = dict(zip(dims, combo))
+            key = (rd.get("model") or best["model"], rd.get("aspect") or None)
+            per[key] = per.get(key, 0) + takes
+        priced_srcs, unpriced_keys = set(), []
+        for (m, ratio), n_img in per.items():
+            sz = adv.size_for(m, ratio)
+            u, src = adv.price(m, sz, mode, support, plan.get("quality"))
+            if u is None:
+                unpriced += n_img
+                unpriced_keys += [pf.price_key(m, sz["token"], quality, mode)] * n_img
+            else:
+                known += u * n_img
+                priced_srcs.add(src)
+                each = u
+        known = round(known, 4)
+        if len(per) == 1:
+            if each is not None:
+                basis = f"{mode} call, {next(iter(priced_srcs))} price"
         else:
-            each, basis = usd, f"{mode} call, {src} price"
-        if "model" in dims:                              # spread: every model prices its own rows
-            per_model: dict[str, int] = {}
-            for combo in result["rows"]:
-                m = dict(zip(dims, combo))["model"]
-                per_model[m] = per_model.get(m, 0) + takes
-            known, unpriced = 0.0, 0
-            for m, n_rows in per_model.items():
-                u, _ = adv.price(m, adv.size_for(m, None), mode, support, plan.get("quality"))
-                if u is None:
-                    unpriced += n_rows
-                else:
-                    known += u * n_rows
-            known = round(known, 4)
-            basis = f"{mode} calls, per model (spread)"
-        elif usd is not None:
-            known = round(usd * n_images, 4)
-    indicative = None                                       # a hint for the plan confirmation when no price is verified yet (never part of a quote)
-    if best and unpriced and "model" not in dims:
-        indicative = pf.indicative([pf.price_key(best["model"], size["token"], quality, mode)] * unpriced)
+            each = None
+            basis = (f"{mode} calls, per model (spread)" if "model" in dims else f"{mode} calls, per size (the plan's aspect values)") if priced_srcs else None
+        if unpriced_keys and "model" not in dims:
+            indicative = pf.indicative(unpriced_keys)
     # plan-level problems a planner should fix or disclose before the user confirms, grouped per dimension
     warns = []
     by = plan.get("batch_by")
@@ -403,7 +406,26 @@ def format_plan_summary(s: dict) -> str:
     return "\n".join(lines)
 
 
-def build_quick(prompt: str, intent: str | None, count: int, out_dir, models: list[str] | None = None) -> dict:
+QUICK_RATIO_IN_PROMPT = re.compile(r"(?<![\d:])(\d{1,2}):(\d{1,2})(?![\d:])")
+
+
+def prompt_ratio(prompt: str) -> str | None:
+    """A supported aspect ratio the prompt text names ("4:5 vertical"), so Quick can say its quote does not use it."""
+    for a, b in QUICK_RATIO_IN_PROMPT.findall(prompt or ""):
+        if f"{a}:{b}" in pf.il.ASPECT_RATIOS:
+            return f"{a}:{b}"
+    return None
+
+
+def valid_aspect(aspect: str) -> str:
+    """'4:5' for a ratio Quick can ask for; anything else is an error naming the choices."""
+    text = str(aspect or "").strip()
+    if not re.fullmatch(r"\d+(\.\d+)?:\d+(\.\d+)?", text) or not pf.exact_wxh(text, 1, 1):
+        raise mx.PlanError(f"--aspect {aspect!r} is not a usable ratio (use one like 4:5, 2:3 or 16:9; the common ones are {', '.join(pf.il.ASPECT_RATIOS)})")
+    return text
+
+
+def build_quick(prompt: str, intent: str | None, count: int, out_dir, models: list[str] | None = None, aspect: str | None = None) -> dict:
     """Quick mode (design 5, 7): the model is the only dimension. v0.1's allocation decides which
     models and how many samples each; the prompt is used verbatim. Writes ledger.json and a
     snapshot (no plan.json, no workbook); `run` then works exactly as for an experiment."""
@@ -412,11 +434,21 @@ def build_quick(prompt: str, intent: str | None, count: int, out_dir, models: li
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     with lg.writer_lock(out, "quick"):
-        return _build_quick(prompt, intent, count, out, models)
+        return _build_quick(prompt, intent, count, out, models, aspect)
 
 
-def _build_quick(prompt, intent, count, out, models) -> dict:
+def _build_quick(prompt, intent, count, out, models, aspect=None) -> dict:
     plan = pf.il.plan_for(intent, count, models)
+    if aspect:                                              # the shape the user asked for, instead of the intent's default one
+        aspect = valid_aspect(aspect)
+        adv, support = pf.Advisor(plan["intent"]), pf.load_reference_support()
+        for seg in plan["allocation"]:
+            sz = adv.size_for(seg["model"], aspect)
+            usd, src = adv.price(seg["model"], sz, "text", support, None)
+            seg["size"] = sz["token"] or "default"
+            seg["aspect_ratio"] = sz.get("aspect_ratio") or "-"
+            seg["price_source"] = "unverified" if usd is None else src
+            seg["subtotal_usd"] = round((usd or 0.0) * seg["n"], 6)
     ledger_path = out / "ledger.json"
     ledger = lg.load(ledger_path) if ledger_path.exists() else lg.new_ledger(
         {"brief": prompt, "intent": plan["intent"]}, [], [])
@@ -440,20 +472,29 @@ def _build_quick(prompt, intent, count, out, models) -> dict:
     fp = snap["fingerprint"] = pf.snapshot_fingerprint(snap)
     lg.write_json_atomic(out / "snapshots" / f"{fp}.json", snap)
     lg.save(ledger_path, ledger)
+    notes = []
+    named = prompt_ratio(prompt)
+    if named and not aspect:
+        shapes = sorted({str(r["aspect_ratio"] or r["size"] or "the default shape") for r in snapshot_rows})
+        notes.append(f"your prompt names {named}, but Quick picks the shape from the intent ({', '.join(shapes)}): "
+                     f"add --aspect {named} to get that shape (the quote then changes)")
     return {"fingerprint": fp, "rows": snapshot_rows, "known_usd": round(known, 6), "unverified_rows": unverified,
-            "images": sum(r["qty"] for r in snapshot_rows), "intent": plan["intent"], "why": plan["why"]}
+            "images": sum(r["qty"] for r in snapshot_rows), "intent": plan["intent"], "why": plan["why"], "aspect": aspect, "notes": notes}
 
 
 def format_quick(q: dict) -> str:
     L = [f"IMAGE LAB QUICK PLAN  ({q['intent']})", q["why"]]
     for r in q["rows"]:
         price = "price unverified" if r["est_usd"] is None else f"~${r['est_usd']:.4f}"
-        L.append(f"  {r['id']}  {r['model']:<36} {price}")
+        shape = (r.get("size") or "default size") + (f" ({r['aspect_ratio']})" if r.get("aspect_ratio") else "")
+        L.append(f"  {r['id']}  {r['model']:<36} {price}  {shape}")
     cost = f"${q['known_usd']:.4f} known"
     if q["unverified_rows"]:
         cost += f"  +  {len(q['unverified_rows'])} row(s) price unverified (not in the total)"
     L.append(f"Images: {q['images']}   Estimated cost: {cost}")
     L.append("Balance: unread (the gateway will confirm)")
+    for n in q.get("notes", []):
+        L.append(f"Note: {n}")
     L.append(f"Fingerprint: {q['fingerprint']}")
     return "\n".join(L)
 
@@ -602,6 +643,7 @@ def register(sub, with_run: bool = True) -> None:
     k.add_argument("--intent", default=None)
     k.add_argument("--count", type=int, default=4)
     k.add_argument("--models", default=None, help="comma-separated model ids to force")
+    k.add_argument("--aspect", default=None, help="the shape to ask for, for example 4:5 (default: the intent's own shape; the quote shows the size)")
     k.add_argument("--out", required=True)
     ak = sub.add_parser("acknowledge-person",
                         help="record that the user confirmed permission to use a person's photo (writes "
@@ -624,6 +666,12 @@ def register(sub, with_run: bool = True) -> None:
     r.add_argument("--dir", required=True)
     r.add_argument("--record-models", action="store_true",
                    help="fill blank Model cells of generated rows with the model that made their images")
+    rv = sub.add_parser("review", help="record visual-check verdicts (free), or quote and run a vision-model review of the finished images (spends a little, needs approval)")
+    import review as _review
+    _review.add_args(rv)
+    cs = sub.add_parser("case-study", help="build a shareable case-study page from a finished experiment (free, needs Pillow)")
+    import case_study as _case_study
+    _case_study.add_args(cs)
     at = sub.add_parser("add-takes", help="add more images of the same values: new ticked rows with the next Take numbers (free)")
     at.add_argument("--dir", required=True)
     at.add_argument("--rows", required=True, help="comma-separated row ids, for example r001,r005")
@@ -794,6 +842,19 @@ def _handle(a) -> None:
     elif a.cmd == "montage":
         import montage as _montage
         sys.exit(_montage.run(a))
+    elif a.cmd == "case-study":
+        import case_study as _case_study
+        sys.exit(_case_study.run(a))
+    elif a.cmd == "review":
+        import review as _review
+        models = []
+        if not a.record:
+            import llm_fit as _lf
+            models, source, _ = _lf.load_models()
+            if not models:
+                print("error: the gateway's model list is not available (no token and no saved snapshot)", file=sys.stderr)
+                sys.exit(2)
+        sys.exit(_review.run_command(a, models))
     elif a.cmd == "sheet":
         import sheet as _sheet
         sys.exit(_sheet.run(a))
@@ -859,7 +920,7 @@ def _handle(a) -> None:
     elif a.cmd == "quick":
         models = [m.strip() for m in a.models.split(",") if m.strip()] if a.models else None
         try:
-            print(format_quick(build_quick(a.prompt, a.intent, a.count, a.out, models)))
+            print(format_quick(build_quick(a.prompt, a.intent, a.count, a.out, models, a.aspect)))
         except mx.PlanError as e:
             print(f"error: {e}", file=sys.stderr)
             sys.exit(2)

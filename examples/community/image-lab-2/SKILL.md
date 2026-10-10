@@ -30,7 +30,7 @@ for quick mode; `skills/plan.md` and `skills/direction.md` (about 17 KB each) on
    its own quote and approval. Nothing is spent before the user approves the numbers you show; `run` needs `--confirm <fingerprint>` and refuses anything else. The fingerprint
    binds the approval to an immutable snapshot (`snapshots/<fp>.json`, the only thing `run` reads). **What the fingerprint covers**, per row: its id (which images), the compiled prompt,
    model, size, quantity, mode, quality and reference-file hashes, plus the known total and the unverified rows. It does not cover file times.
-   - **The one spend gate:** `run --confirm <fingerprint>` (and a repeat with `--again`) is the only command that spends. `retry`, `add-takes` and `recover` never spend by themselves:
+   - **The one spend gate:** `run --confirm <fingerprint>` (and a repeat with `--again`) is the only command that spends on images (`review --confirm` spends a few cents on a vision model to read them, see `skills/results.md`). `retry`, `add-takes` and `recover` never spend by themselves:
      `retry` prepares a new quote for failed rows, `add-takes` adds ticked rows that need their own preflight and approval, `recover` only re-downloads images already billed and sends
      no new request. They are steps toward a batch, never a way around the approval.
    - **A calibration batch is approved on its own;** the main batch is quoted and approved again after the user has seen it.
