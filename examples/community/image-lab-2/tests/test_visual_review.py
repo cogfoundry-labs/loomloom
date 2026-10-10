@@ -136,6 +136,37 @@ class RecordingTests(Base):
             rv.load_record_file(self.tmp / "missing.json")
 
 
+class SecondReaderTests(Base):
+    def test_a_model_reading_is_kept_beside_the_assistants_verdict_and_never_replaces_it(self):
+        rid = self.ids[0]
+        rv.record(self.exp, {rid: {"checks": {"1": "fail", "2": "pass"}, "note": "mine"}}, source="agent", reviewer="Claude")
+        rv.record(self.exp, {rid: {"checks": {"1": "pass", "2": "pass"}, "note": "model's"}}, source="model", reviewer="gpt")
+        row = self.row(rid)
+        self.assertEqual((row["review"]["source"], row["review"]["note"]), ("agent", "mine"))
+        self.assertEqual((row["model_review"]["source"], row["model_review"]["note"]), ("model", "model's"))
+        rv.record(self.exp, {rid: {"checks": {"1": "pass", "2": "fail"}}}, source="agent", reviewer="Claude")      # a newer assistant verdict replaces the old one
+        self.assertEqual(self.row(rid)["review"]["checks"][1]["verdict"], "fail")
+        self.assertEqual(self.row(rid)["model_review"]["note"], "model's")
+
+    def test_with_no_other_verdict_a_model_reading_is_the_rows_review_too(self):
+        rid = self.ids[1]
+        rv.record(self.exp, {rid: {"checks": {"1": "pass", "2": "pass"}}}, source="model", reviewer="gpt")
+        row = self.row(rid)
+        self.assertEqual((row["review"]["source"], row["model_review"]["source"]), ("model", "model"))
+        rv.record(self.exp, {rid: {"checks": {"1": "fail", "2": "pass"}}}, source="model", reviewer="gpt2")        # a later model reading replaces an earlier one
+        self.assertEqual((self.row(rid)["review"]["reviewer"], self.row(rid)["model_review"]["reviewer"]), ("gpt2", "gpt2"))
+
+    def test_a_model_run_leaves_the_assistants_verdicts_alone(self):
+        rid = self.ids[0]
+        rv.record(self.exp, {rid: {"checks": {"1": "pass", "2": "pass"}, "note": "mine"}}, source="agent", reviewer="Claude")
+        q = rv.quote(self.exp, MODELS)
+        rv.run(q, q["fingerprint"], self.exp, MODELS, post=FakeVision())
+        row = self.row(rid)
+        self.assertEqual((row["review"]["source"], row["review"]["note"]), ("agent", "mine"))
+        self.assertEqual(row["model_review"]["source"], "model")
+        self.assertEqual(self.row(self.ids[1])["review"]["source"], "model")                                      # rows without a verdict get the model's as theirs
+
+
 class WorkbookColumnTests(Base):
     def test_the_review_column_shows_the_verdicts_and_is_never_read_back(self):
         rv.record(self.exp, {self.ids[0]: {"checks": {"1": "pass", "2": "fail"}, "note": "No books."}})
@@ -167,8 +198,10 @@ class QuoteTests(Base):
         (self.exp / "round-1" / f"{self.ids[0]}.png").write_bytes(PNG + b"0")
         self.assertNotEqual(base, rv.quote(self.exp, MODELS)["fingerprint"])
 
-    def test_only_unreviewed_skips_rows_with_a_current_review(self):
-        rv.record(self.exp, {self.ids[0]: {"checks": {"1": "pass", "2": "pass"}}})
+    def test_only_unreviewed_skips_rows_that_already_have_a_current_model_reading(self):
+        rv.record(self.exp, {self.ids[1]: {"checks": {"1": "pass", "2": "pass"}}})                      # an assistant's verdict does not count as a model reading
+        self.assertEqual(rv.quote(self.exp, MODELS, only_unreviewed=True)["images"], 3)
+        rv.record(self.exp, {self.ids[0]: {"checks": {"1": "pass", "2": "pass"}}}, source="model", reviewer=rv.DEFAULT_MODEL)
         q = rv.quote(self.exp, MODELS, only_unreviewed=True)
         self.assertEqual((q["images"], q["skipped"]), (2, [self.ids[0]]))
 

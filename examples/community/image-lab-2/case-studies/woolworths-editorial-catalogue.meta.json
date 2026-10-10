@@ -78,7 +78,7 @@
     },
     {
       "title": "Most images carry extra readable words.",
-      "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none. That is a small sample, but it is a clear difference."
+      "text": "Of the 31 images made before the last batch, 19 show extra readable words, garbled print or a stray character: store signs such as \"Fruit & Veg\" and \"BAKERY\", and product labels. The four made with the no-extra-words line show none in the assistant's reading (the automatic second reader disagrees: see How the images were checked). That is a small sample, but it is a clear difference."
     },
     {
       "title": "A new line slightly relaxes the brief.",
@@ -88,5 +88,14 @@
       "title": "It is not a benchmark.",
       "text": "One model, one random draw per row, and the directions differ on purpose. Use it to see what each direction gives, not to rank models."
     }
-  ]
+  ],
+  "check_labels": [
+    "Only the allowed text, spelled exactly",
+    "The trolley is the hero (the couple, in the wildcard direction)",
+    "Nobody looks at the camera; bodies and hands look right",
+    "A real Australian Woolworths, brand green kept rare",
+    "Headline left-aligned, not centred, not a top banner",
+    "The direction's own look"
+  ],
+  "review_note": "The second reader is much stricter on check 1: it failed 34 of the 35 images, often calling the Woolworths signature or the headline's line breaks \"extra text\" (both are allowed), including all four made with the no-extra-words line. It transcribed the garbled supporting line in r054 as correct, so it did not find that image's real defect. It passed all 13 images the assistant was unsure about for check 4. Where it is plainly wrong, its reason is shown so you can see why. Check 6 concerns directions 2 to 5 only; for direction 1 it is not shown."
 }

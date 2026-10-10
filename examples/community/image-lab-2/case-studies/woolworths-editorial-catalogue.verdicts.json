@@ -3,35 +3,86 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "All five text elements correct; an extra word on a store sign (Fruit & Veg)"
+    "reason": "an extra word on a store sign (Fruit & Veg)"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "a large green plate in the foreground and the green logo: a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "na",
+    "reason": ""
+   }
   },
   "note": "All five text elements correct; an extra word on a store sign (Fruit & Veg)."
  },
  "r016": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "na",
+    "reason": ""
+   }
   },
   "note": "Text correct, no extra words."
  },
  "r024": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "a large green plate and two green logo boards behind: a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "na",
+    "reason": ""
+   }
   },
   "note": "Text correct, no extra words."
  },
@@ -39,13 +90,28 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; an extra product label (Aurora Australian Extra Virgin Olive Oil)"
+    "reason": "an extra product label (Aurora Australian Extra Virgin Olive Oil)"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "na",
+    "reason": ""
+   }
   },
   "note": "Text correct; an extra product label (Aurora Australian Extra Virgin Olive Oil)."
  },
@@ -55,11 +121,26 @@
     "verdict": "fail",
     "reason": "A stray full stop after EVERYDAY VALUE; extra and garbled product print"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "na",
+    "reason": ""
+   }
   },
   "note": "A stray full stop after EVERYDAY VALUE; extra and garbled product print."
  },
@@ -69,22 +150,55 @@
     "verdict": "fail",
     "reason": "The supporting line is garbled (\"Australiansatian life\")"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "na",
+    "reason": ""
+   }
   },
   "note": "The supporting line is garbled (\"Australiansatian life\")."
  },
  "r272": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "na",
+    "reason": ""
+   }
   },
   "note": "Made with the no-extra-words line: all text correct, no extra words."
  },
@@ -92,13 +206,28 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; an extra product label (Australian Extra Virgin Olive Oil)"
+    "reason": "an extra product label (Australian Extra Virgin Olive Oil)"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the trolley's front fills the lower half of the frame"
+   }
   },
   "note": "Text correct; an extra product label (Australian Extra Virgin Olive Oil)."
  },
@@ -106,13 +235,28 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; garbled print on the paper bag"
+    "reason": "garbled print on the paper bag"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the trolley's front fills the lower half of the frame"
+   }
   },
   "note": "Text correct; garbled print on the paper bag."
  },
@@ -122,11 +266,26 @@
     "verdict": "fail",
     "reason": "A stray full stop after EVERYDAY VALUE; garbled labels"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the trolley's front fills the lower half of the frame"
+   }
   },
   "note": "A stray full stop after EVERYDAY VALUE; garbled labels."
  },
@@ -134,13 +293,28 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; a garbled egg-carton label"
+    "reason": "a garbled egg-carton label"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the trolley's front fills the lower half of the frame"
+   }
   },
   "note": "Text correct; a garbled egg-carton label."
  },
@@ -148,13 +322,28 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; a large in-scene Woolworths sign adds a second brand mark"
+    "reason": "a large in-scene Woolworths sign adds a second brand mark"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "a large green plate, the logo, and a second large Woolworths sign behind: a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the trolley's front fills the lower half of the frame"
+   }
   },
   "note": "Text correct; a large in-scene Woolworths sign adds a second brand mark."
  },
@@ -162,24 +351,57 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; extra sign words (Australian Fresher Together)"
+    "reason": "extra sign words (Australian Fresher Together)"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the trolley's front fills the lower half of the frame"
+   }
   },
   "note": "Text correct; extra sign words (Australian Fresher Together)."
  },
  "r275": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "the trolley's green plate is large in this close framing, with the logo on top of it: whether that is 'rare' is a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the trolley's front fills the lower half of the frame"
+   }
   },
   "note": "Made with the no-extra-words line: all text correct, no extra words."
  },
@@ -187,18 +409,27 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "The original Direction 3 wording: the couple dominates and the trolley is mid-size. Garbled print on the cart box"
+    "reason": "garbled print on the cart box"
    },
    "2": {
     "verdict": "fail",
-    "reason": "the couple dominates and the trolley is mid-size"
+    "reason": "the couple dominates the frame and the trolley is mid-size"
    },
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
    "6": {
     "verdict": "fail",
-    "reason": "direction 3 should show a large trolley with a quiet upper third"
+    "reason": "the original wording: the trolley is mid-size and the couple large, not a large trolley under a quiet upper third"
    }
   },
   "note": "The original Direction 3 wording: the couple dominates and the trolley is mid-size. Garbled print on the cart box."
@@ -207,13 +438,28 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; extra sign words (Fruit & Veg, A better tomorrow together, Good food brighter days)"
+    "reason": "extra sign words (Fruit & Veg, A better tomorrow together, Good food brighter days)"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+   }
   },
   "note": "Text correct; extra sign words (Fruit & Veg, A better tomorrow together, Good food brighter days)."
  },
@@ -221,35 +467,86 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; an extra sign (A fresher brighter tomorrow)"
+    "reason": "an extra sign (A fresher brighter tomorrow)"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+   }
   },
   "note": "Text correct; an extra sign (A fresher brighter tomorrow)."
  },
  "r138": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": "one small garbled label, no extra readable words"
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+   }
   },
   "note": "Text correct, no extra readable words (one small garbled label)."
  },
  "r149": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+   }
   },
   "note": "Text correct, no extra words."
  },
@@ -257,13 +554,28 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; a garbled Woolworths sign in the background"
+    "reason": "a garbled Woolworths sign in the background"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+   }
   },
   "note": "Text correct; a garbled Woolworths sign in the background."
  },
@@ -271,90 +583,231 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "The rewritten wording: trolley large at the lower left. The headline sits on a dark panel; garbled print on a bag"
+    "reason": "garbled print on a bag"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": "the headline sits on a dark panel that looks stuck on"
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+   }
   },
   "note": "The rewritten wording: trolley large at the lower left. The headline sits on a dark panel; garbled print on a bag."
  },
  "r273": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": "the 01 / THE LIFESTYLE identifier is faint"
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a large trolley at the lower left and a ceiling grid above; the couple is about half the frame height, larger than intended"
+   }
   },
   "note": "Made with the no-extra-words line: no extra words. The 01 / THE LIFESTYLE identifier is faint."
  },
  "r163": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a true side profile, walking across the frame"
+   }
   },
   "note": "Text correct, no extra words."
  },
  "r178": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a true side profile, walking across the frame"
+   }
   },
   "note": "Text correct, no extra words."
  },
  "r186": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a true side profile, walking across the frame"
+   }
   },
   "note": "Text correct, no extra words."
  },
  "r192": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a true side profile, walking across the frame"
+   }
   },
   "note": "Text correct, no extra words."
  },
  "r203": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a true side profile, walking across the frame"
+   }
   },
   "note": "Text correct, no extra words. The couple look at each other."
  },
  "r216": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "a true side profile, walking across the frame"
+   }
   },
   "note": "Text correct, no extra words. Green full stops."
  },
@@ -362,24 +815,57 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; extra words on a store sign (The fresh food people) and a bag (Australian Baby Spinach)"
+    "reason": "extra words on a store sign (The fresh food people) and a bag (Australian Baby Spinach)"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "a large green logo on the wall behind and the trolley's green plate: a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the couple leads"
+   }
   },
   "note": "Text correct; extra words on a store sign (The fresh food people) and a bag (Australian Baby Spinach)."
  },
  "r232": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "the trolley's large green plate and a green logo sign: a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the couple leads"
+   }
   },
   "note": "Text correct, no extra words."
  },
@@ -387,13 +873,28 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; an extra sign word (Fruit & Veg); the supporting line wraps to two lines"
+    "reason": "an extra sign word (Fruit & Veg); the supporting line wraps to two lines"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the couple leads"
+   }
   },
   "note": "Text correct; an extra sign word (Fruit & Veg); the supporting line wraps to two lines."
  },
@@ -403,22 +904,55 @@
     "verdict": "fail",
     "reason": "A stray full stop after EVERYDAY VALUE; extra words (BAKERY, Fresh food for a brighter tomorrow, product labels)"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "the trolley's green plate is large in the lower left: a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the couple leads"
+   }
   },
   "note": "A stray full stop after EVERYDAY VALUE; extra words (BAKERY, Fresh food for a brighter tomorrow, product labels)."
  },
  "r257": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the couple leads"
+   }
   },
   "note": "Text correct, no extra words."
  },
@@ -426,24 +960,57 @@
   "checks": {
    "1": {
     "verdict": "fail",
-    "reason": "Text correct; an extra sign word (BAKERY)"
+    "reason": "an extra sign word (BAKERY)"
    },
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "2": {
+    "verdict": "pass",
+    "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "cant_tell",
+    "reason": "a green logo sign behind and the trolley's green plate: a judgement call"
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the couple leads"
+   }
   },
   "note": "Text correct; an extra sign word (BAKERY)."
  },
  "r274": {
   "checks": {
-   "1": "pass",
-   "2": "pass",
-   "3": "pass",
-   "4": "pass",
-   "5": "pass",
-   "6": "pass"
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": "the couple leads and the trolley sits at the edge of the frame, as intended for this direction"
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": "the couple leads"
+   }
   },
   "note": "Made with the no-extra-words line: all text correct, no extra words."
  }

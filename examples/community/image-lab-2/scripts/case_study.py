@@ -100,7 +100,7 @@ def collect(exp: Path, meta: dict) -> dict:
             items.append({"row": rid, "label": LETTERS[k], "index": k + 1, "file": a["file"], "model": a["model"], "model_label": entry.get("label") or a["model"],
                           "model_url": entry.get("url") or "", "size": a.get("size_actual") or a.get("size") or "", "cost": float(a.get("cost") or 0),
                           "seconds": a.get("seconds") or 0, "note": rv.caption(row.get("review")), "tag": (meta.get("row_tags") or {}).get(rid, ""),
-                          "params": row["params"], "take": row.get("take", 1), "batch": a.get("batch"), "review": row.get("review"),
+                          "params": row["params"], "take": row.get("take", 1), "batch": a.get("batch"), "review": row.get("review"), "model_review": row.get("model_review"),
                           "asset": (f"assets/d{gi + 1}-alternative-{k + 1:02d}.jpg" if group_by else f"assets/alternative-{k + 1:02d}.jpg")})
         out_groups.append({"key": key, "index": gi, "items": items})
     all_items = [i for g in out_groups for i in g["items"]]
@@ -116,7 +116,13 @@ def collect(exp: Path, meta: dict) -> dict:
     wildcards = 0
     for vals in ((plan or {}).get("dimensions") or {}).values():
         wildcards += sum(1 for v in vals if isinstance(v, dict) and v.get("wildcard"))
-    return {"ledger": ledger, "plan": plan, "group_by": group_by, "groups": out_groups, "items": all_items, "batches": batches, "rejected": len(rejected),
+    checks = rv.checks_of(plan)
+    labels = list(meta.get("check_labels") or [])
+    labels += checks[len(labels):]                                 # a label per check: the short ones from the meta file, else the check's own words
+    reviewed = any(i["review"] and i["review"].get("checks") for i in all_items)
+    model_names = sorted({i["model_review"]["reviewer"] for i in all_items if i.get("model_review") and i["model_review"].get("checks")})
+    return {"ledger": ledger, "plan": plan, "group_by": group_by, "checks": checks, "labels": labels, "reviewed": reviewed,
+            "has_model": bool(model_names), "model_name": model_names[0] if model_names else "", "groups": out_groups, "items": all_items, "batches": batches, "rejected": len(rejected),
             "models": models, "sizes": sizes, "wildcards": wildcards, "quality": (plan or {}).get("quality"),
             "cost": round(sum(i["cost"] for i in all_items), 4), "est": round(sum(b["estimated_usd"] for b in batches), 4)}
 
@@ -128,15 +134,178 @@ def _model_link(label, url, cls: str = "model") -> str:
     return f'<a class="{cls}" href="{esc(url)}" target="_blank" rel="noopener">{esc(label)}</a>' if url else f'<span class="{cls}">{esc(label)}</span>'
 
 
+
+# --------------------------------------------------------------------------- #
+# the review: a panel under the picture, a badge on each thumbnail, a summary per group, a filter, and one method section
+# --------------------------------------------------------------------------- #
+CODE = {"pass": "p", "fail": "f", "cant_tell": "u", "na": "n"}
+RV_CLASS = {"p": "pass", "f": "fail", "u": "unsure", "n": "na"}
+RV_WORD = {"p": "pass", "f": "fail", "u": "unsure", "n": "n/a"}
+
+
+def reader_label(rev: dict | None) -> str:
+    if not rev:
+        return ""
+    who = rev.get("reviewer") or "the reviewer"
+    return who if rev.get("source") in ("model", "user") else f"{who}, on the full-size image"
+
+
+def compact(rev: dict | None):
+    """A review reduced to what the page script needs: who, and [code, reason] per check."""
+    if not rev or not rev.get("checks"):
+        return None
+    return {"by": reader_label(rev), "v": [[CODE[c["verdict"]], c.get("reason") or ""] for c in rev["checks"]]}
+
+
+def review_json(it: dict) -> str:
+    p, m = compact(it.get("review")), compact(it.get("model_review"))
+    if not p and not m:
+        return ""
+    data = {"p": p or m}
+    if p and m:
+        data["m"] = m
+    return json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+
+
+def flag_of(it: dict) -> tuple:
+    """(filter key, badge text, badge class) from the row's verdict; nothing when it has no per-check verdicts."""
+    rev = it.get("review")
+    mk = rv.mark(rev) if rev and rev.get("checks") else ""
+    if mk == "ok":
+        return "ok", "OK", "f-ok"
+    if mk.startswith("fail"):
+        return "fail", mk.upper(), "f-fail"
+    if mk.startswith("?"):
+        return "unsure", mk, "f-unsure"
+    return "none", "", ""
+
+
+def rv_rows_html(rev: dict, other: dict | None, labels: list) -> tuple:
+    """(the <li> rows, the numbers of the checks that do not apply). The same markup the page script builds when you click another picture."""
+    html_rows, skipped = "", []
+    for i, (code, reason) in enumerate(rev["v"]):
+        if code == "n":
+            skipped.append(i + 1)
+            continue
+        cmp = ""
+        if other and i < len(other["v"]):
+            o = other["v"][i][0]
+            cmp = '<span class="rv-agree">agrees with the assistant</span>' if o == code else f'<span class="rv-differ">the assistant said {RV_WORD[o]}</span>'
+        label = labels[i] if i < len(labels) and labels[i] else f"Check {i + 1}"
+        reason_html = f'<span class="rv-reason">{esc(reason)}</span>' if reason else ""
+        html_rows += (f'<li class="rv-{RV_CLASS[code]}"><span class="rv-mark">{RV_WORD[code].upper()}</span><span class="rv-n">{i + 1}</span>'
+                      f'<span class="rv-text">{esc(label)}{reason_html}{cmp}</span></li>')
+    return html_rows, skipped
+
+
+def panel_html(it: dict, c: dict) -> str:
+    """The review panel for the first picture (the page script re-renders it for every other one). Empty when nothing was reviewed."""
+    if not c["reviewed"]:
+        return ""
+    labels = json.dumps(c["labels"], ensure_ascii=False, separators=(",", ":"))
+    data = json.loads(review_json(it) or "null")
+    hidden = "" if data else " hidden"
+    p = data["p"] if data else {"by": "", "v": []}
+    rows, skipped = rv_rows_html(p, None, c["labels"])
+    skip = f'Does not apply to this image: check {", ".join(map(str, skipped))}' if skipped else ""
+    model = ""
+    if c["has_model"]:
+        m = data.get("m") if data else None
+        mrows = rv_rows_html(m, p, c["labels"])[0] if m else ""
+        short = (c["model_name"] or "a model").split("/")[-1]
+        model = (f'\n      <div class="rv-model-wrap" id="rv-model-wrap"{"" if m else " hidden"}>'
+                 f'<button type="button" class="btn-ghost rv-model-btn js-only" id="rv-model-btn" aria-expanded="false" data-model="{esc(short)}">Show the second reading ({esc(short)})</button>'
+                 f'<p class="rv-by" id="rv-model-by" hidden>{esc("Read by " + m["by"] + " (automatic, one pass)") if m else ""}</p>'
+                 f'<ul class="rv-list rv-model" id="rv-model" hidden>{mrows}</ul></div>')
+    return (f'      <div class="review" id="hero-review" data-labels="{esc(labels)}"{hidden}>\n'
+            f'        <p class="rv-head"><span class="rv-title">How it checked out</span><span class="rv-by" id="rv-by">{esc("Read by " + p["by"]) if p["by"] else ""}</span></p>\n'
+            f'        <ul class="rv-list" id="rv-list">{rows}</ul>\n'
+            f'        <p class="rv-skip" id="rv-skip"{"" if skip else " hidden"}>{esc(skip)}</p>{model}\n      </div>\n')
+
+
+def chips_html(items: list, c: dict) -> str:
+    if not c["reviewed"]:
+        return ""
+    counts = {"ok": 0, "fail": 0, "unsure": 0}
+    for it in items:
+        k = flag_of(it)[0]
+        if k in counts:
+            counts[k] += 1
+    chips = [("all", f"All {len(items)}")] + [(k, f"{lab} {counts[k]}") for k, lab in (("ok", "Clean"), ("fail", "Failed a check"), ("unsure", "Doubtful")) if counts[k]]
+    if len(chips) < 3:
+        return ""                                                      # one kind of image: nothing to filter
+    btns = "".join(f'<button type="button" class="chip{" on" if k == "all" else ""} js-only" data-filter="{k}" aria-pressed="{"true" if k == "all" else "false"}">{esc(t)}</button>' for k, t in chips)
+    return f'    <div class="filters" aria-label="Filter the images"><span class="filters-lbl js-only">Show</span>{btns}</div>\n'
+
+
+def check_summary(items: list, c: dict) -> str:
+    """'3 of 7 pass every check that applies; check 1 failed in 4' for a group; empty when none of its images has verdicts."""
+    rated = [it for it in items if it.get("review") and it["review"].get("checks")]
+    if not rated:
+        return ""
+    clean = sum(1 for it in rated if rv.mark(it["review"]) == "ok")
+    failed: dict = {}
+    for it in rated:
+        for ck in it["review"]["checks"]:
+            if ck["verdict"] == "fail":
+                failed[ck["n"]] = failed.get(ck["n"], 0) + 1
+    text = f"{clean} of {len(rated)} pass every check that applies"
+    if failed:
+        text += "; " + ", ".join(f"check {n} failed in {k}" for n, k in sorted(failed.items()))
+    return text
+
+
+def agreement(c: dict) -> tuple:
+    """(verdicts compared, verdicts the two readers agree on) over the checks the assistant judged to apply."""
+    both = agree = 0
+    for it in c["items"]:
+        p, m = it.get("review"), it.get("model_review")
+        if not (p and m and p.get("checks") and m.get("checks")):
+            continue
+        for a, b in zip(p["checks"], m["checks"]):
+            if a["verdict"] == "na":
+                continue
+            both += 1
+            agree += a["verdict"] == b["verdict"]
+    return both, agree
+
+
+def method_html(meta: dict, c: dict) -> str:
+    if not c["reviewed"]:
+        return ""
+    lis = "".join(f"<li>{esc(t)}</li>" for t in c["checks"])
+    first = next(it["review"] for it in c["items"] if it.get("review") and it["review"].get("checks"))
+    who = esc(first.get("reviewer") or "the reviewer")
+    legend = "".join(f'<span class="rv-{RV_CLASS[k]}"><span class="rv-mark">{RV_WORD[k].upper()}</span>{txt}</span> &nbsp; '
+                     for k, txt in (("p", "the image meets it"), ("f", "it does not"), ("u", "the image does not show enough to tell"), ("n", "it does not apply to this image (not shown)")))
+    paras = [f"Every image was opened at full size and read against the checks below by {who}, the assistant that ran the experiment, and the verdicts were recorded in the experiment's ledger. "
+             "That is a reading by a model, not an independent verification: a person's own look is the check that counts, and image models follow text instructions only loosely, which is why the checks exist."]
+    if c["has_model"]:
+        both, agree = agreement(c)
+        pct = f" ({round(100 * agree / both)}%)" if both else ""
+        paras.append(f"A second reader, {esc(c['model_name'] or 'a model')}, read each image once, automatically, against the same checks. "
+                     + (f"Across the verdicts the assistant judged to apply, the two readers agreed on {agree} of {both}{pct}. " if both else "")
+                     + "Each picture's panel can show the second reading beside the first, with the differences marked.")
+    if meta.get("review_note"):
+        paras.append(esc(meta["review_note"]))
+    body = "".join(f'<p class="lead">{p}</p>' for p in paras)
+    return (f'<section class="method">\n    <div class="col">\n    <span class="section-label">Method</span>\n    <h2>How the images were checked</h2>\n    {body}\n'
+            f'      <ol class="method-checks">{lis}</ol>\n      <p class="method-legend">{legend}</p>\n    </div>\n  </section>')
+
+
 def thumb_html(it: dict, active: bool) -> str:
     cap = it["row"] + (f" · {it['tag']}" if it["tag"] else "")
     size = it["size"]
     aria = f' aria-current="true"' if active else ""
+    key, badge_text, badge_cls = flag_of(it)
+    badge = f'<span class="thumb-flag {badge_cls}">{esc(badge_text)}</span>' if badge_text else ""
+    rjson = review_json(it)
+    review_attrs = (f' data-flag="{key}" data-review="{esc(rjson)}"' if rjson else "")
     return (f'<button type="button" class="thumb{" active" if active else ""}"{aria} '
             f'aria-label="Show alternative {it["label"]} — {esc(it["row"])}" data-asset="{esc(it["asset"])}" data-label="{it["label"]}" '
             f'data-index="{it["index"]}" data-row="{esc(it["row"])}" data-model="{esc(it["model_label"])}" data-model-url="{esc(it["model_url"])}" data-size="{esc(size)}" '
-            f'data-asked="{esc(size)}" data-cost="${it["cost"]:.4f}" data-seconds="{it["seconds"]}" data-note="{esc(it["note"])}" data-selected="">'
-            f'<span class="shot"><img src="{esc(it["asset"])}" alt="Alternative {it["label"]}" loading="lazy"></span>'
+            f'data-asked="{esc(size)}" data-cost="${it["cost"]:.4f}" data-seconds="{it["seconds"]}" data-note="{esc(it["note"])}"{review_attrs} data-selected="">'
+            f'<span class="shot">{badge}<img src="{esc(it["asset"])}" alt="Alternative {it["label"]}" loading="lazy"></span>'
             f'<span class="thumb-cap"><span class="ltr">{it["label"]}</span><span class="m">{esc(cap)}</span></span></button>')
 
 
@@ -258,6 +427,9 @@ def body_html(meta: dict, c: dict, gi: int) -> str:
             cards += f'<div class="fact"><span class="fact-label">Gives up</span><p>{esc(info["gives_up"])}</p></div>'
         if info.get("outcome"):
             cards += f'<div class="fact"><span class="fact-label">How it turned out</span><p>{esc(info["outcome"])}</p></div>'
+        summary = check_summary(items, c)
+        if summary:
+            cards += f'<div class="fact"><span class="fact-label">How they checked out</span><p>{esc(summary)}</p></div>'
         cards += f'<div class="fact"><span class="fact-label">In this {esc(c["group_by"] or "group")}</span><p>{len(items)} images &middot; ${cost:.4f}</p></div>'
         direction = (f'<section class="direction">\n    <span class="section-label">{esc((c["group_by"] or "group").capitalize())} {gi + 1} of {n}</span>\n    <h2>{esc(info.get("name") or g["key"])}</h2>\n    {wild}\n'
                      + (f'    <p class="lead">{esc(info["idea"])}</p>\n' if info.get("idea") else "")
@@ -276,9 +448,11 @@ def body_html(meta: dict, c: dict, gi: int) -> str:
                f'        <a id="hero-link" href="{esc(first["asset"])}" target="_blank" rel="noopener"><img id="hero-img" src="{esc(first["asset"])}" alt="Alternative {first["label"]}"></a>\n      </div>\n'
                f'      <p class="gallery-meta" id="hero-meta">{meta_line}</p>\n'
                f'      <p class="gallery-noteline" id="hero-note">{esc(first["note"])}</p>\n'
+               f'{panel_html(first, c)}'
                f'      <p class="gallery-hint">\n        <span>Click image to open full size<span class="js-only"> &middot; &#8592; &#8594; to browse</span></span>\n'
                f'      <span class="pos" id="hero-pos">1 / {len(items)}</span>\n      </p>\n'
                f'      <button type="button" class="link-btn btn-ghost js-only" id="copy-alt-link">Copy link to alternative {first["label"]}</button>\n    </div>\n'
+               f'{chips_html(items, c)}'
                f'    <div class="gallery-thumbs" aria-label="alternatives">\n      {thumbs}\n    </div>\n'
                f'    <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Full size image">\n'
                f'      <button type="button" class="lb-close" id="lb-close" aria-label="Close (Esc)">&times;</button>\n'
@@ -291,7 +465,7 @@ def body_html(meta: dict, c: dict, gi: int) -> str:
     facts = (f'<section class="run-facts">\n    <div class="col">\n    <span class="section-label">Details</span>\n    <h2>The run</h2>\n'
              f'    <p class="lead">What Image Lab planned, and what it actually cost. These facts are for the whole run, not only this {esc(c["group_by"] or "group")}.</p>\n'
              f'      <div class="facts">{facts_html(meta, c)}</div>\n    </div>\n  </section>')
-    return "\n\n  ".join(x for x in [nav, direction, gallery, facts, caveats_html(meta), prompt_html(meta, c), credits_html(meta, c)] if x)
+    return "\n\n  ".join(x for x in [nav, direction, gallery, facts, method_html(meta, c), caveats_html(meta), prompt_html(meta, c), credits_html(meta, c)] if x)
 
 
 # --------------------------------------------------------------------------- #
@@ -359,9 +533,10 @@ def build(exp_dir, out_dir, meta_path, force: bool = False) -> dict:
                      "alternatives": [{"index": i["index"], "of": len(its), "label": i["label"], "row": i["row"], "asset": i["asset"], "model_label": i["model_label"],
                                        "model_url": i["model_url"], "cost_usd": i["cost"], "seconds": i["seconds"], "actual_size": i["size"], "status": "COMPLETED",
                                        "note": i["note"], "take": i["take"], "levers": {k: v for k, v in i["params"].items() if k not in (c["group_by"], "aspect")},
-                                       **({"review": {"reviewer": i["review"]["reviewer"], "source": i["review"]["source"], "checks": i["review"]["checks"]}} if i["review"] and i["review"].get("checks") else {})}
+                                       **({"review": {"reviewer": i["review"]["reviewer"], "source": i["review"]["source"], "checks": i["review"]["checks"]}} if i["review"] and i["review"].get("checks") else {}),
+                                       **({"model_review": {"reviewer": i["model_review"]["reviewer"], "checks": i["model_review"]["checks"]}} if i.get("model_review") and i["model_review"].get("checks") else {})}
                                       for i in its],
-                     "caveats": meta.get("caveats") or []})
+                     "checks": c["checks"], "check_labels": c["labels"], "caveats": meta.get("caveats") or []})
     (out / "case-study-data.json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n")
     mb = sum(p.stat().st_size for p in (out / "assets").glob("*.jpg")) / 1048576
     return {"out": out, "images": len(c["items"]), "groups": len(c["groups"]), "assets_mb": round(mb, 1), "cost": c["cost"]}

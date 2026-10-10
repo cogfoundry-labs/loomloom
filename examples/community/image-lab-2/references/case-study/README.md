@@ -24,6 +24,8 @@ verdicts recorded by `image.py review` (the caption under each image). You write
   },
   "row_tags": {"r272": "new line"},
   "batches": {"1": {"title": "Calibration", "note": "5 planned, one per direction; 3 finished."}},
+  "check_labels": ["Only the allowed text, spelled exactly", "The trolley is the hero"],
+  "review_note": "optional: a sentence for the method section",
   "caveats": [{"title": "The logo is the model's approximation.", "text": "..."}],
   "how": ["optional: your own three reuse steps (HTML)"]
 }
@@ -36,9 +38,16 @@ verdicts recorded by `image.py review` (the caption under each image). You write
 | `groups` | no | per value of `group_by`: `name`, `idea` (what the picture is), `gives_up`, `outcome` (how it turned out, in your words, from the verdicts), `wildcard` (adds the wildcard badge) |
 | `prompt` or `prompt_file` | no | the exact brief shown with a Copy button (default: the plan's `brief`, which is usually a summary, so give the user's real prompt). `prompt_file` is relative to the meta file |
 | `canonical_url` | no | the deploy address: makes `og:image` and the canonical link absolute, so link previews find the picture and the Share buttons use the stable URL |
+| `check_labels`, `review_note` | no | short names for the plan's checks in the review panel; a sentence of your own for the method section |
 | `row_tags` | no | a short tag on a thumbnail's caption (`r272 · new line`) |
 | `batches` | no | a title and note per batch number; the numbers and costs come from the ledger |
 | `caveats` | no | the "What to know" list: say what a reader must know before using the images |
+
+**The review on the page** appears when the experiment has verdicts (`image.py review`): a panel under each picture with the verdict on every check that applies (a check recorded as `na` is not
+shown, and the panel says it does not apply), a badge on each thumbnail, a filter (All / Clean / Failed a check / Doubtful), a "how they checked out" card per group and a "How the images were checked"
+section that lists the checks and says who read them. If the ledger also holds a model's reading (`row["model_review"]`, from a `review --confirm` run), each panel offers it as a second reading beside the
+first with the differences marked, and the method section states how often the two agree. `check_labels` gives each check a short name for the panel (default: the check's own words); `review_note` is a
+sentence of your own for the method section, for example how the second reader differs. Without verdicts none of this appears and the page is the plain gallery.
 
 Rules: the page never states a verdict that is not in the ledger (an image with no review has no caption), and the builder refuses an experiment with a pictured person.
 Text in the meta file is HTML-escaped on the page except `eyebrow` and `how`, which are HTML you write yourself.
