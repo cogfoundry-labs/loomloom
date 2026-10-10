@@ -18,5 +18,8 @@ Template Input ──────────────────> Workbook 
 - A `stepOutput` source must also name its source Step in `dependsOn`.
 - Scalars and Artifacts use the same source union. Use `sequence` for ordered multimodal values and `merge` for homogeneous Artifact collections.
 - Capability Profile model routing uses the separate `modelSelection` field and never enters Provider-native JSON.
+- Code uses `codeProfile` and `code` for its environment and ports; boolean `when` controls conditions, and explicit Loop containers control bounded rework. See the [Step reference](reference/steps.md) for implemented capabilities and controlled test boundaries.
 
 Start with the [quickstart](get-started/quickstart.md), [syntax reference](reference/template-syntax.md), and [examples](examples/README.md). Machine validation is defined by the [JSON Schema](../machine/template-spec.schema.json) and Core `ValidateTemplateSpecV2`.
+
+Use the [CLI Code review walkthrough](how-to/code-cli-review.md) to exercise the authoring and result flow.

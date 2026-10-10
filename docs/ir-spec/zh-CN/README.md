@@ -18,6 +18,7 @@ Template Input ──────────────────> Workbook 
 - `stepOutput` 必须同时在 `dependsOn` 中声明来源 Step。
 - 标量和 Artifact 使用同一套 source union；有序多模态值使用 `sequence`，同构 Artifact 集合使用 `merge`。
 - Capability Profile 的模型选择使用独立 `modelSelection`，不会写入 Provider 原生请求。
+- Code 用 `codeProfile` 和 `code` 声明运行环境与输入/输出；条件节点用 boolean `when`，有界返工用显式 Loop 容器。已实现范围及受控测试边界见 [Step 参考](reference/steps.md)。
 
 ## 开始使用
 
@@ -28,6 +29,7 @@ Template Input ──────────────────> Workbook 
 5. [Step 与执行绑定](reference/steps.md)
 6. [输入绑定](reference/bindings.md)
 7. [示例](examples/README.md)
+8. [CLI Code 节点评审闭环](how-to/code-cli-review.md)
 
 机器校验以 [JSON Schema](../machine/template-spec.schema.json) 和 Core `ValidateTemplateSpecV2` 为准。模型合同、Profile 成员和输出端口是环境动态事实，创建版本时由 Core 解析并冻结。
 

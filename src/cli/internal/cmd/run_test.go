@@ -670,6 +670,65 @@ func TestRunResultRowsTextRedactsSignedAccessURL(t *testing.T) {
 	}
 }
 
+func TestRunResultRowsPreservesCodeValuesAndLoopOutcomes(t *testing.T) {
+	const response = `{"items":[
+		{"rowIndex":0,"status":"completed","values":[
+			{"stepId":"stp_code001","portId":"count","executionId":"exec_1","value":9007199254740993},
+			{"stepId":"stp_code001","portId":"passed","executionId":"exec_1","value":false},
+			{"stepId":"stp_code001","portId":"object","executionId":"exec_1","value":{"title":"HELLO","items":[15]}}
+		],"loops":[{"loopId":"stp_loop001","status":"accepted","iterations":2,"acceptedIteration":2,"actualCost":10,"costIncomplete":true,"fees":[{"cost":10,"costKnown":false}]}]},
+		{"rowIndex":1,"status":"failed","errorMessage":"quality rounds exhausted","loops":[{"loopId":"stp_loop001","status":"exhausted","iterations":3,"acceptedIteration":0,"actualCost":30,"costIncomplete":false,"fees":[]}],"stepErrors":[{"stepId":"stp_loop001","stepLabel":"Quality","status":"failed","errorCode":"LOOP_EXHAUSTED","errorMessage":"No accepted copy"}]}
+	],"totalCount":2}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(response))
+	}))
+	defer server.Close()
+	for _, format := range []string{"json", "text"} {
+		t.Run(format, func(t *testing.T) {
+			opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: format}
+			cmd := newRunResultRowsCmd(opts)
+			var out bytes.Buffer
+			cmd.SetOut(&out)
+			cmd.SetArgs([]string{"run_123"})
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+			for _, want := range []string{"9007199254740993", "false", "HELLO", "exhausted", "LOOP_EXHAUSTED", "No accepted copy"} {
+				if !strings.Contains(out.String(), want) {
+					t.Fatalf("%s result missing %q: %s", format, want, out.String())
+				}
+			}
+			if format == "text" {
+				for _, want := range []string{"iterations=2 accepted=2", "iterations=3 accepted=0"} {
+					if !strings.Contains(out.String(), want) {
+						t.Fatalf("text result missing %q: %s", want, out.String())
+					}
+				}
+				return
+			}
+			var decoded struct {
+				Rows []struct {
+					Values []struct{ Value json.RawMessage }
+					Loops  []struct {
+						CostIncomplete bool
+						Fees           []json.RawMessage
+					}
+				}
+			}
+			if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
+				t.Fatal(err)
+			}
+			if len(decoded.Rows) != 2 || len(decoded.Rows[0].Values) != 3 || string(decoded.Rows[0].Values[0].Value) != "9007199254740993" {
+				t.Fatalf("typed values lost or rounded: %s", out.String())
+			}
+			if !decoded.Rows[0].Loops[0].CostIncomplete || len(decoded.Rows[0].Loops[0].Fees) != 1 || len(decoded.Rows[1].Values) != 0 {
+				t.Fatalf("loop facts lost or exhausted candidate fabricated: %s", out.String())
+			}
+		})
+	}
+}
+
 func TestRunResultWorkbookCmdDownloadsServerWorkbook(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/loom/v1/users/me/runs/run_123/resultWorkbook" {
