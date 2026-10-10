@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "name": "Code 布尔条件"
+  },
+  "templateInputs": {
+    "text": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "presentation": {
+        "label": "输入文本",
+        "order": 1
+      }
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_code001",
+      "displayName": "stp_code001",
+      "executionBinding": {
+        "kind": "codeProfile",
+        "profileId": "python-pure",
+        "profileRevision": "1"
+      },
+      "code": {
+        "language": "python",
+        "entrypoint": "main",
+        "source": "import json\nfrom pathlib import Path\n\ndef main(inputs):\n    text = inputs[\"text\"].strip()\n    Path(\"result.json\").write_text(json.dumps({\"text\": text}, ensure_ascii=False), encoding=\"utf-8\")\n    return {\"text\": text, \"passed\": bool(text) and text != \"REJECT\", \"file\": \"result.json\"}\n",
+        "contractVersion": "2",
+        "outputs": {
+          "text": {
+            "kind": "value",
+            "valueType": "string",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "passed": {
+            "kind": "value",
+            "valueType": "boolean",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          "file": {
+            "kind": "artifact",
+            "mimeType": "application/json"
+          }
+        },
+        "inputs": {
+          "text": {
+            "valueType": "string",
+            "required": true,
+            "nullable": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          }
+        }
+      },
+      "inputBindings": {
+        "text": {
+          "source": "templateInput",
+          "inputKey": "text"
+        }
+      }
+    },
+    {
+      "stepId": "stp_next001",
+      "displayName": "stp_next001",
+      "executionBinding": {
+        "kind": "codeProfile",
+        "profileId": "python-pure",
+        "profileRevision": "1"
+      },
+      "code": {
+        "language": "python",
+        "entrypoint": "main",
+        "source": "def main(inputs):\n    return {\"copy\": inputs[\"text\"].upper()}\n",
+        "contractVersion": "1",
+        "outputs": {
+          "copy": {
+            "kind": "value",
+            "valueType": "string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "inputBindings": {
+        "text": {
+          "source": "stepOutput",
+          "stepId": "stp_code001",
+          "portId": "text"
+        }
+      },
+      "dependsOn": [
+        "stp_code001"
+      ],
+      "when": {
+        "stepId": "stp_code001",
+        "portId": "passed",
+        "equals": true
+      }
+    }
+  ],
+  "workbook": {
+    "sampleRows": [
+      {
+        "values": {
+          "text": " Hello Code "
+        }
+      },
+      {
+        "values": {
+          "text": "REJECT"
+        }
+      }
+    ]
+  }
+}

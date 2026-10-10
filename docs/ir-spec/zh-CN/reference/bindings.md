@@ -12,6 +12,10 @@
 
 来源 Step 必须存在、不能是自身，并且必须同时出现在当前 Step 的 `dependsOn`。`portId` 是冻结输出合同中的稳定身份，不使用 role、文件名或 native JSON pointer 代替。
 
+Code 显式 string 输入消费模型文本 Artifact 时，在此 binding 上增加 `"valueType":"string"`，并使用 `code.contractVersion="2"` 声明必填、非 nullable string 输入。平台有界读取文本，`main(inputs)` 取得字符串，不自动解析 JSON。该标记当前只允许 Code 的 stepOutput string 输入。
+
+Code Value 通过普通 stepOutput 按冻结端口合同传递，不因为它存储在 JSON 中就隐式变成文本 Artifact。Loop 的外部引用指向容器 ID 与已声明出口 alias；`loopState` 只用于 body 的显式状态消费者，不能在 Root 节点中使用。
+
 ## Template Input、literal 与平台上下文
 
 ```json

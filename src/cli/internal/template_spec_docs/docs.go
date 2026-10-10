@@ -27,6 +27,7 @@ type Topic struct {
 
 var topicsByLanguage = map[string][]Topic{
 	"en": {
+		{Name: "code", Filename: "how-to/code-cli-review.md", Description: "Controlled test walkthrough for Code, conditions, and bounded rework"},
 		{Name: "spec", Filename: "reference/template-syntax.md", Description: "Complete TemplateSpec syntax reference"},
 		{Name: "authoring", Filename: "get-started/quickstart.md", Description: "Quickstart for template authors"},
 		{Name: "examples", Filename: "examples/README.md", Description: "Executable example index"},
@@ -38,6 +39,7 @@ var topicsByLanguage = map[string][]Topic{
 		{Name: "execution-units", Filename: "reference/execution-units.md", Description: "Execution-unit input ports and output types"},
 	},
 	"zh-CN": {
+		{Name: "code", Filename: "how-to/code-cli-review.md", Description: "Code、条件与有界返工的 CLI 测试评审流程"},
 		{Name: "spec", Filename: "reference/template-syntax.md", Description: "完整 TemplateSpec 语法参考"},
 		{Name: "authoring", Filename: "get-started/quickstart.md", Description: "模板作者快速开始"},
 		{Name: "examples", Filename: "examples/README.md", Description: "可执行示例索引"},

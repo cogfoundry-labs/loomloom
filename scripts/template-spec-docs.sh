@@ -312,6 +312,7 @@ normalize_example() {
       else . end
     | .steps |= map(
         redact("displayName")
+        | if has("loop") then .loop.body |= map(redact("displayName")) else . end
         | if has("inputBindings") then
             .inputBindings |= with_entries(
               .value |= walk(

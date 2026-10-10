@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "name": "Code 文本处理与文件交付"
+  },
+  "templateInputs": {
+    "text": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "presentation": {
+        "label": "输入文本",
+        "order": 1
+      }
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_code001",
+      "displayName": "stp_code001",
+      "executionBinding": {
+        "kind": "codeProfile",
+        "profileId": "python-pure",
+        "profileRevision": "1"
+      },
+      "code": {
+        "language": "python",
+        "entrypoint": "main",
+        "source": "import json\nfrom pathlib import Path\n\ndef main(inputs):\n    text = inputs[\"text\"].strip()\n    Path(\"result.json\").write_text(json.dumps({\"text\": text}, ensure_ascii=False), encoding=\"utf-8\")\n    return {\"text\": text, \"passed\": bool(text) and text != \"REJECT\", \"file\": \"result.json\"}\n",
+        "contractVersion": "2",
+        "outputs": {
+          "text": {
+            "kind": "value",
+            "valueType": "string",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "passed": {
+            "kind": "value",
+            "valueType": "boolean",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          "file": {
+            "kind": "artifact",
+            "mimeType": "application/json"
+          }
+        },
+        "inputs": {
+          "text": {
+            "valueType": "string",
+            "required": true,
+            "nullable": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          }
+        }
+      },
+      "inputBindings": {
+        "text": {
+          "source": "templateInput",
+          "inputKey": "text"
+        }
+      }
+    }
+  ],
+  "workbook": {
+    "sampleRows": [
+      {
+        "values": {
+          "text": " Hello Code "
+        }
+      }
+    ]
+  }
+}

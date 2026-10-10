@@ -4,8 +4,8 @@
   "files": [
     {
       "path": "README.md",
-      "source_sha256": "4edef0a95231770f733fc306ea10c0de7114ab61bbf60e9776732e8aafdb1325",
-      "generated_sha256": "4ba64e6bdd21c940890b3a7a87a170be2ef5b0324d77fba4fc7bacc4227d2441"
+      "source_sha256": "6c81e7d651b0772de5e14eb928e308ccebbe701afa28325e7747169b5f00a41b",
+      "generated_sha256": "b8a3f093b20ebf738eb2c5fe2ac8b20cc7f860996d44905a8c851f32c09e6a3e"
     },
     {
       "path": "concepts/artifacts-and-results.md",
@@ -49,13 +49,28 @@
     },
     {
       "path": "examples/README.md",
-      "source_sha256": "8b7410042e8b9c7ad70b06f86079a99c651008b4a0a5e990e43738d5aec0ee79",
-      "generated_sha256": "da330fa283e93cd7308120d43338455ca8bdc023c2a7fce527dc211df59fcee2"
+      "source_sha256": "0883e0ef164a931c9586af09f85bacae7df01a7872a1ab522484feb55c217b0c",
+      "generated_sha256": "b75ccd9a0ca30dc5810eb170ac111e64a393413675e75e1bc6cc3017aee8a017"
+    },
+    {
+      "path": "examples/invalid/code-nullable-input.json",
+      "source_sha256": "508f02374f5e0b6a01b75a315ea47181961aec53538585c08d7b2493249e5d5d",
+      "generated_sha256": "562cbf4861a4edf833825718245e5855506a971331854ade2f3957051d03e04c"
     },
     {
       "path": "examples/invalid/legacy-v1-shape.json",
       "source_sha256": "e85a154edebe6e008b452636a2fa91f8231f7316cd0db737bbe20f5d6149f149",
       "generated_sha256": "dd6ba987fd2b73b873afb548bbf7db6d726074badb047a8c428998168454d375"
+    },
+    {
+      "path": "examples/invalid/loop-body-output-leak.json",
+      "source_sha256": "45a2737f2a6fea1e70819e33e99253c54469f300073825c814c54de79134a1b9",
+      "generated_sha256": "0ab9c44ebb36f87132f2bbaeca91eafd9a3188d7e1ade6919513592e3dcde460"
+    },
+    {
+      "path": "examples/invalid/loop-unbounded.json",
+      "source_sha256": "9446cceb180996931a240cb13a6e735d9c66f7ec80d6c1fafce9d1f44d7e9177",
+      "generated_sha256": "41b7db0ddbfcd829d07b1e14b3a09d4b6e33dee7eb496426f831372001693cdf"
     },
     {
       "path": "examples/invalid/profile-without-model-selection.json",
@@ -73,9 +88,24 @@
       "generated_sha256": "c010ec499bd99439b98c439556c2bb43def2b8e2df684474a18b73682d1a291b"
     },
     {
+      "path": "examples/valid/bounded-text-loop.json",
+      "source_sha256": "041a7d4856a7a122498f859c82dbad91702deb780445b4d11ace21a18b1d7cae",
+      "generated_sha256": "fd55d08e068929ef30bd7888e586b37c613bcdbaa97ef8b3bed75b25ebce8b26"
+    },
+    {
       "path": "examples/valid/capability-profile.json",
       "source_sha256": "d0225734777ca17a48bfbae2065610a28a48c36d963462e9894c4172c1a31100",
       "generated_sha256": "89f40faf9ceabeb90ca5a628f09f81e4f2d7b38610918f2f08c6c69b13d6df85"
+    },
+    {
+      "path": "examples/valid/code-condition.json",
+      "source_sha256": "9585133af78a2b8f4c884ffed8cbb81980fb771f59b3f824bca9545449b379ae",
+      "generated_sha256": "3bf3c809c3a41c304d54efaf036d420783570222ff90c824fe6862e392889b0c"
+    },
+    {
+      "path": "examples/valid/code-value-artifact.json",
+      "source_sha256": "cacebae25747ce69627c23547d6673c453e4143b0b90559f62036c60fe256f1e",
+      "generated_sha256": "b3de83d20d401256a2bd427e094d3e9114a62d2ed11aca63a8b4bd6461cae741"
     },
     {
       "path": "examples/valid/compose-value.json",
@@ -123,6 +153,11 @@
       "generated_sha256": "36e8063f3b5629f5c6c0adde28dcb71986063d16c82bfba8a9ae8e41b28b980b"
     },
     {
+      "path": "how-to/code-cli-review.md",
+      "source_sha256": "1a2e6d7fc51273702d32a4468f066e6e050b5bd0e3070e76eb7114046453f985",
+      "generated_sha256": "5b0aaf1345206720050112ade78dce0e882369ba274a2e300b6a9f7d4f330f6f"
+    },
+    {
       "path": "how-to/compose-prompts.md",
       "source_sha256": "385cd2ad9677460528b396c107ac3cc98d88c1c1c6c015c9fb0ee7179179c5cf",
       "generated_sha256": "c9b58727b1916aa6215b4dfcb1c6cb954216574cc8a1f5652d5149f7c4d1e53b"
@@ -159,13 +194,13 @@
     },
     {
       "path": "reference/bindings.md",
-      "source_sha256": "e53ecefe9ef01bbb0244db38a24319eb2a692fd5ff42f644a48a2e245473ee41",
-      "generated_sha256": "e340841fa004466189d49c48137eb03c3cb353218428888136b1bcaa000e5cb3"
+      "source_sha256": "aa52838b0547fac0ba72c7859913527055b8decb1ed275594b9e267b37b04046",
+      "generated_sha256": "47e1e80f0e2d9bc74d4abe6089eff94f9eddb06c6d5864d3d6839ca3f266d639"
     },
     {
       "path": "reference/compatibility.md",
-      "source_sha256": "79ba01b8630cd7ee0cd548d2468157d33a43a298932c57313c0af500a00827e1",
-      "generated_sha256": "2c1971eac8123fe21bf914c4cb9045cc938d9078d96e6c324d7fdc935869d325"
+      "source_sha256": "7c099b8c1aef7fee31990914bbfc6be315809cf700a9ba1074ce55de76d0c30f",
+      "generated_sha256": "33d6bd08ed863f2f2a072bd76e71f9352543ba181eefeb2ac36287de8fe1c262"
     },
     {
       "path": "reference/execution-units.md",
@@ -179,8 +214,8 @@
     },
     {
       "path": "reference/limits.md",
-      "source_sha256": "3d372fdd061c1046dc0233d50012b016b967cfebcf92fff611bb9b894749aae8",
-      "generated_sha256": "bdd31c8fdbedf63a7b1d599264902d70f757839963802ae317815f080b98ffcb"
+      "source_sha256": "0668d4a53503f25375def5fede495fce0d34290fe93b1b178df80c127e1eaae2",
+      "generated_sha256": "d5514eb441dab92e13dfba4586f56a33f9d49fee3d76f85a272196cfab411730"
     },
     {
       "path": "reference/metadata.md",
@@ -189,13 +224,13 @@
     },
     {
       "path": "reference/steps.md",
-      "source_sha256": "c7858029e88a1c7fd6e32ece83a9710bf9a55d72883cdbde4f896f9464994412",
-      "generated_sha256": "7156c211b93436e05fa93fdbdd1f9a31467ca2746d7c5433b69394708797bfd2"
+      "source_sha256": "6e43097b0f596553089dcd0f4786b32b15cde83651ebaaad78f3a0db6d9990c7",
+      "generated_sha256": "f6379bd00846bfd362b3fec85d3db2afbffc3fb055f98878ce91f7a76b90ec27"
     },
     {
       "path": "reference/template-syntax.md",
-      "source_sha256": "075b84d098dcc146be80ecce56d3e1d4bde5e054a1fedfd1ccae13331d5eb91f",
-      "generated_sha256": "196c6b8df44693ba4038e23a253f47a186be61a75737b9b2d846bca57b2b2dbb"
+      "source_sha256": "5a761f889b7036bb138854f585c7a97f5d348f00c8313010dd65641be0471e7a",
+      "generated_sha256": "e6d53387dcaf982754fdd601f5e5655735d514bb47c7d1c92f8f91b687fc2f43"
     },
     {
       "path": "reference/validation-errors.md",

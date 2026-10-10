@@ -8,9 +8,14 @@
 | 多模态有序输入 | `content-sequence.json` | text/image sequence 与 role |
 | 上游图片进入有序输入 | `content-sequence-step-output.json` | literal、上游 Artifact、sequence、dependsOn |
 | 可替换文本模型 | `capability-profile.json` | Profile、动态模型选择、默认模型 |
+| Code 文本与文件交付 | [code-value-artifact.json](valid/code-value-artifact.json) | 必填 string 输入、Value、JSON Artifact |
+| Code 布尔条件 | [code-condition.json](valid/code-condition.json) | 直接依赖的 boolean when 与下游消费 |
+| 文本有界返工 | [bounded-text-loop.json](valid/bounded-text-loop.json) | fixed 模型、模型文本转 string、显式反馈、接受出口与条件交付 |
 
 示例中的 Subject revision 和 model ID 是结构占位或某次测试环境证据；创建版本前必须替换为目标环境当前返回的权威 ID。Capability Profile 的普通写法只保留稳定 `profileId`，不要把某次查询得到的 `profileRevision` 写进模板。
 
 invalid 目录保存应被 Schema 或 Core validator 拒绝的示例，用于稳定错误边界。
+
+新增非法示例覆盖 nullable Code 输入、超过十轮的 Loop 和外部节点读取体内未导出结果。Schema 校验结构；作用域、依赖、端口类型、实际 Profile 与作者权限仍由 Core/服务端验证。valid 表示结构、核心校验与冻结读回测试通过，不表示示例已在当前环境实际运行。Loop 示例的模型占位必须替换为目标环境实际可用的成员；Code/Loop 还需受控测试准入。
 
 所有示例只包含 `canonicalSpecV2` 对象本身。提交创建版本请求时，还要在外层增加 `specVersion=template-spec/v2` 和 `canonicalSpecV2` 字段。

@@ -540,12 +540,41 @@ type runResultRowArtifact struct {
 }
 
 type runResultRow struct {
-	RowIndex     int                    `json:"rowIndex"`
-	Status       string                 `json:"status"`
-	Error        string                 `json:"error"`
-	ErrorMessage string                 `json:"errorMessage"`
-	InputJSON    string                 `json:"inputJson"`
-	Artifacts    []runResultRowArtifact `json:"artifacts"`
+	RowIndex     int                     `json:"rowIndex"`
+	Status       string                  `json:"status"`
+	Error        string                  `json:"error"`
+	ErrorMessage string                  `json:"errorMessage"`
+	InputJSON    string                  `json:"inputJson"`
+	Artifacts    []runResultRowArtifact  `json:"artifacts"`
+	Values       []runResultRowValue     `json:"values,omitempty"`
+	Loops        []runResultRowLoop      `json:"loops,omitempty"`
+	StepErrors   []runResultRowStepError `json:"stepErrors,omitempty"`
+}
+
+type runResultRowValue struct {
+	StepID      string          `json:"stepId"`
+	PortID      string          `json:"portId"`
+	ExecutionID string          `json:"executionId"`
+	Value       json.RawMessage `json:"value"`
+}
+
+type runResultRowLoop struct {
+	LoopID            string            `json:"loopId"`
+	Status            string            `json:"status"`
+	Iterations        int               `json:"iterations"`
+	AcceptedIteration int               `json:"acceptedIteration"`
+	ActualCost        int64             `json:"actualCost"`
+	CostIncomplete    bool              `json:"costIncomplete"`
+	Fees              []json.RawMessage `json:"fees"`
+}
+
+type runResultRowStepError struct {
+	StepID       string `json:"stepId"`
+	StepLabel    string `json:"stepLabel"`
+	Status       string `json:"status"`
+	ErrorCode    string `json:"errorCode"`
+	ErrorMessage string `json:"errorMessage"`
+	ErrorURL     string `json:"errorUrl,omitempty"`
 }
 
 type listRunResultRowsResponse struct {
@@ -618,7 +647,7 @@ func newRunResultRowsCmd(opts *rootOptions) *cobra.Command {
 			}
 
 			tw := newTabWriter(cmd.OutOrStdout())
-			if _, err := fmt.Fprintln(tw, "row\tstatus\tartifacts\tresult\tinput"); err != nil {
+			if _, err := fmt.Fprintln(tw, "row\tstatus\tartifacts\tresult\tloops\terrors\tinput"); err != nil {
 				return err
 			}
 			for _, row := range resp.Rows {
@@ -626,7 +655,18 @@ func newRunResultRowsCmd(opts *rootOptions) *cobra.Command {
 				if len(input) > 120 {
 					input = input[:117] + "..."
 				}
-				if _, err := fmt.Fprintf(tw, "%d\t%s\t%d\t%s\t%s\n", row.RowIndex, row.Status, len(row.Artifacts), runResultPreview(row), input); err != nil {
+				loops := make([]string, 0, len(row.Loops))
+				for _, loop := range row.Loops {
+					loops = append(loops, fmt.Sprintf("%s:%s iterations=%d accepted=%d", loop.LoopID, loop.Status, loop.Iterations, loop.AcceptedIteration))
+				}
+				var errors []string
+				if row.Error != "" {
+					errors = append(errors, row.Error)
+				}
+				for _, step := range row.StepErrors {
+					errors = append(errors, fmt.Sprintf("%s:%s %s %s", step.StepID, step.Status, step.ErrorCode, step.ErrorMessage))
+				}
+				if _, err := fmt.Fprintf(tw, "%d\t%s\t%d\t%s\t%s\t%s\t%s\n", row.RowIndex, oneLine(row.Status), len(row.Artifacts), runResultPreview(row), oneLine(strings.Join(loops, " | ")), oneLine(strings.Join(errors, " | ")), oneLine(input)); err != nil {
 					return err
 				}
 			}
@@ -643,6 +683,13 @@ func newRunResultRowsCmd(opts *rootOptions) *cobra.Command {
 }
 
 func runResultPreview(row runResultRow) string {
+	if len(row.Values) > 0 {
+		values := make([]string, 0, len(row.Values))
+		for _, value := range row.Values {
+			values = append(values, value.StepID+"."+value.PortID+"="+string(value.Value))
+		}
+		return oneLine(strings.Join(values, " | "))
+	}
 	inlineTexts := make([]string, 0)
 	hasAccessURL := false
 	for _, artifact := range row.Artifacts {
