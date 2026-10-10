@@ -5,8 +5,8 @@ always REGENERATED from the ledger and never edited in place. Image Lab never op
 user's file for modification.
 
 Columns: ID (read-only) | Selected (checkbox) | one per dimension | Model | Take | Reference
-         | Prompt | Status | Image (thumbnail) | File | Cost | Notes
-System-owned (ignored on read): ID, Prompt, Status, Image, File, Cost.
+         | Prompt | Status | Image (thumbnail) | File | Cost | Review | Notes
+System-owned (ignored on read): ID, Prompt, Status, Image, File, Cost, Review (the visual-check verdicts, from `image.py review`).
 
 A row is exactly one image. A second image of the same values is a second row with the next Take number.
 
@@ -29,11 +29,12 @@ import zipfile
 from pathlib import Path
 
 import ledger as lg
+import review as review_mod
 
 # Excel re-saves dropdowns as an extension that openpyxl cannot read; we only read values, so it is harmless.
 warnings.filterwarnings("ignore", message="Data Validation extension is not supported")
 
-SYSTEM = ("ID", "Prompt", "Status", "Image", "File", "Cost")
+SYSTEM = ("ID", "Prompt", "Status", "Image", "File", "Cost", "Review")
 USER = ("Selected", "Model", "Take", "Reference", "Notes")
 LEGACY = ("Images", "Qty")                          # columns of older workbooks: ignored on read
 TRUE_WORDS = {"true", "x", "yes", "y", "1", "✓", "✔"}
@@ -52,7 +53,7 @@ def _need(mod: str):
 
 def headers(names: list[str], thumbnails: bool = False) -> list[str]:
     return ["ID", "Selected", *names, "Model", "Take", "Reference", "Prompt", "Status",
-            *(["Image"] if thumbnails else []), "File", "Cost", "Notes"]
+            *(["Image"] if thumbnails else []), "File", "Cost", "Review", "Notes"]
 
 
 def _have_pillow() -> bool:
@@ -177,7 +178,7 @@ READ_ME = [
     "How to use this workbook",
     "Tick Selected for the rows you want in the next batch. Ticking starts nothing: your assistant prices the batch and generation starts only after you approve that quote. Rows that already have an image are skipped, and anything you save after approving a batch is not part of that run; it is in the next quote.",
     "You can change the dimension values, Model, Take, Reference and Notes. Save the file before you ask Image Lab to generate.",
-    "ID, Prompt, Status, Image, File and Cost are written by Image Lab and ignored when it reads your edits. IDs are read-only: do not edit them.",
+    "ID, Prompt, Status, Image, File, Cost and Review are written by Image Lab and ignored when it reads your edits. IDs are read-only: do not edit them.",
     "A row is exactly one image. Take numbers the images of the same values: r001 Take 1 and r002 Take 2 with identical values produce two images. To add one, run `image.py add-takes --dir <experiment> --rows r001`, or copy the row, change Take and save (the copy gets a new ID).",
     "Image shows the row's generated picture. Click it to open the full-size file; move the mouse over it for a larger preview. File is the file name, also a link. The files must stay in this folder.",
     "Use the filter arrows on the top row to narrow the rows. A ticked row that is hidden by a filter is still ticked and still counts as selected.",
@@ -268,6 +269,9 @@ def _write_to(xw, path: Path, ledger: dict, plan: dict, names: list[str], prompt
             elif h == "Cost":
                 cost = lg.row_cost(ledger, row["id"])
                 ws.write(i, c, cost if cost else "", sysf)
+            elif h == "Review":
+                rev = row.get("review")
+                ws.write(i, c, _t(review_mod.cell_text(rev, review_mod.is_stale(rev, base, ledger, row["id"]))) if rev else "", sysf)
             elif h == "Notes":
                 ws.write(i, c, _t(row.get("notes") or ""), usrf)
     extra_heads = []
@@ -298,6 +302,7 @@ def _write_to(xw, path: Path, ledger: dict, plan: dict, names: list[str], prompt
     ws.set_column(cols.index("Reference"), cols.index("Reference"), 12, usrf)
     ws.set_column(cols.index("Prompt"), cols.index("Prompt"), 60)
     ws.set_column(cols.index("Status"), cols.index("Cost"), 12)
+    ws.set_column(cols.index("Review"), cols.index("Review"), 34, sysf)
     ws.set_column(cols.index("Notes"), cols.index("Notes"), 30, usrf)
     for h in cols:
         if IMAGE_COL.match(h):

@@ -14,6 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ledger as lg  # noqa: E402
+import review as rv  # noqa: E402
 import sheet as sh  # noqa: E402
 
 
@@ -32,7 +33,8 @@ def _images(exp: Path, ledger: dict) -> list[dict]:
         if p is None or not p.exists():
             continue
         row = rows.get(a["row_id"])
-        out.append({"id": a.get("sample_id") or a["row_id"], "params": (row or {}).get("params", a.get("params", {})), "path": p})
+        out.append({"id": a.get("sample_id") or a["row_id"], "params": (row or {}).get("params", a.get("params", {})), "path": p,
+                    "review": (row or {}).get("review")})
     return out
 
 
@@ -58,7 +60,19 @@ def _grid(items: list[dict], labels: list[str], cols: int, thumb: int, title: st
     return sheet
 
 
-def build(exp_dir, by: str | None = None, cols: int = 6, thumb: int = 320, blind: bool = False, out_dir=None, seed: int = 20261008) -> list[Path]:
+READABLE = {"cols": 3, "thumb": 576}          # tiles big enough to read small type (a headline reads at 320 px, a supporting line does not)
+
+
+def _natural(value) -> list:
+    """'10 x' sorts after '2 x': numbers compare as numbers."""
+    import re
+    return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", str(value))]
+
+
+def build(exp_dir, by: str | None = None, cols: int = 6, thumb: int = 320, blind: bool = False, out_dir=None, seed: int = 20261008,
+          readable: bool = False) -> list[Path]:
+    if readable:
+        cols, thumb = READABLE["cols"], READABLE["thumb"]
     try:
         import PIL  # noqa: F401
     except ImportError as e:
@@ -87,11 +101,17 @@ def build(exp_dir, by: str | None = None, cols: int = 6, thumb: int = 320, blind
     groups: dict = {}
     for it in items:
         groups.setdefault(it["params"].get(by, "all") if by else "all", []).append(it)
-    for i, (value, grp) in enumerate(groups.items(), 1):
-        grp.sort(key=lambda it: it["id"])
+    used: set = set()
+    for i, value in enumerate(sorted(groups, key=_natural), 1):                  # the groups in their own order (direction 1, 2, ... 10), not the order they first finished
+        grp = sorted(groups[value], key=lambda it: _natural(it["id"]))
         safe = "".join(c if c.isalnum() or c in "-_" else "-" for c in str(value)).strip("-")[:40] or f"g{i}"
-        p = out / f"{by or 'all'}-{i}-{safe}.jpg"
-        _grid(grp, [it["id"] for it in grp], cols, thumb, f"{by or 'all'}: {value}   ({len(grp)} images)").save(p, "JPEG", quality=88)
+        name = f"{by or 'all'}-{safe}.jpg"                                        # the value already carries its number ("3 Architectural aisle")
+        if name in used:
+            name = f"{by or 'all'}-{i}-{safe}.jpg"
+        used.add(name)
+        p = out / name
+        labels = [(it["id"] + (" " + rv.mark(it.get("review")) if it.get("review") else "")) for it in grp]
+        _grid(grp, labels, cols, thumb, f"{by or 'all'}: {value}   ({len(grp)} images)").save(p, "JPEG", quality=88)
         made.append(p)
     return made
 
@@ -102,12 +122,13 @@ def add_args(ap) -> None:
     ap.add_argument("--cols", type=int, default=6, help="images per row in each grid (default 6)")
     ap.add_argument("--thumb", type=int, default=320, help="thumbnail width in pixels")
     ap.add_argument("--blind", action="store_true", help="one shuffled grid with neutral labels S01... and a key file")
+    ap.add_argument("--readable", action="store_true", help="bigger tiles (3 across, 576 px) so small type can be read; overrides --cols and --thumb")
     ap.add_argument("--out", default=None, help="output folder (default <dir>/montage)")
 
 
 def run(a) -> int:
     try:
-        made = build(a.dir, a.by, a.cols, a.thumb, a.blind, a.out)
+        made = build(a.dir, a.by, a.cols, a.thumb, a.blind, a.out, readable=a.readable)
     except MontageError as e:
         print(f"error: {e}", file=sys.stderr)
         return 2

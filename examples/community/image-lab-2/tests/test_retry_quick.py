@@ -108,6 +108,50 @@ class QuickTests(Base):
         self.assertEqual(len(led["batches"]), 2)
 
 
+class QuickAspectTests(Base):
+    SB = "openai/gpt-image-2.5-sunburst"
+
+    def snap(self, q, out):
+        return json.loads(next((out / "snapshots").glob(f"{q['fingerprint']}.json")).read_text(encoding="utf-8"))
+
+    def test_aspect_asks_for_that_shape_and_the_quote_shows_it(self):
+        out = self.tmp / "q"
+        q = ex.build_quick("a poster, 4:5 vertical", "poster / flyer", 1, out, models=[self.SB], aspect="4:5")
+        row = self.snap(q, out)["rows"][0]
+        w, h = (int(x) for x in row["size"].split("x"))
+        self.assertEqual(w * 5, h * 4)                                         # exactly 4:5
+        self.assertEqual(q["aspect"], "4:5")
+        self.assertEqual(q["notes"], [])                                       # the prompt names 4:5 and the quote now uses it
+        self.assertIn(row["size"], ex.format_quick(q))
+
+    def test_without_aspect_a_ratio_in_the_prompt_gets_a_note_with_the_fix(self):
+        out = self.tmp / "q"
+        q = ex.build_quick("a poster, 4:5 vertical", "poster / flyer", 1, out, models=[self.SB])
+        self.assertEqual(len(q["notes"]), 1)
+        self.assertIn("--aspect 4:5", q["notes"][0])
+        self.assertIn("Note: your prompt names 4:5", ex.format_quick(q))
+        plain = ex.build_quick("a poster of a cat", "poster / flyer", 1, self.tmp / "q2", models=[self.SB])
+        self.assertEqual(plain["notes"], [])
+        self.assertEqual(ex.prompt_ratio("at 12:30 pm, then 3:2 wide"), "3:2")        # a time is not a ratio the models support; a real one is found
+        self.assertIsNone(ex.prompt_ratio("the score was 7:1"))
+
+    def test_a_bad_aspect_is_refused_and_the_default_quote_is_unchanged(self):
+        with self.assertRaises(ex.mx.PlanError):
+            ex.build_quick("x", "poster / flyer", 1, self.tmp / "q", models=[self.SB], aspect="wide")
+        with self.assertRaises(ex.mx.PlanError):
+            ex.build_quick("x", "poster / flyer", 1, self.tmp / "q", models=[self.SB], aspect="0:5")
+        a = ex.build_quick("x", "poster / flyer", 1, self.tmp / "a", models=[self.SB])
+        b = ex.build_quick("x", "poster / flyer", 1, self.tmp / "b", models=[self.SB], aspect=None)
+        self.assertEqual(a["fingerprint"], b["fingerprint"])
+
+    def test_the_cli_takes_aspect(self):
+        r = subprocess.run([sys.executable, str(SCRIPTS / "image.py"), "quick", "--prompt", "a poster", "--intent", "poster / flyer", "--count", "1",
+                            "--models", self.SB, "--aspect", "4:5", "--out", str(self.tmp / "cli")], capture_output=True, text=True, encoding="utf-8",
+                           env={**__import__("os").environ, "PYTHONUTF8": "1"})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("1152x1440", r.stdout)
+
+
 class QuickFollowUpTests(Base):
     def run_quick(self, count=2, **kw):
         out = self.tmp / "q"

@@ -14,7 +14,9 @@ Differences from the Image Lab 1 page: the switcher steps through the **creative
 each direction has a short description block (what it gives up, how it turned out), and each image has a one-line verdict
 from checking it at full size against the plan's visual checks. The page also carries a "What to know" caveats section.
 
-These are not produced by the skill on every run; a case study here is a maintainer picking one run worth showing.
+These are not produced by the skill on every run; a case study here is a maintainer picking one run worth showing. Build one from a finished experiment with
+`python scripts/image.py case-study --dir <experiment> --out case-studies/<slug> --meta <meta.json>` (see [`references/case-study/README.md`](../references/case-study/README.md)); the meta, prompt and
+verdict files of the Woolworths one sit beside its folder (`woolworths-editorial-catalogue.meta.json`, `.prompt.txt`, `.verdicts.json`).
 Image Lab 2 is not published yet, so nothing links to these pages.
 
 ## Index
