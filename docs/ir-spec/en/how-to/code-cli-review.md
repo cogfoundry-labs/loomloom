@@ -32,11 +32,18 @@ Create `rows.jsonl`; each line maps template input keys to values:
 
 ```bash
 loomloom orchestration-input upload rows.jsonl
-loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input-file-id>
 loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input-file-id> --client-request-id <request-id>
 ```
 
-The upload returns the batch's inputFileId, not a material inputAssetId. Precheck does not run code. Controlled-test model estimates/fees are not formal Code/Sandbox prices. `CODE_PRICING_PENDING` means there is no valid test admission; do not bypass it with zero prices, substituted identity, or direct database writes. Disabled Loop authoring or missing runtime bindings require the engineering delivery configuration.
+The upload returns the batch's inputFileId, not a material inputAssetId. Submission revalidates identity, version, input, contracts, and test admission. Disabled Loop authoring or missing runtime bindings require the engineering delivery configuration.
+
+Cost precheck for a template containing Code is currently unsupported. This command may return `CODE_PRICING_PENDING`; it does not mean Code is free or priced at zero:
+
+```bash
+loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input-file-id>
+```
+
+Pricing precheck and controlled test submission are separate paths. An authorized test identity may use the run command above for business review; ordinary unauthorized submission remains rejected. The existing precheck error mentions missing internal test admission, but that message alone does not establish test submission eligibility. Cost precheck is not a prerequisite for this business demonstration. Do not bypass guards with zero prices, substituted identity, or direct database writes; permission, input, and model-cost errors still require resolution and must not be ignored together.
 
 Use a new requestId for a new execution. After an ambiguous network result, retrying identical version/input/requestId should return the original Run. Changed input is a new execution. This does not authorize automatic re-execution of an unknown Code Attempt.
 

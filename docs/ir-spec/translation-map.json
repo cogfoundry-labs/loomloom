@@ -154,8 +154,8 @@
     },
     {
       "path": "how-to/code-cli-review.md",
-      "source_sha256": "1a2e6d7fc51273702d32a4468f066e6e050b5bd0e3070e76eb7114046453f985",
-      "generated_sha256": "5b0aaf1345206720050112ade78dce0e882369ba274a2e300b6a9f7d4f330f6f"
+      "source_sha256": "bc262681e3163e9a05ed1f57e369bfdcf3820c410d02af8792cca5011b5b1ad0",
+      "generated_sha256": "f4bb75765898bbce56103e1e63e0f6f03cb654643a8300f267309388a5bdd79d"
     },
     {
       "path": "how-to/compose-prompts.md",
