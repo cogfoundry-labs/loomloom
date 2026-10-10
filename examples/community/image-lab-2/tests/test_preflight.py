@@ -138,6 +138,15 @@ class ApprovalScope(Base):
         self.assertEqual(len(drift), 1)
         self.assertIn("will still run", drift[0])
 
+    def test_a_row_that_a_fresh_preflight_rejects_is_reported_with_its_issue_not_as_unticked(self):
+        self.build()
+        fp = self.run_pf()["fingerprint"]
+        (self.exp / "refs" / "mighty-product.png").unlink()                       # the reference the approved rows use is gone
+        drift = ex.snapshot_drift(self.exp, fp)
+        self.assertTrue(drift)
+        self.assertTrue(all("raises an issue" in line for line in drift), drift)
+        self.assertFalse(any("unticked" in line for line in drift))
+
     def test_rows_that_already_ran_and_retry_snapshots_are_not_compared_and_unknown_fingerprints_are_quiet(self):
         self.build()
         fp = self.run_pf()["fingerprint"]
@@ -170,6 +179,40 @@ class ApprovalScope(Base):
         self.assertEqual(sorted(left), sorted(rows[2:]))
         self.assertEqual(ex.unapproved_ticked(self.exp, self.run_pf()["fingerprint"]), [])       # the full preflight covers all nine
         self.assertEqual(ex.unapproved_ticked(self.exp, "nosuchfingerprint"), [])
+
+
+class RowsInTheBatch(Base):
+    """The report names the rows an approval covers (a cold-start test had to open the snapshot to find them)."""
+    def test_a_small_batch_lists_its_rows_with_their_values(self):
+        self.build()
+        first = self.ledger()["rows"][0]
+        text = pf.format_report(self.run_pf(only=[first["id"]]))
+        self.assertIn("Rows in this batch (this is what an approval covers):", text)
+        self.assertIn(f"  {first['id']}: " + " / ".join(str(v) for v in first["params"].values()), text)
+
+    def test_a_big_batch_does_not_list_every_row(self):
+        plan = copy.deepcopy(PLAN)
+        plan["dimensions"]["mood"] = ["calm", "bold", "warm"]                      # 27 rows, all ticked
+        self.build(plan)
+        self.assertGreater(len(self.ledger()["rows"]), pf.BATCH_ROWS_LISTED)
+        self.assertNotIn("Rows in this batch", pf.format_report(self.run_pf()))
+
+    def test_a_quick_mode_row_has_no_dimensions_so_its_model_is_shown(self):
+        out = self.tmp / "quick"
+        ex.build_quick("a red apple on a white table", "generic", 2, out)
+        text = pf.format_report(pf.run_preflight(out, advisor=ADVISOR))
+        listed = [line for line in text.splitlines() if line.startswith("  r00")]
+        self.assertEqual(len(listed), 2)
+        self.assertTrue(all("/" in line.split(":", 1)[1] for line in listed), listed)       # a model id, never an empty value
+
+    def test_a_take_is_marked(self):
+        self.build()
+        rid = self.ledger()["rows"][0]["id"]
+        lg.add_takes(led := self.ledger(), [rid], 1)
+        lg.save(self.exp / "ledger.json", led)
+        (self.exp / "experiment.xlsx").unlink()
+        new = [r["id"] for r in self.ledger()["rows"] if r.get("take") == 2][0]
+        self.assertIn(f"{new} (Take 2):", pf.format_report(self.run_pf(only=[new])))
 
 
 class EndToEndFindings(Base):
@@ -262,6 +305,14 @@ class IndicativePrice(unittest.TestCase):
         self.assertIn("--max-usd 0.06", text)
         self.assertIn("this batch is a subset", text)
         self.assertIn("all ticked rows, not only this subset", text)
+
+    def test_the_shipped_hints_include_an_exact_reference_price_and_no_range_is_made_for_other_reference_rows(self):
+        hints = pf.load_price_hints()
+        exact = "openai/gpt-image-2.5-sunburst|1024x1024|q=medium|reference"
+        self.assertIn(exact, hints["usd_per_image"])
+        r = pf.indicative([exact] * 2, hints)
+        self.assertAlmostEqual(r["low"], 2 * hints["usd_per_image"][exact], places=3)
+        self.assertIsNone(pf.indicative(["openai/gpt-image-2.5-sunburst|default|q=medium|reference"], hints))     # another size: no guess
 
     def test_the_shipped_hints_file_loads(self):
         self.assertTrue(pf.load_price_hints()["usd_per_image"])

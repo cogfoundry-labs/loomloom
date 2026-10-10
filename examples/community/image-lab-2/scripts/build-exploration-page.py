@@ -1374,6 +1374,8 @@ def main() -> None:
     _save_case_study(session_root, manifest)
 
     for rn in sorted(known_rounds):
+        if not any((session_root / known_rounds[rn].get("out_dir", f"round-{rn}")).glob("*.*g")):
+            continue                                       # a round that produced no image (every sample failed) has nothing to publish
         if str(rn) not in manifest["rounds"]:
             # A round session.json knows about but this script was never run
             # for — it silently never appears on the page. Loud here beats a
@@ -1405,6 +1407,12 @@ def main() -> None:
     render_session(rounds_data, session_root, out_dir, a.canonical_url)
 
     inline_path = _write_inline(out_dir) if a.inline else None
+    if inline_path is not None:
+        size = inline_path.stat().st_size
+        print(f"  {inline_path.name}: {size / 1048576:.1f} MB", file=sys.stderr)
+        if size > ARTIFACT_LIMIT_BYTES:
+            print(f"  WARNING: {inline_path.name} is over the 16 MB an artifact page may weigh. Publish the folder ({out_dir}) instead, "
+                  f"or build the page for fewer images.", file=sys.stderr)
 
     latest_round, latest_data = rounds_data[-1]
     made = latest_data["stats"]["generated"]
@@ -1430,18 +1438,34 @@ def main() -> None:
     }, indent=2))
 
 
-def _write_inline(out_dir: Path) -> Path:
-    """index.inline.html — every assets/*.png swapped for a base64 data URI, so
-    the page is a single file to publish. No recompression (stdlib only); if the
-    run's PNGs are large the caller recompresses to JPEG before publishing."""
+INLINE_MAX_SIDE, INLINE_QUALITY = 1280, 82           # the one-file copy carries recompressed JPEGs; the full-size PNGs stay in assets/
+ARTIFACT_LIMIT_BYTES = 16 * 1024 * 1024               # what an artifact page may weigh
+
+
+def _inline_uri(png: Path) -> str:
+    """A data URI for one asset: a recompressed JPEG when Pillow is available (a Sunburst PNG is about 1.3 MB and the page uses each image
+    about eight times, so raw PNGs made a 28 MB page from two images), the raw PNG otherwise."""
     import base64
+    try:
+        import io
+        from PIL import Image
+        im = Image.open(png).convert("RGB")
+        im.thumbnail((INLINE_MAX_SIDE, INLINE_MAX_SIDE))
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=INLINE_QUALITY, optimize=True)
+        return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+    except ImportError:
+        return "data:image/png;base64," + base64.b64encode(png.read_bytes()).decode("ascii")
+
+
+def _write_inline(out_dir: Path) -> Path:
+    """index.inline.html: every assets/*.png swapped for a data URI, so the page is a single file to publish."""
     page = (out_dir / "index.html").read_text(encoding="utf-8")
     # the OG/Twitter image tags are useless once inlined (scrapers ignore data:
-    # URIs) and would bloat the file with a base64 blob — drop them.
+    # URIs) and would bloat the file with a base64 blob: drop them.
     page = re.sub(r'\n<meta (?:property="og:image"|name="twitter:image")[^>]*>', "", page)
     for png in sorted((out_dir / "assets").glob("*.png")):
-        uri = "data:image/png;base64," + base64.b64encode(png.read_bytes()).decode("ascii")
-        page = page.replace(f"assets/{png.name}", uri)
+        page = page.replace(f"assets/{png.name}", _inline_uri(png))
     dest = out_dir / "index.inline.html"
     dest.write_text(page, encoding="utf-8")
     return dest
