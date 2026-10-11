@@ -185,6 +185,30 @@ class EvaluationFindingsTests(Base):
         self.assertGreater(len(mixed["estimate"]["unverified_rows"]), 0)
         self.assertGreater(mixed["estimate"]["known_usd"], 0)
 
+    def test_an_unpriced_total_is_not_presented_as_zero(self):
+        src = self.tmp / "plan.json"
+        src.write_text(json.dumps(golden("product-photo")), encoding="utf-8")
+        text = ex.format_plan_summary(ex.build_experiment(src, self.tmp / "o", dry_run=True))
+        self.assertIn("$0.0000 known · 12 rows price unverified (not in the total)", text)
+
+    def test_work_written_inside_an_installed_skill_gets_a_note_but_a_checkout_does_not(self):
+        installed = self.tmp / ".claude" / "skills" / "image-lab-2"
+        (installed / "out").mkdir(parents=True)
+        self.assertTrue(ex.inside_installed_skill(installed / "out" / "x", installed))
+        self.assertTrue(ex.inside_installed_skill(installed, installed))
+        self.assertFalse(ex.inside_installed_skill(self.tmp / "image-lab-out" / "x", installed))     # a folder of your own is fine
+        checkout = self.tmp / "examples" / "community" / "image-lab-2"
+        (checkout / "out").mkdir(parents=True)
+        self.assertFalse(ex.inside_installed_skill(checkout / "out" / "x", checkout))                  # in a checkout, out/ is the normal place
+        import contextlib
+        import io
+        err = io.StringIO()
+        with mock.patch.object(ex, "SKILL_ROOT", installed), contextlib.redirect_stderr(err):
+            ex.warn_inside_skill(installed / "out" / "bike")
+            ex.warn_inside_skill(self.tmp / "mine" / "bike")
+        self.assertEqual(err.getvalue().count("note:"), 1)
+        self.assertIn("./image-lab-out/<name>", err.getvalue())
+
     def test_fixed_items_reach_the_reference_prompt(self):
         plan = golden("product-photo")
         out = cp.compile_prompt(plan, {"camera": "eye-level front", "lighting": "soft daylight"}, "reference",

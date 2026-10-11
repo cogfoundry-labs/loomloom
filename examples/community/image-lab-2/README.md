@@ -47,7 +47,7 @@ Ticking starts nothing. A paid run happens only after the agent has quoted the t
 
 ## Requirements and install
 
-- Python 3 (tested on 3.13), `pip install -r requirements.txt` (XlsxWriter, openpyxl, allpairspy). **Pillow** is needed for embedded thumbnails, `montage` grids and the compact one-file gallery page.
+- Python 3 (tested on 3.13), `pip install -r requirements.txt` (XlsxWriter, openpyxl, allpairspy and **Pillow**, which draws the workbook's thumbnails and is used by `montage`, `review` and `case-study`).
 - Excel to use the workbook (the hover preview is verified in desktop Excel only; LibreOffice and Excel for the web are untested).
 - An API key from https://console.cogfoundry.ai/api-keys, needed for `run` and other paid commands (a `quick` quote is free). The token is read from `LOOMLOOM_TOKEN_COGFOUNDRY`, then `LOOMLOOM_TOKEN`, then the loomloom config file.
 

@@ -19,7 +19,7 @@ thing at a time to learn what matters; Creative Direction changes the whole idea
 
 ## 2. The loop (nothing here spends money until `run`)
 
-Run from the skill folder; on Windows set `PYTHONUTF8=1` (PowerShell: `$env:PYTHONUTF8=1`).
+Run from the skill folder; on Windows set `PYTHONUTF8=1` (PowerShell: `$env:PYTHONUTF8=1`). Put `plan.json` and `--out` in your own folder (`./image-lab-out/`), not under the skill (an update replaces it).
 
 ```
 python scripts/image.py check   --plan plan.json                       # is the plan valid? errors say what to fix
@@ -29,7 +29,7 @@ python scripts/image.py preflight --dir out/<name>                     # prices 
 python scripts/image.py run --dir out/<name> --confirm <fingerprint> --max-usd <N>   # the ONLY step that spends; only after the user approves THIS batch
 ```
 
-For creative directions, price **one image per direction first**: `preflight --dir out/<name> --one-per direction`, run it, look
+For creative directions, price **one image per direction first** (they share the first ticked row's other values, so it tests the directions, not the levers; the user may edit the workbook before approving): `preflight --dir out/<name> --one-per direction`, run it, look
 (`montage --dir out/<name> --by direction`), then a plain `preflight` for the rest. A token (`LOOMLOOM_TOKEN_COGFOUNDRY`) is needed only for `run`.
 
 ## 3. The plan file in 30 seconds

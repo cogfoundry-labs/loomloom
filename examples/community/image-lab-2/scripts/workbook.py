@@ -23,6 +23,7 @@ import io
 import os
 import re
 import shutil
+import sys
 import time
 import warnings
 import zipfile
@@ -233,6 +234,9 @@ def _write_to(xw, path: Path, ledger: dict, plan: dict, names: list[str], prompt
     numf = wb.add_format({"valign": "top"})
     link = wb.add_format({"font_color": "blue", "underline": 1, "valign": "top"})
     thumbnails = bool(image_links) and _have_pillow()                # no picture column before the first image exists
+    if image_links and not thumbnails:
+        print("note: Pillow is not installed, so the workbook shows a link to each image instead of its picture "
+              "(pip install -r requirements.txt)", file=sys.stderr)
     cols = headers(names, thumbnails)
     hover: list[tuple[int, int, bytes]] = []
     for c, h in enumerate(cols):
