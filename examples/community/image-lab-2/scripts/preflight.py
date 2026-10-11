@@ -510,7 +510,7 @@ def _run_preflight(exp_dir, now, advisor, ref_support, write, retry, include_unk
             report["info"].append(f'{rid}: {dim} "{val}" uses starter wording that has not been tested')
 
         # model
-        row_quality = plan.get("quality") if plan.get("quality") not in (None, "auto") else None
+        row_quality = (row.get("quality") or plan.get("quality")) if (row.get("quality") or plan.get("quality")) not in (None, "auto") else None   # a quick row carries its own
         chosen = row.get("model")
         if not chosen:
             if strategy.startswith("fixed:"):

@@ -13,7 +13,7 @@ Three modes share one engine (`scripts/image.py`), one ledger and one gate. **Qu
 
 Setup: run commands from this folder (the one holding this file; for an installed skill, for example `~/.claude/skills/image-lab-2/`) (`python scripts/image.py <command>`); `pip install -r requirements.txt` (experiment mode; quick mode needs nothing); a gateway key in
 `LOOMLOOM_TOKEN_COGFOUNDRY` (https://console.cogfoundry.ai/api-keys), needed only for `run`; the loomloom CLI is **not** used. On Windows set `PYTHONUTF8=1` (bash:
-`PYTHONUTF8=1 python ...`; PowerShell: `$env:PYTHONUTF8=1`). Keep plans and experiments in a folder of your own (`./image-lab-out/`), never inside the skill folder: an update replaces it. Read `./out/<name>` below as that folder. Without `AskUserQuestion` or `SendUserFile`, ask in plain chat and give file paths.
+`PYTHONUTF8=1 python ...`; PowerShell: `$env:PYTHONUTF8=1`). Keep plans and experiments in a folder of your own (`./image-lab-out/`), never inside the skill folder: an update replaces it. Read `./out/<name>` below as that folder. If your packages are in a virtual environment, call its interpreter (`.venv/Scripts/python` on Windows) in place of `python`, with absolute paths for `--plan` and `--out`. Without `AskUserQuestion` or `SendUserFile`, ask in plain chat and give file paths.
 
 ## Start here
 
@@ -108,7 +108,7 @@ Fix issues in the workbook and preflight again. For a **calibration** (one image
 other ticked rows stay ticked. With no observed price yet (a fresh clone) rows show as unverified, nothing is added to the known total, and preflight prints an "Indicative" range
 (`references/price-hints.json`) and a safe `--max-usd`: a hint, not a quote; say so.
 
-**5. Approve** this batch with `AskUserQuestion` (Generate / Edit the workbook / Stop), naming images, models and the known total, and **its scope** (rule 1). For creative
+**5. Approve** this batch with `AskUserQuestion`, or in plain chat if you have no such tool (Generate / Edit the workbook / Stop), naming images, models and the known total, and **its scope** (rule 1). For creative
 directions the first batch is the calibration, and its approval says so.
 
 **6 to 8. Generate, results, retry.** After the user's approval: `run --dir ./out/<name> --confirm <fingerprint> --max-usd <N>` in the background with a progress

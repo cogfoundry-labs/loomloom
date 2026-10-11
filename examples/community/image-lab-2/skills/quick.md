@@ -25,7 +25,7 @@ python scripts/image.py quick --prompt "<final prompt>" --intent "<intent>" --co
 ```
 
 Add `--models "<id>[,<id>]"` only if the user named models; the Advisor never replaces a
-model they asked for. Quick takes the shape from the intent (a poster is 2:3): if the user wants another, or the prompt names one ("4:5 vertical"), add `--aspect 4:5`; each row of the quote then
+model they asked for. A model with a quality setting (the GPT Image 2.5 models) is priced at the catalog default unless you pass `--quality medium`: with none the gateway has billed 4 to 8 times that, and the quote says so (Caution, and a safe `--max-usd`); with it the price is unverified until one image bills, with an indicative range. Quick takes the shape from the intent (a poster is 2:3): if the user wants another, or the prompt names one ("4:5 vertical"), add `--aspect 4:5`; each row of the quote then
 shows its size, and without `--aspect` a ratio named in the prompt gets a note. Reuse the same `--out` for a further round of the same subject; a
 different subject gets a fresh `--out`. It prints each row (`r001`...), model, samples,
 price, the total, and a fingerprint. For the score table use

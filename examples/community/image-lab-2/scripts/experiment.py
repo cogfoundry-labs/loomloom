@@ -160,6 +160,45 @@ def il_shape_q(entry: dict) -> list:
     return pf.il._shape(entry)["quality_values"]
 
 
+SMALL_TYPE = frozenset("small tiny quiet subtle discreet modest compact delicate understated".split())
+BIG_TYPE = frozenset("huge big large giant massive oversized enormous filling chunky".split())
+LETTER_WORDS = frozenset("letter letters lettering headline headlines type typeface font text".split())
+
+
+def _words(text) -> set:
+    return set(re.findall(r"[a-z]+", str(text).lower()))
+
+
+def lever_conflicts(plan: dict) -> list[str]:
+    """Creative directions only: a shared lever that is not scoped with `only_in` is combined with every direction, so a headline
+    style of "quiet small letters" lands on a direction whose own type trait is "huge blocky letters". The checker cannot read
+    meaning, so this looks for size words that point opposite ways (small against huge) in lever wording about letters."""
+    by = plan.get("batch_by")
+    dirs = [v for v in plan["dimensions"].get(by, []) if isinstance(v, dict) and isinstance(v.get("traits"), dict)] if by else []
+    out = []
+    for dim, vals in plan["dimensions"].items():
+        if dim in (by, "aspect"):
+            continue
+        for v in vals:
+            name = mx.value_name(v)
+            text = name + " " + (v.get("fragment", "") if isinstance(v, dict) else "")
+            w = _words(text)
+            if not w & LETTER_WORDS:
+                continue
+            small, big = bool(w & SMALL_TYPE), bool(w & BIG_TYPE)
+            if small == big:
+                continue
+            allowed = ((v.get("only_in") or {}).get(by) if isinstance(v, dict) else None)
+            for d in dirs:
+                if allowed is not None and mx.value_name(d) not in allowed:
+                    continue
+                dw = _words(d["traits"].get("type", ""))
+                if (small and dw & BIG_TYPE and not dw & SMALL_TYPE) or (big and dw & SMALL_TYPE and not dw & BIG_TYPE):
+                    out.append(f'{dim} "{name}" would be combined with direction "{mx.value_name(d)}", whose type trait is "{d["traits"]["type"]}": the two pull opposite ways. '
+                               f'Scope the value with `only_in` or leave it out (quickstart section 5)')
+    return out[:4]
+
+
 def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
     """The numbers a user needs to confirm a plan, with no file written and no gateway call."""
     adv = pf.Advisor(plan["intent"])
@@ -237,6 +276,7 @@ def preview_plan(plan: dict, target: int = 30, plan_dir=None) -> dict:
         wide = [d for d, v in plan["dimensions"].items() if len(v) > PLANNER_MAX_VALUES]
         if wide:
             warns.append(f"dimension(s) {', '.join(wide)} have more than {PLANNER_MAX_VALUES} values; 3 or 4 visibly different values is the workable size")
+    warns += lever_conflicts(plan)
     # workload and cost risk, for every plan (creative directions are exempt only from the dimension-shape limits above, never from these)
     if n_images > WORKLOAD_WARN_IMAGES:
         warns.append(f"the first batch is {n_images} images ({len(result['rows'])} rows x {takes} take(s)): a large spend to approve at once. "
@@ -448,7 +488,11 @@ def valid_aspect(aspect: str) -> str:
     return text
 
 
-def build_quick(prompt: str, intent: str | None, count: int, out_dir, models: list[str] | None = None, aspect: str | None = None) -> dict:
+QUICK_LADDER_MAX_USD = 0.06            # the highest price seen per image for a model with a quality setting when none is sent (measured $0.0549)
+
+
+def build_quick(prompt: str, intent: str | None, count: int, out_dir, models: list[str] | None = None, aspect: str | None = None,
+                quality: str | None = None) -> dict:
     """Quick mode (design 5, 7): the model is the only dimension. v0.1's allocation decides which
     models and how many samples each; the prompt is used verbatim. Writes ledger.json and a
     snapshot (no plan.json, no workbook); `run` then works exactly as for an experiment."""
@@ -458,14 +502,14 @@ def build_quick(prompt: str, intent: str | None, count: int, out_dir, models: li
     warn_inside_skill(out)
     out.mkdir(parents=True, exist_ok=True)
     with lg.writer_lock(out, "quick"):
-        return _build_quick(prompt, intent, count, out, models, aspect)
+        return _build_quick(prompt, intent, count, out, models, aspect, quality)
 
 
-def _build_quick(prompt, intent, count, out, models, aspect=None) -> dict:
+def _build_quick(prompt, intent, count, out, models, aspect=None, quality=None) -> dict:
     plan = pf.il.plan_for(intent, count, models)
+    adv, support = pf.Advisor(plan["intent"]), pf.load_reference_support()
     if aspect:                                              # the shape the user asked for, instead of the intent's default one
         aspect = valid_aspect(aspect)
-        adv, support = pf.Advisor(plan["intent"]), pf.load_reference_support()
         for seg in plan["allocation"]:
             sz = adv.size_for(seg["model"], aspect)
             usd, src = adv.price(seg["model"], sz, "text", support, None)
@@ -473,6 +517,23 @@ def _build_quick(prompt, intent, count, out, models, aspect=None) -> dict:
             seg["aspect_ratio"] = sz.get("aspect_ratio") or "-"
             seg["price_source"] = "unverified" if usd is None else src
             seg["subtotal_usd"] = round((usd or 0.0) * seg["n"], 6)
+    quality = str(quality).strip().lower() if quality else None
+    quality = None if quality == "auto" else quality
+    quality_notes = []
+    for seg in plan["allocation"]:
+        values = il_shape_q(adv.catalog[seg["model"]]) if seg["model"] in adv.catalog else []
+        seg["has_quality_setting"] = bool(values)           # such a model bills by quality: with none sent, its catalog price is only a default
+        if not quality:
+            continue
+        if quality not in values:
+            quality_notes.append(f"{seg['label']} has no quality setting {quality!r}"
+                                 + (f" (it accepts: {', '.join(values)})" if values else " (it has none at all)") + ": its images are made without one")
+            continue
+        token = None if seg["size"] in (None, "default") else seg["size"]
+        usd, src = adv.price(seg["model"], {"token": token, "px": 0}, "text", support, quality)
+        seg["quality"] = quality
+        seg["price_source"] = "unverified" if usd is None else src
+        seg["subtotal_usd"] = round((usd or 0.0) * seg["n"], 6)
     ledger_path = out / "ledger.json"
     ledger = lg.load(ledger_path) if ledger_path.exists() else lg.new_ledger(
         {"brief": prompt, "intent": plan["intent"]}, [], [])
@@ -482,7 +543,7 @@ def _build_quick(prompt, intent, count, out, models, aspect=None) -> dict:
         per_image = round(seg["subtotal_usd"] / seg["n"], 6) if priced else None
         size = None if seg["size"] in (None, "default") else seg["size"]
         for take in range(1, seg["n"] + 1):                 # a row is one image: n images are n rows, Take 1..n
-            row = lg.add_row(ledger, {}, selected=True, model=seg["model"], take=take, prompt=prompt)
+            row = lg.add_row(ledger, {}, selected=True, model=seg["model"], take=take, prompt=prompt, **({"quality": seg["quality"]} if seg.get("quality") else {}))
             row["status"] = "Ready"
             known += per_image or 0.0
             if not priced:
@@ -490,33 +551,51 @@ def _build_quick(prompt, intent, count, out, models, aspect=None) -> dict:
             snapshot_rows.append({
                 "id": row["id"], "model": seg["model"], "prompt": prompt, "size": size,
                 "aspect_ratio": None if seg["aspect_ratio"] in (None, "-") else seg["aspect_ratio"],
-                "qty": 1, "mode": "text", "references": [], "est_usd": per_image})
+                "qty": 1, "mode": "text", "references": [], "est_usd": per_image, **({"quality": seg["quality"]} if seg.get("quality") else {})})
     snap = {"created_at": lg.now(), "estimated_usd_known": round(known, 6),
             "unverified_rows": unverified, "rows": snapshot_rows}
     fp = snap["fingerprint"] = pf.snapshot_fingerprint(snap)
     lg.write_json_atomic(out / "snapshots" / f"{fp}.json", snap)
     lg.save(ledger_path, ledger)
-    notes = []
+    notes = list(quality_notes)
+    caution = []
+    risky = [seg for seg in plan["allocation"] if seg.get("has_quality_setting") and not seg.get("quality") and seg.get("price_source") != "unverified"]
+    if risky:                                               # a catalog default is not what such a model bills when no quality is sent
+        n_risky = sum(seg["n"] for seg in risky)
+        others = sum(seg["subtotal_usd"] for seg in plan["allocation"] if seg not in risky and seg.get("price_source") != "unverified")
+        safe = int((others + n_risky * QUICK_LADDER_MAX_USD) * 100 + 0.999) / 100
+        caution.append(f"{' and '.join(seg['label'] for seg in risky)} {'is' if len(risky) == 1 else 'are'} priced at the catalog's default, measured at the default size with a short prompt. "
+                       f"With no quality setting the gateway has billed 4 to 8 times that for an explicit size or a longer prompt (up to ${QUICK_LADDER_MAX_USD - 0.005:.3f} an image), "
+                       f"so the real total is not known until an image bills. Add --quality medium for a predictable price, or pass --max-usd {safe:.2f} to `run`.")
+    unpriced_keys = [pf.price_key(r["model"], r.get("size"), r.get("quality"), "text") for r in snapshot_rows if r["est_usd"] is None]
+    indicative = pf.indicative(unpriced_keys) if unpriced_keys else None
     named = prompt_ratio(prompt)
     if named and not aspect:
         shapes = sorted({str(r["aspect_ratio"] or r["size"] or "the default shape") for r in snapshot_rows})
         notes.append(f"your prompt names {named}, but Quick picks the shape from the intent ({', '.join(shapes)}): "
                      f"add --aspect {named} to get that shape (the quote then changes)")
     return {"fingerprint": fp, "rows": snapshot_rows, "known_usd": round(known, 6), "unverified_rows": unverified,
-            "images": sum(r["qty"] for r in snapshot_rows), "intent": plan["intent"], "why": plan["why"], "aspect": aspect, "notes": notes}
+            "images": sum(r["qty"] for r in snapshot_rows), "intent": plan["intent"], "why": plan["why"], "aspect": aspect, "quality": quality, "notes": notes,
+            "caution": caution, "indicative": indicative}
 
 
 def format_quick(q: dict) -> str:
     L = [f"IMAGE LAB QUICK PLAN  ({q['intent']})", q["why"]]
     for r in q["rows"]:
         price = "price unverified" if r["est_usd"] is None else f"~${r['est_usd']:.4f}"
-        shape = (r.get("size") or "default size") + (f" ({r['aspect_ratio']})" if r.get("aspect_ratio") else "")
+        shape = (r.get("size") or "default size") + (f" ({r['aspect_ratio']})" if r.get("aspect_ratio") else "") + (f"  quality {r['quality']}" if r.get("quality") else "")
         L.append(f"  {r['id']}  {r['model']:<36} {price}  {shape}")
     cost = f"${q['known_usd']:.4f} known"
     if q["unverified_rows"]:
         cost += f"  +  {len(q['unverified_rows'])} row(s) price unverified (not in the total)"
     L.append(f"Images: {q['images']}   Estimated cost: {cost}")
+    ind = q.get("indicative")
+    if ind:
+        rng = f"${ind['low']:.2f}" + ("" if ind["low"] == ind["high"] else f" to ${ind['high']:.2f}")
+        L.append(f"Indicative:         about {rng} for these {ind['rows']} image(s), from prices measured {ind['measured']} (a hint, not a quote). A safe limit: --max-usd {ind['max_usd']:.2f}")
     L.append("Balance: unread (the gateway will confirm)")
+    for c in q.get("caution", []):
+        L.append(f"Caution: {c}")
     for n in q.get("notes", []):
         L.append(f"Note: {n}")
     L.append(f"Fingerprint: {q['fingerprint']}")
@@ -667,6 +746,7 @@ def register(sub, with_run: bool = True) -> None:
     k.add_argument("--intent", default=None)
     k.add_argument("--count", type=int, default=4)
     k.add_argument("--models", default=None, help="comma-separated model ids to force")
+    k.add_argument("--quality", default=None, help="the model's quality setting, for example medium (for the models that have one): a predictable price instead of the catalog default")
     k.add_argument("--aspect", default=None, help="the shape to ask for, for example 4:5 (default: the intent's own shape; the quote shows the size)")
     k.add_argument("--out", required=True)
     ak = sub.add_parser("acknowledge-person",
@@ -944,7 +1024,7 @@ def _handle(a) -> None:
     elif a.cmd == "quick":
         models = [m.strip() for m in a.models.split(",") if m.strip()] if a.models else None
         try:
-            print(format_quick(build_quick(a.prompt, a.intent, a.count, a.out, models, a.aspect)))
+            print(format_quick(build_quick(a.prompt, a.intent, a.count, a.out, models, a.aspect, a.quality)))
         except mx.PlanError as e:
             print(f"error: {e}", file=sys.stderr)
             sys.exit(2)
