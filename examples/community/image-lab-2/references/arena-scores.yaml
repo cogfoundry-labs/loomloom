@@ -8,9 +8,13 @@
 # should ever hand-type a score into model-catalog.yaml again; re-measuring
 # means re-pulling this file, not editing a score by hand.
 #
-# Source: https://arena.ai/leaderboard/text-to-image/{overall,
-#   commercial-design,3d-modeling,cartoon,photorealistic,art,portraits,
-#   text-rendering} — pulled 2026-09-08, confirmed against a 78-model board.
+# Source: https://arena.ai/leaderboard/image/text-to-image and its category pages (commercial-design,
+#   3d-modeling, cartoon, photorealistic, art, portraits, text-rendering) — pulled 2026-10-11; the boards
+#   were dated Oct 8, 2026 and listed 82 models. (The previous pull, 2026-09-08, read a 78-model board at
+#   arena.ai/leaderboard/text-to-image/<category>, which now redirects here.)
+#
+# Some models have several entries on a board; each catalog model is taken from the same entry in every
+# category: openai/gpt-image-2.5-sunburst = gpt-image-2.5-sunburst; openai/gpt-image-2.5-flare = gpt-image-2.5-flare; openai/gpt-image-2 = gpt-image-2 (medium); google/gemini-3.1-flash-image = gemini-3.1-flash-image (nano-banana-2) [web-search]; google/gemini-3-pro-image = gemini-3-pro-image-2k (nano-banana-pro); bytedance/doubao-seedream-5-0-pro = seedream-5.0-pro; google/gemini-2.5-flash-image = gemini-2.5-flash-image-preview (nano-banana); bytedance/doubao-seedream-4.5 = seedream-4.5; bytedance/doubao-seedream-5-0-lite = seedream-5.0-lite.
 #
 # `margin` is arena's displayed "±" next to each Elo rating — confirmed via
 # arena.ai/blog/arena-rank and the lmarena/arena-rank package it describes to
@@ -27,105 +31,105 @@
 #
 # When re-pulling: update snapshot_date and every elo/margin pair together —
 # they are one leaderboard snapshot, not independently-dated facts.
-snapshot_date: "2026-09-08"
+snapshot_date: "2026-10-11"
 
 categories:
-  overall: https://arena.ai/leaderboard/text-to-image/overall
-  commercial_design: https://arena.ai/leaderboard/text-to-image/commercial-design
-  three_d_modeling: https://arena.ai/leaderboard/text-to-image/3d-modeling
-  cartoon: https://arena.ai/leaderboard/text-to-image/cartoon
-  photorealistic: https://arena.ai/leaderboard/text-to-image/photorealistic
-  art: https://arena.ai/leaderboard/text-to-image/art
-  portraits: https://arena.ai/leaderboard/text-to-image/portraits
-  text_rendering: https://arena.ai/leaderboard/text-to-image/text-rendering
+  overall: https://arena.ai/leaderboard/image/text-to-image
+  commercial_design: https://arena.ai/leaderboard/image/text-to-image/commercial-design
+  three_d_modeling: https://arena.ai/leaderboard/image/text-to-image/3d-modeling
+  cartoon: https://arena.ai/leaderboard/image/text-to-image/cartoon
+  photorealistic: https://arena.ai/leaderboard/image/text-to-image/photorealistic
+  art: https://arena.ai/leaderboard/image/text-to-image/art
+  portraits: https://arena.ai/leaderboard/image/text-to-image/portraits
+  text_rendering: https://arena.ai/leaderboard/image/text-to-image/text-rendering
 
 models:
   openai/gpt-image-2.5-sunburst:
-    overall: { elo: 1421, margin: 13 }
-    commercial_design: { elo: 1419, margin: 21 }
-    three_d_modeling: { elo: 1405, margin: 42 }
-    cartoon: { elo: 1440, margin: 21 }
-    photorealistic: { elo: 1423, margin: 20 }
-    art: { elo: 1390, margin: 31 }
-    portraits: { elo: 1450, margin: 32 }
-    text_rendering: { elo: 1481, margin: 23 }
+    overall: { elo: 1425, margin: 7 }
+    commercial_design: { elo: 1419, margin: 10 }
+    three_d_modeling: { elo: 1410, margin: 17 }
+    cartoon: { elo: 1446, margin: 10 }
+    photorealistic: { elo: 1430, margin: 10 }
+    art: { elo: 1394, margin: 13 }
+    portraits: { elo: 1467, margin: 14 }
+    text_rendering: { elo: 1472, margin: 10 }
 
   openai/gpt-image-2.5-flare:
-    overall: { elo: 1399, margin: 13 }
-    commercial_design: { elo: 1388, margin: 21 }
-    three_d_modeling: { elo: 1388, margin: 39 }
-    cartoon: { elo: 1428, margin: 21 }
-    photorealistic: { elo: 1406, margin: 22 }
-    art: { elo: 1360, margin: 28 }
-    portraits: { elo: 1456, margin: 35 }
-    text_rendering: { elo: 1434, margin: 22 }
+    overall: { elo: 1398, margin: 7 }
+    commercial_design: { elo: 1391, margin: 10 }
+    three_d_modeling: { elo: 1377, margin: 16 }
+    cartoon: { elo: 1421, margin: 10 }
+    photorealistic: { elo: 1414, margin: 10 }
+    art: { elo: 1372, margin: 13 }
+    portraits: { elo: 1442, margin: 14 }
+    text_rendering: { elo: 1433, margin: 10 }
 
   openai/gpt-image-2:
-    overall: { elo: 1381, margin: 4 }
-    commercial_design: { elo: 1389, margin: 6 }
-    three_d_modeling: { elo: 1361, margin: 9 }
-    cartoon: { elo: 1400, margin: 6 }
-    photorealistic: { elo: 1381, margin: 6 }
-    art: { elo: 1366, margin: 8 }
-    portraits: { elo: 1427, margin: 8 }
-    text_rendering: { elo: 1427, margin: 7 }
+    overall: { elo: 1383, margin: 4 }
+    commercial_design: { elo: 1386, margin: 6 }
+    three_d_modeling: { elo: 1364, margin: 9 }
+    cartoon: { elo: 1401, margin: 6 }
+    photorealistic: { elo: 1382, margin: 6 }
+    art: { elo: 1366, margin: 7 }
+    portraits: { elo: 1430, margin: 8 }
+    text_rendering: { elo: 1425, margin: 6 }
 
   google/gemini-3.1-flash-image:
-    overall: { elo: 1261, margin: 5 }
-    commercial_design: { elo: 1269, margin: 7 }
-    three_d_modeling: { elo: 1254, margin: 10 }
-    cartoon: { elo: 1263, margin: 7 }
-    photorealistic: { elo: 1268, margin: 7 }
-    art: { elo: 1241, margin: 8 }
-    portraits: { elo: 1264, margin: 8 }
-    text_rendering: { elo: 1292, margin: 7 }
+    overall: { elo: 1262, margin: 4 }
+    commercial_design: { elo: 1270, margin: 6 }
+    three_d_modeling: { elo: 1257, margin: 9 }
+    cartoon: { elo: 1263, margin: 6 }
+    photorealistic: { elo: 1266, margin: 6 }
+    art: { elo: 1239, margin: 7 }
+    portraits: { elo: 1263, margin: 7 }
+    text_rendering: { elo: 1295, margin: 6 }
 
   google/gemini-3-pro-image:
-    overall: { elo: 1246, margin: 3 }
-    commercial_design: { elo: 1246, margin: 5 }
-    three_d_modeling: { elo: 1231, margin: 7 }
-    cartoon: { elo: 1242, margin: 5 }
-    photorealistic: { elo: 1260, margin: 5 }
-    art: { elo: 1223, margin: 6 }
-    portraits: { elo: 1257, margin: 6 }
-    text_rendering: { elo: 1270, margin: 5 }
+    overall: { elo: 1248, margin: 3 }
+    commercial_design: { elo: 1246, margin: 4 }
+    three_d_modeling: { elo: 1232, margin: 6 }
+    cartoon: { elo: 1245, margin: 5 }
+    photorealistic: { elo: 1261, margin: 4 }
+    art: { elo: 1224, margin: 6 }
+    portraits: { elo: 1259, margin: 5 }
+    text_rendering: { elo: 1271, margin: 5 }
 
   bytedance/doubao-seedream-5-0-pro:
-    overall: { elo: 1257, margin: 4 }
-    commercial_design: { elo: 1235, margin: 6 }
-    three_d_modeling: { elo: 1252, margin: 9 }
-    cartoon: { elo: 1271, margin: 7 }
-    photorealistic: { elo: 1281, margin: 7 }
-    art: { elo: 1266, margin: 8 }
-    portraits: { elo: 1295, margin: 8 }
-    text_rendering: { elo: 1255, margin: 7 }
+    overall: { elo: 1255, margin: 4 }
+    commercial_design: { elo: 1239, margin: 6 }
+    three_d_modeling: { elo: 1253, margin: 8 }
+    cartoon: { elo: 1267, margin: 6 }
+    photorealistic: { elo: 1279, margin: 6 }
+    art: { elo: 1265, margin: 7 }
+    portraits: { elo: 1293, margin: 7 }
+    text_rendering: { elo: 1255, margin: 6 }
 
   google/gemini-2.5-flash-image:
     overall: { elo: 1150, margin: 2 }
-    commercial_design: { elo: 1152, margin: 4 }
-    three_d_modeling: { elo: 1142, margin: 5 }
-    cartoon: { elo: 1145, margin: 4 }
-    photorealistic: { elo: 1156, margin: 4 }
-    art: { elo: 1145, margin: 4 }
+    commercial_design: { elo: 1152, margin: 3 }
+    three_d_modeling: { elo: 1143, margin: 5 }
+    cartoon: { elo: 1146, margin: 3 }
+    photorealistic: { elo: 1157, margin: 3 }
+    art: { elo: 1146, margin: 4 }
     portraits: { elo: 1168, margin: 4 }
     text_rendering: { elo: 1154, margin: 4 }
 
   bytedance/doubao-seedream-4.5:
-    overall: { elo: 1147, margin: 3 }
-    commercial_design: { elo: 1142, margin: 4 }
-    three_d_modeling: { elo: 1148, margin: 6 }
+    overall: { elo: 1149, margin: 3 }
+    commercial_design: { elo: 1143, margin: 4 }
+    three_d_modeling: { elo: 1147, margin: 5 }
     cartoon: { elo: 1150, margin: 4 }
-    photorealistic: { elo: 1166, margin: 4 }
-    art: { elo: 1155, margin: 5 }
+    photorealistic: { elo: 1167, margin: 4 }
+    art: { elo: 1157, margin: 5 }
     portraits: { elo: 1168, margin: 5 }
     text_rendering: { elo: 1143, margin: 4 }
 
   bytedance/doubao-seedream-5-0-lite:
     overall: { elo: 1138, margin: 3 }
-    commercial_design: { elo: 1130, margin: 5 }
-    three_d_modeling: { elo: 1142, margin: 7 }
-    cartoon: { elo: 1142, margin: 5 }
-    photorealistic: { elo: 1155, margin: 5 }
-    art: { elo: 1138, margin: 6 }
-    portraits: { elo: 1154, margin: 6 }
-    text_rendering: { elo: 1134, margin: 5 }
+    commercial_design: { elo: 1131, margin: 5 }
+    three_d_modeling: { elo: 1143, margin: 7 }
+    cartoon: { elo: 1143, margin: 5 }
+    photorealistic: { elo: 1156, margin: 5 }
+    art: { elo: 1139, margin: 6 }
+    portraits: { elo: 1156, margin: 6 }
+    text_rendering: { elo: 1136, margin: 5 }
