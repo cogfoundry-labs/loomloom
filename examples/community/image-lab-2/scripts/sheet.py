@@ -361,6 +361,15 @@ def add_args(ap) -> None:
     ap.add_argument("--selected", default="", help="comma-separated sample ids to highlight (your picks)")
 
 
+def has_images(exp_dir) -> bool:
+    """True when at least one finished image exists in the experiment."""
+    try:
+        led = lg.load(Path(exp_dir) / "ledger.json")
+    except (OSError, ValueError):
+        return True                                             # cannot tell: say nothing
+    return any(a.get("status") == "Completed" and a.get("file") for a in led.get("attempts", []))
+
+
 def run(a) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -370,6 +379,8 @@ def run(a) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 2
     print(f"contact sheet: {p}")
+    if not has_images(a.dir):
+        print("note: no image has finished yet, so every cell says 'not generated'")
     return 0
 
 

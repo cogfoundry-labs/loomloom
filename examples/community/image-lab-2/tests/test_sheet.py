@@ -51,6 +51,20 @@ class SheetTests(Base):
         self.assertEqual(d["dim_values"]["camera"][:3], ["eye-level front", "three-quarter high", "low angle"])
         self.assertFalse(d["person"])
 
+    def test_the_sheet_says_when_no_image_has_finished_yet(self):
+        import argparse
+        import contextlib
+        import io
+        self.build()
+        self.assertFalse(sh.has_images(self.exp))
+        a = argparse.Namespace(dir=str(self.exp), rows=None, cols=None, inline=False, out=None, selected="")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            sh.run(a)
+        self.assertIn("contact sheet:", out.getvalue())
+        self.assertIn("no image has finished yet", out.getvalue())
+        self.assertTrue(sh.has_images(self.tmp / "nowhere"))                         # cannot tell: no false alarm
+
     def test_default_axes_and_explicit_axes(self):
         exp = self.run_experiment()
         d = payload(sh.build_sheet(exp).read_text(encoding="utf-8"))

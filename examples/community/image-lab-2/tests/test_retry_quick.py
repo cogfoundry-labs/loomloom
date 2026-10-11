@@ -108,6 +108,70 @@ class QuickTests(Base):
         self.assertEqual(len(led["batches"]), 2)
 
 
+class QuickQualityTests(Base):
+    SB, NB2 = "openai/gpt-image-2.5-sunburst", "google/gemini-3.1-flash-image"
+
+    def snap(self, q, out):
+        return json.loads(next((out / "snapshots").glob(f"{q['fingerprint']}.json")).read_text(encoding="utf-8"))
+
+    def test_a_model_with_a_quality_setting_is_quoted_with_a_caution_not_as_a_plain_known_price(self):
+        q = ex.build_quick("a poster", "poster / flyer", 2, self.tmp / "q", models=[self.SB])
+        self.assertEqual(len(q["caution"]), 1)
+        c = q["caution"][0]
+        self.assertIn("priced at the catalog's default", c)
+        self.assertIn("4 to 8 times", c)
+        self.assertIn("--quality medium", c)
+        safe = float(c.rsplit("--max-usd ", 1)[1].split(" ")[0])
+        self.assertAlmostEqual(safe, 0.12, places=2)                                 # 2 images x the highest price seen ($0.06)
+        text = ex.format_quick(q)
+        self.assertIn("Caution: GPT Image 2.5 Sunburst is priced at", text)
+        self.assertIn("Estimated cost:", text)
+
+    def test_a_model_without_a_quality_setting_gets_no_caution(self):
+        q = ex.build_quick("a poster", "poster / flyer", 2, self.tmp / "q", models=[self.NB2])
+        self.assertEqual(q["caution"], [])
+        self.assertNotIn("Caution:", ex.format_quick(q))
+
+    def test_quality_is_sent_priced_as_unverified_with_an_indicative_range_and_recorded_on_the_row(self):
+        out = self.tmp / "q"
+        q = ex.build_quick("a poster", "poster / flyer", 2, out, models=[self.SB], quality="medium")
+        rows = self.snap(q, out)["rows"]
+        self.assertEqual([r["quality"] for r in rows], ["medium", "medium"])
+        self.assertEqual(q["caution"], [])                                           # a set quality is predictable: no caution
+        self.assertEqual(lg.load(out / "ledger.json")["rows"][0]["quality"], "medium")
+        self.assertEqual(q["unverified_rows"], ["r001", "r002"])                    # no observed price for this size and quality yet (the tests start with none)
+        self.assertEqual(q["indicative"]["rows"], 2)
+        text = ex.format_quick(q)
+        self.assertIn("quality medium", text)
+        self.assertIn("Indicative:", text)
+        self.assertIn("a hint, not a quote", text)
+        self.assertNotEqual(q["fingerprint"], ex.build_quick("a poster", "poster / flyer", 2, self.tmp / "q2", models=[self.SB])["fingerprint"])
+
+    def test_the_request_carries_the_quality_and_a_retried_row_keeps_it(self):
+        out = self.tmp / "q"
+        q = ex.build_quick("a green pear", "e-commerce product photo", 2, out, models=[self.SB], quality="medium")
+        gw = FakeGateway(fail_reasons={"req-2": "boom"})
+        gen.run_batch(out, q["fingerprint"], gateway=gw, max_usd=1.0, poll_seconds=0.01, record_prices=False, log=quiet)
+        self.assertTrue(all(b.get("quality") == "medium" for b in gw.bodies))
+        rep = pf.run_preflight(out, advisor=ADVISOR, retry=True)                     # a quick folder has no plan: the row carries its own quality
+        self.assertEqual(rep["ready"], 1)
+        self.assertEqual([r.get("quality") for r in rep["snapshot"]["rows"]], ["medium"])
+
+    def test_a_quality_the_model_does_not_have_is_said_and_the_images_are_made_without_one(self):
+        out = self.tmp / "q"
+        q = ex.build_quick("a poster", "poster / flyer", 2, out, models=[self.NB2], quality="medium")
+        self.assertTrue(any("has no quality setting 'medium'" in n for n in q["notes"]))
+        self.assertTrue(all("quality" not in r for r in self.snap(q, out)["rows"]))
+        self.assertEqual(ex.build_quick("x", "poster / flyer", 2, self.tmp / "q3", models=[self.SB], quality="auto")["quality"], None)   # auto is no setting
+
+    def test_the_cli_takes_quality(self):
+        r = subprocess.run([sys.executable, str(SCRIPTS / "image.py"), "quick", "--prompt", "a poster", "--intent", "poster / flyer", "--count", "1",
+                            "--models", self.SB, "--quality", "medium", "--out", str(self.tmp / "cli")], capture_output=True, text=True, encoding="utf-8",
+                           env={**__import__("os").environ, "PYTHONUTF8": "1"})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("quality medium", r.stdout)
+
+
 class QuickAspectTests(Base):
     SB = "openai/gpt-image-2.5-sunburst"
 

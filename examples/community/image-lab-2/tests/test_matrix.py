@@ -265,7 +265,41 @@ class ExamplePlanTests(unittest.TestCase):
         plan = mx.load_plan(Path(__file__).resolve().parent.parent / "references" / "examples" / "direction-plan.json")
         self.assertEqual(plan.get("constraints", []), [])
         dims = {d: [mx.value_name(v) for v in vs] for d, vs in plan["dimensions"].items()}
-        self.assertEqual(len(mx.enumerate_valid(dims, mx.excludes(plan))), 72)
+        self.assertEqual(len(mx.enumerate_valid(dims, mx.excludes(plan))), 42)       # each headline style is scoped to the directions it suits (it was 72 when all applied to all)
+
+    def test_the_shipped_direction_plan_has_no_shared_lever_that_contradicts_a_direction(self):
+        import experiment as ex
+        plan = mx.load_plan(Path(__file__).resolve().parent.parent / "references" / "examples" / "direction-plan.json")
+        self.assertEqual([w for w in ex.preview_plan(plan)["warnings"] if "pull opposite ways" in w], [])
+        self.assertEqual(ex.lever_conflicts(plan), [])
+
+    def test_a_shared_lever_that_contradicts_a_directions_type_is_warned_about_until_it_is_scoped(self):
+        import copy
+        import experiment as ex
+        plan = mx.load_plan(Path(__file__).resolve().parent.parent / "references" / "examples" / "direction-plan.json")
+        unscoped = copy.deepcopy(plan)
+        for v in unscoped["dimensions"]["headline style"]:
+            v.pop("only_in", None)
+        found = ex.lever_conflicts(unscoped)
+        text = " ".join(found)
+        self.assertTrue(any('"quiet small letters"' in w and '"4 Bold shapes"' in w for w in found), text)      # small letters against huge blocky ones
+        self.assertTrue(any('"chunky block letters"' in w and '"2 Reading fort"' in w for w in found), text)    # chunky letters against a small pennant
+        self.assertIn("quickstart section 5", text)
+        self.assertTrue(any("pull opposite ways" in w for w in ex.preview_plan(unscoped)["warnings"]))
+        scoped = copy.deepcopy(unscoped)
+        scoped["dimensions"]["headline style"][2]["only_in"] = {"direction": ["2 Reading fort", "3 Adventure map"]}
+        scoped["dimensions"]["headline style"][1]["only_in"] = {"direction": ["1 Your brief", "4 Bold shapes"]}
+        self.assertEqual(ex.lever_conflicts(scoped), [])
+
+    def test_the_lever_check_ignores_wording_that_is_not_about_letters_and_plans_without_directions(self):
+        import copy
+        import experiment as ex
+        plan = mx.load_plan(Path(__file__).resolve().parent.parent / "references" / "examples" / "direction-plan.json")
+        other = copy.deepcopy(plan)
+        other["dimensions"]["accent color"] = [{"value": "tiny dots", "fragment": "with tiny dots as the accent"}, {"value": "huge dots", "fragment": "with huge dots"}]
+        self.assertEqual(ex.lever_conflicts(other), [])                                   # no word about letters or a headline: no verdict
+        flat = {"schema_version": 1, "brief": "b", "intent": "generic", "dimensions": {"style": ["quiet small letters", "huge letters"]}}
+        self.assertEqual(ex.lever_conflicts(flat), [])                                    # no directions to contradict
 
     def test_the_shipped_variation_plan_is_valid_quiet_and_passes_the_planner_rules(self):
         import experiment as ex

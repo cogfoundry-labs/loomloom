@@ -40,9 +40,9 @@
       {"value": "grape purple", "fragment": "with grape purple as the accent color"}
     ],
     "headline style": [
-      {"value": "painted lettering", "fragment": "the headline in painted hand lettering with visible brush marks"},
-      {"value": "chunky block letters", "fragment": "the headline in thick, evenly weighted block letters"},
-      {"value": "quiet small letters", "fragment": "the headline in small, quiet, evenly spaced letters"}
+      {"value": "painted lettering", "fragment": "the headline in painted hand lettering with visible brush marks", "only_in": {"direction": ["1 Your brief", "2 Reading fort", "3 Adventure map"]}},
+      {"value": "chunky block letters", "fragment": "the headline in thick, evenly weighted block letters", "only_in": {"direction": ["1 Your brief", "4 Bold shapes"]}},
+      {"value": "quiet small letters", "fragment": "the headline in small, quiet, evenly spaced letters", "only_in": {"direction": ["2 Reading fort", "3 Adventure map"]}}
     ]
   },
   "visual_checks": [

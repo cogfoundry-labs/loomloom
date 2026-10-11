@@ -12,7 +12,7 @@ It has three ways to work, and the agent picks one from what you ask:
 
 ## In action: four directions of one brief
 
-An invented brief, run end to end with [`references/examples/direction-plan.json`](references/examples/direction-plan.json): *a poster for a public library's summer reading challenge, for children aged 6 to 10, headline READ THE SUMMER, portrait*. Creative Direction turned it into four directions (Direction 1 is the brief as written); each direction then varies its own layout, accent color and headline style.
+An invented brief, run end to end with [`references/examples/direction-plan.json`](references/examples/direction-plan.json): *a poster for a public library's summer reading challenge, for children aged 6 to 10, headline READ THE SUMMER, portrait*. Creative Direction turned it into four directions (Direction 1 is the brief as written); each direction then varies its own layout, accent color and headline style. (The run used an earlier version of the plan in which every headline style applied to every direction; the plan now scopes each style to the directions it suits.)
 
 **One image per direction first (a calibration), to check the directions really look different:**
 
