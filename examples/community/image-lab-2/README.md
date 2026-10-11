@@ -69,13 +69,13 @@ Or use the checkout above: copy or symlink this folder to `~/.claude/skills/imag
 
 Then ask in plain words:
 
-- `8 options of this with Image Lab: "<finished prompt>"`
-- `with Image Lab, try three lighting styles and three camera angles of this product photo`
-- `with Image Lab, explore four creative directions for this campaign brief: ...`
+- `8 options of this with Image Lab 2: "<finished prompt>"`
+- `with Image Lab 2, try three lighting styles and three camera angles of this product photo`
+- `with Image Lab 2, explore four creative directions for this campaign brief: ...`
 
 ## Status and limitations
 
-- A **beta**. The installer lists and copies this skill; a full first run from an installed copy has not been done yet. `image-lab` (v0.1, quick mode only) is a separate skill: if both are installed, a request that only says "Image Lab" can trigger either, so say "Image Lab 2".
+- A **beta**. The installer lists and copies this skill; a full first run from an installed copy has not been done yet. `image-lab` (v0.1, quick mode only) is a separate skill and both can be installed: a request that only says "Image Lab" goes to v0.1 (which hands variations, creative directions and reference photos over to this skill), so say "Image Lab 2" to reach this one.
 - Tested on Windows 11 with desktop Excel. Mac and Linux are untested.
 - Reference photos of people were tested as a flow (the notice, the acknowledgement), not on a range of real portraits.
 - `--max-usd` limits how much new work is submitted; it is **not a hard cap** on what the gateway may bill.
