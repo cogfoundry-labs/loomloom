@@ -189,6 +189,30 @@ class SkillFrontMatterTests(unittest.TestCase):
             return
         self.assertEqual(yaml.safe_load(m.group(1))["description"], desc)
 
+    def test_the_two_image_lab_skills_have_distinct_triggers_and_route_to_each_other(self):
+        """Both skills answer to "Image Lab": v2's triggers name the version, and v0.1 hands what only v2 can do over to it."""
+        def description(path):
+            m = re.match(r"---\r?\n(.*?)\r?\n---", path.read_text(encoding="utf-8"), re.S)
+            raw = dict(self.FIELD.findall(m.group(1)))["description"]
+            return m.group(1), (json.loads(raw) if raw.startswith('"') else raw)
+
+        _, v2 = description(ROOT / "SKILL.md")
+        triggers = [q for q in re.findall(r'"([^"]*)"', v2) if "Image Lab" in q and q != "Image Lab"]
+        self.assertGreaterEqual(len(triggers), 4)
+        for q in triggers:
+            self.assertIn("Image Lab 2", q, "every v2 trigger must name the version")
+        self.assertIn("older image-lab skill", v2)
+        v1_path = ROOT.parent / "image-lab" / "SKILL.md"
+        if not v1_path.exists():                       # an installed copy has no neighbour to compare with
+            return
+        front, v1 = description(v1_path)
+        self.assertEqual(self.problems(front, "image-lab"), [])
+        self.assertIn("image-lab-2", v1)
+        self.assertIn("Image Lab 2", v1)
+        for what in ("controlled variations", "creative directions", "reference photo"):
+            self.assertIn(what, v1)
+        self.assertIn("generate that with Image Lab", v1)       # v0.1 keeps its own triggers
+
     def test_the_check_rejects_the_description_that_broke_the_installer_and_an_overlong_one(self):
         head = "name: image-lab-2\nlicense: Apache-2.0\ndescription: "
         broken = head + 'It needs to be named: a bare "generate an image" belongs elsewhere.'
