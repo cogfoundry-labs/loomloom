@@ -335,181 +335,6 @@ func TestMarketPublishDeprecatedTaskFixedFeeTStillWorks(t *testing.T) {
 	}
 }
 
-func TestMarketListSendsProductAPIQueryParams(t *testing.T) {
-	var requestedPath string
-	var requestedQuery string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestedPath = r.URL.Path
-		requestedQuery = r.URL.RawQuery
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"items":[]}`))
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newMarketListCmd(opts)
-	cmd.SetArgs([]string{
-		"--keyword", "prd",
-		"--page-size", "5",
-		"--page-token", "next",
-		"--order-by", "createdAt desc",
-	})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("market list command error = %v", err)
-	}
-	if requestedPath != "/loom/v1/marketListings" {
-		t.Fatalf("path=%q want market listings endpoint", requestedPath)
-	}
-	for _, want := range []string{"keyword=prd", "pageSize=5", "pageToken=next", "orderBy=createdAt+desc"} {
-		if !strings.Contains(requestedQuery, want) {
-			t.Fatalf("query=%q missing %s", requestedQuery, want)
-		}
-	}
-}
-
-func TestMarketListRejectsLimitAndPageSizeTogether(t *testing.T) {
-	opts := &rootOptions{server: "https://example.test/loom/v1", timeout: time.Second}
-	cmd := newMarketListCmd(opts)
-	cmd.SetArgs([]string{"--limit", "5", "--page-size", "10"})
-
-	err := cmd.Execute()
-	if err == nil || !strings.Contains(err.Error(), "--limit and --page-size cannot be used together") {
-		t.Fatalf("error=%v want limit/page-size conflict", err)
-	}
-}
-
-func TestMarketListJSONPreservesUnknownFields(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{
-			"items":[{"id":"listing-1","displayName":"Writer","newBackendField":"kept"}],
-			"nextPageToken":"next",
-			"serverTraceId":"trace-1"
-		}`))
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
-	cmd := newMarketListCmd(opts)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("market list command error = %v", err)
-	}
-	for _, want := range []string{`"serverTraceId": "trace-1"`, `"newBackendField": "kept"`} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output=%s missing %q", out.String(), want)
-		}
-	}
-}
-
-func TestMarketShowUsesDetailEndpoint(t *testing.T) {
-	var requestedPath string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestedPath = r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(marketListingDetailBody(t)))
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newMarketShowCmd(opts)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"listing-1"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("market show command error = %v", err)
-	}
-	if requestedPath != "/loom/v1/marketListings/listing-1" {
-		t.Fatalf("path=%q want detail endpoint", requestedPath)
-	}
-	assertContainsAll(t, out.String(), "listing-1", "CNY 0.000001", "fields:", "Prompt", "prompt", "sample_rows:")
-	assertContainsNone(t, out.String(), "task_fixed_fee_t")
-}
-
-func TestMarketShowDisplaysEnumChoices(t *testing.T) {
-	schema := `{"fields":[{"key":"stage","label":"Funding stage","required":true,"value_type":"enum","enum_values":["Seed","Series A"]}]}`
-	body, err := json.Marshal(map[string]any{
-		"id":                  "listing-1",
-		"displayName":         "Fundraising helper",
-		"inputSchemaSnapshot": json.RawMessage(schema),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(body)
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newMarketShowCmd(opts)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"listing-1"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("market show command error = %v", err)
-	}
-	assertContainsAll(t, out.String(), "choices", `["Seed","Series A"]`)
-}
-
-func TestMarketShowSanitizesRemoteSchemaText(t *testing.T) {
-	schema, err := json.Marshal(map[string]any{
-		"schema_version": "v1\nINJECTED_VERSION",
-		"instructions":   []string{"guide\nINJECTED_INSTRUCTION\tcell\x1b[31m"},
-		"fields": []map[string]any{{
-			"key":         "stage\nINJECTED_KEY",
-			"label":       "Funding\tstage\nINJECTED_LABEL",
-			"value_type":  "enum\nINJECTED_TYPE",
-			"source_kind": "user_input\tINJECTED_SOURCE",
-			"enum_values": []string{"Seed\u009b[31m", "Series\u202eA"},
-		}},
-		"sample_rows": []map[string]string{{"stage": "Seed\u009b[31m\u202e"}},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	body, err := json.Marshal(map[string]any{
-		"id":                  "listing-1",
-		"displayName":         "Fundraising helper",
-		"inputSchemaSnapshot": json.RawMessage(schema),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(body)
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newMarketShowCmd(opts)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"listing-1"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("market show command error = %v", err)
-	}
-	assertContainsAll(t, out.String(),
-		"v1 INJECTED_VERSION",
-		"guide INJECTED_INSTRUCTION cell [31m",
-		"Funding stage INJECTED_LABEL",
-		"stage INJECTED_KEY",
-		"enum INJECTED_TYPE",
-		"user_input INJECTED_SOURCE",
-		"Seed [31m",
-		"Series A",
-	)
-	assertContainsNone(t, out.String(), "\nINJECTED_", "\tINJECTED_", "\x1b", "\u009b", "\u202e")
-}
-
 func TestPromptMarketInputRowsSanitizesDisplayAndPreservesOriginalKey(t *testing.T) {
 	const key = "stage\nINJECTED_KEY"
 	var prompt bytes.Buffer
@@ -538,7 +363,7 @@ func TestMarketShowJSONPreservesUnknownFields(t *testing.T) {
 		_, _ = w.Write([]byte(`{
 			"id":"listing-1",
 			"displayName":"Writer",
-			"inputSchemaSnapshot":"{}",
+			"source":"market","resourceId":"listing-1","input":{"fields":[]},
 			"newBackendField":{"nested":true}
 		}`))
 	}))
@@ -557,27 +382,6 @@ func TestMarketShowJSONPreservesUnknownFields(t *testing.T) {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output=%s missing %q", out.String(), want)
 		}
-	}
-}
-
-func TestMarketShowKeepsBasicOutputWhenSchemaInvalid(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"listing-1","displayName":"Broken","inputSchemaSnapshot":"{"}`))
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newMarketShowCmd(opts)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"listing-1"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("market show command error = %v", err)
-	}
-	if !strings.Contains(out.String(), "listing-1") || !strings.Contains(out.String(), "input_schema_error") {
-		t.Fatalf("unexpected output: %s", out.String())
 	}
 }
 
@@ -1015,55 +819,6 @@ func TestMarketQuoteJSONPreservesRawFields(t *testing.T) {
 	assertContainsNone(t, out.String(), "taskFixedFeeT", "estimatedBuyerPayableT")
 	if strings.Contains(out.String(), "CNY ") {
 		t.Fatalf("output=%s json mode must not format money", out.String())
-	}
-}
-
-func TestMarketListTextShowsFormattedFee(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"items":[{
-			"id":"listing-1",
-			"displayName":"Writer",
-			"taskFixedFeeT":5000000,
-			"taskFixedFee":{"amount":"0.5000000","currency":"CNY"},
-			"currency":"CNY",
-			"executionAvailabilityStatus":"available",
-			"listingVersionId":"lv-1"
-		}]}`))
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newMarketListCmd(opts)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("market list command error = %v", err)
-	}
-	assertContainsAll(t, out.String(), "CNY 0.5")
-	assertContainsNone(t, out.String(), "task_fixed_fee_t")
-}
-
-func TestMarketListTextUnknownCurrencyFallback(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"items":[{"id":"listing-1","displayName":"Writer","taskFixedFeeT":5000000}]}`))
-	}))
-	defer server.Close()
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newMarketListCmd(opts)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("market list command error = %v", err)
-	}
-	for _, want := range []string{"(currency unknown) 5000000", "5000000"} {
-		if !strings.Contains(out.String(), want) {
-			t.Fatalf("output=%s missing %q", out.String(), want)
-		}
 	}
 }
 

@@ -136,7 +136,7 @@ func writeExecution(b *bytes.Buffer, data TemplateData) {
 		_, _ = fmt.Fprintln(b, "- Market runs must use the Market path. Never call the underlying private template directly.")
 		_, _ = fmt.Fprintf(b, "- Before execution, run `loomloom market show %s` or rely on `market quote/run` to read the current Listing and current public schema.\n", listingID)
 		_, _ = fmt.Fprintf(b, "- Workbook flow: `loomloom market workbook download %s` -> fill/approve workbook -> `loomloom market workbook validate %s --file <xlsx>` -> `loomloom market workbook quote %s --file <xlsx>` -> confirmation -> `loomloom market workbook run %s --file <xlsx> --confirm --client-request-id <id>`.\n", listingID, listingID, listingID, listingID)
-		_, _ = fmt.Fprintf(b, "- JSON flow, only when explicitly requested: build public `inputRows` from current `inputSchemaSnapshot.fields[].key`, then `loomloom market quote %s --input-file <json>` -> confirmation -> `loomloom market run %s --input-file <json> --confirm --client-request-id <id>`.\n", listingID, listingID)
+		_, _ = fmt.Fprintf(b, "- JSON flow, only when explicitly requested: build public `inputRows` from current `input.fields[].key`, then `loomloom market quote %s --input-file <json>` -> confirmation -> `loomloom market run %s --input-file <json> --confirm --client-request-id <id>`.\n", listingID, listingID)
 		_, _ = fmt.Fprintln(b, "- Never send `taskInputs`, `workflowDefinition`, `templateSpec`, hidden step IDs, hidden prompts, or internal mappings to Market buyer endpoints.")
 	case SourceUserTemplate:
 		_, _ = fmt.Fprintln(b, "- Private template runs must stay pinned to the installed template version.")

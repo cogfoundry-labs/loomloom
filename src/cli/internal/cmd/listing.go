@@ -28,6 +28,10 @@ type creatorMarketListingResponse struct {
 	ReviewRequestID             string                    `json:"reviewRequestId"`
 	ReviewStatus                string                    `json:"reviewStatus"`
 	ReviewReason                string                    `json:"reviewReason"`
+	UnlistedReason              string                    `json:"unlistedReason"`
+	Category                    string                    `json:"category"`
+	PinPosition                 *flexInt64                `json:"pinPosition"`
+	Value                       marketPublicValue         `json:"value"`
 	TaskFixedFeeT               *flexInt64                `json:"taskFixedFeeT,omitempty"`
 	TaskFixedFee                *moneyResponse            `json:"taskFixedFee,omitempty"`
 	Currency                    string                    `json:"currency"`
@@ -67,6 +71,7 @@ type creatorMarketListingVersionResponse struct {
 	ExecutionBlockReason        string         `json:"executionBlockReason"`
 	ReviewStatus                string         `json:"reviewStatus"`
 	ReviewReason                string         `json:"reviewReason"`
+	UnlistedReason              string         `json:"unlistedReason"`
 	TemplateVersionID           string         `json:"templateVersionId"`
 	SourceTemplateVersionID     string         `json:"sourceTemplateVersionId,omitempty"`
 	TaskFixedFeeT               *flexInt64     `json:"taskFixedFeeT,omitempty"`
@@ -117,6 +122,7 @@ func newListingCmd(opts *rootOptions) *cobra.Command {
 }
 
 func newListingPublishCmd(opts *rootOptions) *cobra.Command {
+	var profile listingProfileFlags
 	var (
 		listingID                       string
 		templateVersionID               string
@@ -141,12 +147,18 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 			"Subscription mode requires at least one enabled tier; submitting for review does not make the listing or bundle sellable.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			category, err := profile.categoryValue(cmd)
+			if err != nil {
+				return err
+			}
 			resolvedTaskFixedFeeT, err := taskFixedFeeFromFlags(cmd, taskFixedFee, taskFixedFeeT)
 			if err != nil {
 				return err
 			}
 
 			req := publishMarketListingRequest{
+				Category:          category,
+				UpdateSummary:     strings.TrimSpace(profile.updateSummary),
 				ListingID:         strings.TrimSpace(listingID),
 				TemplateID:        strings.TrimSpace(args[0]),
 				TemplateVersionID: strings.TrimSpace(templateVersionID),
@@ -181,11 +193,20 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 			}
 			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
 			defer cancel()
-			if selection == nil && req.ListingID != "" {
-				selection, err = inferExistingListingSkillPackageSelection(ctx, httpClient, req.ListingID, req.TemplateVersionID)
-				if err != nil {
-					return err
+			current := creatorMarketListingResponse{}
+			if req.ListingID != "" {
+				if err := httpClient.GetProductJSON(ctx, "/creators/me/marketListings/"+url.PathEscape(req.ListingID), &current); err != nil {
+					return fmt.Errorf("get current listing before publish: %w", err)
 				}
+				if selection == nil {
+					selection, err = inferListingSkillPackageSelection(ctx, httpClient, req.ListingID, req.TemplateVersionID, current)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			if req.ListingID != "" || profile.valueChanged(cmd) {
+				req.Value = profile.mergeValue(cmd, current.Value)
 			}
 			req.SkillPackage = selection
 			paymentModesChanged := cmd.Flags().Changed("pay-per-use") || cmd.Flags().Changed("subscription")
@@ -217,6 +238,7 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 			return writeIndentedJSON(cmd.OutOrStdout(), resp)
 		},
 	}
+	profile.addFlags(cmd)
 	cmd.Flags().StringVar(&listingID, "listing-id", "", "Existing listing ID when publishing a new version")
 	cmd.Flags().StringVar(&templateVersionID, "template-version-id", "", "Template version ID to publish")
 	cmd.Flags().StringVar(&displayName, "display-name", "", "Market SkillBot display name")
@@ -329,25 +351,14 @@ func promptNameWarningConfirmation(ctx context.Context, in io.Reader, out io.Wri
 func boolPointer(value bool) *bool { return &value }
 
 type listingPublishProductReader interface {
-	GetProductJSON(context.Context, string, any) error
 	GetProductJSONWithQuery(context.Context, string, url.Values, any) error
 }
 
 // Existing Listing release updates preserve the current public package only
 // when the execution TemplateVersion is unchanged. A changed (or not-yet-
 // published) execution version explicitly asks the Server to resolve auto.
-func inferExistingListingSkillPackageSelection(ctx context.Context, httpClient listingPublishProductReader, listingID, nextTemplateVersionID string) (*listingSkillPackageSelection, error) {
-	listingID = strings.TrimSpace(listingID)
-	nextTemplateVersionID = strings.TrimSpace(nextTemplateVersionID)
-	if listingID == "" || nextTemplateVersionID == "" {
-		return nil, fmt.Errorf("listing ID and template version ID are required to resolve Skill Package mode")
-	}
-
+func inferListingSkillPackageSelection(ctx context.Context, httpClient listingPublishProductReader, listingID, nextTemplateVersionID string, listing creatorMarketListingResponse) (*listingSkillPackageSelection, error) {
 	basePath := "/creators/me/marketListings/" + url.PathEscape(listingID)
-	var listing creatorMarketListingResponse
-	if err := httpClient.GetProductJSON(ctx, basePath, &listing); err != nil {
-		return nil, fmt.Errorf("get current listing before publish: %w", err)
-	}
 	publishedVersionID := strings.TrimSpace(listing.PublishedVersionID)
 	if publishedVersionID == "" {
 		return &listingSkillPackageSelection{Mode: "auto"}, nil
@@ -569,17 +580,22 @@ func newListingVersionsCmd(opts *rootOptions) *cobra.Command {
 }
 
 func newListingUpdateCmd(opts *rootOptions) *cobra.Command {
+	var profile listingProfileFlags
 	var (
 		displayName string
 		description string
 	)
 	cmd := &cobra.Command{
 		Use:   "update <listing-id>",
-		Short: "Submit a public profile update for review (display name / description)",
+		Short: "Submit public name, description, category and value details for review",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if !cmd.Flags().Changed("display-name") && !cmd.Flags().Changed("description") {
-				return fmt.Errorf("at least one of --display-name or --description is required")
+			category, err := profile.categoryValue(cmd)
+			if err != nil {
+				return err
+			}
+			if !cmd.Flags().Changed("display-name") && !cmd.Flags().Changed("description") && category == nil && !profile.valueChanged(cmd) && !cmd.Flags().Changed("update-summary") {
+				return fmt.Errorf("at least one public profile flag is required (--display-name, --description, --category, --target-audience, --problem-solved, --scenario, --not-suitable-for or --update-summary)")
 			}
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
@@ -589,8 +605,8 @@ func newListingUpdateCmd(opts *rootOptions) *cobra.Command {
 			defer cancel()
 
 			listingID := strings.TrimSpace(args[0])
-			current := creatorListingProfile{}
-			if !cmd.Flags().Changed("display-name") || !cmd.Flags().Changed("description") {
+			current := creatorMarketListingResponse{}
+			if !cmd.Flags().Changed("display-name") || !cmd.Flags().Changed("description") || profile.valueChanged(cmd) {
 				path := "/creators/me/marketListings/" + url.PathEscape(listingID)
 				if err := httpClient.GetProductJSON(ctx, path, &current); err != nil {
 					return fmt.Errorf("get current listing profile: %w", err)
@@ -610,11 +626,18 @@ func newListingUpdateCmd(opts *rootOptions) *cobra.Command {
 				nextDescription = strings.TrimSpace(current.Description)
 			}
 
-			payload := map[string]any{
-				"displayName": nextDisplayName,
-				"description": nextDescription,
+			payload := updateMarketListingPublicProfileRequest{
+				DisplayName: nextDisplayName,
+				Description: nextDescription,
+				Category:    category,
 			}
 
+			if profile.valueChanged(cmd) {
+				payload.Value = profile.mergeValue(cmd, current.Value)
+			}
+			if cmd.Flags().Changed("update-summary") {
+				payload.UpdateSummary = strings.TrimSpace(profile.updateSummary)
+			}
 			path := "/marketListings/" + url.PathEscape(listingID) + ":updatePublicProfile"
 			var resp map[string]any
 			if err := httpClient.PostProductJSON(ctx, path, payload, &resp); err != nil {
@@ -623,14 +646,10 @@ func newListingUpdateCmd(opts *rootOptions) *cobra.Command {
 			return writeIndentedJSON(cmd.OutOrStdout(), resp)
 		},
 	}
+	profile.addFlags(cmd)
 	cmd.Flags().StringVar(&displayName, "display-name", "", "New display name")
 	cmd.Flags().StringVar(&description, "description", "", "New description")
 	return cmd
-}
-
-type creatorListingProfile struct {
-	DisplayName string `json:"displayName"`
-	Description string `json:"description"`
 }
 
 type creatorReviewSummary struct {
@@ -726,7 +745,7 @@ func printCreatorListings(w io.Writer, resp creatorMarketListingsResponse) error
 		return nil
 	}
 	tw := newTabWriter(w)
-	if _, err := fmt.Fprintln(tw, "id\tname\ttask_fixed_fee\tstatus\tsale_status\texecution_availability_status\treview_status\tversion"); err != nil {
+	if _, err := fmt.Fprintln(tw, "id\tname\ttask_fixed_fee\tstatus\tsale_status\texecution_availability_status\treview_status\tversion\tcategory\tpin_position\tunlisted_reason"); err != nil {
 		return err
 	}
 	for _, item := range resp.Items {
@@ -736,7 +755,7 @@ func printCreatorListings(w io.Writer, resp creatorMarketListingsResponse) error
 		}
 		if _, err := fmt.Fprintf(
 			tw,
-			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.ID,
 			oneLine(item.DisplayName),
 			taskFixedFee,
@@ -745,6 +764,9 @@ func printCreatorListings(w io.Writer, resp creatorMarketListingsResponse) error
 			oneLine(item.ExecutionAvailabilityStatus),
 			oneLine(item.ReviewStatus),
 			oneLine(item.ListingVersionID),
+			oneLine(item.Category),
+			optionalPinPosition(item.PinPosition),
+			oneLine(item.UnlistedReason),
 		); err != nil {
 			return err
 		}
@@ -775,6 +797,8 @@ func printCreatorListingDetail(w io.Writer, listing creatorMarketListingResponse
 		{"review_request_id", listing.ReviewRequestID},
 		{"review_status", listing.ReviewStatus},
 		{"review_reason", listing.ReviewReason},
+		{"unlisted_reason", listing.UnlistedReason},
+		{"category", listing.Category},
 		{"task_fixed_fee", taskFixedFee},
 		{"sale_status", listing.SaleStatus},
 		{"execution_availability_status", listing.ExecutionAvailabilityStatus},
@@ -785,6 +809,14 @@ func printCreatorListingDetail(w io.Writer, listing creatorMarketListingResponse
 		if _, err := fmt.Fprintf(tw, "%s\t%s\n", row[0], oneLine(row[1])); err != nil {
 			return err
 		}
+	}
+	if listing.PinPosition != nil {
+		if _, err := fmt.Fprintf(tw, "pin_position\t%d\n", *listing.PinPosition); err != nil {
+			return err
+		}
+	}
+	if err := printMarketValue(tw, listing.Value); err != nil {
+		return err
 	}
 	if listing.SkillPackageReview == nil {
 		if strings.Contains(strings.ToLower(listing.ReviewStatus), "pending") {
@@ -863,6 +895,9 @@ func printCreatorListingVersions(w io.Writer, resp creatorMarketListingVersionsR
 		}
 		if strings.TrimSpace(item.ExecutionBlockReason) != "" {
 			notes = append(notes, versionNote{id: item.ID, label: "execution_block_reason", reason: item.ExecutionBlockReason})
+		}
+		if strings.TrimSpace(item.UnlistedReason) != "" {
+			notes = append(notes, versionNote{id: item.ID, label: "unlisted_reason", reason: item.UnlistedReason})
 		}
 		if strings.TrimSpace(item.ReviewReason) != "" {
 			notes = append(notes, versionNote{id: item.ID, label: "review_reason", reason: item.ReviewReason})

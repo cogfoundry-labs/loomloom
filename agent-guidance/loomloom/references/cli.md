@@ -173,8 +173,8 @@ the historical version.
 
 ### Market buyer and usage
 
-- `loomloom market list`
-- `loomloom market show <listing-id>`
+- `loomloom market list [--keyword <text>] [--category <code>] [--sort-by default|usage|newest] [--page <n>] [--page-size <1-15>]`
+- `loomloom market show <resource-id> [--source market|official]`
 - `loomloom market quote <listing-id> --input-file <request.json>`
 - `loomloom market run <listing-id> --input-file <request.json> --confirm --client-request-id <id>`
 - `loomloom market workbook download <listing-id> --output-file <xlsx>`
@@ -197,6 +197,7 @@ the historical version.
 - `loomloom listing versions <listing-id>`
 - `loomloom listing download-skill-package <listing-id> --version-id <skill-package-version-id> --output-file <zip>`
 - `loomloom listing update <listing-id>`
+
 - `loomloom listing unlist <listing-id>`
 - `loomloom listing relist <listing-id>`
 - `loomloom listing withdraw <listing-id>`
@@ -205,6 +206,12 @@ the historical version.
 - `loomloom creator review list`
 - `loomloom creator review get <review-request-id>`
 - `loomloom creator review withdraw <review-request-id>`
+
+
+`listing publish` and `listing update` accept `--category`, `--target-audience`,
+`--problem-solved`, repeatable `--scenario`, `--not-suitable-for`, and
+`--update-summary` for review. Read `market.md` for omission, clearing, merging,
+and the pending-category readback limitation.
 
 ### Local Agent Skills
 
