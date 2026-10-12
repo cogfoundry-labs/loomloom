@@ -55,6 +55,8 @@ also expose fixed contracts.
 
 ## inputBindings
 
+`executionBinding.kind=codeProfile` requires `profileId`, `profileRevision`, and `code`, without `modelSelection`. A `loop` binding requires `loop`, without ordinary input bindings, Code, or model selection. See the [Step reference](steps.md) for fields and initial support.
+
 The map key is the target contract input port. Sources are:
 
 - `templateInput`
@@ -64,6 +66,7 @@ The map key is the target contract input port. Sources are:
 - `composeValue`
 - `sequence`
 - `merge`
+- `loopState`: only within a Loop body, referencing declared string state.
 
 One target port permits one binding. Express multiple sources within one `merge` or `sequence` source, not by repeating a port.
 
