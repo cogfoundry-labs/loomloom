@@ -19,7 +19,7 @@ Model IDs and contracts come from the target environment's authoring catalog, no
 
 ## TS-CODE-001: Code nodes
 
-`executionBinding.kind=codeProfile` requires `profileId`, `profileRevision`, and `code`. Implemented environments are `python-pure@1` and `python-image@pillow-12.3.0-1`; the target server must also have the corresponding runtime binding. The image environment includes Pillow. Authors cannot install dependencies at runtime, access the network, or obtain platform Secrets.
+`executionBinding.kind=codeProfile` requires `code`. Authors do not need to fill in `profileId` or `profileRevision`. When both are omitted, Core defaults to the Python 3.12 standard-library environment and fills in and freezes `python-pure@1` during validation and template version creation. Existing explicit bindings remain compatible, but both fields must be provided together. Unknown environments or revisions are rejected rather than replaced with the default. Implemented environments are `python-pure@1` and `python-image@pillow-12.3.0-1`; the target server must also have the corresponding runtime binding. The image environment includes Pillow. Authors cannot install dependencies at runtime, access the network, or obtain platform Secrets.
 
 | `code` field | Contract |
 | --- | --- |

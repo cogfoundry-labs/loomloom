@@ -336,10 +336,9 @@
         {
           "type": "object",
           "required": [
-            "kind",
-            "profileId",
-            "profileRevision"
+            "kind"
           ],
+          "dependentRequired": {"profileId": ["profileRevision"], "profileRevision": ["profileId"]},
           "additionalProperties": false,
           "properties": {
             "kind": {
@@ -942,10 +941,9 @@
             {
               "type": "object",
               "required": [
-                "kind",
-                "profileId",
-                "profileRevision"
+                "kind"
               ],
+              "dependentRequired": {"profileId": ["profileRevision"], "profileRevision": ["profileId"]},
               "additionalProperties": false,
               "properties": {
                 "kind": {
