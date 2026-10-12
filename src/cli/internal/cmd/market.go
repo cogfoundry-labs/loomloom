@@ -27,7 +27,7 @@ import (
 func newMarketCmd(opts *rootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "market",
-		Short: "LoomLoom Market SkillBot commands",
+		Short: "Discover skills and use the LoomLoom Market",
 	}
 	cmd.AddCommand(
 		newMarketBundleCmd(opts),
@@ -42,24 +42,10 @@ func newMarketCmd(opts *rootOptions) *cobra.Command {
 	return cmd
 }
 
-type marketListingsResponse struct {
-	Items         []marketListingPublicResponse `json:"items"`
-	NextPageToken string                        `json:"nextPageToken,omitempty"`
-}
-
-type marketListingPublicResponse struct {
-	ID                          string         `json:"id"`
-	DisplayName                 string         `json:"displayName"`
-	Description                 string         `json:"description"`
-	Status                      string         `json:"status"`
-	ListingVersionID            string         `json:"listingVersionId"`
-	PricingRuleVersion          string         `json:"pricingRuleVersion"`
-	TaskFixedFeeT               *flexInt64     `json:"taskFixedFeeT,omitempty"`
-	TaskFixedFee                *moneyResponse `json:"taskFixedFee,omitempty"`
-	Currency                    string         `json:"currency"`
-	SaleStatus                  string         `json:"saleStatus"`
-	ExecutionAvailabilityStatus string         `json:"executionAvailabilityStatus"`
-	// Preserve either snapshot representation for the shared parser.
+// Execution validation uses the backend's public execution schema contract.
+// The unified directory returns presentation fields rather than this snapshot.
+type marketExecutionSchemaResponse struct {
+	ListingVersionID    string          `json:"listingVersionId"`
 	InputSchemaSnapshot json.RawMessage `json:"inputSchemaSnapshot"`
 }
 
@@ -78,102 +64,12 @@ var forbiddenMarketInputFields = []string{
 	"template_spec",
 }
 
-func newMarketListCmd(opts *rootOptions) *cobra.Command {
-	var (
-		keyword   string
-		limit     int
-		pageSize  int
-		pageToken string
-		orderBy   string
-	)
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List published Market SkillBots",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if cmd.Flags().Changed("limit") && cmd.Flags().Changed("page-size") {
-				return fmt.Errorf("--limit and --page-size cannot be used together")
-			}
-			httpClient, err := newHTTPClient(opts)
-			if err != nil {
-				return err
-			}
-			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
-			defer cancel()
-
-			query := url.Values{}
-			if strings.TrimSpace(keyword) != "" {
-				query.Set("keyword", strings.TrimSpace(keyword))
-			}
-			if pageSize > 0 {
-				query.Set("pageSize", fmt.Sprintf("%d", pageSize))
-			} else if limit > 0 {
-				query.Set("pageSize", fmt.Sprintf("%d", limit))
-			}
-			if strings.TrimSpace(pageToken) != "" {
-				query.Set("pageToken", strings.TrimSpace(pageToken))
-			}
-			if strings.TrimSpace(orderBy) != "" {
-				query.Set("orderBy", strings.TrimSpace(orderBy))
-			}
-
-			var raw map[string]any
-			if err := httpClient.GetProductJSONWithQuery(ctx, "/marketListings", query, &raw); err != nil {
-				return err
-			}
-			if opts.output == "json" {
-				return writeIndentedJSON(cmd.OutOrStdout(), raw)
-			}
-			resp, err := decodeJSONValue[marketListingsResponse](raw)
-			if err != nil {
-				return err
-			}
-			return printMarketListings(cmd.OutOrStdout(), resp)
-		},
-	}
-	cmd.Flags().StringVar(&keyword, "keyword", "", "Search keyword matched against listing title and description")
-	cmd.Flags().IntVar(&limit, "limit", 100, "Maximum number of listings")
-	cmd.Flags().IntVar(&pageSize, "page-size", 0, "Page size")
-	cmd.Flags().StringVar(&pageToken, "page-token", "", "Opaque pagination token returned by the previous response")
-	cmd.Flags().StringVar(&orderBy, "order-by", "", "Sort expression, for example 'createdAt desc'")
-	return cmd
-}
-
-func newMarketShowCmd(opts *rootOptions) *cobra.Command {
-	return &cobra.Command{
-		Use:   "show <listing-id>",
-		Short: "Show one Market SkillBot detail",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			httpClient, err := newHTTPClient(opts)
-			if err != nil {
-				return err
-			}
-			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
-			defer cancel()
-
-			var raw map[string]any
-			path := "/marketListings/" + url.PathEscape(strings.TrimSpace(args[0]))
-			if err := httpClient.GetProductJSON(ctx, path, &raw); err != nil {
-				return err
-			}
-			if opts.output == "json" {
-				return writeIndentedJSON(cmd.OutOrStdout(), raw)
-			}
-			resp, err := decodeJSONValue[marketListingPublicResponse](raw)
-			if err != nil {
-				return err
-			}
-			return printMarketListingDetail(cmd.OutOrStdout(), resp)
-		},
-	}
-}
-
 func newMarketQuoteCmd(opts *rootOptions) *cobra.Command {
 	var inputFile string
 	var paymentPreference string
 	cmd := &cobra.Command{
 		Use:   "quote <listing-id>",
-		Short: "Quote a Market SkillBot run from public input rows",
+		Short: "Quote a Market SkillApp run from public input rows",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			httpClient, err := newHTTPClient(opts)
@@ -220,7 +116,7 @@ func newMarketRunCmd(opts *rootOptions) *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "run <listing-id>",
-		Short: "Quote and execute a Market SkillBot from public input rows",
+		Short: "Quote and execute a Market SkillApp from public input rows",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateMarketPaymentPreference(paymentPreference); err != nil {
@@ -353,7 +249,7 @@ func newMarketRunCmd(opts *rootOptions) *cobra.Command {
 func newMarketWorkbookCmd(opts *rootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workbook",
-		Short: "Run Market SkillBots with Excel workbooks",
+		Short: "Run Market SkillApps with Excel workbooks",
 	}
 	cmd.AddCommand(
 		newMarketWorkbookDownloadCmd(opts),
@@ -371,7 +267,7 @@ func newMarketWorkbookDownloadCmd(opts *rootOptions) *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "download <listing-id>",
-		Short: "Download a Market SkillBot input workbook",
+		Short: "Download a Market SkillApp input workbook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			httpClient, err := newHTTPClient(opts)
@@ -428,7 +324,7 @@ func newMarketWorkbookValidateCmd(opts *rootOptions) *cobra.Command {
 	var workbookPath string
 	cmd := &cobra.Command{
 		Use:   "validate <listing-id>",
-		Short: "Validate a filled Market SkillBot workbook",
+		Short: "Validate a filled Market SkillApp workbook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resp, err := postMarketWorkbook[validateTemplateFileResponse](cmd.Context(), opts, strings.TrimSpace(args[0]), workbookPath, ":validateWorkbook", nil)
@@ -454,7 +350,7 @@ func newMarketWorkbookQuoteCmd(opts *rootOptions) *cobra.Command {
 	var paymentPreference string
 	cmd := &cobra.Command{
 		Use:   "quote <listing-id>",
-		Short: "Quote a filled Market SkillBot workbook",
+		Short: "Quote a filled Market SkillApp workbook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateMarketPaymentPreference(paymentPreference); err != nil {
@@ -490,7 +386,7 @@ func newMarketWorkbookRunCmd(opts *rootOptions) *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "run <listing-id>",
-		Short: "Quote and execute a Market SkillBot workbook",
+		Short: "Quote and execute a Market SkillApp workbook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateMarketPaymentPreference(paymentPreference); err != nil {
@@ -589,7 +485,7 @@ func prepareMarketInputPayloadWithLoaded(
 	inputFile string,
 	loadedInput *marketInputPayload,
 ) (marketInputPayload, error) {
-	var listing marketListingPublicResponse
+	var listing marketExecutionSchemaResponse
 	path := "/marketListings/" + url.PathEscape(listingID)
 	if err := httpClient.GetProductJSON(ctx, path, &listing); err != nil {
 		return marketInputPayload{}, err
@@ -1104,135 +1000,6 @@ func postMarketWorkbook[T any](ctx context.Context, opts *rootOptions, listingID
 	return out, nil
 }
 
-func printMarketListings(w io.Writer, resp marketListingsResponse) error {
-	if len(resp.Items) == 0 {
-		if _, err := fmt.Fprintln(w, "no market listings"); err != nil {
-			return err
-		}
-		if resp.NextPageToken != "" {
-			_, err := fmt.Fprintf(w, "next_page_token\t%s\n", resp.NextPageToken)
-			return err
-		}
-		return nil
-	}
-	tw := newTabWriter(w)
-	if _, err := fmt.Fprintln(tw, "id\tname\ttask_fixed_fee\tavailability\tversion\tdescription"); err != nil {
-		return err
-	}
-	for _, item := range resp.Items {
-		taskFixedFee, err := formatResponseMoney(item.TaskFixedFee, item.TaskFixedFeeT, item.Currency)
-		if err != nil {
-			return fmt.Errorf("listing %s taskFixedFee contract error: %w", item.ID, err)
-		}
-		if _, err := fmt.Fprintf(
-			tw,
-			"%s\t%s\t%s\t%s\t%s\t%s\n",
-			item.ID,
-			oneLine(item.DisplayName),
-			taskFixedFee,
-			oneLine(item.ExecutionAvailabilityStatus),
-			oneLine(item.ListingVersionID),
-			oneLine(item.Description),
-		); err != nil {
-			return err
-		}
-	}
-	if err := tw.Flush(); err != nil {
-		return err
-	}
-	if resp.NextPageToken != "" {
-		_, err := fmt.Fprintf(w, "next_page_token\t%s\n", resp.NextPageToken)
-		return err
-	}
-	return nil
-}
-
-func printMarketListingDetail(w io.Writer, listing marketListingPublicResponse) error {
-	taskFixedFee, err := formatResponseMoney(listing.TaskFixedFee, listing.TaskFixedFeeT, listing.Currency)
-	if err != nil {
-		return fmt.Errorf("listing %s taskFixedFee contract error: %w", listing.ID, err)
-	}
-	tw := newTabWriter(w)
-	for _, row := range [][2]string{
-		{"id", listing.ID},
-		{"display_name", listing.DisplayName},
-		{"description", listing.Description},
-		{"listing_version_id", listing.ListingVersionID},
-		{"task_fixed_fee", taskFixedFee},
-		{"sale_status", listing.SaleStatus},
-		{"execution_availability_status", listing.ExecutionAvailabilityStatus},
-	} {
-		if row[1] == "" {
-			continue
-		}
-		if _, err := fmt.Fprintf(tw, "%s\t%s\n", row[0], oneLine(row[1])); err != nil {
-			return err
-		}
-	}
-	if err := tw.Flush(); err != nil {
-		return err
-	}
-	schema, err := parseMarketInputSchemaSnapshot(listing.InputSchemaSnapshot)
-	if err != nil {
-		_, err = fmt.Fprintf(w, "input_schema_error\t%s\n", err)
-		return err
-	}
-	if schema.SchemaVersion != "" {
-		if _, err := fmt.Fprintf(w, "input_schema_version\t%s\n", oneLine(schema.SchemaVersion)); err != nil {
-			return err
-		}
-	}
-	if len(schema.Instructions) > 0 {
-		if _, err := fmt.Fprintln(w, "instructions:"); err != nil {
-			return err
-		}
-		for _, instruction := range schema.Instructions {
-			if _, err := fmt.Fprintf(w, "- %s\n", oneLine(instruction)); err != nil {
-				return err
-			}
-		}
-	}
-	if len(schema.Fields) > 0 {
-		if _, err := fmt.Fprintln(w, "fields:"); err != nil {
-			return err
-		}
-		fieldWriter := newTabWriter(w)
-		if _, err := fmt.Fprintln(fieldWriter, "label\tkey\trequired\ttype\tsource\tchoices\tdescription"); err != nil {
-			return err
-		}
-		for _, field := range schema.Fields {
-			if _, err := fmt.Fprintf(
-				fieldWriter,
-				"%s\t%s\t%t\t%s\t%s\t%s\t%s\n",
-				oneLine(field.Label),
-				oneLine(field.Key),
-				field.Required,
-				oneLine(field.ValueType),
-				oneLine(field.SourceKind),
-				displayStringList(field.EnumValues),
-				oneLine(field.Description),
-			); err != nil {
-				return err
-			}
-		}
-		if err := fieldWriter.Flush(); err != nil {
-			return err
-		}
-	}
-	if len(schema.SampleRows) > 0 {
-		if _, err := fmt.Fprintln(w, "sample_rows:"); err != nil {
-			return err
-		}
-		encoded, err := json.MarshalIndent(schema.SampleRows, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, err = fmt.Fprintln(w, sanitizeRemoteText(string(encoded), true))
-		return err
-	}
-	return nil
-}
-
 func printMarketQuote(w io.Writer, resp map[string]any) error {
 	currency := stringMapValue(resp, "currency")
 	if currency == "-" {
@@ -1408,7 +1175,7 @@ func isBidiControl(r rune) bool {
 }
 
 func newDeprecatedMarketRelistCmd(opts *rootOptions) *cobra.Command {
-	cmd := newMarketSaleStatusCmd(opts, "relist", "Restore a Market SkillBot listing", "list")
+	cmd := newMarketSaleStatusCmd(opts, "relist", "Restore a Market SkillApp listing", "list")
 	cmd.Deprecated = "use 'loomloom listing relist <listing-id>'"
 	return cmd
 }

@@ -15,7 +15,7 @@ After publishing:
 Developers can publish a private template version as a SkillApp, manage listings, track reviews, and monitor earnings.
 
 ```bash
-# 1. Publish a template version for review (requires at least one successful run)
+# 1. Publish for review (the Server validates the required trial evidence)
 loomloom listing publish <template-id> \
   --template-version-id <version-id> \
   --display-name "My SkillApp" \
@@ -45,11 +45,24 @@ loomloom creator earnings
 loomloom creator transactions
 ```
 
+Read dynamic category codes with `loomloom market list` (the returned `categoryOptions`). Both
+`listing publish` and `listing update` accept `--category <code>` and public
+detail flags: `--target-audience`, `--problem-solved`, repeatable `--scenario`,
+`--not-suitable-for`, and `--update-summary`. Category changes take effect after
+approval. Omit `--category` to keep the effective classification; empty codes
+cannot clear it. Partial value edits preserve other public value fields.
+Submitting again supersedes the existing pending request.
+
+The current creator review HTTP response omits the pending category. Use
+`listing show` for the effective category after approval; do not mistake it for
+candidate-category readback.
+
 ## Use a published SkillApp
 
 ```bash
-# 1. Browse and inspect available SkillApps
-loomloom market list --keyword "tweet"
+# 1. Browse official and Market SkillApps together
+loomloom market list --keyword "tweet" --sort-by usage --page 1 --page-size 15
+loomloom market show <template-slug> --source official
 loomloom market show <listing-id>
 
 # 2A. JSON input: estimate cost from input data
@@ -84,7 +97,7 @@ Example `request.json`:
 }
 ```
 
-Use `market show` to understand public fields and examples before building JSON input. Show users `inputSchemaSnapshot.fields[].label`, submit `inputRows` with `inputSchemaSnapshot.fields[].key`, and treat `fields[].required` as required input. Do not send `taskInputs`, `workflowDefinition`, `templateSpec`, or other hidden Core / TemplateSpec structures to Market buyer execution endpoints.
+Use `market show` to understand public fields and examples before building JSON input. Show users `input.fields[].name`, submit `inputRows` with `input.fields[].key`, and treat `input.fields[].required` as required input. Enum choices are `input.fields[].options`, and examples are `sampleRows[].values`. Do not send `taskInputs`, `workflowDefinition`, `templateSpec`, or other hidden Core / TemplateSpec structures to Market buyer execution endpoints.
 
 ## Install a template or SkillApp as a local Agent Skill
 

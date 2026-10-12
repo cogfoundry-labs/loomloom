@@ -53,7 +53,7 @@ func newUsageListCmd(opts *rootOptions) *cobra.Command {
 	var pageSize int
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List my Market SkillBot usage records",
+		Short: "List my Market SkillApp usage records",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
@@ -88,7 +88,7 @@ func newUsageListCmd(opts *rootOptions) *cobra.Command {
 func newUsageGetCmd(opts *rootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <run-transaction-id>",
-		Short: "Get one Market SkillBot usage record",
+		Short: "Get one Market SkillApp usage record",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			httpClient, err := newHTTPClient(opts)
