@@ -47,9 +47,7 @@
             "stepId": "stp_judge01",
             "displayName": "stp_judge01",
             "executionBinding": {
-              "kind": "codeProfile",
-              "profileId": "python-pure",
-              "profileRevision": "1"
+              "kind": "codeProfile"
             },
             "code": {
               "language": "python",
@@ -136,9 +134,7 @@
       "stepId": "stp_deliver1",
       "displayName": "stp_deliver1",
       "executionBinding": {
-        "kind": "codeProfile",
-        "profileId": "python-pure",
-        "profileRevision": "1"
+        "kind": "codeProfile"
       },
       "code": {
         "language": "python",

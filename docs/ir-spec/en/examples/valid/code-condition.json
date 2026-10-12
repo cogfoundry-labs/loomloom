@@ -19,9 +19,7 @@
       "stepId": "stp_code001",
       "displayName": "stp_code001",
       "executionBinding": {
-        "kind": "codeProfile",
-        "profileId": "python-pure",
-        "profileRevision": "1"
+        "kind": "codeProfile"
       },
       "code": {
         "language": "python",
@@ -71,9 +69,7 @@
       "stepId": "stp_next001",
       "displayName": "stp_next001",
       "executionBinding": {
-        "kind": "codeProfile",
-        "profileId": "python-pure",
-        "profileRevision": "1"
+        "kind": "codeProfile"
       },
       "code": {
         "language": "python",

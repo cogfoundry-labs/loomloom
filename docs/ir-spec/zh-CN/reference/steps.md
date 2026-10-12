@@ -30,7 +30,7 @@
 
 ## TS-CODE-001：Code 节点
 
-`executionBinding.kind=codeProfile` 时必须提供 `profileId`、`profileRevision` 和 `code`。当前已实现的运行环境为 `python-pure@1` 与 `python-image@pillow-12.3.0-1`；目标环境还必须具备对应运行绑定。图片环境包含 Pillow，不允许作者在执行时安装依赖、访问网络或取得平台 Secret。
+`executionBinding.kind=codeProfile` 时必须提供 `code`；作者无需填写 `profileId`、`profileRevision`。两者均省略时，Core 默认使用 Python 3.12 标准库环境，并在校验及创建模板版本时补齐和冻结 `python-pure@1`。已有显式配置保持兼容，但必须成对提供；未知环境或修订不会回退为默认环境。当前已实现的运行环境为 `python-pure@1` 与 `python-image@pillow-12.3.0-1`；目标环境还必须具备对应运行绑定。图片环境包含 Pillow，不允许作者在执行时安装依赖、访问网络或取得平台 Secret。
 
 | `code` 字段 | 合同 |
 | --- | --- |
