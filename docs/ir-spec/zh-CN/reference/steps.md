@@ -74,6 +74,6 @@ Loop 容器的 `executionBinding` 只写 `{"kind":"loop"}`；不带普通输入�
 
 体内模型固定选择当前可用文本模型，按普通规则解析内置或动态 Profile；可依赖体内 Code 并消费字符串 Value，Code 也可消费模型文本并返回反馈。body 只引用自身作用域的依赖/输出；外部节点只读取容器声明的 alias，不直接读取体内节点。body 的 Code 输出首期只允许 Value；尚不支持图片/视频生成返工、嵌套 Loop或 Loop 出口进入 sequence/merge。完整示例见 [文本生成与有界返工](../examples/valid/bounded-text-loop.json)。
 
-条件未选择的节点按本轮身份记录 skipped，不产生 Attempt 或模型费用。继续下一轮需要本轮 state 更新值，接受需要本轮出口值；缺失必需值明确失败，不复用上一轮。文本连接与体内条件当前已完成本地验证，尚未交付测试环境。示例见 [Code 到文本模型](../examples/valid/loop-code-to-text-model.json) 与 [接受条件交付](../examples/valid/loop-conditional-delivery.json)。
+条件未选择的节点按本轮身份记录 skipped，不产生 Attempt 或模型费用。继续下一轮需要本轮 state 更新值，接受需要本轮出口值；缺失必需值明确失败，不复用上一轮。文本连接与体内条件已交付测试环境，并通过真实文本返工、跨轮跳过及必需值缺失失败验收。示例见 [Code 到文本模型](../examples/valid/loop-code-to-text-model.json) 与 [接受条件交付](../examples/valid/loop-conditional-delivery.json)。
 
 Code 和 Loop 当前用于受控测试评审。Schema 和本地校验通过不等于目标环境已开放作者入口、已配置运行环境或具备正式收费能力；真实可用范围以目标环境交付记录为准。
