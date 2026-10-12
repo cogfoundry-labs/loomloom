@@ -7,6 +7,7 @@ For quotes, confirmation wording, currency, settlement, failure/cancellation, an
 ## Contents
 
 - [Core objects](#core-objects)
+- [Unified catalog](#unified-catalog)
 - [Buyer flow](#buyer-flow)
 - [Creator flow](#creator-flow)
 
@@ -30,28 +31,64 @@ Buyers call the Listing, not a version they hold. When the order is created, the
 
 Never bypass Market by directly running the underlying private template version.
 
-## Buyer Flow
+## Unified Catalog
 
-Discover and inspect:
+The existing `market list` and `market show` commands use the current unified
+public directory, containing official templates and Market SkillBots:
 
 ```bash
-loomloom market list
+loomloom market list --keyword "writing" --sort-by usage --page 1 --page-size 15
+loomloom market list --category <category-code>
 loomloom market show <listing-id>
+loomloom market show <template-slug> --source official
 ```
 
-Always inspect `market show` before preparing input.
+`source + resourceId` identifies a directory entry. `market show` defaults to
+`--source market`; select `--source official` for an official template slug.
+Route official execution to `template`, and Market execution to `market`.
+Always inspect the selected resource's detail before preparing input.
+
+`market list` uses one-based pages, with page sizes 1–15 and sort modes
+`default`, `usage`, or `newest`. The Server ranks pinned entries first for every
+sort. Search is a literal substring in name, description or category label, at
+most 200 Unicode characters. Read `totalCount`, `page`, and `pageSize`;
+`--page-token`, `--order-by` and `--limit` are removed from this command.
+Creator listing and subscription pagination keep their own existing contracts.
+
+Read enabled category codes and labels from `market list`'s `categoryOptions`
+(or its text category table), including categories with no matching entries.
+Categories are dynamic and single-select, not arbitrary tags or a compiled
+list. If the directory fails, report the error; never invent category options.
+`successfulTaskCount` counts successful tasks across versions and differs from
+`trust.runCount` (successful run batches).
+
+Public detail includes value, fields, instructions, samples, outputs, Skill
+Package availability and `pricing`. List fees are `invocationFee`; detail fees
+are `pricing.creatorFee`. A zero creator fee does not imply free model
+execution. Subscription offers are public prices, not an execution quote or
+personal entitlement. Preserve `subscriptionOffersStatus` (`available`,
+`unavailable`, or `notApplicable`) and nullable `payPerUseEnabled`; null does not
+mean payment is disabled. Subscription purchase waives creator call fees,
+while model fees remain billed by actual usage. Use `market quote` or workbook
+quote for the actual user's execution estimate.
+
+## Buyer Flow
 
 ### Public input boundary
 
-Build buyer input only from `inputSchemaSnapshot`:
+Build buyer input from `market show`'s current public `input.fields`:
 
-- Use `fields[].label` for user-facing prompts.
+- Use `fields[].name` for user-facing prompts.
 - Use `fields[].key` as the submitted input key.
-- Use `fields[].value_type` for type validation.
-- Use `fields[].required` for required-field validation.
-- Use `fields[].enum_values` as the allowed choices for enum fields, and present those choices before collecting the user's value.
-- Do not guess, normalize, or substitute enum choices. After normal interactive input trimming, forward the collected scalar value without local membership validation; the service remains authoritative for enum membership. Multi-value inputs retain the existing CLI behavior.
-- Use `sample_rows` as examples.
+- Use `fields[].type` for the public type and `fields[].required` for required input.
+- Present `fields[].options` as allowed choices without guessing or changing them.
+- Use top-level `instructions` and `sampleRows[].values` as filling guidance and examples.
+
+The CLI's quote/run validation and local Skill export still read the backend's
+public execution schema contract (`inputSchemaSnapshot`). Unified detail is a
+presentation projection and omits execution-specific fields such as defaults
+and limits; it must not replace that validation contract. Commands handle
+schema retrieval and current-version binding internally.
 
 Do not reveal, reconstruct, infer, or submit hidden `taskInputs`, `workflowDefinition`, `templateSpec`, internal prompts, internal step IDs, or private mappings.
 
@@ -101,7 +138,7 @@ loomloom listing publish <template-id> \
   --task-fixed-fee <amount>
 ```
 
-The private template version must already have one successful run. Use normal currency units such as `--task-fixed-fee 0.5`; the CLI converts them to backend units. A successful request returns a `reviewRequestId` with a pending review state.
+The Server decides the required trial evidence for the deployed review policy. First publication, execution changes and a new ZIP candidate use execution review; static profile or price updates may use static review without a new mandatory trial. Do not claim one successful run is sufficient for every deployed policy. Use normal currency units such as `--task-fixed-fee 0.5`; the CLI converts them to backend units. A successful request returns a `reviewRequestId` with a pending review state.
 
 ### Configure initial subscription prices
 
@@ -181,7 +218,45 @@ loomloom listing publish <template-id> \
   --confirm-name-warning
 ```
 
-The flag still performs the check and prints warnings; it allows submission to continue after either kind of warning. It does not bypass the successful trial-run requirement, other server validation, or review. A successful submission is a pending review request, not an approved public listing. `Unimplemented` concerns the check service's RPC availability; verify the target environment and deployed services separately from trial-run validation.
+The flag still performs the check and prints warnings; it allows submission to continue after either kind of warning. It does not bypass the Server's trial-evidence policy, other validation, or review. A successful submission is a pending review request, not an approved public listing. `Unimplemented` concerns the check service's RPC availability; verify the target environment and deployed services separately from trial-run validation.
+
+### Submit category and public details
+
+Read `market list` categoryOptions before selecting an enabled code. Add these optional
+flags to `listing publish` or `listing update`:
+
+```bash
+loomloom listing update <listing-id> \
+  --category <category-code> \
+  --target-audience "Content teams" \
+  --problem-solved "Create first drafts" \
+  --scenario "News articles" --scenario "Emails" \
+  --not-suitable-for "Legal advice" \
+  --update-summary "Clarified audience and use cases"
+```
+
+`--category` submits one code for review. Omitting it preserves the effective
+classification; an explicit empty code is rejected and cannot clear it. The
+Server verifies that the code exists and is enabled. Approval applies the
+candidate; rejection leaves the effective classification unchanged. There is
+no creator `--tags`, `--pin-position`, category-label edit, or category-directory
+management command.
+
+The four public value fields map to `value.targetAudience`, `problemSolved`,
+`scenarios`, and `notSuitableFor`. The CLI merges only explicit value flags with
+the current owner-visible value so omitted siblings survive. `--scenario` is
+repeatable and keeps commas within a scenario; `--scenario ""` clears the list.
+Explicit empty text flags clear their corresponding value field. Re-publishing
+an existing Listing preserves its current value unless a value flag changes it.
+Name, description and task fee retain their existing publish flag behavior.
+
+Both submission paths replace an existing pending request with a new one;
+inspect pending review state before resubmitting. Submission does not approve
+or list the candidate. `listing show` exposes the effective category and
+unlisting reason. At the audited backend revision, creator review list/get
+omit the pending category and request type from HTTP responses; do not use the
+effective Listing category as proof of the submitted candidate. Report that
+readback limitation, and verify effective classification after approval.
 
 ### Change only the price
 
