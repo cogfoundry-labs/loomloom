@@ -35,7 +35,7 @@
             "code": {
               "language": "python",
               "entrypoint": "main",
-              "source": "def main(inputs):\n    import json\n    n = int(inputs['feedback']) + 1\n    path = '/tmp/candidate.json'\n    with open(path, 'w') as f:\n        json.dump({'round': n}, f)\n    return {'candidate': {'path': path, 'mimeType': 'application/json'}}\n",
+              "source": "def main(inputs):\n    import json\n    n = int(inputs['feedback']) + 1\n    path = 'candidate.json'\n    with open(path, 'w') as f:\n        json.dump({'round': n}, f)\n    return {'candidate': path}\n",
               "contractVersion": "2",
               "inputs": {
                 "feedback": {
