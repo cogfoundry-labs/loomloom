@@ -1,11 +1,11 @@
 ---
 name: loomloom
-description: Use this skill when the user mentions LoomLoom, loomloom, batch generation, batch processing, batch tasks, batch execution, template execution, template submission, Excel submission, template download, Excel validation, run results, result download, run id, task status, execution status, official templates, private templates, TemplateSpec, Excel/workbook templates, Market SkillApps, template market, public templates, SkillApp, listing, unlisting, relisting, price changes, fixed task fees, publishing to the Market, review submission, review status, creator earnings, template earnings, usage, orders, call records, installing LoomLoom, doctor, token, server, or when the user clearly wants multi-row input to produce batch outputs.
+description: Use this skill when the user mentions LoomLoom, loomloom, batch generation, batch processing, batch tasks, batch execution, template execution, template submission, Excel submission, template download, Excel validation, run results, result download, run id, task status, execution status, official templates, private templates, TemplateSpec, Excel/workbook templates, Market SkillApps, template market, public templates, SkillApp, listing, unlisting, relisting, price changes, fixed task fees, subscription bundles, subscription purchase and renewal, publishing to the Market, review submission, review status, creator earnings, template earnings, usage, orders, call records, installing LoomLoom, doctor, token, server, or when the user clearly wants multi-row input to produce batch outputs.
 ---
 
 # loomloom
 
-LoomLoom is a template-based AI workflow platform for structured, repeatable AI work. Use it for batch or table-shaped generation, official and private template execution, TemplateSpec authoring, Market SkillApps, creator listing management, local Agent Skill installation, run monitoring, and result retrieval.
+LoomLoom is a template-based AI workflow platform for structured, repeatable AI work. Use it for batch or table-shaped generation, official and private template execution, TemplateSpec authoring, Market SkillApps, subscriptions and bundle management, creator listing management, local Agent Skill installation, run monitoring, and result retrieval.
 
 Do not use LoomLoom for ordinary one-off writing or chat unless the user explicitly asks for LoomLoom, templates, Excel/workbook input, a Market SkillApp, or batch/table-shaped processing.
 
@@ -54,6 +54,7 @@ Read every required reference for the current intent before answering with busin
 | Execute an official or private template; validate, precheck, run, monitor, or retrieve results | [execution.md](references/execution.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Create, explain, or version a private template or TemplateSpec | [template-spec.md](references/template-spec.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Discover, quote, or execute a Market SkillApp | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
+| Browse, buy, renew, or inspect subscriptions; create or manage subscription bundles | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Publish, change price/version/profile, list/unlist/relist, review, usage, settlement, or earnings | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Manage Skill Packages or install local Agent Skills | [local-skills.md](references/local-skills.md), [cli.md](references/cli.md) |
 | Diagnose a failure, ambiguous response, missing ID, or command syntax | [cli.md](references/cli.md) plus the relevant domain reference above |
@@ -213,6 +214,15 @@ Select a successfully run private version → Explain intended change
 
 Changing only the price and changing the execution version are different operations; follow `market.md`.
 
+### Subscriptions and bundles
+
+For buyers, inspect the published bundle and selected monthly/yearly price,
+show the purchase or renewal action, obtain confirmation, and then submit with
+the displayed bundle revision and a stable request ID. Inspect the returned
+subscription separately from execution; buying a subscription does not run a
+SkillApp. For creators, follow `market.md` to manage automatic single-SkillApp
+bundles or create, configure, and publish manual bundles.
+
 ### Local Agent Skill
 
 ```text
@@ -238,7 +248,7 @@ Determine the current platform only from the user's explicit selection or a succ
 6. **Use execution IDs safely.** Every newly confirmed execution gets a new `client-request-id`. Reuse one only for an identical retry of the same confirmed request after an ambiguous failure.
 7. **Do not bypass Market.** Execute a SkillApp through its Listing and public schema. Never expose or reconstruct hidden prompts, steps, mappings, TemplateSpec, or private execution logic.
 8. **Respect order locking.** Market resolves the current sellable Listing Version when creating the order and locks that version and price for the order.
-9. **Confirm persistent changes.** Creating or versioning a template, publishing or changing a Listing, unlisting/relisting, and withdrawing review require explicit confirmation.
+9. **Confirm persistent changes.** Creating or versioning a template, publishing or changing a Listing, unlisting/relisting, withdrawing review, buying/renewing a subscription, and changing or publishing a subscription bundle require explicit confirmation.
 10. **Do not invent facts.** Never guess IDs, versions, flags, currency, fee fields, server state, hidden step IDs, settlement outcomes, or URLs.
 11. **Use current sources of truth.** Use CLI help for syntax, CLI-bundled TemplateSpec docs for the contract, downloaded workbooks for input shape, and returned service fields for state and IDs.
 12. **Keep technical details internal by default.** Translate raw JSON and backend fields into business language unless the user asks for CLI/API details.

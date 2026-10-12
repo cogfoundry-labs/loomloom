@@ -140,8 +140,8 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "publish <template-id>",
-		Short: "Submit a template version for Market SkillBot review",
-		Long: "Submit a template version for Market SkillBot review. " +
+		Short: "Submit a template version for Market SkillApp review",
+		Long: "Submit a template version for Market SkillApp review. " +
 			"On first publication, use --subscription-tiers-file with --subscription=true to include initial monthly/yearly prices in the same request. " +
 			"Existing listings use creator bundle set-tier to change prices. " +
 			"Subscription mode requires at least one enabled tier; submitting for review does not make the listing or bundle sellable.",
@@ -241,15 +241,15 @@ func newListingPublishCmd(opts *rootOptions) *cobra.Command {
 	profile.addFlags(cmd)
 	cmd.Flags().StringVar(&listingID, "listing-id", "", "Existing listing ID when publishing a new version")
 	cmd.Flags().StringVar(&templateVersionID, "template-version-id", "", "Template version ID to publish")
-	cmd.Flags().StringVar(&displayName, "display-name", "", "Market SkillBot display name")
-	cmd.Flags().StringVar(&description, "description", "", "Market SkillBot description")
+	cmd.Flags().StringVar(&displayName, "display-name", "", "Market SkillApp display name")
+	cmd.Flags().StringVar(&description, "description", "", "Market SkillApp description")
 	cmd.Flags().StringVar(&taskFixedFee, "task-fixed-fee", "", "Creator fixed fee per billable task, in currency units (for example 0.5)")
 	cmd.Flags().Int64Var(&taskFixedFeeT, "task-fixed-fee-t", 0, "Deprecated: creator fixed fee per billable task, in raw API units")
 	cmd.Flags().StringVar(&skillArchiveHash, "skill-package-archive-hash", "", "Private Skill Package Head archive hash to freeze with this listing")
 	cmd.Flags().StringVar(&skillValidationID, "skill-package-validation-id", "", "Private Skill Package Head validation ID to freeze with this listing")
 	cmd.Flags().BoolVar(&confirmNameWarning, "confirm-name-warning", false, "Continue non-interactively after a duplicate-name warning or name-check failure")
 	cmd.Flags().BoolVar(&payPerUse, "pay-per-use", true, "Enable pay-per-use for this listing")
-	cmd.Flags().BoolVar(&subscription, "subscription", false, "Enable the automatic single-SkillBot subscription package")
+	cmd.Flags().BoolVar(&subscription, "subscription", false, "Enable the automatic single-SkillApp subscription package")
 	cmd.Flags().StringVar(&subscriptionTiersFile, "subscription-tiers-file", "", "JSON array of initial monthly/yearly tiers; first publication only, requires --subscription=true")
 	cmd.Flags().Int64Var(&expectedPaymentSettingsRevision, "expected-payment-settings-revision", 0, "Current payment settings revision when changing an existing listing")
 	_ = cmd.Flags().MarkDeprecated("task-fixed-fee-t", "use --task-fixed-fee with a decimal currency amount")
@@ -277,9 +277,9 @@ func precheckListingDisplayName(ctx context.Context, cmd *cobra.Command, httpCli
 
 	w := cmd.ErrOrStderr()
 	if err != nil {
-		_, _ = fmt.Fprintf(w, "Warning: unable to check whether you already have a Market SkillBot named %q: %v\n", strings.TrimSpace(displayName), err)
+		_, _ = fmt.Fprintf(w, "Warning: unable to check whether you already have a Market SkillApp named %q: %v\n", strings.TrimSpace(displayName), err)
 	} else {
-		_, _ = fmt.Fprintf(w, "Warning: you already have %d Market SkillBot(s) with this display name:\n", len(response.Matches))
+		_, _ = fmt.Fprintf(w, "Warning: you already have %d Market SkillApp(s) with this display name:\n", len(response.Matches))
 		for _, match := range response.Matches {
 			_, _ = fmt.Fprintf(w, "- %s\t%s\t%s\n",
 				sanitizeRemoteText(match.ListingID, false),
@@ -322,7 +322,7 @@ func promptNameWarningConfirmation(ctx context.Context, in io.Reader, out io.Wri
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("submission cancelled: %w", err)
 	}
-	_, _ = fmt.Fprint(out, "Continue creating this Market SkillBot? [y/N] (expires in 5 minutes) ")
+	_, _ = fmt.Fprint(out, "Continue creating this Market SkillApp? [y/N] (expires in 5 minutes) ")
 	result := make(chan error, 1)
 	go func() {
 		line, err := bufio.NewReader(in).ReadString('\n')
@@ -467,7 +467,7 @@ func newListingListCmd(opts *rootOptions) *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List my Market SkillBot listings",
+		Short: "List my Market SkillApp listings",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			httpClient, err := newHTTPClient(opts)
 			if err != nil {
@@ -514,7 +514,7 @@ func newListingListCmd(opts *rootOptions) *cobra.Command {
 func newListingShowCmd(opts *rootOptions) *cobra.Command {
 	return &cobra.Command{
 		Use:   "show <listing-id>",
-		Short: "Show one creator-owned Market SkillBot listing",
+		Short: "Show one creator-owned Market SkillApp listing",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			httpClient, err := newHTTPClient(opts)
@@ -545,7 +545,7 @@ func newListingVersionsCmd(opts *rootOptions) *cobra.Command {
 	var pageSize int
 	cmd := &cobra.Command{
 		Use:   "versions <listing-id>",
-		Short: "List versions of a creator-owned Market SkillBot listing",
+		Short: "List versions of a creator-owned Market SkillApp listing",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			httpClient, err := newHTTPClient(opts)
@@ -726,11 +726,11 @@ func newListingWithdrawCmd(opts *rootOptions) *cobra.Command {
 }
 
 func newListingUnlistCmd(opts *rootOptions) *cobra.Command {
-	return newMarketSaleStatusCmd(opts, "unlist", "Unlist a Market SkillBot listing", "unlist")
+	return newMarketSaleStatusCmd(opts, "unlist", "Unlist a Market SkillApp listing", "unlist")
 }
 
 func newListingRelistCmd(opts *rootOptions) *cobra.Command {
-	return newMarketSaleStatusCmd(opts, "relist", "Restore a previously unlisted Market SkillBot listing", "list")
+	return newMarketSaleStatusCmd(opts, "relist", "Restore a previously unlisted Market SkillApp listing", "list")
 }
 
 func printCreatorListings(w io.Writer, resp creatorMarketListingsResponse) error {

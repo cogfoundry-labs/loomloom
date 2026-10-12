@@ -22,8 +22,8 @@ loomloom's CLI is organized into the following command groups, in the order they
 6. **Catalog** → list available models and assets
 7. **Private templates** → build your own workflows with TemplateSpec
 8. **Local agent skills** → install/uninstall workflows as agent skills
-9. **Market — Buy** → discover and run SkillApps
-10. **Market — Create** → publish and manage SkillApps
+9. **Market — Buy** → discover and run SkillApps, buy and renew subscriptions
+10. **Market — Create** → publish SkillApps and manage subscription bundles
 
 Most users only need:
 
@@ -250,8 +250,8 @@ Typical flow
 
 | Command | Description |
 |---|---|
-| `loomloom market list` | Browse published Market SkillApps. |
-| `loomloom market show <listing-id>` | Show one SkillApp, including its input schema. |
+| `loomloom market list [--keyword <text>] [--category <code>] [--sort-by default\|usage\|newest] [--page <n>] [--page-size <1-15>]` | Browse the unified official-template and Market SkillApp catalog, including dynamic category options. |
+| `loomloom market show <resource-id> [--source market\|official]` | Show public inputs, outputs, and prices. Defaults to Market; use `official` for an official-template slug. |
 | `loomloom market quote <listing-id> --input-file <json>` | Estimate execution cost. |
 | `loomloom market run <listing-id> --input-file <json> --confirm --client-request-id <id>` | Execute a SkillApp from JSON input rows (paid). |
 | `loomloom market workbook download <listing-id> --output-file <xlsx>` | Download a Market workbook template. |
@@ -260,6 +260,43 @@ Typical flow
 | `loomloom market workbook run <listing-id> --file <xlsx> --confirm --client-request-id <id>` | Execute a SkillApp from a workbook (paid). |
 | `loomloom usage list` | List my Market SkillApp usage records. |
 | `loomloom usage get <run-transaction-id>` | Show one usage record. |
+
+Official entries discovered through `market list` execute through `template`;
+Market entries execute through `market`. Catalog prices and subscription offers
+are public pricing, not an execution quote or the current user's entitlement.
+
+### Subscription purchases and renewal
+
+| Command | Description |
+|---|---|
+| `loomloom market bundle list [--creator-id <user-id>] [--name <name>]` | Browse published subscription bundles. |
+| `loomloom market bundle show <bundle-id>` | Inspect a published bundle, its current revision and tier prices. |
+| `loomloom market bundle items <bundle-id>` | List the SkillApps currently in a published bundle. |
+| `loomloom market subscribe <listing-id> --tier monthly\|yearly` | Preview the Listing's automatic single-SkillApp subscription; add confirmation flags to purchase. |
+| `loomloom subscription list` | List my subscriptions. |
+| `loomloom subscription show <subscription-id>` | Inspect a subscription's returned state and details. |
+| `loomloom subscription items <subscription-id> [--snapshot]` | List current members, or immutable purchase membership with `--snapshot`. |
+| `loomloom subscription buy <bundle-id> --tier monthly\|yearly` | Preview a bundle subscription; add confirmation flags to purchase. |
+| `loomloom subscription renew <subscription-id> --tier monthly\|yearly` | Preview renewal of an expired subscription against its bundle's current prices. |
+
+Without `--confirm`, purchase and renewal commands return the selected tier and
+bundle without submitting a purchase. Inspect the price/currency, duration,
+members and bundle revision, then obtain explicit confirmation before adding
+`--confirm --expected-revision <bundle-revision> --client-request-id <id>`.
+`buy` takes a bundle ID; `renew` takes a subscription ID. `market subscribe`
+resolves only the selected Listing's automatic bundle; use `subscription buy`
+for a selected manual bundle.
+
+On a revision/price conflict, inspect the new state and confirm it again. Keep
+the request ID stable only for an identical retry of the confirmed purchase,
+and check subscription state before retrying an ambiguous result. Purchase or
+renewal does not execute a SkillApp: subscription coverage waives applicable
+creator call fees, while model/API usage remains billed separately. Later
+execution still requires the normal quote and confirmation flow.
+
+Bundle/subscription lists and member lists use `--page-size` (default 20,
+1–100) and `--page-token` from the returned `nextPageToken`. This token contract
+is separate from the unified catalog's `--page`/`--page-size` pagination.
 
 ## 10. Market (Create workflows)
 
@@ -276,7 +313,8 @@ Typical flow
 | `loomloom listing show <listing-id>` | Show one of my listings. |
 | `loomloom listing versions <listing-id>` | List versions of one of my listings. |
 | `loomloom listing download-skill-package <listing-id> --version-id <skill-package-version-id> --output-file <zip>` | Save a specific Skill Package version ZIP of one of my listings without installing it. |
-| `loomloom listing update <listing-id> --display-name <name>` | Submit a public-profile update for review after confirmation; pass a display name, description, or both. |
+| `loomloom listing update-skill-package <listing-id> [--skill-package-archive-hash <hash> --skill-package-validation-id <id>] [--request-id <id>]` | Submit a Skill Package update for an already published Listing. Supply archive hash and validation ID together for an exact candidate; omit both for `auto`. A request ID is generated if omitted. |
+| `loomloom listing update <listing-id>` | Submit public name, description, category, value details or update summary for review after confirmation. |
 | `loomloom listing unlist <listing-id>` | Stop new executions of a listing after confirmation. |
 | `loomloom listing relist <listing-id>` | Restore a previously unlisted listing after confirmation. |
 | `loomloom listing withdraw <listing-id>` | Withdraw the pending review request for a listing after confirmation. |
@@ -285,6 +323,36 @@ Typical flow
 | `loomloom creator review list` | List my review requests. |
 | `loomloom creator review get <review-request-id>` | Show one review request. |
 | `loomloom creator review withdraw <review-request-id>` | Withdraw a pending review request after confirmation. |
+
+### Creator subscription bundles
+
+| Command | Description |
+|---|---|
+| `loomloom creator bundle list [--name <name>] [--status draft\|published\|unlisted]` | List my automatic and manual bundles. |
+| `loomloom creator bundle show <bundle-id>` | Read saved prices, state and current bundle revision. |
+| `loomloom creator bundle list-available` | List owned SkillApps eligible for manual bundle membership. |
+| `loomloom creator bundle create --name <name> --client-request-id <id> [--description <text>]` | Create an empty manual draft; retain the request ID for identical retries. |
+| `loomloom creator bundle items <bundle-id>` | List current bundle members. |
+| `loomloom creator bundle update <bundle-id> --name <name> --expected-revision <revision> [--description <text>]` | Replace the name and description; omission of description sends an empty string. |
+| `loomloom creator bundle add-item <bundle-id> --listing-id <listing-id> --expected-revision <revision>` | Atomically add eligible members to a manual bundle; repeat the Listing flag or use comma-separated IDs. |
+| `loomloom creator bundle set-tier <bundle-id> --tier monthly\|yearly --price <amount> --currency CNY --enabled=<bool> --expected-revision <revision>` | Create or change an automatic/manual bundle's tier price or enabled state. |
+| `loomloom creator bundle publish <bundle-id> --expected-revision <revision>` | Publish or reopen sales, subject to current member and enabled-tier checks. |
+| `loomloom creator bundle unlist <bundle-id> --expected-revision <revision> [--reason <text>]` | Stop new sales while preserving existing subscriptions; reason defaults to `creator_unlisted`. |
+
+Automatic bundles identify their one source Listing with `sourceListingId` and
+are initialized through Listing payment settings/publication. For a manual
+bundle, follow `list-available` → confirm/create → confirm/add-item →
+confirm/set-tier → confirm/publish. Each mutation needs its own current bundle
+revision: use the returned revision or read `creator bundle show` before the
+next change. Never guess or automatically increment a revision after conflict.
+The bundle revision is distinct from the Listing payment-settings revision.
+
+Confirm creator bundle mutations before executing them. Creating a draft is
+not publication, changing a tier does not reprice existing purchases, and
+unlisting sales does not revoke existing subscription rights. To preserve a
+bundle description during `update`, pass its current value explicitly.
+Creator bundle `list`, `list-available`, and `items` use token pagination
+(`--page-size` default 20, range 1–100; `--page-token` from `nextPageToken`).
 
 ### Initial subscription prices
 
@@ -314,8 +382,9 @@ amounts, excess precision, and overflow fail locally before any HTTP request.
 An explicitly supplied `null` or empty array is rejected locally; omitting the
 flag omits `subscriptionTiers` from the request.
 
-A zero subscription price does not imply zero model/API execution cost. Check
-the actual buyer quote before any purchase or hosted execution.
+A zero subscription price does not imply zero model/API execution cost. Inspect
+the selected subscription price before purchase, and obtain an execution quote
+before a later hosted run.
 
 The CLI sends initial tiers and payment modes together; it does not first enable
 subscription and then issue separate price writes. At least one tier must be

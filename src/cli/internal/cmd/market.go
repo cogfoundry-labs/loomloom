@@ -69,7 +69,7 @@ func newMarketQuoteCmd(opts *rootOptions) *cobra.Command {
 	var paymentPreference string
 	cmd := &cobra.Command{
 		Use:   "quote <listing-id>",
-		Short: "Quote a Market SkillBot run from public input rows",
+		Short: "Quote a Market SkillApp run from public input rows",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			httpClient, err := newHTTPClient(opts)
@@ -116,7 +116,7 @@ func newMarketRunCmd(opts *rootOptions) *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "run <listing-id>",
-		Short: "Quote and execute a Market SkillBot from public input rows",
+		Short: "Quote and execute a Market SkillApp from public input rows",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateMarketPaymentPreference(paymentPreference); err != nil {
@@ -249,7 +249,7 @@ func newMarketRunCmd(opts *rootOptions) *cobra.Command {
 func newMarketWorkbookCmd(opts *rootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workbook",
-		Short: "Run Market SkillBots with Excel workbooks",
+		Short: "Run Market SkillApps with Excel workbooks",
 	}
 	cmd.AddCommand(
 		newMarketWorkbookDownloadCmd(opts),
@@ -267,7 +267,7 @@ func newMarketWorkbookDownloadCmd(opts *rootOptions) *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "download <listing-id>",
-		Short: "Download a Market SkillBot input workbook",
+		Short: "Download a Market SkillApp input workbook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			httpClient, err := newHTTPClient(opts)
@@ -324,7 +324,7 @@ func newMarketWorkbookValidateCmd(opts *rootOptions) *cobra.Command {
 	var workbookPath string
 	cmd := &cobra.Command{
 		Use:   "validate <listing-id>",
-		Short: "Validate a filled Market SkillBot workbook",
+		Short: "Validate a filled Market SkillApp workbook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resp, err := postMarketWorkbook[validateTemplateFileResponse](cmd.Context(), opts, strings.TrimSpace(args[0]), workbookPath, ":validateWorkbook", nil)
@@ -350,7 +350,7 @@ func newMarketWorkbookQuoteCmd(opts *rootOptions) *cobra.Command {
 	var paymentPreference string
 	cmd := &cobra.Command{
 		Use:   "quote <listing-id>",
-		Short: "Quote a filled Market SkillBot workbook",
+		Short: "Quote a filled Market SkillApp workbook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateMarketPaymentPreference(paymentPreference); err != nil {
@@ -386,7 +386,7 @@ func newMarketWorkbookRunCmd(opts *rootOptions) *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "run <listing-id>",
-		Short: "Quote and execute a Market SkillBot workbook",
+		Short: "Quote and execute a Market SkillApp workbook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateMarketPaymentPreference(paymentPreference); err != nil {
@@ -1175,7 +1175,7 @@ func isBidiControl(r rune) bool {
 }
 
 func newDeprecatedMarketRelistCmd(opts *rootOptions) *cobra.Command {
-	cmd := newMarketSaleStatusCmd(opts, "relist", "Restore a Market SkillBot listing", "list")
+	cmd := newMarketSaleStatusCmd(opts, "relist", "Restore a Market SkillApp listing", "list")
 	cmd.Deprecated = "use 'loomloom listing relist <listing-id>'"
 	return cmd
 }
