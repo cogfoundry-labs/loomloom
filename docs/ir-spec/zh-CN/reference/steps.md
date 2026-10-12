@@ -65,13 +65,15 @@ Loop 容器的 `executionBinding` 只写 `{"kind":"loop"}`；不带普通输入�
 | --- | --- |
 | `maxIterations` | 必填，1–10；包含首次执行，不额外增加一次 |
 | `deadlineSeconds` | 必填，1–1800 秒；业务轮次和截止共同限制执行 |
-| `body` | 非空节点列表；首期为固定模型的 `text.basic.openai-chat.v1` 与 Code，使用无条件 `require_all` |
-| `until` | `{stepId, portId}` 指向体内 Code boolean Value；判定节点须依赖整个 body |
+| `body` | 非空普通子工作流；当前支持固定文本 Profile 与 Code Value，使用 `require_all`，可声明普通 `when` |
+| `until` | `{stepId, portId}` 指向体内 Code boolean Value；整轮完成后读取，不要求判定节点依赖全部节点 |
 | `state` | 显式状态 map，可为空；每项声明 `initial` 和 `update`，每个状态必须有体内消费者 |
 | `outputs` | 非空出口 map；alias 映射到体内 Code Value，只在接受后对外可见 |
 
 `state.initial` 支持非空字符串 literal、必填 string Template Input 或字符串 `composeValue`。`update` 指向体内 Code string Value；消费者使用 `{"source":"loopState","inputKey":"状态名"}`。模型只把状态绑定到 prompt；Code 目标必须声明必填、非 nullable string。未通过时更新状态并进入下一轮；通过时冻结接受输出。耗尽、取消或技术失败不发布最后一轮候选作为成功结果。
 
-体内模型必须固定选择当前可用模型、没有体内上游依赖；Code 可消费模型文本并返回反馈。body 只引用自身作用域的依赖/输出；外部节点只读取容器声明的 alias，不直接读取体内节点。body 的 Code 输出首期只允许 Value；尚不支持图片/视频生成返工、嵌套 Loop、体内条件分支或 Loop 出口进入 sequence/merge。完整示例见 [文本生成与有界返工](../examples/valid/bounded-text-loop.json)。
+体内模型固定选择当前可用文本模型，按普通规则解析内置或动态 Profile；可依赖体内 Code 并消费字符串 Value，Code 也可消费模型文本并返回反馈。body 只引用自身作用域的依赖/输出；外部节点只读取容器声明的 alias，不直接读取体内节点。body 的 Code 输出首期只允许 Value；尚不支持图片/视频生成返工、嵌套 Loop或 Loop 出口进入 sequence/merge。完整示例见 [文本生成与有界返工](../examples/valid/bounded-text-loop.json)。
+
+条件未选择的节点按本轮身份记录 skipped，不产生 Attempt 或模型费用。继续下一轮需要本轮 state 更新值，接受需要本轮出口值；缺失必需值明确失败，不复用上一轮。文本连接与体内条件当前已完成本地验证，尚未交付测试环境。示例见 [Code 到文本模型](../examples/valid/loop-code-to-text-model.json) 与 [接受条件交付](../examples/valid/loop-conditional-delivery.json)。
 
 Code 和 Loop 当前用于受控测试评审。Schema 和本地校验通过不等于目标环境已开放作者入口、已配置运行环境或具备正式收费能力；真实可用范围以目标环境交付记录为准。
