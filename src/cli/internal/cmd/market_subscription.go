@@ -12,7 +12,7 @@ import (
 )
 
 func newMarketBundleCmd(opts *rootOptions) *cobra.Command {
-	cmd := &cobra.Command{Use: "bundle", Short: "Browse published SkillBot subscription bundles"}
+	cmd := &cobra.Command{Use: "bundle", Short: "Browse published SkillApp subscription bundles"}
 	cmd.AddCommand(newMarketBundleListCmd(opts), newMarketBundleShowCmd(opts), newMarketBundleItemsCmd(opts))
 	return cmd
 }
@@ -48,7 +48,7 @@ func newMarketBundleShowCmd(opts *rootOptions) *cobra.Command {
 func newMarketBundleItemsCmd(opts *rootOptions) *cobra.Command {
 	var pageSize int
 	var pageToken string
-	cmd := &cobra.Command{Use: "items <bundle-id>", Short: "List SkillBots in a published subscription bundle", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+	cmd := &cobra.Command{Use: "items <bundle-id>", Short: "List SkillApps in a published subscription bundle", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		path := "/subscriptionBundles/" + url.PathEscape(strings.TrimSpace(args[0])) + "/items"
 		return subscriptionGetAndPrint(cmd, opts, path, subscriptionPageQuery(pageSize, pageToken))
 	}}
@@ -60,7 +60,7 @@ func newMarketSubscribeCmd(opts *rootOptions) *cobra.Command {
 	var tier, clientRequestID string
 	var expectedRevision int64
 	var confirm bool
-	cmd := &cobra.Command{Use: "subscribe <listing-id>", Short: "Buy the listing's automatic single-SkillBot subscription", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+	cmd := &cobra.Command{Use: "subscribe <listing-id>", Short: "Buy the listing's automatic single-SkillApp subscription", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		tier = strings.TrimSpace(tier)
 		if tier != "monthly" && tier != "yearly" {
 			return fmt.Errorf("--tier must be monthly or yearly")

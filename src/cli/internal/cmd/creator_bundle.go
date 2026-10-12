@@ -10,7 +10,7 @@ import (
 )
 
 func newCreatorBundleCmd(opts *rootOptions) *cobra.Command {
-	cmd := &cobra.Command{Use: "bundle", Short: "Manage creator SkillBot subscription bundles"}
+	cmd := &cobra.Command{Use: "bundle", Short: "Manage creator SkillApp subscription bundles"}
 	cmd.AddCommand(
 		newCreatorBundleCandidatesCmd(opts),
 		newCreatorBundleCreateCmd(opts),
@@ -29,7 +29,7 @@ func newCreatorBundleCmd(opts *rootOptions) *cobra.Command {
 func newCreatorBundleCandidatesCmd(opts *rootOptions) *cobra.Command {
 	var pageSize int
 	var pageToken string
-	cmd := &cobra.Command{Use: "list-available", Short: "List my SkillBots eligible for bundle membership", RunE: func(cmd *cobra.Command, _ []string) error {
+	cmd := &cobra.Command{Use: "list-available", Short: "List my SkillApps eligible for bundle membership", RunE: func(cmd *cobra.Command, _ []string) error {
 		return subscriptionGetAndPrint(cmd, opts, "/creators/me/subscriptionBundleCandidates", subscriptionPageQuery(pageSize, pageToken))
 	}}
 	addSubscriptionPageFlags(cmd, &pageSize, &pageToken)
@@ -80,7 +80,7 @@ func newCreatorBundleShowCmd(opts *rootOptions) *cobra.Command {
 func newCreatorBundleItemsCmd(opts *rootOptions) *cobra.Command {
 	var pageSize int
 	var pageToken string
-	cmd := &cobra.Command{Use: "items <bundle-id>", Short: "List SkillBots in one creator subscription bundle", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+	cmd := &cobra.Command{Use: "items <bundle-id>", Short: "List SkillApps in one creator subscription bundle", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		return subscriptionGetAndPrint(cmd, opts, creatorBundlePath(args[0])+"/items", subscriptionPageQuery(pageSize, pageToken))
 	}}
 	addSubscriptionPageFlags(cmd, &pageSize, &pageToken)
@@ -105,13 +105,13 @@ func newCreatorBundleUpdateCmd(opts *rootOptions) *cobra.Command {
 func newCreatorBundleAddItemCmd(opts *rootOptions) *cobra.Command {
 	var listingIDs []string
 	var revision int64
-	cmd := &cobra.Command{Use: "add-item <bundle-id>", Short: "Atomically add SkillBots to a manual bundle", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+	cmd := &cobra.Command{Use: "add-item <bundle-id>", Short: "Atomically add SkillApps to a manual bundle", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		if len(listingIDs) == 0 || revision <= 0 {
 			return fmt.Errorf("at least one --listing-id and a positive --expected-revision are required")
 		}
 		return creatorBundleMutation(cmd, opts, "POST", creatorBundlePath(args[0])+":addItems", map[string]any{"listingIds": listingIDs, "expectedRevision": revision})
 	}}
-	cmd.Flags().StringSliceVar(&listingIDs, "listing-id", nil, "SkillBot listing ID to add; repeat for multiple IDs")
+	cmd.Flags().StringSliceVar(&listingIDs, "listing-id", nil, "SkillApp listing ID to add; repeat for multiple IDs")
 	cmd.Flags().Int64Var(&revision, "expected-revision", 0, "Current bundle revision")
 	return cmd
 }
@@ -193,7 +193,7 @@ func newListingPaymentSettingsCmd(opts *rootOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&payPerUse, "pay-per-use", true, "Enable per-run creator pricing")
-	cmd.Flags().BoolVar(&subscription, "subscription", false, "Enable the stable automatic single-SkillBot bundle")
+	cmd.Flags().BoolVar(&subscription, "subscription", false, "Enable the stable automatic single-SkillApp bundle")
 	cmd.Flags().StringVar(&subscriptionTiersFile, "subscription-tiers-file", "", "JSON array of initial monthly/yearly tiers; only initializes an automatic bundle without existing prices")
 	cmd.Flags().Int64Var(&revision, "expected-revision", -1, "Current payment settings revision; use 0 for first creation")
 	return cmd

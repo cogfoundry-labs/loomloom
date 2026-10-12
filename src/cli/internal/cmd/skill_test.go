@@ -237,7 +237,7 @@ func TestSkillInstallTemplateSpecWritesFiles(t *testing.T) {
 		t.Fatalf("SKILL.md missing file input upload guidance:\n%s", string(skillBytes))
 	}
 	if !strings.Contains(string(skillBytes), "translate technical field names and enum values into plain user-facing wording") ||
-		!strings.Contains(string(skillBytes), "This SkillBot has been forcibly removed from the Market and cannot currently be listed or run") ||
+		!strings.Contains(string(skillBytes), "This SkillApp has been forcibly removed from the Market and cannot currently be listed or run") ||
 		!strings.Contains(string(skillBytes), "the review was not approved") ||
 		!strings.Contains(string(skillBytes), "currently unavailable to run") {
 		t.Fatalf("SKILL.md missing user-facing status wording guidance:\n%s", string(skillBytes))

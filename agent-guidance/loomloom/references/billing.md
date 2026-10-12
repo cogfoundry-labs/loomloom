@@ -182,8 +182,18 @@ Before executing any of these, describe the exact business action and ask for ex
 - `listing relist`
 - `listing withdraw`
 - `creator review withdraw`
+- `listing update-skill-package`
+- `creator bundle create`, `update`, `add-item`, `set-tier`, `publish`, and `unlist`
+- `market subscribe --confirm`, `subscription buy --confirm`, and `subscription renew --confirm`
 
 "Describe the exact action" means explain what will change in business language. It does not require displaying the raw CLI command.
+
+For subscription purchase or renewal, show the selected bundle, tier, current
+price/currency, returned duration, and bundle revision before confirmation.
+The preview without `--confirm` reads public pricing; it is not an execution
+quote. Subscription payment waives applicable creator call fees during the
+entitlement period; model/API usage remains billed separately. Quote and
+confirm any later hosted execution through the normal execution flow.
 
 ## Creator Earnings
 

@@ -329,7 +329,7 @@ loom upload <file>               # provide input data (asset or rows)
 **Discover & inspect**
 ```
 loom search <query>              # find AI work to run (official templates + SkillApps)
-loom list <collection>           # list of your own: work | runs | skillbots | usage | earnings | servers | models
+loom list <collection>           # list of your own: work | runs | skillapps | usage | earnings | servers | models
 loom get <id>                    # inspect any one object by id (a work, run, SkillApp, usage record…)
 ```
 
@@ -464,7 +464,7 @@ flowchart LR
 
 > **Design consideration — `list` means *enumerate*, never *put on the Market*.**
 > In marketplace vernacular, "list a SkillApp" means *offer it for sale* — so
-> `loom list skillbots` could be misread as "list this SkillApp for sale" instead of
+> `loom list skillapps` could be misread as "list this SkillApp for sale" instead of
 > "show me my SkillApps." Two things keep `list` unambiguous. First, the sales action
 > has its **own** verb: you put a SkillApp on the Market with **`publish`** and take it
 > off with **`publish pause`** — "list"/"unlist" carry *no* marketplace meaning anywhere
@@ -514,7 +514,7 @@ migration alias table (Part 6).
    auditing. Power users may pin `--idempotency-key`.
 
 4. **Terminology-faithful nouns as *arguments*, not command groups.** loomloom nouns
-   appear as arguments to intent verbs — `list work`, `list skillbots`, `get <run-id>`,
+   appear as arguments to intent verbs — `list work`, `list skillapps`, `get <run-id>`,
    `run <work>`, `publish <work>` — never as top-level noun-groups (no
    `market …`, `listing …`, `work …` groups; see §1.4). No "workflow."
 
@@ -924,7 +924,7 @@ Carried from RFC-0001, plus this RFC's additions:
 | `market run <id> --input-file <json> --confirm --client-request-id` | `run start <id> --input <json> --yes` | |
 | `market workbook download/validate/quote/run …` | `run download/check/quote/start <id> --input <xlsx>` | |
 | `listing publish <id> --template-version-id …` | `publish <work> --version <id> --fee <amt>` | |
-| `listing list/show/versions` | `list skillbots` / `get <id>` | versions in `get` detail |
+| `listing list/show/versions` | `list skillapps` / `get <id>` | versions in `get` detail |
 | `listing update/unlist/relist/withdraw` | `publish update/pause/resume/withdraw <id>` | folded into `publish` |
 | `creator earnings/transactions` | `list earnings [--transactions]` | |
 | `creator review list/get/withdraw` | `list reviews` / `get <id>` / `publish withdraw <id>` | |
