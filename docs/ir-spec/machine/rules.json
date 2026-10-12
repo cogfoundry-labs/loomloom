@@ -82,7 +82,8 @@
       "validExamples": [
         "examples/valid/bounded-text-loop.json",
         "examples/valid/loop-code-to-text-model.json",
-        "examples/valid/loop-conditional-delivery.json"
+        "examples/valid/loop-conditional-delivery.json",
+        "examples/valid/loop-code-file-consumption.json"
       ],
       "invalidExamples": [
         "examples/invalid/loop-unbounded.json",
