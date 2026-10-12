@@ -31,7 +31,7 @@ type listingProfileFlags struct {
 func (f *listingProfileFlags) addFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&f.category, "category", "", "Category code from market list (categoryOptions); effective after approval, omit to preserve")
 	cmd.Flags().StringVar(&f.targetAudience, "target-audience", "", "Public target audience; pass an empty string to clear")
-	cmd.Flags().StringVar(&f.problemSolved, "problem-solved", "", "Public problem this SkillBot solves; pass an empty string to clear")
+	cmd.Flags().StringVar(&f.problemSolved, "problem-solved", "", "Public problem this SkillApp solves; pass an empty string to clear")
 	cmd.Flags().StringArrayVar(&f.scenarios, "scenario", nil, "Public use scenario; repeat for multiple scenarios, pass an empty string to clear all")
 	cmd.Flags().StringVar(&f.notSuitableFor, "not-suitable-for", "", "Public limitations or unsuitable uses; pass an empty string to clear")
 	cmd.Flags().StringVar(&f.updateSummary, "update-summary", "", "Public summary of this update")

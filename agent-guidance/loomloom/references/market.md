@@ -9,7 +9,9 @@ For quotes, confirmation wording, currency, settlement, failure/cancellation, an
 - [Core objects](#core-objects)
 - [Unified catalog](#unified-catalog)
 - [Buyer flow](#buyer-flow)
+- [Subscription buyer flow](#subscription-buyer-flow)
 - [Creator flow](#creator-flow)
+- [Creator subscription bundles](#creator-subscription-bundles)
 
 ## Core Objects
 
@@ -127,6 +129,66 @@ Do not show raw request JSON unless the user explicitly asks for JSON/API detail
 
 Use `usage list` and `usage get <run-transaction-id>` for the buyer's own calls and settlement.
 
+## Subscription Buyer Flow
+
+Use `market bundle list`, `market bundle show <bundle-id>`, and
+`market bundle items <bundle-id>` to inspect published subscription bundles,
+their enabled monthly/yearly prices, and current SkillApp members. The list
+supports `--creator-id` and `--name` filters. `market show` can also return
+subscription offers covering the selected Listing, including manual bundles.
+
+Preview a purchase before requesting confirmation:
+
+```bash
+loomloom subscription buy <bundle-id> --tier monthly
+# For the Listing's automatic single-SkillApp bundle:
+loomloom market subscribe <listing-id> --tier monthly
+```
+
+Without `--confirm`, these commands return the selected tier and bundle without
+creating a subscription. Show the actual tier price/currency, duration, covered
+SkillApps, and current bundle revision. An unavailable offer or failed preview
+does not authorize a purchase. After the user confirms that exact purchase:
+
+```bash
+loomloom subscription buy <bundle-id> --tier monthly \
+  --confirm --expected-revision <bundle-revision> --client-request-id <id>
+```
+
+The `market subscribe` shortcut accepts the same confirmation/revision/request-ID
+flags and resolves only the Listing's automatic bundle. Use `subscription buy`
+with a bundle ID for a selected manual bundle. The revision is the bundle's
+current revision, not a Listing version or payment-settings revision. If the
+price/revision changes, inspect it again and obtain a new confirmation; do not
+guess a revision or silently accept a different price. Reuse the request ID
+only for an identical retry of the same confirmed purchase after checking state.
+
+Use `subscription list`, `subscription show <subscription-id>`, and
+`subscription items <subscription-id>` to read the buyer's own subscription
+state and current members. Add `--snapshot` to `subscription items` to inspect
+the immutable membership at purchase. Keep bundle IDs and subscription IDs
+distinct, and verify returned state rather than treating command success as
+proof of active entitlement.
+
+Renew an expired subscription with its subscription ID:
+
+```bash
+loomloom subscription renew <subscription-id> --tier yearly
+# After inspecting the current price and obtaining confirmation:
+loomloom subscription renew <subscription-id> --tier yearly \
+  --confirm --expected-revision <bundle-revision> --client-request-id <id>
+```
+
+The unconfirmed renewal reads the existing subscription's bundle and current
+price; it does not charge or renew it. Purchasing or renewing does not execute
+a SkillApp. Use the normal Market quote/confirmation/run flow for execution;
+subscription coverage waives applicable creator call fees, while model/API
+usage remains separately billed. Follow `billing.md` for confirmation wording.
+
+Bundle and subscription lists/items use token pagination: `--page-size` defaults
+to 20 with range 1–100; pass the returned `nextPageToken` as `--page-token` to
+continue. `subscription show` and bundle `show` do not take pagination flags.
+
 ## Creator Flow
 
 Publish a private template version:
@@ -195,6 +257,75 @@ revision. A pending review or draft bundle is not approval or availability for
 purchase. Initialization keeps the automatic bundle draft; authorized formal
 approval or explicit bundle publication is a separate step. Profile/Skill
 Package reviews must not be treated as formal subscription publication.
+
+### Creator Subscription Bundles
+
+Automatic bundles belong to one Listing and are initialized through its
+publication or `listing payment-settings`; identify them by `sourceListingId`.
+Manual bundles are explicitly created and can contain multiple eligible
+creator-owned SkillApps. Use `creator bundle list` (optionally `--name` and
+`--status draft|published|unlisted`), `show <bundle-id>`, and `items <bundle-id>`
+to inspect both kinds. `list-available` returns eligible owned SkillApps for
+manual bundle membership; select by Listing ID, not by display name.
+
+After explaining the intended bundle and obtaining confirmation, create a
+manual draft and read its returned ID and revision:
+
+```bash
+loomloom creator bundle list-available
+loomloom creator bundle create --name "Writing tools" \
+  --description "A bundle of writing SkillApps" --client-request-id <id>
+loomloom creator bundle show <bundle-id>
+```
+
+`create` requires a non-empty name and request ID. Reuse that ID only for the
+same creation payload when retrying an ambiguous result; inspect creator
+bundle state before retrying. Creation alone does not make the draft sellable.
+
+Add eligible members, configure at least one enabled tier, and publish as
+separately confirmed changes:
+
+```bash
+loomloom creator bundle add-item <bundle-id> \
+  --listing-id <listing-a> --listing-id <listing-b> \
+  --expected-revision <current-bundle-revision>
+loomloom creator bundle set-tier <bundle-id> --tier monthly \
+  --price <amount> --currency CNY --enabled=true \
+  --expected-revision <current-bundle-revision>
+loomloom creator bundle publish <bundle-id> \
+  --expected-revision <current-bundle-revision>
+```
+
+Read the returned revision or `creator bundle show` after each successful
+mutation before the next command; the placeholders above are not one reusable
+revision. On conflict, refresh and explain the changed state rather than
+incrementing a revision or retrying automatically. `add-item` supports repeated
+or comma-separated `--listing-id` values, operates only on manual bundles, and
+adds the requested members atomically. Do not invent a remove-item command.
+Publication requires members, an enabled monthly/yearly tier, and the Server's
+current availability checks. Zero subscription price is valid; model/API
+execution is still billed separately.
+
+To edit a bundle's name and description:
+
+```bash
+loomloom creator bundle update <bundle-id> --name <name> \
+  --description <description> --expected-revision <bundle-revision>
+```
+
+The current CLI requires `--name` and sends an empty description if
+`--description` is omitted. Read and pass the existing description explicitly
+to preserve it. Tier price/enabled changes use `set-tier` and the current bundle
+revision, including for automatic bundles with existing prices. These are
+immediate bundle changes, not Listing review requests, and do not reprice
+already purchased subscriptions.
+
+Use `creator bundle unlist <bundle-id> --expected-revision <bundle-revision>`
+to close sales; optional `--reason` defaults to `creator_unlisted`. Existing
+subscription entitlements remain. `publish` reopens the same bundle subject to
+current checks; it is not `listing relist`. Verify saved bundle state after
+either action. See `cli.md` for all ten creator bundle subcommands and token
+pagination, and `billing.md` for confirmation requirements.
 
 ### Confirm duplicate names before publishing
 

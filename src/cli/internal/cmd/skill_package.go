@@ -38,7 +38,7 @@ func addSkillRootFlag(cmd *cobra.Command, root *string) {
 
 func newSkillPackageInstallMarketCmd(opts *rootOptions) *cobra.Command {
 	var root string
-	cmd := &cobra.Command{Use: "market <listing-id>", Short: "Install or update a Market SkillBot ZIP package", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+	cmd := &cobra.Command{Use: "market <listing-id>", Short: "Install or update a Market SkillApp ZIP package", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		listingID := strings.TrimSpace(args[0])
 		listingPath := url.PathEscape(listingID)
 		return installMarketSkillPackage(cmd, opts, "/marketListings/"+listingPath+"/skillPackage", "/marketListings/"+listingPath+"/skillPackage/archive", root, "market:"+listingID)
