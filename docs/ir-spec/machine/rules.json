@@ -80,7 +80,9 @@
       ],
       "referenceId": "loop.scope",
       "validExamples": [
-        "examples/valid/bounded-text-loop.json"
+        "examples/valid/bounded-text-loop.json",
+        "examples/valid/loop-code-to-text-model.json",
+        "examples/valid/loop-conditional-delivery.json"
       ],
       "invalidExamples": [
         "examples/invalid/loop-unbounded.json",

@@ -12,6 +12,9 @@
 | Code 布尔条件 | [code-condition.json](valid/code-condition.json) | 直接依赖的 boolean when 与下游消费 |
 | 文本有界返工 | [bounded-text-loop.json](valid/bounded-text-loop.json) | fixed 模型、模型文本转 string、显式反馈、接受出口与条件交付 |
 
+| Loop Code 到文本模型 | [loop-code-to-text-model.json](valid/loop-code-to-text-model.json) | 体内 Code Value 驱动模型 prompt，再由 Code 判断 |
+| Loop 条件交付 | [loop-conditional-delivery.json](valid/loop-conditional-delivery.json) | 拒绝轮次跳过，接受轮次执行并导出结果 |
+
 示例中的 Subject revision 和 model ID 是结构占位或某次测试环境证据；创建版本前必须替换为目标环境当前返回的权威 ID。Capability Profile 的普通写法只保留稳定 `profileId`，不要把某次查询得到的 `profileRevision` 写进模板。
 
 invalid 目录保存应被 Schema 或 Core validator 拒绝的示例，用于稳定错误边界。

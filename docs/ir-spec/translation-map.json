@@ -49,8 +49,8 @@
     },
     {
       "path": "examples/README.md",
-      "source_sha256": "0883e0ef164a931c9586af09f85bacae7df01a7872a1ab522484feb55c217b0c",
-      "generated_sha256": "b75ccd9a0ca30dc5810eb170ac111e64a393413675e75e1bc6cc3017aee8a017"
+      "source_sha256": "1f2e2ef4c0a19b2842ec1eb26d2bb7ac44364512065f5bbeece0794e57e445b5",
+      "generated_sha256": "528a24b4ed04362db589097fcf011e89b9e284ef4945418189706fc376ff6c30"
     },
     {
       "path": "examples/invalid/code-nullable-input.json",
@@ -121,6 +121,16 @@
       "path": "examples/valid/content-sequence.json",
       "source_sha256": "7d808239e8fa8240c15108d93583c865ae27d856cbf87910a27ebf7b85883489",
       "generated_sha256": "58cd43f22ac8d132b66747f269581cc96f9db9431b1e25d5644939e54557be97"
+    },
+    {
+      "path": "examples/valid/loop-code-to-text-model.json",
+      "source_sha256": "d96d05d7faffd7ab8389e31d1945a3b3e895d273f5b39b0477478e00d9a04f54",
+      "generated_sha256": "9ebf299839a8c67ab0e3232395223ea10bbc095bb1f050027574d2b7a028c547"
+    },
+    {
+      "path": "examples/valid/loop-conditional-delivery.json",
+      "source_sha256": "23ef4bc572e1650d68bc7204a2541d32658c1918aaea2f48ad908b5f96ba634c",
+      "generated_sha256": "60c861365e679ca53aab454ddb315c5515431b93c16707967de07e7b39af4f70"
     },
     {
       "path": "examples/valid/multi-step-fixed-model.json",
@@ -214,8 +224,8 @@
     },
     {
       "path": "reference/limits.md",
-      "source_sha256": "0668d4a53503f25375def5fede495fce0d34290fe93b1b178df80c127e1eaae2",
-      "generated_sha256": "d5514eb441dab92e13dfba4586f56a33f9d49fee3d76f85a272196cfab411730"
+      "source_sha256": "bf381a9dd0ef394e2c8f1a06cb3f905f2c86f2c9c81b2be01fea66451c7a4a3c",
+      "generated_sha256": "c653945c6db741e51808aedd9666e02599688ac78f72f28aef04228d5b585e67"
     },
     {
       "path": "reference/metadata.md",
@@ -224,8 +234,8 @@
     },
     {
       "path": "reference/steps.md",
-      "source_sha256": "3f749eab11c8563099ff4845b5246e19558e8ca1c0c64a2050f5e35e42185dfa",
-      "generated_sha256": "5923be4a2ee870dfa4ed8a18b8c51c88e6458ecfe07241daf361ad6e7fd8e2ba"
+      "source_sha256": "9ae62d6bb29f64382c0fc42a67c916dad8876e489b7870debc3612e58c748a0e",
+      "generated_sha256": "9618b7b99d50f3e6b1907bab9ad78ddd9c9d71e63ca6acbef4370f1e627d3bde"
     },
     {
       "path": "reference/template-syntax.md",

@@ -980,6 +980,7 @@
             ]
           }
         },
+        "when": {"$ref": "#/$defs/step/properties/when"},
         "code": {
           "$ref": "#/$defs/code"
         }
@@ -1055,16 +1056,6 @@
           },
           "then": {
             "properties": {
-              "dependsOn": {
-                "maxItems": 0
-              },
-              "executionBinding": {
-                "properties": {
-                  "profileId": {
-                    "const": "text.basic.openai-chat.v1"
-                  }
-                }
-              },
               "modelSelection": {
                 "properties": {
                   "source": {

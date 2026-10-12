@@ -11,6 +11,8 @@
 | Code text and file delivery | [code-value-artifact.json](valid/code-value-artifact.json) | Required string input, Value, JSON Artifact |
 | Code boolean condition | [code-condition.json](valid/code-condition.json) | Direct boolean when dependency and downstream consumption |
 | Bounded text rework | [bounded-text-loop.json](valid/bounded-text-loop.json) | Fixed model, text-to-string input, explicit feedback, accepted exports and conditional delivery |
+| Loop Code to text model | [loop-code-to-text-model.json](valid/loop-code-to-text-model.json) | Body Code string Value drives a model prompt, followed by a Code check |
+| Loop conditional delivery | [loop-conditional-delivery.json](valid/loop-conditional-delivery.json) | Skip rejected rounds, execute and export the accepted round |
 
 Subject revision and model IDs in examples are placeholders or test evidence. Replace them with records from the target environment. Ordinary Capability Profile bindings keep only the stable `profileId`; do not copy a discovered `profileRevision` into a template.
 

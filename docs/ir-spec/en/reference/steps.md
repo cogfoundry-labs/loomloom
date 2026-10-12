@@ -54,13 +54,15 @@ A Loop container uses only `{"kind":"loop"}` as its execution binding. It has no
 | --- | --- |
 | `maxIterations` | Required, 1–10, including the first execution |
 | `deadlineSeconds` | Required, 1–1800 seconds; both limits constrain execution |
-| `body` | Non-empty nodes; initially fixed-model `text.basic.openai-chat.v1` and Code, using unconditional `require_all` |
-| `until` | `{stepId, portId}` selecting a body Code boolean Value; its judge must depend on the entire body |
+| `body` | A non-empty ordinary child workflow; currently fixed text Profiles and Code Values, using require_all and ordinary when conditions |
+| `until` | `{stepId, portId}` selecting a body Code boolean Value, read after the entire round completes; the judge need not depend on every node |
 | `state` | Explicit state map, optionally empty; each entry has `initial` and `update` and an explicit body consumer |
 | `outputs` | Non-empty aliases selecting body Code Values; visible outside only after acceptance |
 
 State initializers are non-empty string literals, required string Template Inputs, or string `composeValue`. Updates select body Code string Values. Consumers use `{"source":"loopState","inputKey":"stateName"}`; models bind state only to prompt, and Code targets declare required non-nullable strings. Rejected rounds update state for another iteration. Acceptance freezes exports. Exhaustion, cancellation, and technical failure do not publish the last candidate as a successful result.
 
-Body models use a fixed currently available model and have no body dependencies. Code may consume model text and produce feedback. Body dependencies/outputs stay within the body; outside nodes read declared container aliases, never body nodes directly. Body Code outputs are Value-only. Image/video generation rework, nested Loops, body conditions, and Loop exports in sequence/merge are unsupported. See [bounded text rework](../examples/valid/bounded-text-loop.json).
+Body models use a fixed available text model and resolve built-in or published dynamic Profiles through the ordinary authority. They may depend on body Code nodes and consume string Values; Code may consume model text and produce feedback. Body dependencies/outputs stay within the body; outside nodes read declared container aliases, never body nodes directly. Body Code outputs are Value-only. Image/video generation rework, nested Loops, and Loop exports in sequence/merge are unsupported. See [bounded text rework](../examples/valid/bounded-text-loop.json).
+
+Unselected nodes are recorded as skipped under the current round identity without Attempts or model bills. Continuing requires current-round state updates; acceptance requires current-round exports. Missing required values fail explicitly and never reuse a prior round. Body text connections and conditions have been verified locally and are not deployed to the test server yet. See [Code to text model](../examples/valid/loop-code-to-text-model.json) and [conditional delivery](../examples/valid/loop-conditional-delivery.json).
 
 Code and Loop are currently for controlled test review. Schema/local validation does not prove that authoring is enabled, the runtime is configured, or formal charging is available on the target server. Check the environment's delivery record.
