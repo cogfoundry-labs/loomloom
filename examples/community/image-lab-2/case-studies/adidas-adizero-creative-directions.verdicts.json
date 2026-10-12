@@ -1,0 +1,872 @@
+{
+ "r001": {
+  "checks": {
+   "1": {
+    "verdict": "fail",
+    "reason": "the headline ends FAST with no full stop (it is lost under the torn paper)"
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "The headline lost its full stop; everything else matches the brief."
+ },
+ "r004": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct, the shape is fully red after the swap, and the runner is airborne."
+ },
+ "r005": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "cant_tell",
+    "reason": "the runner's rear leg disappears under the torn paper below the knee"
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "cant_tell",
+    "reason": "the headline moved to the bottom left as asked, but the runner still moves toward the right, not on the opposite diagonal"
+   }
+  },
+  "note": "Text correct; the runner's rear leg is lost under the paper, and the reverse layout moved only the headline."
+ },
+ "r008": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct, a red shape, and the runner climbs the reverse diagonal."
+ },
+ "r010": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "fail",
+    "reason": "the torn headline strip passes in front of the runner's lower leg"
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; the headline strip hides the runner's lower leg."
+ },
+ "r011": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; the tight crop and the airborne pose both came through, with a blue shape and black shoes."
+ },
+ "r013": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; a real underpass, the runner comes straight at the camera on a red painted lane."
+ },
+ "r016": {
+  "checks": {
+   "1": {
+    "verdict": "fail",
+    "reason": "the painted headline is cut off by the right edge, so it has no full stop, and the F of FAST reads like an E"
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "fail",
+    "reason": "the lane stays red while the marks turn cobalt: two accent colours"
+   },
+   "6": {
+    "verdict": "fail",
+    "reason": "the cobalt swap reached the marks but not the red lane"
+   }
+  },
+  "note": "The painted headline is cut off at the right edge; the lane stays red with cobalt marks added."
+ },
+ "r017": {
+  "checks": {
+   "1": {
+    "verdict": "cant_tell",
+    "reason": "the F of FAST looks like an E on the painted ground, and the full stop floats off to the right"
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "A real underpass with a side pan; the F of FAST is hard to read."
+ },
+ "r020": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "fail",
+    "reason": "the lane stays red and the added marks are cobalt: two accent colours"
+   },
+   "6": {
+    "verdict": "fail",
+    "reason": "the cobalt swap reached the marks but not the red lane"
+   }
+  },
+  "note": "Text correct; the lane stays red with cobalt marks added instead of swapping."
+ },
+ "r022": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; the lane is cobalt blue, as the swap asked."
+ },
+ "r023": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; a front three-quarter view with a bright exit at the top right."
+ },
+ "r025": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; a huge headline, a yellow shape and a black-and-white cutout."
+ },
+ "r028": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; the red shape replaces yellow completely, and the pose is airborne."
+ },
+ "r029": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; the headline stands tall on the left with the runner striding alongside."
+ },
+ "r032": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; a red shape and a huge headline on the left."
+ },
+ "r034": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; the headline is cut by the bottom edge as asked and the runner steps out above it."
+ },
+ "r035": {
+  "checks": {
+   "1": {
+    "verdict": "cant_tell",
+    "reason": "FAST. is cut by the bottom edge, as the layout asked, so its letters are hard to confirm"
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "FAST. is cut by the bottom edge, so its letters are hard to confirm; a yellow shape."
+ },
+ "r037": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; a side-profile runner on a blue lane diagram."
+ },
+ "r040": {
+  "checks": {
+   "1": {
+    "verdict": "fail",
+    "reason": "a second, garbled and mirrored ADIZERO sits on the dimension arrow"
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "fail",
+    "reason": "the shape turned yellow but the lane lines stay blue: two accent colours"
+   },
+   "6": {
+    "verdict": "fail",
+    "reason": "the yellow swap reached the shape but not the blue lane lines"
+   }
+  },
+  "note": "A second, mirrored ADIZERO appears; the shape is yellow but the lane lines stay blue."
+ },
+ "r041": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; the lane lines converge to the upper right as asked."
+ },
+ "r044": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "fail",
+    "reason": "the shape turned yellow but the lane lines stay blue: two accent colours"
+   },
+   "6": {
+    "verdict": "fail",
+    "reason": "the yellow swap reached the shape but not the blue lane lines"
+   }
+  },
+  "note": "Text correct; the shape is yellow but the lane lines stay blue."
+ },
+ "r046": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "fail",
+    "reason": "the shape turned yellow but the lane lines stay blue: two accent colours"
+   },
+   "6": {
+    "verdict": "fail",
+    "reason": "the yellow swap reached the shape but not the blue lane lines"
+   }
+  },
+  "note": "Text correct; a dotted arc and a yellow shape, with thin blue lines left over."
+ },
+ "r047": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; a blue shape, a dotted arc and a clean open grid."
+ },
+ "r049": {
+  "checks": {
+   "1": {
+    "verdict": "fail",
+    "reason": "the shoe's midsole reads LIGHTSTRIKE PRO, a phrase that is not in the copy"
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "The shoe's midsole reads LIGHTSTRIKE PRO; otherwise correct, with the shoe huge at the lower left."
+ },
+ "r052": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; a yellow shape and the headline up the right edge."
+ },
+ "r053": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; a red shape and the headline up the left edge."
+ },
+ "r056": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; the shoe at the lower right with a yellow shape on the left."
+ },
+ "r058": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; the runner comes head-on with the shoe nearest the lens."
+ },
+ "r059": {
+  "checks": {
+   "1": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "2": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "3": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "4": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "5": {
+    "verdict": "pass",
+    "reason": ""
+   },
+   "6": {
+    "verdict": "pass",
+    "reason": ""
+   }
+  },
+  "note": "Text correct; head-on, with a red shape running off the top edge."
+ }
+}

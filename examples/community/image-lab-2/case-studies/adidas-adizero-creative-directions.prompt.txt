@@ -1,0 +1,151 @@
+BRAND NAME = adidas
+PRODUCT = adidas Adizero running shoe
+Act as a Social Media Art Director and Digital Collage Artist specializing in bold, youth-oriented sports brand content for Instagram and digital campaigns.
+PHASE 1: CONCEPTUAL FRAMEWORK
+Create a dynamic digital collage that merges high-performance running photography with contemporary urban graphic design.
+This is technical speed breaking into street energy — a composition that feels fast, precise, confident and expressive while maintaining strong adidas brand coherence.
+Aesthetic direction:
+
+* Technical but human
+* Raw urban textures
+* Layered imperfections
+* Youth-driven visual energy
+* High confidence, high movement
+* Performance precision mixed with street culture
+
+Visual language:
+Geometric fragments, technical grids, torn photographic edges, directional arrows, hand-drawn running marks, speed trails, track-inspired lines, cropped numbers and bold adidas-inspired graphic blocking.
+The composition should feel deliberately art-directed rather than perfectly polished.
+It should communicate speed, progress, individuality and forward movement, without becoming a generic sports advertisement.
+PHASE 2: MODEL & PHOTOGRAPHY
+
+* Subject: One elite adult runner, age 20–30
+* Pose Energy: 80% attitude, 20% natural — explosive sprint, powerful stride, airborne transition or strong forward lean — NEVER static
+* Outfit: Contemporary adidas performance running apparel
+* Hero Product: One adidas Adizero running shoe, clearly visible and visually important
+* Photography Style: Premium editorial sports photography cutout
+* Background Removal: Clean, sharp extraction
+* Camera Angle: Slight low angle, hero perspective
+* Crop: Full body or 3/4 body, with the Adizero shoe clearly visible
+* Body position: Strong diagonal movement through the frame
+* Expression: Focused, confident, determined — never exaggerated or theatrical
+
+The runner should look like a serious contemporary athlete rather than a fitness model.
+The shoe must remain physically realistic, anatomically correctly positioned and commercially desirable.
+PHASE 3: COLOR BLOCKING FOUNDATION
+
+* Primary Foundation: Black, white and warm off-white / light grey
+* Primary Color Blob: One large irregular graphic shape occupying approximately 40–60% of the frame
+* Accent Color: One high-energy adidas performance accent such as electric blue, cobalt, solar yellow or vivid red
+* Shape Style: Irregular, graphic, slightly imperfect — NO perfect geometry
+* Texture: Subtle brush grain / print noise / paper texture
+* Placement: Behind or partially wrapping around the runner, framing the athlete without hiding the runner or Adizero shoe
+
+The color system should feel distinctly adidas rather than Nike.
+Use restraint: black and white should establish the visual foundation, while the single accent color creates energy and directs the eye toward the athlete and shoe.
+PHASE 4: GRAPHIC ELEMENTS LAYER
+Add 3–5 carefully art-directed abstract graphic elements.
+Element types:
+
+* Hand-drawn speed marks
+* Directional arrows
+* Running trajectory lines
+* Technical measurement symbols
+* Cropped athletic numbers
+* Track-lane or route-inspired lines
+* Subtle technical grid fragments
+* Small geometric impact marks
+* Controlled photographic duplication or offset fragments
+* Texture overlays such as dust, grain, paper and fabric noise
+
+Rules:
+
+* Colors: black + off-white + one energetic accent color
+* Placement: Asymmetric, with strong top-left / bottom-right or bottom-left / top-right visual tension
+* Scale: Mix small (5%) and medium (10–20%) elements with one larger graphic intervention
+* Avoid center clutter
+* Graphics must reinforce the runner's direction of movement
+* Keep the visual language imperfect and contemporary
+* Do not allow graphics to obscure the face, body or Adizero shoe
+
+The graphics should feel like part of the campaign's visual identity, not decorative stickers added afterward.
+PHASE 5: TYPOGRAPHY INTEGRATION
+
+* adidas branding: Upper-left or upper-right, approximately 10–15% of frame width
+* Primary Headline: RUN YOUR FAST.
+* Supporting Copy: ADIZERO
+* Optional small supporting descriptor: ENGINEERED FOR SPEED.
+* Type Style: Bold condensed sans-serif / contemporary grotesk / athletic editorial typography
+* Treatment: Mix large straight typography with one slightly rotated or cropped element
+* Hierarchy: adidas branding → headline → product / supporting copy
+* Typography should integrate with the graphic composition rather than simply sit on top of the image
+
+The headline should feel confident and contemporary, not like a generic motivational slogan.
+Use typography as a directional element that helps reinforce the diagonal movement of the runner.
+PHASE 6: TEXTURE & BACKGROUND
+
+* Base Layer: Warm off-white / light grey neutral
+* Color Range: Approximately RGB 245–250 for the lightest areas
+* Texture Options: Fine paper grain, fabric texture, subtle print noise, lightly distressed photographic texture
+* Rule: Texture should be FELT, not dominant
+
+Introduce enough physical imperfection to make the digital artwork feel tactile and human.
+Avoid excessive grunge.
+The final image should feel like a contemporary physical poster photographed or scanned into a digital campaign rather than a generic AI-generated graphic.
+PHASE 7: COMPOSITION RULES
+
+* Layout: Asymmetric balance
+* Runner: Off-center
+* Movement: Strong diagonal flow through the entire composition
+* Breathing Room: Approximately 15–20% negative space
+* Focal Point: Runner + Adizero shoe = approximately 60% of visual attention
+* Graphics = approximately 40% supporting visual energy
+* The runner must visually travel through the composition rather than simply stand inside it
+
+Layering Order:
+Background
+→ Urban / technical texture
+→ Primary color field
+→ Graphic elements
+→ Runner
+→ Adizero product emphasis
+→ Typography
+→ Fine texture / print details
+The composition should have a clear visual hierarchy.
+The viewer should naturally notice:
+runner → Adizero shoe → headline → adidas branding → supporting graphic details.
+Do not make every part of the image equally loud.
+PHASE 8: BRAND INTELLIGENCE — AUTO-ADAPT
+Adapt the visual energy based on adidas's sports and cultural identity:
+→ Performance: lightweight speed, technical precision, aerodynamic movement, product credibility
+→ Running: personal progress, endurance, pace, forward motion and the pursuit of a faster self
+→ Street Culture: contemporary urban energy, individuality, expressive graphics and fashion-aware styling
+→ adidas Heritage: recognizable 3-Stripes language, strong graphic simplicity, confident black-and-white foundations and modern sport design
+→ Youth Culture: raw textures, asymmetric layouts, expressive typography and controlled visual experimentation
+The final image should feel unmistakably adidas without becoming a literal collection of logos and brand symbols.
+Do NOT imitate Nike's visual identity.
+Do NOT use Nike-specific slogans, visual motifs or branding.
+The creative language should communicate adidas through its own combination of performance, sport, street culture and design.
+PHASE 9: PRODUCT & BRAND INTEGRITY
+The adidas Adizero shoe is a hero product, not merely an accessory.
+Ensure:
+
+* The shoe is clearly visible
+* The shoe has realistic proportions
+* The sole and upper structure are physically plausible
+* The 3-Stripes are clean and recognizable
+* The shoe receives sufficient lighting and contrast
+* Graphic elements never accidentally deform or cover the product
+* The shoe looks premium and commercially desirable
+
+Avoid surreal product distortion.
+Avoid extra shoes.
+Avoid duplicate runners.
+Avoid unnecessary objects that compete with the hero product.
+PHASE 10: FINAL IMAGE
+The final visual should be a premium adidas Adizero running campaign poster combining an explosive editorial runner photograph, a clearly visible hero performance shoe, contemporary urban graphic design, technical running marks, asymmetric color blocking, expressive typography, raw tactile textures and strong directional movement.
+The finished artwork should feel like a contemporary global adidas campaign discovered on a leading design platform — highly art-directed, energetic, editorial, technically credible, imperfect and youth-driven.
+It should communicate:
+SPEED. PROGRESS. PERFORMANCE.
+without becoming a generic running advertisement.
+The image must feel like one deliberate creative concept, not a collection

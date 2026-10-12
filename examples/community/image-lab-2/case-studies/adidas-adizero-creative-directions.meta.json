@@ -1,0 +1,91 @@
+{
+ "slug": "adidas-adizero-creative-directions",
+ "title": "adidas Adizero Creative Directions",
+ "page_title": "adidas Adizero: five creative directions",
+ "summary": "One brief. Five creative directions. Thirty images from one model: what each direction gave, and what it cost.",
+ "eyebrow": "Image Lab 2 &middot; Creative Direction &middot; social post",
+ "wordmark": "Image Lab 2",
+ "group_by": "direction",
+ "prompt_file": "adidas-adizero-creative-directions.prompt.txt",
+ "trigger": "use Image Lab 2, and explore creative directions",
+ "generated_on": "2026-10-08",
+ "project_url": "https://github.com/cogfoundry-labs/loomloom/tree/main/examples/community/image-lab-2",
+ "groups": {
+  "Torn collage": {
+   "name": "Torn collage",
+   "idea": "The brief as written: a layered paper-and-photo collage on warm off-white paper. A hand-cut accent shape fills about half the frame behind a cleanly cut-out runner on a diagonal, with a stacked headline, speed marks, an arrow, a cropped number and a grid fragment.",
+   "gives_up": "Nothing. It is the baseline the other four are measured against.",
+   "outcome": "Reads as the brief in all six, and the red swap worked completely three times. Three images have a flaw: the headline lost its full stop (r001), a headline strip hides the runner's lower leg (r010), and the runner's rear leg vanishes under the paper (r005), where the reverse layout also moved only the headline.",
+   "wildcard": false
+  },
+  "Underpass lane": {
+   "name": "Underpass lane",
+   "idea": "The wildcard. A full-bleed documentary photograph in a real concrete underpass, with no collage, no paper and no cutout. The runner crosses track-style lanes painted on the ground, the headline is stencilled in paint in perspective, and the graphics are painted marks on the concrete.",
+   "gives_up": "The brief's cut-out runner on a colour-shape poster: the runner stays in a real photographed scene, and the accent colour becomes one painted lane.",
+   "outcome": "Six believable photographs, and the look is unmistakable every time. The painted headline is the weak point: in two images the F of FAST is hard to read or the full stop is cut off. The cobalt swap turned the lane blue only once in three; twice the lane stayed red and cobalt marks were added, giving two accent colours.",
+   "wildcard": true
+  },
+  "Overprint": {
+   "name": "Overprint",
+   "idea": "A two-ink screen print on uncoated off-white stock: flat black and one flat accent ink overlap with slight misregistration. The runner is a black-and-white cutout standing on a hard accent shape, and the headline is enormous and partly overlapped by the runner.",
+   "gives_up": "The collage's layered paper and graphic detail; it keeps only an arrow, a number and a few marks.",
+   "outcome": "The cleanest type of the five: the copy is correct in five of six, and the sixth (r035) is cut by the bottom edge as the layout asked, so its letters are hard to confirm. The red swap replaced yellow completely in all three.",
+   "wildcard": false
+  },
+  "Lane diagram": {
+   "name": "Lane diagram",
+   "idea": "A technical drawing on pale millimetre grid paper: thin black lines, flat electric blue lane lines, dimension arrows and a dotted trajectory arc. The runner is the only photograph, a sharp full-body cutout on a large blue shape, with the headline set along a lane line like a callout.",
+   "gives_up": "Texture and tactile imperfection; it is precise and clean.",
+   "outcome": "Cleanly drawn and clearly its own look, with correct text in five of six. The yellow swap did not carry through: in all three yellow images the lane lines stayed blue, so each has two accent colours. One of them (r040) also has a second, mirrored ADIZERO.",
+   "wildcard": false
+  },
+  "Shoe first": {
+   "name": "Shoe first",
+   "idea": "A hard-flash studio photograph on seamless grey paper, shot from a very low camera so the Adizero is the nearest thing to the lens and the runner rises behind it. A huge accent shape bleeds off one edge, and the headline runs vertically up a side.",
+   "gives_up": "Setting and graphic detail; it has only a speed trail, a number and an arrow.",
+   "outcome": "The most consistent: the low camera, the huge shoe and the vertical headline came through in all six, and the colour swap worked fully. Text is correct in five; r049 shows LIGHTSTRIKE PRO on the shoe's midsole.",
+   "wildcard": false
+  }
+ },
+ "batches": {
+  "1": {
+   "title": "Calibration",
+   "note": "5 images, one per direction, all finished."
+  },
+  "2": {
+   "title": "The other 25",
+   "note": "5 more images in each direction."
+  }
+ },
+ "check_labels": [
+  "The copy, spelled exactly, no other words",
+  "One runner, one hero shoe, clean 3-Stripes",
+  "Anatomy right; nothing covers the runner or the shoe",
+  "The direction's own look",
+  "One accent colour, nothing like Nike",
+  "The layout, pose and accent that were asked for"
+ ],
+ "review_note": "These verdicts are my own reading of every image at full size, with zoomed crops for the headline and small print. There is no second reader on this page. Checks 5 and 6 overlap where a colour swap left a second accent colour in the image.",
+ "caveats": [
+  {
+   "title": "The logo and the shoe are the model's approximation.",
+   "text": "The adidas mark and the Adizero shoe in every image were drawn by the image model, not taken from official assets or product photographs. Check them against the real marks before any real use. These are AI-generated images from a campaign brief, not official adidas material."
+  },
+  {
+   "title": "The runner was chosen in the plan, not the brief.",
+   "text": "The brief does not say who the runner is. The plan fixed one description: a lean athletic woman in her mid-twenties with dark hair tied back, in black adidas running apparel. The model still varies her face from image to image."
+  },
+  {
+   "title": "Small print is the weak point.",
+   "text": "In my reading, 24 of the 30 images have the copy exactly right. Four have a missing full stop, a mirrored second ADIZERO or a phrase on the shoe (LIGHTSTRIKE PRO), and two are hard to confirm. These are small-print slips, not wrong headlines."
+  },
+  {
+   "title": "A colour swap does not always reach every accent.",
+   "text": "In 5 of the 15 images that asked for a different accent colour, the old colour stayed in the lane lines or the painted lane, so the image has two accent colours. It happened where the direction's own wording names the colour of those lines: the blue lane lines in Lane diagram and the red painted lane in Underpass lane."
+  },
+  {
+   "title": "It is not a benchmark.",
+   "text": "One model, one random draw per row, and the directions differ on purpose. Use it to see what each direction gives, not to rank models."
+  }
+ ]
+}
