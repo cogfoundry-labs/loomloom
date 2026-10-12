@@ -169,7 +169,7 @@ the historical version.
 - `loomloom model list --step-type <step-type>`
 - `loomloom asset list`
 
-`asset list` aggregates private templates and Market SkillBots; it does not include official templates.
+`asset list` aggregates private templates and Market SkillApps; it does not include official templates.
 
 ### Market buyer and usage
 

@@ -131,7 +131,7 @@ Please confirm whether to execute.
 Reply: Confirm
 ```
 
-### Public Market template / SkillBot
+### Public Market template / SkillApp
 
 ```text
 This will make a paid call to a public Market template. Please confirm the fee before execution.

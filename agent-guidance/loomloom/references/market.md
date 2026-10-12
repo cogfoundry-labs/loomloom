@@ -1,6 +1,6 @@
-# Market And SkillBots
+# Market And SkillApps
 
-Use this reference for Market discovery and execution, SkillBots, Listings, Listing Versions, public input schemas, publishing, price changes, execution-version changes, listing lifecycle, and creator review.
+Use this reference for Market discovery and execution, SkillApps, Listings, Listing Versions, public input schemas, publishing, price changes, execution-version changes, listing lifecycle, and creator review.
 
 For quotes, confirmation wording, currency, settlement, failure/cancellation, and creator earnings, also read `billing.md`. For exact command discovery and error recovery, also read `cli.md`.
 
@@ -18,14 +18,14 @@ Private template
 └─ Private template version
    └─ Submitted for Market review
       └─ Listing Version (immutable publish snapshot)
-         └─ Approved and executable by buyers as a SkillBot
+         └─ Approved and executable by buyers as a SkillApp
 ```
 
-- **SkillBot** is the public, paid, executable form of an approved private template version.
+- **SkillApp** is the public, paid, executable form of an approved private template version.
 - **Listing** is the Market shelf object that buyers discover and call.
 - **Listing Version** is an immutable execution snapshot copied from a private template version at publish time.
-- There is no separate "public template" resource. In user-facing language, "public Market template" may refer to a SkillBot, but internally it remains a Listing/SkillBot.
-- Later changes to a private template do not automatically change a live SkillBot.
+- There is no separate "public template" resource. In user-facing language, "public Market template" may refer to a SkillApp, but internally it remains a Listing/SkillApp.
+- Later changes to a private template do not automatically change a live SkillApp.
 
 Buyers call the Listing, not a version they hold. When the order is created, the service resolves the current sellable Listing Version and locks that version and its price for the order. A quote does not require the agent to pass a version into execution.
 
@@ -34,7 +34,7 @@ Never bypass Market by directly running the underlying private template version.
 ## Unified Catalog
 
 The existing `market list` and `market show` commands use the current unified
-public directory, containing official templates and Market SkillBots:
+public directory, containing official templates and Market SkillApps:
 
 ```bash
 loomloom market list --keyword "writing" --sort-by usage --page 1 --page-size 15
@@ -142,7 +142,7 @@ The Server decides the required trial evidence for the deployed review policy. F
 
 ### Configure initial subscription prices
 
-`--subscription=true` enables the automatic single-SkillBot subscription mode.
+`--subscription=true` enables the automatic single-SkillApp subscription mode.
 `--task-fixed-fee` is the creator's per-call fee, not a subscription price.
 For a new Listing, provide initial prices in the same publication request:
 
@@ -198,7 +198,7 @@ Package reviews must not be treated as formal subscription publication.
 
 ### Confirm duplicate names before publishing
 
-When creating a new Listing (without `--listing-id`), `listing publish` checks the authenticated creator's Market SkillBots across all states, including pending review and unlisted entries. Private templates are excluded. Matching ignores outer whitespace and case, but preserves internal whitespace. Updating an existing Listing with `--listing-id` skips this check.
+When creating a new Listing (without `--listing-id`), `listing publish` checks the authenticated creator's Market SkillApps across all states, including pending review and unlisted entries. Private templates are excluded. Matching ignores outer whitespace and case, but preserves internal whitespace. Updating an existing Listing with `--listing-id` skips this check.
 
 - No matching names: the CLI continues with the normal submission.
 - Matching names: the CLI displays all matches, including their IDs, names, and states, and requires confirmation. Duplicate names are allowed.
