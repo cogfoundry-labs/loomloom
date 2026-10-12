@@ -244,8 +244,8 @@
     },
     {
       "path": "reference/steps.md",
-      "source_sha256": "a40b80cbf6ede4aa09adbfa14afc23b4d11ed2aa0801334b756d19846c7027f6",
-      "generated_sha256": "8c54457c5010e292ccd1132525e19a0bed3ca83843a15a86cb07aa6e2546640d"
+      "source_sha256": "9e00a12fa8066236c856246102e429c2769be83f1b8991cd44b51b5646e568e1",
+      "generated_sha256": "cdb987f99d906ed83903822629124b2a342bc4078275d66173e8f07acb9f2a4b"
     },
     {
       "path": "reference/template-syntax.md",
