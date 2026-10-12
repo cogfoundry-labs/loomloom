@@ -19,7 +19,7 @@ method. The specific picks will differ from platform to platform; the way you
 arrive at them shouldn't.
 
 loomloom is not a chat app. Creators compile AI work into
-[SkillApps](../../README.md#skillbot--a-deployable-modular-ai-system), publish
+[SkillApps](../../README.md#skillapp--a-deployable-modular-ai-system), publish
 them, and sell them — and a published SkillApp pins the models it runs on. So
 "best model" can't mean "whatever tops a leaderboard this week." It has to mean
 the model that does the job well, at a price that keeps a SkillApp viable, from a
