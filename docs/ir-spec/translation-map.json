@@ -124,8 +124,13 @@
     },
     {
       "path": "examples/valid/loop-code-file-consumption.json",
-      "source_sha256": "47cb77c0becbae6706c19fb001c3b55dcdf88b706023eb408688e12c533bd2d3",
-      "generated_sha256": "92acb9a3ef6fdf1c0e004db592585333cfdea8dd03f2b87399eebff01183f556"
+      "source_sha256": "cea757db4f746928a47d1020790a3a90b39371f0a9d88586c704dbc053deb9dc",
+      "generated_sha256": "ceb0bdb5c28a8022ba82ebb5830486f8933da1a0cfa5baa0b34e0bc723e1073d"
+    },
+    {
+      "path": "examples/valid/loop-code-file-export.json",
+      "source_sha256": "8ba2c22d873cf4e91dd642726600cd0e05000ab0f15af75cbc58a3be264b2589",
+      "generated_sha256": "861b5de0030b98f667655e1020a072334cb0dfae22c153b518b3dcca2d658de4"
     },
     {
       "path": "examples/valid/loop-code-to-text-model.json",
@@ -239,8 +244,8 @@
     },
     {
       "path": "reference/steps.md",
-      "source_sha256": "68b3e3e868ccd849552348aecbb36ec119fdd6438794385b23b6d5678817d539",
-      "generated_sha256": "a92763380bf63621bfb53b10909ac20f9cd6def730d57ba9109a134bb8b255b2"
+      "source_sha256": "a40b80cbf6ede4aa09adbfa14afc23b4d11ed2aa0801334b756d19846c7027f6",
+      "generated_sha256": "8c54457c5010e292ccd1132525e19a0bed3ca83843a15a86cb07aa6e2546640d"
     },
     {
       "path": "reference/template-syntax.md",

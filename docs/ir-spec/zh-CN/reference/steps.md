@@ -68,12 +68,12 @@ Loop 容器的 `executionBinding` 只写 `{"kind":"loop"}`；不带普通输入�
 | `body` | 非空普通子工作流；当前支持固定文本 Profile 与普通 Code Value/Artifact，使用 `require_all`，可声明普通 `when` |
 | `until` | `{stepId, portId}` 指向体内 Code boolean Value；整轮完成后读取，不要求判定节点依赖全部节点 |
 | `state` | 显式状态 map，可为空；每项声明 `initial` 和 `update`，每个状态必须有体内消费者 |
-| `outputs` | 非空出口 map；alias 映射到体内 Code Value，只在接受后对外可见 |
+| `outputs` | 非空出口 map；alias 映射到体内 Code Value 或 Artifact，只在接受后对外可见 |
 
 `state.initial` 支持非空字符串 literal、必填 string Template Input 或字符串 `composeValue`。`update` 指向体内 Code string Value；消费者使用 `{"source":"loopState","inputKey":"状态名"}`。模型只把状态绑定到 prompt；Code 目标必须声明必填、非 nullable string。未通过时更新状态并进入下一轮；通过时冻结接受输出。耗尽、取消或技术失败不发布最后一轮候选作为成功结果。
 
-体内模型固定选择当前可用文本模型，按普通规则解析内置或动态 Profile；可依赖体内 Code 并消费字符串 Value，Code 也可消费模型文本并返回反馈。body 只引用自身作用域的依赖/输出；外部节点只读取容器声明的 alias，不直接读取体内节点。body 的 Code 可沿用普通 Profile 产生文件并在本轮消费；contractVersion="1" 文件列表与 "2" 必填 string 不混用。逐轮候选保存在私有事实，不作为容器出口。轮内文件消费已本地验证，尚未测试交付；尚不支持图片/视频生成返工、嵌套 Loop或 Loop 出口进入 sequence/merge。完整示例见 [文本生成与有界返工](../examples/valid/bounded-text-loop.json)。
+体内模型固定选择当前可用文本模型，按普通规则解析内置或动态 Profile；可依赖体内 Code 并消费字符串 Value，Code 也可消费模型文本并返回反馈。body 只引用自身作用域的依赖/输出；外部节点只读取容器声明的 alias，不直接读取体内节点。body 的 Code 可沿用普通 Profile 产生文件并在本轮消费；contractVersion="1" 文件列表与 "2" 必填 string 不混用。未接受候选保存在私有事实；接受时可转发所选轮次文件的引用和完整性信息，不复制文件内容。文件-only 和混合出口都支持，同源多别名有各自稳定的导出身份。轮内消费与接受轮文件出口已本地验证，尚未测试交付；尚不支持图片/视频生成返工、嵌套 Loop或 Loop 出口进入 sequence/merge。完整示例见 [文本生成与有界返工](../examples/valid/bounded-text-loop.json)。
 
-条件未选择的节点按本轮身份记录 skipped，不产生 Attempt 或模型费用。继续下一轮需要本轮 state 更新值，接受需要本轮出口值；缺失必需值明确失败，不复用上一轮。文本连接与体内条件已交付测试环境，并通过真实文本返工、跨轮跳过及必需值缺失失败验收。文件消费示例见 [本轮 JSON 文件消费](../examples/valid/loop-code-file-consumption.json)。文本示例见 [Code 到文本模型](../examples/valid/loop-code-to-text-model.json) 与 [接受条件交付](../examples/valid/loop-conditional-delivery.json)。
+条件未选择的节点按本轮身份记录 skipped，不产生 Attempt 或模型费用。继续下一轮需要本轮 state 更新值，接受需要本轮出口值；缺失必需值明确失败，不复用上一轮。文本连接与体内条件已交付测试环境，并通过真实文本返工、跨轮跳过及必需值缺失失败验收。文件示例见 [本轮 JSON 文件消费](../examples/valid/loop-code-file-consumption.json) 与 [接受轮文件交付](../examples/valid/loop-code-file-export.json)。文本示例见 [Code 到文本模型](../examples/valid/loop-code-to-text-model.json) 与 [接受条件交付](../examples/valid/loop-conditional-delivery.json)。
 
 Code 和 Loop 当前用于受控测试评审。Schema 和本地校验通过不等于目标环境已开放作者入口、已配置运行环境或具备正式收费能力；真实可用范围以目标环境交付记录为准。
