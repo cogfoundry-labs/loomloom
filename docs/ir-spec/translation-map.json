@@ -163,6 +163,11 @@
       "generated_sha256": "60c861365e679ca53aab454ddb315c5515431b93c16707967de07e7b39af4f70"
     },
     {
+      "path": "examples/valid/loop-model-artifact-merge.json",
+      "source_sha256": "ebed6490b3c475cf1c540799fec7183458d60f44cdf0d8b59077e80b99767a13",
+      "generated_sha256": "68686a9c1b0dd8ff6f931b5df3d1bf61c3062a16a4abc3a78f64793d5ed1e5fc"
+    },
+    {
       "path": "examples/valid/multi-step-fixed-model.json",
       "source_sha256": "62bf341f0906dc8ca754077927a007e6b88602c302dda58222da7116f476ece5",
       "generated_sha256": "791e3b53e418107fedd07f67a4f0b08e6b557508509fbe1276102bebfb4b7710"
@@ -264,8 +269,8 @@
     },
     {
       "path": "reference/steps.md",
-      "source_sha256": "fe3463e33d598776062f837ad4ca6f87589f24aeb7c56d1bd845263b321f6677",
-      "generated_sha256": "47369a7c5f3af84a6f0852192f1f5db78c5d9c9939b96d7ab21c5af2d39ae8c2"
+      "source_sha256": "9e8a7301be5c5140a83248fddde6739df4edd7c99112f279a78b0f56d9ad997b",
+      "generated_sha256": "a8e9762313c583cb965f3f28e259da12fb2f32522bfbf437b75f92d90589b0c9"
     },
     {
       "path": "reference/template-syntax.md",

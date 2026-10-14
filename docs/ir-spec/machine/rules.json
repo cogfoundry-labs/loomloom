@@ -86,7 +86,8 @@
         "examples/valid/loop-code-file-consumption.json",
         "examples/valid/loop-code-file-export.json",
         "examples/valid/loop-business-decision.json",
-        "examples/valid/loop-checkpoint.json"
+        "examples/valid/loop-checkpoint.json",
+        "examples/valid/loop-model-artifact-merge.json"
       ],
       "invalidExamples": [
         "examples/invalid/loop-unbounded.json",
