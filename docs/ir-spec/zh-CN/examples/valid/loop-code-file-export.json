@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "name": "接受轮文件交付",
+    "description": "两轮 JSON 文件返工，接受后导出第二轮文件；外层 Code 读取相同文件并返回 ROUND_2。"
+  },
+  "templateInputs": {
+    "request": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "presentation": {
+        "label": "生成要求",
+        "order": 1
+      }
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_loop001",
+      "displayName": "最多三轮返工",
+      "executionBinding": {
+        "kind": "loop"
+      },
+      "loop": {
+        "maxIterations": 3,
+        "deadlineSeconds": 180,
+        "body": [
+          {
+            "stepId": "stp_file001",
+            "displayName": "生成本轮 JSON 文件",
+            "executionBinding": {
+              "kind": "codeProfile"
+            },
+            "code": {
+              "language": "python",
+              "entrypoint": "main",
+              "source": "def main(inputs):\n    import json\n    n = int(inputs['feedback']) + 1\n    path = 'candidate.json'\n    with open(path, 'w') as f:\n        json.dump({'round': n}, f)\n    return {'candidate': path}\n",
+              "contractVersion": "2",
+              "inputs": {
+                "feedback": {
+                  "valueType": "string",
+                  "required": true,
+                  "nullable": false,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              },
+              "outputs": {
+                "candidate": {
+                  "kind": "artifact",
+                  "mimeType": "application/json"
+                }
+              }
+            },
+            "inputBindings": {
+              "feedback": {
+                "source": "loopState",
+                "inputKey": "feedback"
+              }
+            }
+          },
+          {
+            "stepId": "stp_check01",
+            "displayName": "读取本轮文件并判断",
+            "executionBinding": {
+              "kind": "codeProfile"
+            },
+            "dependsOn": [
+              "stp_file001"
+            ],
+            "code": {
+              "language": "python",
+              "entrypoint": "main",
+              "contractVersion": "1",
+              "source": "def main(inputs):\n    import json\n    with open(inputs['candidate'][0]['path']) as f:\n        n = json.load(f)['round']\n    return {'passed': n == 2, 'feedback': str(n), 'copy': 'ROUND_' + str(n)}\n",
+              "outputs": {
+                "passed": {
+                  "kind": "value",
+                  "valueType": "boolean",
+                  "schema": {
+                    "type": "boolean"
+                  }
+                },
+                "feedback": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "copy": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "inputBindings": {
+              "candidate": {
+                "source": "stepOutput",
+                "stepId": "stp_file001",
+                "portId": "candidate"
+              }
+            }
+          }
+        ],
+        "until": {
+          "stepId": "stp_check01",
+          "portId": "passed"
+        },
+        "state": {
+          "feedback": {
+            "initial": {
+              "source": "templateInput",
+              "inputKey": "request"
+            },
+            "update": {
+              "stepId": "stp_check01",
+              "portId": "feedback"
+            }
+          }
+        },
+        "outputs": {
+          "copy": {
+            "stepId": "stp_check01",
+            "portId": "copy"
+          },
+          "file": {
+            "stepId": "stp_file001",
+            "portId": "candidate"
+          }
+        }
+      }
+    },
+    {
+      "stepId": "stp_deliver1",
+      "displayName": "读取接受轮文件",
+      "executionBinding": {
+        "kind": "codeProfile"
+      },
+      "dependsOn": [
+        "stp_loop001"
+      ],
+      "code": {
+        "language": "python",
+        "entrypoint": "main",
+        "contractVersion": "1",
+        "source": "def main(inputs):\n    import json\n    with open(inputs['candidate'][0]['path']) as f:\n        n = json.load(f)['round']\n    return {'copy': 'ROUND_' + str(n)}\n",
+        "outputs": {
+          "copy": {
+            "kind": "value",
+            "valueType": "string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "inputBindings": {
+        "candidate": {
+          "source": "stepOutput",
+          "stepId": "stp_loop001",
+          "portId": "file"
+        }
+      }
+    }
+  ],
+  "workbook": {
+    "sampleRows": [
+      {
+        "values": {
+          "request": "0"
+        }
+      }
+    ],
+    "instructions": [
+      "Request 填写 0；第二轮文件通过容器 file 端口交付，外层返回 ROUND_2；第一轮候选不公开。"
+    ]
+  }
+}
