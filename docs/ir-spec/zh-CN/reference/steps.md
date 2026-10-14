@@ -67,8 +67,8 @@ Loop 容器的 `executionBinding` 只写 `{"kind":"loop"}`；不带普通输入�
 | `deadlineSeconds` | 必填，1–1800 秒；业务轮次和截止共同限制执行 |
 | `body` | 非空普通子工作流；当前支持固定文本 Profile 与普通 Code Value/Artifact，使用 `require_all`，可声明普通 `when` |
 | `until` | until/decision/control 恰选一个；`{stepId, portId}` 指向体内 Code boolean Value；整轮完成后读取，旧语义不变 |
-| `control` | 与 until/decision 恰选一个；必填 decision selector 与非空 checkpoints 数组；均为 Code string continue/accept/reject；本地新增，未交付测试环境 |
-| `decision` | until/decision/control 恰选一个；指向体内 Code string Value，只允许 continue/accept/reject；整轮完成后读取；本地新增，未交付测试环境 |
+| `control` | 与 until/decision 恰选一个；必填 decision selector 与非空 checkpoints 数组；均为 Code string continue/accept/reject；已交付测试环境，具名业务验收通过 |
+| `decision` | until/decision/control 恰选一个；指向体内 Code string Value，只允许 continue/accept/reject；整轮完成后读取；已交付测试环境，具名业务验收通过 |
 | `state` | 显式状态 map，可为空；每项声明 `initial` 和 `update`，每个状态必须有体内消费者 |
 | `outputs` | 非空出口 map；alias 映射到体内 Code Value 或 Artifact，只在接受后对外可见 |
 

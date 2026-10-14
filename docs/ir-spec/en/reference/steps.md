@@ -56,8 +56,8 @@ A Loop container uses only `{"kind":"loop"}` as its execution binding. It has no
 | `deadlineSeconds` | Required, 1–1800 seconds; both limits constrain execution |
 | `body` | A non-empty ordinary child workflow; currently fixed text Profiles and ordinary Code Values/Artifacts, using require_all and ordinary when conditions |
 | `until` | Exactly one of until/decision/control; selects a body Code boolean Value after the whole round completes; existing semantics remain unchanged |
-| `decision` | Exactly one control mode; selects a body Code string Value containing continue/accept/reject, read after the whole round; implemented locally, not yet deployed to test |
-| `control` | Exactly one control mode; requires a decision selector and a non-empty checkpoints array, selecting Code string continue/accept/reject Values; implemented locally, not yet deployed to test |
+| `decision` | Exactly one control mode; selects a body Code string Value containing continue/accept/reject, read after the whole round; deployed to test, named business acceptance passed |
+| `control` | Exactly one control mode; requires a decision selector and a non-empty checkpoints array, selecting Code string continue/accept/reject Values; deployed to test, named business acceptance passed |
 | `state` | Explicit state map, optionally empty; each entry has `initial` and `update` and an explicit body consumer |
 | `outputs` | Non-empty aliases selecting body Code Values or Artifacts; visible outside only after acceptance |
 
