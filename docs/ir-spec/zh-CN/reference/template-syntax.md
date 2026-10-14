@@ -40,6 +40,8 @@
 
 - `fixedModelContract`：必须给 `subjectRevisionId`。
 - `capabilityProfile`：必须给稳定的 `profileId`，并声明 `modelSelection`。动态 Profile 不接受 `profileRevision`；普通创作必须省略该字段。创建前先使用 `loomloom capability resolve` 按业务输入输出选择当前匹配结果；需要查看全部 Profile 时再调用目标环境的 `GET /loom/v1/templateAuthoringContext`（CLI：`loomloom template-spec authoring-context --output json`）。
+- `codeProfile`：必须给 `profileId`、`profileRevision` 和 `code`，不声明 `modelSelection`。
+- `loop`：必须给 `loop`，不带普通输入绑定、Code 或模型选择。字段与首期范围见 [Step 参考](steps.md)。
 
 Capability Profile 的 `definition` 是固定接口，`eligibleModels` 是根据当前模型能力
 事实动态计算的集合。Profile 可以描述文本生成、图片理解、图片生成或视频生成等
@@ -63,6 +65,7 @@ map key 是目标合同输入端口。source 支持：
 - `composeValue`
 - `sequence`
 - `merge`
+- `loopState`：仅在 Loop body 内引用已声明的字符串状态。
 
 一个目标端口只允许一个 binding。多来源不是重复声明端口，而是在一个 `merge` 或 `sequence` source 内显式列出。
 
