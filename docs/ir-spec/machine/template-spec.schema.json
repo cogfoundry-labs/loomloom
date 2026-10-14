@@ -770,9 +770,13 @@
         "maxIterations",
         "deadlineSeconds",
         "body",
-        "until",
         "state",
         "outputs"
+      ],
+      "oneOf": [
+        {"required": ["until"], "not": {"anyOf": [{"required": ["decision"]}, {"required": ["control"]}]}},
+        {"required": ["decision"], "not": {"anyOf": [{"required": ["until"]}, {"required": ["control"]}]}},
+        {"required": ["control"], "not": {"anyOf": [{"required": ["until"]}, {"required": ["decision"]}]}}
       ],
       "additionalProperties": false,
       "properties": {
@@ -796,6 +800,10 @@
         "until": {
           "$ref": "#/$defs/loopSelector"
         },
+        "decision": {
+          "$ref": "#/$defs/loopSelector"
+        },
+        "control": {"$ref": "#/$defs/loopControl"},
         "state": {
           "type": "object",
           "propertyNames": {
@@ -815,6 +823,15 @@
           },
           "minProperties": 1
         }
+      }
+    },
+    "loopControl": {
+      "type": "object",
+      "required": ["decision", "checkpoints"],
+      "additionalProperties": false,
+      "properties": {
+        "decision": {"$ref": "#/$defs/loopSelector"},
+        "checkpoints": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/loopSelector"}}
       }
     },
     "loopSelector": {

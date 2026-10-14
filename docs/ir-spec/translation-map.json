@@ -68,6 +68,16 @@
       "generated_sha256": "ec15424498f352146e59d58d7db4ae4c07880085052130667e6a91c1a2357fb6"
     },
     {
+      "path": "examples/invalid/loop-conflicting-control.json",
+      "source_sha256": "e69ff412719293d89c82f5db54e334b0a4ca4713b87dbb7ac5e5950a43c798c6",
+      "generated_sha256": "0bc314a82e7f15f0f9145af89e3633aee3dd2548d38ead102fb366a858b26199"
+    },
+    {
+      "path": "examples/invalid/loop-parallel-checkpoints.json",
+      "source_sha256": "d21b85c38601123da246e101955a2934b0bfa714c23f976bd24cf21646837f1b",
+      "generated_sha256": "0ce536dbfa908931147add90ab9c6a18a51ecf8acccd5cb14fc132716178885b"
+    },
+    {
       "path": "examples/invalid/loop-unbounded.json",
       "source_sha256": "0c1c30bb63b5b064210040b0c92bf1856f043d352901d75d78e56f0a8f194332",
       "generated_sha256": "b5cf45d1505cdbbb8a9d22a0c8282f76bf94a05b38b00c76d95747c2d081917c"
@@ -121,6 +131,16 @@
       "path": "examples/valid/content-sequence.json",
       "source_sha256": "7d808239e8fa8240c15108d93583c865ae27d856cbf87910a27ebf7b85883489",
       "generated_sha256": "58cd43f22ac8d132b66747f269581cc96f9db9431b1e25d5644939e54557be97"
+    },
+    {
+      "path": "examples/valid/loop-business-decision.json",
+      "source_sha256": "ad7866d357e716c115de735569ca5ea031b3170926c4e3a61a31934987d6b720",
+      "generated_sha256": "c7f92d4e66c1947487a24047fbbe423fa674f46cd1468c41c2d4378cc8403355"
+    },
+    {
+      "path": "examples/valid/loop-checkpoint.json",
+      "source_sha256": "f35eeb098a21e8b8be2566f890158e42ffa35b6489d63a9559ee12ff17f6f0e5",
+      "generated_sha256": "87634086bc3d1941f40ccc60b5bdab987986d76617abfed24974dcd7c99a8f44"
     },
     {
       "path": "examples/valid/loop-code-file-consumption.json",
@@ -244,8 +264,8 @@
     },
     {
       "path": "reference/steps.md",
-      "source_sha256": "9e00a12fa8066236c856246102e429c2769be83f1b8991cd44b51b5646e568e1",
-      "generated_sha256": "cdb987f99d906ed83903822629124b2a342bc4078275d66173e8f07acb9f2a4b"
+      "source_sha256": "79090ac8557cce6a2c9f306aa40ee6dfb7702e4e91959a560b17ae5f2584da51",
+      "generated_sha256": "a94061c7262341388d44ae128124d3f51a6e7ff69f91e032d92caecd564733a3"
     },
     {
       "path": "reference/template-syntax.md",

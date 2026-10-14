@@ -84,11 +84,15 @@
         "examples/valid/loop-code-to-text-model.json",
         "examples/valid/loop-conditional-delivery.json",
         "examples/valid/loop-code-file-consumption.json",
-        "examples/valid/loop-code-file-export.json"
+        "examples/valid/loop-code-file-export.json",
+        "examples/valid/loop-business-decision.json",
+        "examples/valid/loop-checkpoint.json"
       ],
       "invalidExamples": [
         "examples/invalid/loop-unbounded.json",
-        "examples/invalid/loop-body-output-leak.json"
+        "examples/invalid/loop-body-output-leak.json",
+        "examples/invalid/loop-conflicting-control.json",
+        "examples/invalid/loop-parallel-checkpoints.json"
       ]
     }
   ]
