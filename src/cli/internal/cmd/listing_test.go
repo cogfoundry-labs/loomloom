@@ -137,7 +137,7 @@ func TestListingDuplicateNameDisplaySanitizesRemoteText(t *testing.T) {
 	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "--confirm-name-warning") {
 		t.Fatalf("expected confirmation requirement, got %v", err)
 	}
-	want := "Warning: you already have 1 Market SkillBot(s) with this display name:\n- old ID\tBot  [2J Name\tpublished [31m/approved\n"
+	want := "Warning: you already have 1 Market SkillApp(s) with this display name:\n- old ID\tBot  [2J Name\tpublished [31m/approved\n"
 	if stderr.String() != want {
 		t.Fatalf("warning=%q want %q", stderr.String(), want)
 	}

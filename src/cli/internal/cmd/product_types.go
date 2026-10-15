@@ -1,6 +1,9 @@
 package cmd
 
 type publishMarketListingRequest struct {
+	Category                        *string                          `json:"category,omitempty"`
+	Value                           *marketPublicValue               `json:"value,omitempty"`
+	UpdateSummary                   string                           `json:"updateSummary,omitempty"`
 	ListingID                       string                           `json:"listingId,omitempty"`
 	DisplayName                     string                           `json:"displayName"`
 	Description                     string                           `json:"description,omitempty"`
@@ -12,6 +15,14 @@ type publishMarketListingRequest struct {
 	Subscription                    *bool                            `json:"subscription,omitempty"`
 	SubscriptionTiers               []initialSubscriptionTierRequest `json:"subscriptionTiers,omitempty"`
 	ExpectedPaymentSettingsRevision *int64                           `json:"expectedPaymentSettingsRevision,omitempty"`
+}
+
+type updateMarketListingPublicProfileRequest struct {
+	DisplayName   string             `json:"displayName"`
+	Description   string             `json:"description"`
+	Category      *string            `json:"category,omitempty"`
+	Value         *marketPublicValue `json:"value,omitempty"`
+	UpdateSummary string             `json:"updateSummary,omitempty"`
 }
 
 type initialSubscriptionTierRequest struct {

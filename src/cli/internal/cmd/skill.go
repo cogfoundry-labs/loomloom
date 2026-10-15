@@ -52,7 +52,7 @@ func newSkillInstallMarketCmd(opts *rootOptions) *cobra.Command {
 	installOpts := &skillInstallOptions{}
 	cmd := &cobra.Command{
 		Use:   "market <listing-id>",
-		Short: "Install a Market SkillBot listing as a local agent skill",
+		Short: "Install a Market SkillApp listing as a local agent skill",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSkillInstall(cmd, opts, skill.Options{

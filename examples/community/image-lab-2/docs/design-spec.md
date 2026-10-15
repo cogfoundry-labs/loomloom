@@ -64,7 +64,7 @@ PLAN  ->  QUOTE  ->  APPROVE  ->  GENERATE  ->  RESULTS
 | Adjust the prompt after RESULTS and generate another round (own session folder, own gate); a session comparison page across every round | ✅ | |
 | Retry failed branches / allocation-tuning UI | ❌ | v0.2 |
 | LLM judge that ranks the alternatives | ❌ | v0.3 |
-| loomloom TemplateSpec / run record / SkillBot | ❌ | v0.4 (`showcase/`) |
+| loomloom TemplateSpec / run record / SkillApp | ❌ | v0.4 (`showcase/`) |
 | Reference image · edit · batch | ❌ | v0.5–v0.6 |
 | Counts other than 1 / 2 / 4 / 8; seed controls; model leaderboards | ❌ | never |
 | Writing or rewriting the prompt | ❌ | never — bring your own |

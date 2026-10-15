@@ -30,7 +30,7 @@ type subscriptionSummary struct {
 }
 
 func newSubscriptionCmd(opts *rootOptions) *cobra.Command {
-	cmd := &cobra.Command{Use: "subscription", Short: "Manage SkillBot bundle subscriptions"}
+	cmd := &cobra.Command{Use: "subscription", Short: "Manage SkillApp bundle subscriptions"}
 	cmd.AddCommand(
 		newSubscriptionListCmd(opts),
 		newSubscriptionShowCmd(opts),
@@ -62,7 +62,7 @@ func newSubscriptionItemsCmd(opts *rootOptions) *cobra.Command {
 	var snapshot bool
 	var pageSize int
 	var pageToken string
-	cmd := &cobra.Command{Use: "items <subscription-id>", Short: "List current or purchase-snapshot SkillBots", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+	cmd := &cobra.Command{Use: "items <subscription-id>", Short: "List current or purchase-snapshot SkillApps", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		suffix := "/items"
 		if snapshot {
 			suffix = "/snapshotItems"
@@ -91,10 +91,10 @@ func newSubscriptionPurchaseCmd(opts *rootOptions, renewal bool) *cobra.Command 
 	var clientRequestID string
 	var confirm bool
 	use := "buy <bundle-id>"
-	short := "Buy a SkillBot bundle subscription"
+	short := "Buy a SkillApp bundle subscription"
 	if renewal {
 		use = "renew <subscription-id>"
-		short = "Renew an expired SkillBot bundle subscription"
+		short = "Renew an expired SkillApp bundle subscription"
 	}
 	cmd := &cobra.Command{Use: use, Short: short, Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		tier = strings.TrimSpace(tier)

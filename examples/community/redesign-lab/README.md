@@ -30,7 +30,7 @@ Each case study shows the actual process — the real before/after diff, the rea
 
 ## Why I built this
 
-I'm not a web designer. I built Redesign Lab while trying to develop an example SkillBot for loomloom, and it turned into a question I actually wanted an answer to:
+I'm not a web designer. I built Redesign Lab while trying to develop an example SkillApp for loomloom, and it turned into a question I actually wanted an answer to:
 
 > **How far can an AI coding agent get at website design if you give it good design *skills*, instead of throwing lots of *prompts* at it?**
 
@@ -290,7 +290,7 @@ it.
 Most loomloom examples show a TemplateSpec calling a single execution unit
 directly; this one shows the other end of the spectrum — loomloom as one
 small, clearly-scoped component sitting inside a much larger agent
-workflow, for anyone building a SkillBot that's more "real product
+workflow, for anyone building a SkillApp that's more "real product
 workflow" than "single template." More on where it actually fits, below.
 
 ## Bring your own design authority
