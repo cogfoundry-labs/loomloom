@@ -1,0 +1,196 @@
+{
+  "meta": {
+    "name": "Mid-round checkpoints and continuing the current round"
+  },
+  "templateInputs": {
+    "request": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "presentation": {
+        "label": "Input text",
+        "order": 1
+      }
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_loop001",
+      "displayName": "Business decision within three rounds",
+      "executionBinding": {
+        "kind": "loop"
+      },
+      "loop": {
+        "maxIterations": 3,
+        "deadlineSeconds": 180,
+        "body": [
+          {
+            "stepId": "stp_judge01",
+            "displayName": "Judge this round",
+            "executionBinding": {
+              "kind": "codeProfile"
+            },
+            "code": {
+              "language": "python",
+              "entrypoint": "main",
+              "source": "def main(inputs):\n    n = int(inputs['round']) + 1\n    text = inputs['request'].strip()\n    action = 'reject' if text == 'REJECT' else ('accept' if n >= 2 else 'continue')\n    return {'action': action, 'feedback': str(n), 'copy': text}\n",
+              "inputs": {
+                "request": {
+                  "valueType": "string",
+                  "required": true,
+                  "nullable": false,
+                  "schema": {
+                    "type": "string"
+                  },
+                  "kind": "value"
+                },
+                "round": {
+                  "valueType": "string",
+                  "required": true,
+                  "nullable": false,
+                  "schema": {
+                    "type": "string"
+                  },
+                  "kind": "value"
+                }
+              },
+              "outputs": {
+                "action": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string",
+                    "enum": [
+                      "continue",
+                      "accept",
+                      "reject"
+                    ]
+                  }
+                },
+                "feedback": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "copy": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "inputBindings": {
+              "request": {
+                "source": "templateInput",
+                "inputKey": "request"
+              },
+              "round": {
+                "source": "loopState",
+                "inputKey": "feedback"
+              }
+            }
+          },
+          {
+            "stepId": "stp_tail001",
+            "displayName": "Processing after continuing the round",
+            "executionBinding": {
+              "kind": "codeProfile"
+            },
+            "code": {
+              "language": "python",
+              "entrypoint": "main",
+              "source": "def main(inputs):\n    return {'action': 'continue'}\n",
+              "inputs": {
+                "round": {
+                  "valueType": "string",
+                  "required": true,
+                  "nullable": false,
+                  "schema": {
+                    "type": "string"
+                  },
+                  "kind": "value"
+                }
+              },
+              "outputs": {
+                "action": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string",
+                    "enum": [
+                      "continue",
+                      "accept",
+                      "reject"
+                    ]
+                  }
+                }
+              }
+            },
+            "inputBindings": {
+              "round": {
+                "source": "stepOutput",
+                "stepId": "stp_judge01",
+                "portId": "feedback"
+              }
+            },
+            "dependsOn": [
+              "stp_judge01"
+            ]
+          }
+        ],
+        "state": {
+          "feedback": {
+            "initial": {
+              "source": "literal",
+              "value": "0"
+            },
+            "update": {
+              "stepId": "stp_judge01",
+              "portId": "feedback"
+            }
+          }
+        },
+        "outputs": {
+          "copy": {
+            "stepId": "stp_judge01",
+            "portId": "copy"
+          }
+        },
+        "control": {
+          "decision": {
+            "stepId": "stp_tail001",
+            "portId": "action"
+          },
+          "checkpoints": [
+            {
+              "stepId": "stp_judge01",
+              "portId": "action"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "workbook": {
+    "sampleRows": [
+      {
+        "values": {
+          "request": "Hello"
+        }
+      },
+      {
+        "values": {
+          "request": "REJECT"
+        }
+      }
+    ],
+    "instructions": [
+      "Hello continues through the tail in round one and is accepted at the checkpoint in round two; REJECT exits at the first checkpoint without executing the tail."
+    ]
+  }
+}

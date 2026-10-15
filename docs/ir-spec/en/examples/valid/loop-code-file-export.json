@@ -1,0 +1,206 @@
+{
+  "meta": {
+    "name": "Accepted round file delivery",
+    "description": "Two-round JSON file rework exports the accepted file; outer Code consumes it and returns ROUND_2."
+  },
+  "templateInputs": {
+    "request": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "presentation": {
+        "label": "Request",
+        "order": 1
+      }
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_loop001",
+      "displayName": "At most three rounds",
+      "executionBinding": {
+        "kind": "loop"
+      },
+      "loop": {
+        "maxIterations": 3,
+        "deadlineSeconds": 180,
+        "body": [
+          {
+            "stepId": "stp_file001",
+            "displayName": "Generate round JSON file",
+            "executionBinding": {
+              "kind": "codeProfile"
+            },
+            "code": {
+              "language": "python",
+              "entrypoint": "main",
+              "source": "def main(inputs):\n    import json\n    n = int(inputs['feedback']) + 1\n    path = 'candidate.json'\n    with open(path, 'w') as f:\n        json.dump({'round': n}, f)\n    return {'candidate': path}\n",
+              "inputs": {
+                "feedback": {
+                  "valueType": "string",
+                  "required": true,
+                  "nullable": false,
+                  "schema": {
+                    "type": "string"
+                  },
+                  "kind": "value"
+                }
+              },
+              "outputs": {
+                "candidate": {
+                  "kind": "artifact",
+                  "mimeType": "application/json"
+                }
+              }
+            },
+            "inputBindings": {
+              "feedback": {
+                "source": "loopState",
+                "inputKey": "feedback"
+              }
+            }
+          },
+          {
+            "stepId": "stp_check01",
+            "displayName": "Read the current file and judge",
+            "executionBinding": {
+              "kind": "codeProfile"
+            },
+            "dependsOn": [
+              "stp_file001"
+            ],
+            "code": {
+              "language": "python",
+              "entrypoint": "main",
+              "source": "def main(inputs):\n    import json\n    with open(inputs['candidate'][0]['path']) as f:\n        n = json.load(f)['round']\n    return {'passed': n == 2, 'feedback': str(n), 'copy': 'ROUND_' + str(n)}\n",
+              "outputs": {
+                "passed": {
+                  "kind": "value",
+                  "valueType": "boolean",
+                  "schema": {
+                    "type": "boolean"
+                  }
+                },
+                "feedback": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "copy": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              },
+              "inputs": {
+                "candidate": {
+                  "kind": "artifact",
+                  "acceptedMimeTypes": [
+                    "application/json"
+                  ],
+                  "minItems": 1,
+                  "maxItems": 1,
+                  "required": true,
+                  "nullable": false
+                }
+              }
+            },
+            "inputBindings": {
+              "candidate": {
+                "source": "stepOutput",
+                "stepId": "stp_file001",
+                "portId": "candidate"
+              }
+            }
+          }
+        ],
+        "until": {
+          "stepId": "stp_check01",
+          "portId": "passed"
+        },
+        "state": {
+          "feedback": {
+            "initial": {
+              "source": "templateInput",
+              "inputKey": "request"
+            },
+            "update": {
+              "stepId": "stp_check01",
+              "portId": "feedback"
+            }
+          }
+        },
+        "outputs": {
+          "copy": {
+            "stepId": "stp_check01",
+            "portId": "copy"
+          },
+          "file": {
+            "stepId": "stp_file001",
+            "portId": "candidate"
+          }
+        }
+      }
+    },
+    {
+      "stepId": "stp_deliver1",
+      "displayName": "Read the accepted file",
+      "executionBinding": {
+        "kind": "codeProfile"
+      },
+      "dependsOn": [
+        "stp_loop001"
+      ],
+      "code": {
+        "language": "python",
+        "entrypoint": "main",
+        "source": "def main(inputs):\n    import json\n    with open(inputs['candidate'][0]['path']) as f:\n        n = json.load(f)['round']\n    return {'copy': 'ROUND_' + str(n)}\n",
+        "outputs": {
+          "copy": {
+            "kind": "value",
+            "valueType": "string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "inputs": {
+          "candidate": {
+            "kind": "artifact",
+            "acceptedMimeTypes": [
+              "application/json"
+            ],
+            "minItems": 1,
+            "maxItems": 1,
+            "required": true,
+            "nullable": false
+          }
+        }
+      },
+      "inputBindings": {
+        "candidate": {
+          "source": "stepOutput",
+          "stepId": "stp_loop001",
+          "portId": "file"
+        }
+      }
+    }
+  ],
+  "workbook": {
+    "sampleRows": [
+      {
+        "values": {
+          "request": "0"
+        }
+      }
+    ],
+    "instructions": [
+      "Set Request to 0. The second-round file is exported on the container file port; outer Code returns ROUND_2. The first candidate stays private."
+    ]
+  }
+}

@@ -1,0 +1,223 @@
+{
+  "meta": {
+    "name": "中途检查点与继续本轮"
+  },
+  "templateInputs": {
+    "request": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "presentation": {
+        "label": "输入文本",
+        "order": 1
+      }
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_loop001",
+      "displayName": "最多三轮业务判断",
+      "executionBinding": {
+        "kind": "loop"
+      },
+      "loop": {
+        "maxIterations": 3,
+        "deadlineSeconds": 180,
+        "body": [
+          {
+            "stepId": "stp_judge01",
+            "displayName": "判断本轮业务结果",
+            "executionBinding": {
+              "kind": "codeProfile"
+            },
+            "code": {
+              "language": "python",
+              "entrypoint": "main",
+              "source": "def main(inputs):\n    n = int(inputs['round']) + 1\n    text = inputs['request'].strip()\n    action = 'reject' if text == 'REJECT' else ('accept' if n >= 2 else 'continue')\n    return {'action': action, 'feedback': str(n), 'copy': text}\n",
+              "inputs": {
+                "request": {
+                  "valueType": "string",
+                  "required": true,
+                  "nullable": false,
+                  "schema": {
+                    "type": "string"
+                  },
+                  "kind": "value"
+                },
+                "round": {
+                  "valueType": "string",
+                  "required": true,
+                  "nullable": false,
+                  "schema": {
+                    "type": "string"
+                  },
+                  "kind": "value"
+                }
+              },
+              "outputs": {
+                "action": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string",
+                    "enum": [
+                      "continue",
+                      "accept",
+                      "reject"
+                    ]
+                  }
+                },
+                "feedback": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "copy": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "inputBindings": {
+              "request": {
+                "source": "templateInput",
+                "inputKey": "request"
+              },
+              "round": {
+                "source": "loopState",
+                "inputKey": "feedback"
+              }
+            }
+          },
+          {
+            "stepId": "stp_peer001",
+            "displayName": "另一路判据",
+            "executionBinding": {
+              "kind": "codeProfile"
+            },
+            "code": {
+              "language": "python",
+              "entrypoint": "main",
+              "source": "def main(inputs):\n    n = int(inputs['round']) + 1\n    text = inputs['request'].strip()\n    action = 'reject' if text == 'REJECT' else ('accept' if n >= 2 else 'continue')\n    return {'action': action, 'feedback': str(n), 'copy': text}\n",
+              "inputs": {
+                "request": {
+                  "valueType": "string",
+                  "required": true,
+                  "nullable": false,
+                  "schema": {
+                    "type": "string"
+                  },
+                  "kind": "value"
+                },
+                "round": {
+                  "valueType": "string",
+                  "required": true,
+                  "nullable": false,
+                  "schema": {
+                    "type": "string"
+                  },
+                  "kind": "value"
+                }
+              },
+              "outputs": {
+                "action": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string",
+                    "enum": [
+                      "continue",
+                      "accept",
+                      "reject"
+                    ]
+                  }
+                },
+                "feedback": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "copy": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "inputBindings": {
+              "request": {
+                "source": "templateInput",
+                "inputKey": "request"
+              },
+              "round": {
+                "source": "loopState",
+                "inputKey": "feedback"
+              }
+            }
+          }
+        ],
+        "state": {
+          "feedback": {
+            "initial": {
+              "source": "literal",
+              "value": "0"
+            },
+            "update": {
+              "stepId": "stp_judge01",
+              "portId": "feedback"
+            }
+          }
+        },
+        "outputs": {
+          "copy": {
+            "stepId": "stp_judge01",
+            "portId": "copy"
+          }
+        },
+        "control": {
+          "decision": {
+            "stepId": "stp_peer001",
+            "portId": "action"
+          },
+          "checkpoints": [
+            {
+              "stepId": "stp_judge01",
+              "portId": "action"
+            },
+            {
+              "stepId": "stp_peer001",
+              "portId": "action"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "workbook": {
+    "sampleRows": [
+      {
+        "values": {
+          "request": "Hello"
+        }
+      },
+      {
+        "values": {
+          "request": "REJECT"
+        }
+      }
+    ],
+    "instructions": [
+      "Hello 第一轮继续并运行尾节点，第二轮中途接受；REJECT 首轮中途拒绝，尾节点不执行。"
+    ]
+  }
+}
