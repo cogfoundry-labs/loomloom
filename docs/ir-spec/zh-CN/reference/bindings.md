@@ -12,6 +12,10 @@
 
 来源 Step 必须存在、不能是自身，并且必须同时出现在当前 Step 的 `dependsOn`。`portId` 是冻结输出合同中的稳定身份，不使用 role、文件名或 native JSON pointer 代替。
 
+Code 目标端口声明 kind=value、valueType=string 时，text/plain Artifact 有界物化为 Python str，不自动解析 JSON；声明 kind=artifact 时，交付文件描述符列表。binding 只记录来源，不携带 valueType 或合同版本。
+
+Code Value 通过普通 stepOutput 按冻结端口合同传递，不因为它存储在 JSON 中就隐式变成文本 Artifact。Loop 的外部引用指向容器 ID 与已声明出口 alias；`loopState` 只用于 body 的显式状态消费者，不能在 Root 节点中使用。
+
 ## Template Input、literal 与平台上下文
 
 ```json

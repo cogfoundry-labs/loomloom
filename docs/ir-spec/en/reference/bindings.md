@@ -12,6 +12,10 @@ Each `steps[].inputBindings` key is a target contract `portId`. One target port 
 
 The source Step must exist, cannot be the same Step, and must appear in `dependsOn`. `portId` is frozen output-contract identity; do not use role, file name, or native JSON pointer as a long-term identity.
 
+When the target Code input declares `kind=value` and `valueType=string`, a text/plain Artifact is materialized as a bounded Python str without implicit JSON parsing. With `kind=artifact`, the input receives a file descriptor list. A binding identifies only the source; it carries neither valueType nor a contract version.
+
+Code Values follow ordinary stepOutput bindings and frozen port types; JSON storage does not turn them into text Artifacts. External Loop references use the container ID and a declared accepted export alias. `loopState` is only for explicit body state consumers, never Root nodes.
+
 ## Template Input, literal, and platform context
 
 ```json
