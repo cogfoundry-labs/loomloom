@@ -1,5 +1,7 @@
 # Code / Loop test client alignment
 
+Current development status (2026-10-15): rebased onto main `07833c6`, where unified catalog support is now merged. The listing-only candidate and release evidence below describe the immutable `v0.6.2-beta.1` release. Do not substitute the rebased binary against the older test backend until the backend is updated and the pair is verified.
+
 Goal: provide one CLI candidate that matches the clean Code / Loop test backend, including Market discovery and typed results.
 
 Architecture: retain main's Market listing endpoints and behavior; carry only the Code / Loop result readers and authoring documentation, updating the latter from the current Core source. Do not merge the unified catalog release branch or add API fallback paths.
@@ -34,3 +36,11 @@ Baseline: CLI origin/main 95d2c2c22cc6d28086f3621c743ae81d57d8cbc3; prior beta v
 - Independent local install from the official npm Registry returned `loomloom version v0.6.2-beta.1`. The installed package passed test-server doctor, Market list/detail, Code/Loop result readback and English/Chinese unified-contract documentation checks.
 - Release: https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.6.2-beta.1
 - Release branch/tag, GitHub assets, npm versions and mirrored refs are retained as immutable release assets owned by the LoomLoom CLI maintainers; authority is the GitHub source tag and existing versioned release workflows. No server deployment, main merge or production configuration changed. Temporary isolated installation and release-note staging file were removed. Earlier local candidate artifacts remain subject to the review date above.
+
+## Rebase onto updated main
+
+Both main branches now include the formerly independent Market/catalog feature. CLI main is `07833c6f97dfe7f7fa4935ea6aabf65b947e9e6a`; Core main is `8676c08ce5ed0ae0b7cd496ace375e00a91553fd`. The two CLI patches rebased without conflicts to `491edb3` and `44a2e88`; range-diff reports both patches equivalent. Go tests, vet, build, standalone docs checks and the Core-linked documentation check passed.
+
+Remote backup `backup/code-loop-client-before-main-rebase-20261015@9ccb963` preserves the previous task branch. The published source branch `release/v0.6.2`, tag and npm beta remain at `7ee173a`; no new release or server deployment occurred. The new development candidate uses main's unified catalog API. It requires the corresponding backend update and cannot inherit the old candidate's real-environment acceptance claim. Core's rebase also resolves conflicting Run Proto field numbers; its upgrade notes require coordinated Core/Public API delivery.
+
+Backups and the ignored local `bin/loomloom-code-loop-rebased` binary are retained by the CLI maintainer for review by 2026-10-16. No external runtime, paid Run, credential or release artifact was created or modified.
