@@ -23,3 +23,14 @@ Baseline: CLI origin/main 95d2c2c22cc6d28086f3621c743ae81d57d8cbc3; prior beta v
 - Public authoring checks accepted the unified Code example and existing mixed-input product spec; rejected nullable Code input with HTTP 400. Embedded English/Chinese step documentation uses the unified contract.
 - These are read-only business queries and validation requests. No new Run, order, model call, template version, deployment, credential, or external resource was created. Temporary downloaded workbook was removed. Local ignored `bin/loomloom-code-loop` and generated documentation remain for review, owned by this task; review by 2026-10-16 and remove after the candidate is accepted or replaced.
 - This is a task-branch candidate, not a new npm/GitHub beta release. Existing installed beta.2 binaries are unchanged. New execution/paid end-to-end testing was not repeated; the server's earlier execution evidence remains separate from this client readback.
+
+## Published beta: v0.6.2-beta.1
+
+2026-10-15, explicitly authorized after local testing. Release source remains `7ee173a6f2999459cd7aba456af89a9abed41d3d` on the new `release/v0.6.2` branch; the old mixed `release/v0.6.1` branch and published tags remain unchanged.
+
+- GitHub release workflow 38699497439 succeeded, including artifact checks and Gitee/GitLab ref synchronization. Homebrew update was intentionally skipped for this prerelease.
+- npm workflow 38699497703 succeeded, including Linux and Windows isolated Registry tests, all six platform packages, the main package, immutable readback and official Registry install verification.
+- Registry `@cogfoundry/loomloom` beta points to `0.6.2-beta.1`; stable latest remains `0.5.1`.
+- Independent local install from the official npm Registry returned `loomloom version v0.6.2-beta.1`. The installed package passed test-server doctor, Market list/detail, Code/Loop result readback and English/Chinese unified-contract documentation checks.
+- Release: https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.6.2-beta.1
+- Release branch/tag, GitHub assets, npm versions and mirrored refs are retained as immutable release assets owned by the LoomLoom CLI maintainers; authority is the GitHub source tag and existing versioned release workflows. No server deployment, main merge or production configuration changed. Temporary isolated installation and release-note staging file were removed. Earlier local candidate artifacts remain subject to the review date above.
