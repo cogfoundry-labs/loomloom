@@ -44,3 +44,9 @@ Both main branches now include the formerly independent Market/catalog feature. 
 Remote backup `backup/code-loop-client-before-main-rebase-20261015@9ccb963` preserves the previous task branch. The published source branch `release/v0.6.2`, tag and npm beta remain at `7ee173a`; no new release or server deployment occurred. The new development candidate uses main's unified catalog API. It requires the corresponding backend update and cannot inherit the old candidate's real-environment acceptance claim. Core's rebase also resolves conflicting Run Proto field numbers; its upgrade notes require coordinated Core/Public API delivery.
 
 Backups and the ignored local `bin/loomloom-code-loop-rebased` binary are retained by the CLI maintainer for review by 2026-10-16. No external runtime, paid Run, credential or release artifact was created or modified.
+
+## Branch cleanup (2026-10-18)
+
+`feature/code-loop-test-client` is the only branch kept for this requirement. Removed from origin and locally: `feature/code-node-cli-review`, `feature/code-default-python-profile` (and its worktree), `feature/loop-text-condition-docs`, `backup/code-loop-client-before-main-rebase-20261015`, `backup/cli-v061-before-code-clean-20261015`, `release/v0.5.2`, `release/v0.6.0`, `release/v0.6.1` (remote head `8249c1b`, not tagged) and `release/v0.6.2`. Release tags `v0.5.2-beta.1`, `v0.6.0-beta.1`, `v0.6.1-beta.2`, `v0.6.2-beta.1` and the npm versions are unchanged; the release workflow is tag driven. Every removed head, including `8249c1b`, is recoverable from the bundle and manifest under the canonical repository's `.git/cleanup/2026-10-18-code-loop-branches.*`, kept by the CLI maintainer for review by 2026-11-18.
+
+Open: PR #111 (head `LewisZhouCC:feature/code-node-cli-review@27050e2`) is superseded by this branch but still open; closing it and deleting the fork branch needs the fork owner.
