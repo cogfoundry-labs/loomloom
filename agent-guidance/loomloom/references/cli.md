@@ -139,6 +139,14 @@ text Steps use the shared `capabilityProfile` shown by
 `loomloom template-spec docs examples`. Do not report text authoring as
 unavailable solely because `template-spec contracts <text-model-id>` is empty.
 
+Each input port shows whether the template must bind it. A port marked
+`(required)` has no default and must be bound. A port shown as
+`background (default "auto")` is always sent to the model: binding it is
+optional, and when it is left unbound the contract default is sent. In JSON
+these are `required`, `requestRequired` and `default`. A dynamic Profile
+lists only its abstract inputs, such as `prompt`. The selected model's other
+parameters use these contract defaults.
+
 `template-spec check` calls the selected LoomLoom Server and uses the same
 current contract-authority resolver as version creation. It is not an offline
 schema check. A successful check is evidence for that Server at that time;

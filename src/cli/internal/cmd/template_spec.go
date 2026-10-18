@@ -177,10 +177,14 @@ type templateAuthoringContract struct {
 }
 
 type templateAuthoringInputPort struct {
-	PortID            string          `json:"portId"`
-	Kind              string          `json:"kind"`
-	ValueType         string          `json:"valueType,omitempty"`
+	PortID    string `json:"portId"`
+	Kind      string `json:"kind"`
+	ValueType string `json:"valueType,omitempty"`
+	// Required means the template must bind the port. RequestRequired with
+	// Default means the request always carries it and Default is sent unbound.
 	Required          bool            `json:"required"`
+	RequestRequired   bool            `json:"requestRequired,omitempty"`
+	Default           json.RawMessage `json:"default,omitempty"`
 	Constraints       json.RawMessage `json:"constraints,omitempty"`
 	MinItems          int32           `json:"minItems,omitempty"`
 	MaxItems          int32           `json:"maxItems,omitempty"`
@@ -336,13 +340,25 @@ func newTemplateSpecContractsCmd(opts *rootOptions) *cobra.Command {
 			for _, contract := range resp.Contracts {
 				ports := make([]string, 0, len(contract.InputPorts))
 				for _, port := range contract.InputPorts {
-					ports = append(ports, port.PortID)
+					ports = append(ports, formatContractInputPort(port))
 				}
 				_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", contract.Operation, contract.Variant, contract.SubjectRevisionID, contract.ExecutionUnitRef, strings.Join(ports, ","))
 			}
 			return tw.Flush()
 		},
 	}
+}
+
+// formatContractInputPort marks ports the template must bind and shows the
+// contract default sent when an optional request parameter is left unbound.
+func formatContractInputPort(port templateAuthoringInputPort) string {
+	switch {
+	case port.Required:
+		return port.PortID + " (required)"
+	case len(port.Default) > 0:
+		return port.PortID + " (default " + compactRunJSON(port.Default) + ")"
+	}
+	return port.PortID
 }
 
 func newTemplateSpecDocsCmd(opts *rootOptions) *cobra.Command {

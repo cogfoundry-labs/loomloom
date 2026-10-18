@@ -617,7 +617,7 @@ func TestTemplateSpecContractsCmdListsAuthoringContract(t *testing.T) {
 		requestedPath = r.URL.Path
 		requestedModelID = r.URL.Query().Get("modelId")
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"contracts":[{"subjectRevisionId":"subject-image-v2","subjectHash":"sha256:abc","modelId":"ali/qwen-image-plus","operation":"text-to-image","variant":"base","executionUnitRef":"image-generate","inputPorts":[{"portId":"prompt","kind":"value","valueType":"string","required":true}]}]}`))
+		_, _ = w.Write([]byte(`{"contracts":[{"subjectRevisionId":"subject-image-v2","subjectHash":"sha256:abc","modelId":"ali/qwen-image-plus","operation":"text-to-image","variant":"base","executionUnitRef":"image-generate","inputPorts":[{"portId":"prompt","kind":"value","valueType":"string","required":true},{"portId":"background","kind":"value","valueType":"string","required":false,"requestRequired":true,"default":"auto"}]}]}`))
 	}))
 	defer server.Close()
 
@@ -636,7 +636,7 @@ func TestTemplateSpecContractsCmdListsAuthoringContract(t *testing.T) {
 	if requestedModelID != "ali/qwen-image-plus" {
 		t.Fatalf("modelId=%q", requestedModelID)
 	}
-	for _, want := range []string{"text-to-image", "subject-image-v2", "image-generate", "prompt"} {
+	for _, want := range []string{"text-to-image", "subject-image-v2", "image-generate", "prompt (required)", `background (default "auto")`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output missing %q: %s", want, out.String())
 		}

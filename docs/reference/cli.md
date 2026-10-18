@@ -185,7 +185,7 @@ For building your own private workflows.
 | `loomloom template-spec docs [topic]` | Show bundled TemplateSpec documentation. |
 | `loomloom template-spec models <step-type>` | List models for a step type. |
 | `loomloom template-spec authoring-context` | Show current Capability Profiles, including fixed input/output interfaces, default-model availability, and the live eligible-model set. |
-| `loomloom template-spec contracts <model-id>` | List enabled TemplateSpec v2 contracts and their input ports for one model. |
+| `loomloom template-spec contracts <model-id>` | List enabled TemplateSpec v2 contracts and their input ports for one model, marking ports that must be bound and the contract default sent when an optional parameter is unbound. |
 | `loomloom template-spec create <spec.json>` | Create a private template. |
 | `loomloom template-spec create-version <template-id> <spec.json>` | Add a new version to an existing private template. |
 | `loomloom template-spec list` | List my private templates. |
