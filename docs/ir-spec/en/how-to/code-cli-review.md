@@ -58,6 +58,8 @@ loomloom run result-workbook <run-id> --output-file result.xlsx
 
 The first row should complete with text `Hello Code`, passed=true, and an independently delivered JSON Artifact. Text output shows a preview; JSON preserves complete typed Values, Loop status/iterations, and stepErrors. Model fee snapshots are not wallet settlement receipts; unknown-cost markers must remain visible in JSON.
 
+To see why a node failed or a Loop round was rejected, run `loomloom run step-executions <run-id> --output json`. It lists every node execution of your own template's run with its input, outputs, Code error (`ZeroDivisionError: division by zero`, the traceback of your code and output tails), model usage, and each Loop round's starting state and decision. Market buyers cannot read it; their result rows only show the error code and exception type.
+
 ## 5. Conditions and rework
 
 - [Condition example](../examples/valid/code-condition.json): submit `{"text":"Hello Code"}` and `{"text":"REJECT"}` separately. These are demonstration rules. The second source Code completes with passed=false, and its conditional successor is skipped, not a code failure. The source file belongs to that source node, not the skipped node.

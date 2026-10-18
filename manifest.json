@@ -22,6 +22,7 @@
       "run.get",
       "run.watch",
       "run.result-rows",
+      "run.step-executions",
       "run.result-workbook",
       "template-spec.check",
       "template-spec.docs",

@@ -58,6 +58,8 @@ loomloom run result-workbook <run-id> --output-file result.xlsx
 
 第一行预期 completed，Value text 为 `Hello Code`，passed 为 true，JSON Artifact 是独立交付文件。文本模式显示结果预览；JSON 模式保留完整 Value 及类型、Loop 状态/轮次和 stepErrors。模型费用快照不是钱包结算回执；未知费用标记不应丢失。
 
+要查看节点失败或某一轮被拒的原因，执行 `loomloom run step-executions <run-id> --output json`。它列出自己模板 Run 的每次节点执行：输入、输出、Code 错误（如 `ZeroDivisionError: division by zero`、作者代码的 traceback 与输出尾部）、模型用量，以及 Loop 每轮的初始 state 与判断。Market 买家无法读取；买家的结果行只显示错误码和异常类型。
+
 ## 5. 条件和返工
 
 - [条件示例](../examples/valid/code-condition.json)：分别提交 `{"text":"Hello Code"}` 和 `{"text":"REJECT"}`。示例规则仅用于演示；后者的源 Code 正常返回 passed=false，下游条件节点跳过，不把正常跳过当成代码异常。源节点文件仍是它自己的结果，不是被跳过节点的产物。

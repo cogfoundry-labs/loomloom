@@ -151,6 +151,7 @@ Use these commands for programmatic official-template JSON or JSONL input and fo
 | `loomloom run get <run-id>` | Show one run's detail. |
 | `loomloom run watch <run-id>` | Watch run progress until a terminal state. |
 | `loomloom run result-rows <run-id>` | Show aligned input rows and results. |
+| `loomloom run step-executions <run-id>` | For a run of your own template: every node execution with its input, outputs, errors, Code attempts and traceback, model usage, and each Loop round's state and decision. Market runs are not readable. |
 | `loomloom run result-workbook <run-id>` | Download a server-generated result workbook. |
 
 ## 5. Artifacts (outputs)

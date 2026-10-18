@@ -29,6 +29,7 @@ func newRunCmd(opts *rootOptions) *cobra.Command {
 		newRunListCmd(opts),
 		newRunGetCmd(opts),
 		newRunResultRowsCmd(opts),
+		newRunStepExecutionsCmd(opts),
 		newRunResultWorkbookCmd(opts),
 	)
 	return cmd

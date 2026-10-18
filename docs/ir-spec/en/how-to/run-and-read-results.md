@@ -13,6 +13,7 @@ Validation and precheck are preparation; submit creates the hosted run. For prog
 loomloom run watch <run-id>
 loomloom run get <run-id>
 loomloom run result-rows <run-id>
+loomloom run step-executions <run-id>
 loomloom run result-workbook <run-id>
 loomloom artifact list <run-id>
 ```

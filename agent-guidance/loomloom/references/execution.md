@@ -102,12 +102,15 @@ loomloom run list
 loomloom run get <run-id>
 loomloom run watch <run-id>
 loomloom run result-rows <run-id>
+loomloom run step-executions <run-id>
 loomloom run result-workbook <run-id>
 loomloom artifact list <run-id>
 loomloom artifact download <run-id>
 ```
 
 Preserve `runId` exactly from the submission response.
+
+To debug your own template, `run step-executions` lists every node execution of the run: the input it received, outputs, the Code error with traceback and output tails, model usage, and each Loop round's starting state and decision. Use `-o json` for the full input and diagnostic. It only works for runs of templates you own; Market buyers and other authors are rejected. Files appear as `artifact:<id>`.
 
 Do not print workbook base64 `content`. Do not copy temporary signed `accessUrl` values into long-lived logs or documentation. Prefer `inlineText` for small text artifacts and state that a download URL is available for file artifacts.
 

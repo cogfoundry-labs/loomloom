@@ -161,6 +161,7 @@ the historical version.
 - `loomloom run get <run-id>`
 - `loomloom run watch <run-id>`
 - `loomloom run result-rows <run-id>`
+- `loomloom run step-executions <run-id> [--task-id <task-id>]`
 - `loomloom run result-workbook <run-id>`
 - `loomloom artifact list <run-id>`
 - `loomloom artifact download <run-id>`
