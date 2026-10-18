@@ -33,14 +33,10 @@
               "kind": "codeProfile"
             },
             "code": {
-              "language": "python",
-              "entrypoint": "main",
               "source": "def main(inputs):\n    import json\n    n = int(inputs['feedback']) + 1\n    path = 'candidate.json'\n    with open(path, 'w') as f:\n        json.dump({'round': n}, f)\n    return {'candidate': path}\n",
               "inputs": {
                 "feedback": {
                   "valueType": "string",
-                  "required": true,
-                  "nullable": false,
                   "schema": {
                     "type": "string"
                   },
@@ -71,15 +67,18 @@
               "stp_file001"
             ],
             "code": {
-              "language": "python",
-              "entrypoint": "main",
-              "source": "def main(inputs):\n    import json\n    with open(inputs['candidate'][0]['path']) as f:\n        n = json.load(f)['round']\n    return {'passed': n == 2, 'feedback': str(n), 'copy': 'ROUND_' + str(n)}\n",
+              "source": "def main(inputs):\n    import json\n    with open(inputs['candidate'][0]['path']) as f:\n        n = json.load(f)['round']\n    return {'action': 'accept' if n == 2 else 'continue', 'feedback': str(n), 'copy': 'ROUND_' + str(n)}\n",
               "outputs": {
-                "passed": {
+                "action": {
                   "kind": "value",
-                  "valueType": "boolean",
+                  "valueType": "string",
                   "schema": {
-                    "type": "boolean"
+                    "type": "string",
+                    "enum": [
+                      "continue",
+                      "accept",
+                      "reject"
+                    ]
                   }
                 },
                 "feedback": {
@@ -104,9 +103,7 @@
                     "application/json"
                   ],
                   "minItems": 1,
-                  "maxItems": 1,
-                  "required": true,
-                  "nullable": false
+                  "maxItems": 1
                 }
               }
             },
@@ -119,9 +116,11 @@
             }
           }
         ],
-        "until": {
-          "stepId": "stp_check01",
-          "portId": "passed"
+        "control": {
+          "decision": {
+            "stepId": "stp_check01",
+            "portId": "action"
+          }
         },
         "state": {
           "feedback": {

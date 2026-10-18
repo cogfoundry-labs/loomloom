@@ -35,17 +35,17 @@ loomloom orchestration-input upload rows.jsonl
 loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input-file-id> --client-request-id <request-id>
 ```
 
-上传返回的 inputFileId 是批次行数据身份，不是素材 inputAssetId。提交时服务端重新校验身份、版本、输入、合同和测试准入；Loop 未开放或运行绑定缺失应交由研发按交付配置处理。
+上传返回的 inputFileId 是批次行数据身份，不是素材 inputAssetId。提交时服务端重新校验身份、版本、输入和合同；含 Code 的模板只能从已保存的版本提交。环境未配置 Code 运行环境时返回 `CODE_RUNTIME_UNAVAILABLE`，应交由研发按交付配置处理。
 
-当前含 Code 的费用预检尚不支持，以下命令可能返回 `CODE_PRICING_PENDING`，不能作为免费或零价结论：
+Code 计费尚未接入，含 Code 的费用预检会返回 `CODE_PRICING_PENDING`，不能作为免费或零价结论：
 
 ```bash
 loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input-file-id>
 ```
 
-报价预检与测试提交是不同路径。已授权测试身份可按上述 run 命令进行业务评审；普通未授权调用在提交时仍被拒绝。预检的现有错误文案提到“没有有效的内部测试准入”，单凭它不能判断当前身份是否具备测试提交权限。此阶段不把费用预检设为业务演示前置，也不通过改成零价、替换身份或直接写数据库绕过守卫。权限、输入及模型费用等其他错误仍须处理，不能统一忽略。
+报价预检与提交是不同路径：预检暂不可用不影响按上述 run 命令提交，提交不需要额外授权。此阶段不把费用预检设为业务演示前置，也不通过改成零价或直接写数据库绕过守卫。权限、输入及模型费用等其他错误仍须处理，不能统一忽略。
 
-一次新执行使用新的 requestId；网络结果不确定时，相同版本、输入和 requestId 重试应返回原 Run。修改输入属于新执行。该机制不表示可以自动重执行结果 unknown 的 Code Attempt。
+一次新执行使用新的 requestId；网络结果不确定时，相同版本、输入和 requestId 重试应返回原 Run。修改输入属于新执行。Code 遇到基础设施故障时由平台自动在新环境重跑并只发布一次结果，与 requestId 重试无关。
 
 ## 4. 查看和下载
 

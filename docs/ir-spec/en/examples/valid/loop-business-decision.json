@@ -32,14 +32,10 @@
               "kind": "codeProfile"
             },
             "code": {
-              "language": "python",
-              "entrypoint": "main",
               "source": "def main(inputs):\n    n = int(inputs['round']) + 1\n    text = inputs['request'].strip()\n    action = 'reject' if text == 'REJECT' else ('accept' if n >= 2 else 'continue')\n    return {'action': action, 'feedback': str(n), 'copy': text}\n",
               "inputs": {
                 "request": {
                   "valueType": "string",
-                  "required": true,
-                  "nullable": false,
                   "schema": {
                     "type": "string"
                   },
@@ -47,8 +43,6 @@
                 },
                 "round": {
                   "valueType": "string",
-                  "required": true,
-                  "nullable": false,
                   "schema": {
                     "type": "string"
                   },
@@ -96,9 +90,11 @@
             }
           }
         ],
-        "decision": {
-          "stepId": "stp_judge01",
-          "portId": "action"
+        "control": {
+          "decision": {
+            "stepId": "stp_judge01",
+            "portId": "action"
+          }
         },
         "state": {
           "feedback": {

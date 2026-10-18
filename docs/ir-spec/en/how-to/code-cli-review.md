@@ -35,17 +35,17 @@ loomloom orchestration-input upload rows.jsonl
 loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input-file-id> --client-request-id <request-id>
 ```
 
-The upload returns the batch's inputFileId, not a material inputAssetId. Submission revalidates identity, version, input, contracts, and test admission. Disabled Loop authoring or missing runtime bindings require the engineering delivery configuration.
+The upload returns the batch's inputFileId, not a material inputAssetId. Submission revalidates identity, version, input, and contracts; a template containing Code can only be submitted from a saved version. If the environment has no Code runtime configured, the server returns `CODE_RUNTIME_UNAVAILABLE`, which requires the engineering delivery configuration.
 
-Cost precheck for a template containing Code is currently unsupported. This command may return `CODE_PRICING_PENDING`; it does not mean Code is free or priced at zero:
+Code pricing is not connected yet, so cost precheck for a template containing Code returns `CODE_PRICING_PENDING`; it does not mean Code is free or priced at zero:
 
 ```bash
 loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input-file-id>
 ```
 
-Pricing precheck and controlled test submission are separate paths. An authorized test identity may use the run command above for business review; ordinary unauthorized submission remains rejected. The existing precheck error mentions missing internal test admission, but that message alone does not establish test submission eligibility. Cost precheck is not a prerequisite for this business demonstration. Do not bypass guards with zero prices, substituted identity, or direct database writes; permission, input, and model-cost errors still require resolution and must not be ignored together.
+Pricing precheck and submission are separate paths: an unavailable precheck does not stop submission with the run command above, and submission needs no extra authorization. Cost precheck is not a prerequisite for this business demonstration. Do not bypass guards with zero prices or direct database writes; permission, input, and model-cost errors still require resolution and must not be ignored together.
 
-Use a new requestId for a new execution. After an ambiguous network result, retrying identical version/input/requestId should return the original Run. Changed input is a new execution. This does not authorize automatic re-execution of an unknown Code Attempt.
+Use a new requestId for a new execution. After an ambiguous network result, retrying identical version/input/requestId should return the original Run. Changed input is a new execution. On an infrastructure failure the platform re-runs Code in a new environment and publishes the result only once, independently of requestId retries.
 
 ## 4. Inspect and download
 

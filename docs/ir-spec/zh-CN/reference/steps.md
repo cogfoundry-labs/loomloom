@@ -30,13 +30,13 @@
 
 ## TS-CODE-001：Code 节点
 
-`executionBinding.kind=codeProfile` 时必须提供 `code`；作者无需填写 `profileId`、`profileRevision`。两者均省略时，Core 默认使用 Python 3.12 标准库环境，并在校验及创建模板版本时补齐和冻结 `python-pure@1`。已有显式配置保持兼容，但必须成对提供；未知环境或修订不会回退为默认环境。当前已实现的运行环境为 `python-pure@1` 与 `python-image@pillow-12.3.0-1`；目标环境还必须具备对应运行绑定。图片环境包含 Pillow，不允许作者在执行时安装依赖、访问网络或取得平台 Secret。
+`executionBinding.kind=codeProfile` 时必须提供 `code`；作者无需填写 `profileId`、`profileRevision`。两者均省略时，Core 在校验及创建模板版本时补齐并冻结唯一的运行环境 `python@1`（CPython 3.12，标准库加 Pillow、numpy、pydantic、jinja2、PyAV）。显式提供时必须是 `python` / `1`；已退役的 `python-pure@1`、`python-image@pillow-12.3.0-1` 会被拒绝并提示省略这两个字段，未知环境不会回退。`executionBinding.resourceClass` 可选 `standard`（默认）或 `large`，档位随版本冻结（standard：30 秒、1 GiB 内存；large：120 秒、4 GiB）。可读取的输入文件为文本、JSON、PNG/JPEG/WebP 与 MP4/WebM/QuickTime。不允许作者在执行时安装依赖、访问网络或取得平台 Secret。用户异常的完整消息和 traceback 只在作者执行明细（`loomloom run step-executions`）中显示，Run 与结果行只显示异常类型。
 
 | `code` 字段 | 合同 |
 | --- | --- |
-| `language` / `entrypoint` | 固定为 `python` / `main` |
+| `language` / `entrypoint` | 可省略；只支持 `python` / `main`，省略时按此冻结 |
 | `source` | 非空内联源码，定义 `main(inputs)`；不是外部代码包引用 |
-| `inputs` | 全部端口显式声明；无输入填写 `{}`。kind=value 支持文本及 JSON，kind=artifact 接收文件列表；全部 required=true、nullable=false |
+| `inputs` | 全部端口显式声明；无输入填写 `{}`。kind=value 支持文本及 JSON，kind=artifact 接收文件列表；全部输入都是必填、非 null，不需要也不建议再写 required/nullable（写 `required: true`、`nullable: false` 仍可接受，其他值拒绝） |
 | `outputs` | 至少一个命名输出；`main` 返回对象的 key 与声明端口对应 |
 
 输入 key 与 inputBindings 一一对应。Value 声明 valueType（string、boolean、integer、number、array、object），可声明对象形式的 schema；禁止外部 Schema 引用，不隐式转换类型或生成默认值。文件声明 acceptedMimeTypes、minItems、maxItems，满足 1 <= minItems <= maxItems <= 16；实际文件还受冻结运行环境约束。输入解析或运行结果不符时，在 Code 派发前拒绝。普通含 Code 工作流不设额外节点数量上限。
@@ -58,26 +58,24 @@
 
 ## TS-LOOP-001：有界质量返工
 
-Loop 容器的 `executionBinding` 只写 `{"kind":"loop"}`；不带普通输入绑定、Code、模型选择或 `when`。Root 和 body 各自是无环依赖图，返工由容器控制，不向普通 `dependsOn` 加回边。
+Loop 容器的 `executionBinding` 只写 `{"kind":"loop"}`；不带普通输入绑定、Code 或模型选择，但可以带 `when`：条件不满足（或依赖被跳过）时整个 Loop 为 `skipped`、零轮次，下游按普通规则跳过。Root 和 body 各自是无环依赖图，返工由容器控制，不向普通 `dependsOn` 加回边。
 
 | `loop` 字段 | 合同 |
 | --- | --- |
 | `maxIterations` | 必填，1–10；包含首次执行，不额外增加一次 |
 | `deadlineSeconds` | 必填，1–1800 秒；业务轮次和截止共同限制执行 |
 | `body` | 非空普通子工作流；当前支持固定文本 Profile 与普通 Code Value/Artifact，使用 `require_all`，可声明普通 `when` |
-| `until` | until/decision/control 恰选一个；`{stepId, portId}` 指向体内 Code boolean Value；整轮完成后读取，旧语义不变 |
-| `control` | 与 until/decision 恰选一个；必填 decision selector 与非空 checkpoints 数组；均为 Code string continue/accept/reject；已交付测试环境，具名业务验收通过 |
-| `decision` | until/decision/control 恰选一个；指向体内 Code string Value，只允许 continue/accept/reject；整轮完成后读取；已交付测试环境，具名业务验收通过 |
+| `control` | 必填，唯一的控制写法。`control.decision` 必填，`{stepId, portId}` 指向体内 Code string Value，只允许 continue/accept/reject，整轮完成后读取；`control.checkpoints` 可省略，填写时为按依赖顺序排列的 Code string Value，用于本轮中途提前结束 |
 | `state` | 显式状态 map，可为空；每项声明 `initial` 和 `update`，每个状态必须有体内消费者 |
 | `outputs` | 非空出口 map；alias 映射到体内 Code Value/Artifact 或冻结文本模型 Artifact，只在接受后对外可见 |
 
 `state.initial` 支持非空字符串 literal、必填 string Template Input 或字符串 `composeValue`。`update` 指向体内 Code string Value；消费者使用 `{"source":"loopState","inputKey":"状态名"}`。模型只把状态绑定到 prompt；Code 目标必须声明必填、非 nullable string。未通过时更新状态并进入下一轮；通过时冻结接受输出。耗尽、取消或技术失败不发布最后一轮候选作为成功结果。
 
-三路决策的 continue 进入下一轮（最后一轮则 exhausted），accept 接受本轮出口，reject 业务拒绝并结束，不更新 state 或发布候选。判断 Code 的成功与 Loop 的业务拒绝分开：Loop 摘要为 rejected，公共 Task/Run 仍沿既有失败状态收口，已执行模型费用保留。until/decision/control 必须恰选一个，不能为 null；其他 decision 值失败，不隐式转为继续。新 decision-only 版本不携带 until，旧 reader 必须拒绝，不提供静默降级。示例见 [整轮三路业务决策](../examples/valid/loop-business-decision.json)。control.checkpoints 在批次执行并持久化后、下批调度前求值，continue 继续本轮，accept/reject 返回退出意图并为未运行节点保存 scoped LOOP_EXITED，无 Attempt/费用。父 Loop 对 accept 校验本轮全部出口；缺失失败。control.decision 在正常整轮完成后读取，continue 才进入下一轮。检查点非空、来源节点唯一且按依赖祖先顺序排列；来源被跳过或非法时失败，已派发并行节点先收齐，系统失败/取消优先。control-only 不携带旧 selector，旧 reader 必须拒绝。示例见 [中途检查点](../examples/valid/loop-checkpoint.json)。当前不支持跳过本轮、零轮、即时抢占或并行退出仲裁；普通 when 不等于结束 Loop。
+`control.decision` 的 continue 进入下一轮（最后一轮则 exhausted），accept 接受本轮出口，reject 业务拒绝并结束，不更新 state 或发布候选。只需"通过就交付、否则返工"时，判断 Code 返回 accept 或 continue 即可；可在输出 schema 中声明 `enum`。判断 Code 的成功与 Loop 的业务拒绝分开：Loop 摘要为 rejected，公共 Task/Run 仍沿既有失败状态收口，已执行模型费用保留。`control` 不能缺失或为 null；其他 decision 值失败，不隐式转为继续。旧的顶层 `until` 与 `decision` 已停用，保存时拒绝。示例见 [整轮三路业务决策](../examples/valid/loop-business-decision.json)。control.checkpoints 在批次执行并持久化后、下批调度前求值，continue 继续本轮，accept/reject 返回退出意图并为未运行节点保存 LOOP_EXITED，无 Attempt/费用。父 Loop 对 accept 校验本轮全部出口；检查点提前 accept 时，位于检查点下游的出口尚未产生，会失败并指明出口名，因此只用于 reject 的检查点可以位于出口上游。control.decision 在正常整轮完成后读取，continue 才进入下一轮。检查点来源节点唯一且按依赖祖先顺序排列；来源被跳过或非法时失败，已派发并行节点先收齐，系统失败/取消优先。示例见 [中途检查点](../examples/valid/loop-checkpoint.json)。当前不支持跳过本轮、零轮、即时抢占或并行退出仲裁；普通 when 不等于结束 Loop。
 
-体内模型固定选择当前可用文本模型，按普通规则解析内置或动态 Profile；可依赖体内 Code 并消费字符串 Value，Code 也可消费模型文本并返回反馈。body 只引用自身作用域的依赖/输出；外部节点只读取容器声明的 alias，不直接读取体内节点。body 的 Code 可沿用普通 Profile 产生文件并在本轮消费；文本、JSON 和文件通过一套显式输入声明选择交付类型。未接受候选保存在私有事实；接受时可转发所选轮次文件的引用和完整性信息，不复制文件内容。文件-only 和混合出口都支持，同源多别名有各自稳定的导出身份。轮内消费与接受轮文件出口已交付测试环境，真实接受/外层消费/下载与失败边界通过；模型直接出口与 Artifact alias 进入普通 sequence/merge 已交付受控测试环境，真实文本合并、耗尽不发布及 native 视频 sequence 通过。内置文本端口为 output；声明 text 输出的动态文本 Profile 可引用 text，导出仍为 text/plain Artifact，模型文本产物最多 2 MiB；平台读取实际字节验证完整性。接线仍验证目标合同、MIME、来源数量、依赖和缺失策略，不把 Value 转成文件，不重复模型调用或费用。尚不支持图片/视频生成返工或嵌套 Loop。新增示例见 [模型产物出口与合并](../examples/valid/loop-model-artifact-merge.json)。完整示例见 [文本生成与有界返工](../examples/valid/bounded-text-loop.json)。
+体内模型固定选择当前可用文本模型，按普通规则解析内置或动态 Profile；可依赖体内 Code 并消费字符串 Value，Code 也可消费模型文本并返回反馈。body 引用自身作用域的依赖/输出，也可以读取外层步骤 X 的输出，前提是 X 同时写在容器和该 body 步骤的 `dependsOn` 中（X 不能是另一个 Loop）；外部节点只读取容器声明的 alias，不直接读取体内节点。body 的 Code 可沿用普通 Profile 产生文件并在本轮消费；文本、JSON 和文件通过一套显式输入声明选择交付类型。未接受候选保存在私有事实；接受时可转发所选轮次文件的引用和完整性信息，不复制文件内容。文件-only 和混合出口都支持，同源多别名有各自稳定的导出身份。轮内消费与接受轮文件出口已交付测试环境，真实接受/外层消费/下载与失败边界通过；模型直接出口与 Artifact alias 进入普通 sequence/merge 已交付受控测试环境，真实文本合并、耗尽不发布及 native 视频 sequence 通过。内置文本端口为 output；声明 text 输出的动态文本 Profile 可引用 text，导出仍为 text/plain Artifact，模型文本产物最多 2 MiB；平台读取实际字节验证完整性。接线仍验证目标合同、MIME、来源数量、依赖和缺失策略，不把 Value 转成文件，不重复模型调用或费用。图片、视频等 Profile 与固定模型合同也可放在 body 中（一轮可返回至多 16 个同 MIME 族的文件，文本 2 MiB、其他 64 MiB，供应商地址会先转存）；固定模型合同的 prompt 需经 Code 步骤转换后再绑定 `loopState`。尚不支持嵌套 Loop。示例见 [条件与外层读取](../examples/valid/loop-outer-read-conditional.json)。新增示例见 [模型产物出口与合并](../examples/valid/loop-model-artifact-merge.json)。完整示例见 [文本生成与有界返工](../examples/valid/bounded-text-loop.json)。
 
-Loop 视觉文本 Profile 已交付受控测试环境，真实二轮接受/裁切交付与三轮耗尽通过：普通单图视觉 Profile 接收 PNG/JPEG/WebP 的必填单张 Artifact，输出仍为 text/plain；参考图按普通绑定进入每轮请求，反馈仍为 string state。内置 text.vision.openai-chat.v1 与对应已发布动态文本视觉 Profile 沿用普通模型合同，不开放图像/视频生成 body。示例见 [视觉反馈返工](../examples/valid/loop-vision-feedback.json)。
+Loop 视觉文本 Profile 已交付受控测试环境，真实二轮接受/裁切交付与三轮耗尽通过：普通单图视觉 Profile 接收 PNG/JPEG/WebP 的必填单张 Artifact，输出仍为 text/plain；参考图按普通绑定进入每轮请求，反馈仍为 string state。内置 text.vision.openai-chat.v1 与对应已发布动态文本视觉 Profile 沿用普通模型合同，图像/视频生成 body 见上文。示例见 [视觉反馈返工](../examples/valid/loop-vision-feedback.json)。
 
 条件未选择的节点按本轮身份记录 skipped，不产生 Attempt 或模型费用。继续下一轮需要本轮 state 更新值，接受需要本轮出口值；缺失必需值明确失败，不复用上一轮。文本连接与体内条件已交付测试环境，并通过真实文本返工、跨轮跳过及必需值缺失失败验收。文件示例见 [本轮 JSON 文件消费](../examples/valid/loop-code-file-consumption.json) 与 [接受轮文件交付](../examples/valid/loop-code-file-export.json)。文本示例见 [Code 到文本模型](../examples/valid/loop-code-to-text-model.json) 与 [接受条件交付](../examples/valid/loop-conditional-delivery.json)。
 
