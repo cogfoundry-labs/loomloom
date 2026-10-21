@@ -1,13 +1,13 @@
 ---
 name: loomloom
-description: Use this skill when the user mentions LoomLoom, loomloom, batch generation, batch processing, batch tasks, batch execution, template execution, template submission, Excel submission, template download, Excel validation, run results, result download, run id, task status, execution status, official templates, private templates, TemplateSpec, Excel/workbook templates, Market SkillBots, template market, public templates, SkillBot, listing, unlisting, relisting, price changes, fixed task fees, publishing to the Market, review submission, review status, creator earnings, template earnings, usage, orders, call records, installing LoomLoom, doctor, token, server, or when the user clearly wants multi-row input to produce batch outputs.
+description: Use this skill when the user mentions LoomLoom, loomloom, batch generation, batch processing, batch tasks, batch execution, template execution, template submission, Excel submission, template download, Excel validation, run results, result download, run id, task status, execution status, official templates, private templates, TemplateSpec, Excel/workbook templates, Market SkillApps, template market, public templates, SkillApp, listing, unlisting, relisting, price changes, fixed task fees, subscription bundles, subscription purchase and renewal, publishing to the Market, review submission, review status, creator earnings, template earnings, usage, orders, call records, installing LoomLoom, doctor, token, server, or when the user clearly wants multi-row input to produce batch outputs.
 ---
 
 # loomloom
 
-LoomLoom is a template-based AI workflow platform for structured, repeatable AI work. Use it for batch or table-shaped generation, official and private template execution, TemplateSpec authoring, Market SkillBots, creator listing management, local Agent Skill installation, run monitoring, and result retrieval.
+LoomLoom is a template-based AI workflow platform for structured, repeatable AI work. Use it for batch or table-shaped generation, official and private template execution, TemplateSpec authoring, Market SkillApps, subscriptions and bundle management, creator listing management, local Agent Skill installation, run monitoring, and result retrieval.
 
-Do not use LoomLoom for ordinary one-off writing or chat unless the user explicitly asks for LoomLoom, templates, Excel/workbook input, a Market SkillBot, or batch/table-shaped processing.
+Do not use LoomLoom for ordinary one-off writing or chat unless the user explicitly asks for LoomLoom, templates, Excel/workbook input, a Market SkillApp, or batch/table-shaped processing.
 
 ## Install And Update LoomLoom
 
@@ -31,18 +31,18 @@ Private template ── user-created through TemplateSpec
    ├─ optional private Agent Skill Package Head
    └─ Submitted to Market review
       └─ Listing Version (immutable publish snapshot)
-         └─ Approved and executable as a SkillBot
+         └─ Approved and executable as a SkillApp
 ```
 
 - Use `template` and `run` for official templates.
 - Use `template-spec` to author, version, and directly execute private templates.
-- Use `market` when a buyer discovers, quotes, or runs a paid SkillBot.
-- Use `listing` and `creator review` when a creator publishes or manages a SkillBot.
+- Use `market` when a buyer discovers, quotes, or runs a paid SkillApp.
+- Use `listing` and `creator review` when a creator publishes or manages a SkillApp.
 - A Listing is the Market shelf object. Buyers call the Listing; they do not hold a Listing Version.
-- There is no separate "public template" resource. User-facing "public Market template" means a Market SkillBot.
-- `asset list` aggregates private templates and Market SkillBots; it does not include official templates.
+- There is no separate "public template" resource. User-facing "public Market template" means a Market SkillApp.
+- `asset list` aggregates private templates and Market SkillApps; it does not include official templates.
 
-When "template" is ambiguous, clarify whether the user means an official template, their private template, or a Market SkillBot.
+When "template" is ambiguous, clarify whether the user means an official template, their private template, or a Market SkillApp.
 
 ## Intent Routing
 
@@ -52,15 +52,17 @@ Read every required reference for the current intent before answering with busin
 |---|---|
 | Install/configure LoomLoom; token, server, platform, balance, console, or `doctor` | [setup.md](references/setup.md), [cli.md](references/cli.md) |
 | Execute an official or private template; validate, precheck, run, monitor, or retrieve results | [execution.md](references/execution.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
-| Create, explain, or version a private template or TemplateSpec | [template-spec.md](references/template-spec.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
-| Discover, quote, or execute a Market SkillBot | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
+| Create, explain, or version a private template or TemplateSpec | [template-spec.md](references/template-spec.md), [workflow-preview.md](references/workflow-preview.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
+| Show local workflow edits live, inspect a saved private version in the Web workbench, or return a viewing link | [workflow-preview.md](references/workflow-preview.md), [template-spec.md](references/template-spec.md), [cli.md](references/cli.md) |
+| Discover, quote, or execute a Market SkillApp | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
+| Browse, buy, renew, or inspect subscriptions; create or manage subscription bundles | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Publish, change price/version/profile, list/unlist/relist, review, usage, settlement, or earnings | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Manage Skill Packages or install local Agent Skills | [local-skills.md](references/local-skills.md), [cli.md](references/cli.md) |
 | Diagnose a failure, ambiguous response, missing ID, or command syntax | [cli.md](references/cli.md) plus the relevant domain reference above |
 
 Whenever a task involves fees, quote/precheck, currency, balance, confirmation, paid execution, failure, cancellation, partial completion, usage, settlement, or creator earnings, read `billing.md` before answering or acting.
 
-When the user asks to accomplish a task with a Market SkillBot or official template, also read [local-skills.md](references/local-skills.md) for installation commands and result handling.
+When the user asks to accomplish a task with a Market SkillApp or official template, also read [local-skills.md](references/local-skills.md) for installation commands and result handling.
 
 ## High-Level Workflows
 
@@ -93,6 +95,19 @@ Download/prepare version-specific input → Validate → Precheck
 ```
 
 ### Private template authoring
+
+Read [workflow-preview.md](references/workflow-preview.md). For new or modified
+private templates, normally prepare a preview after confirming the plan:
+start `template-spec preview <spec.json>` in a retained tool session before or
+during writing, return its `viewUrl` promptly, and keep that session running while
+editing. Tell the user viewing is optional. Skip this step if the user declines;
+if the CLI or execution tool cannot support it, explain the limitation and
+continue normal local authoring without claiming there is a live preview.
+This step neither saves nor runs the draft. After saving, use
+the save result’s `viewUrl`; if unavailable, retry only
+`template-spec view-link <template-id> <version-id>` with the returned exact IDs;
+stop the retained preview when editing finishes. For viewing an already saved
+version, use view-link directly without a watcher.
 
 ```text
 Business conversation → inspect current LoomLoom Server capabilities
@@ -202,7 +217,7 @@ Discover Listing → Inspect public schema → Select Listing → Explicit use r
 → User confirms → Run through Listing → Usage/results
 ```
 
-When the user requests use of a Market SkillBot, identify the Listing and automatically install its Skill Package into the current Agent's Skill root. For Market execution, prepare input according to the Listing's public schema, obtain a quote, and present the estimated cost for confirmation before running through the Listing, following `billing.md`. Briefly explain any installation failure.
+When the user requests use of a Market SkillApp, identify the Listing and automatically install its Skill Package into the current Agent's Skill root. For Market execution, prepare input according to the Listing's public schema, obtain a quote, and present the estimated cost for confirmation before running through the Listing, following `billing.md`. Briefly explain any installation failure.
 
 ### Market creator
 
@@ -212,6 +227,15 @@ Select a successfully run private version → Explain intended change
 ```
 
 Changing only the price and changing the execution version are different operations; follow `market.md`.
+
+### Subscriptions and bundles
+
+For buyers, inspect the published bundle and selected monthly/yearly price,
+show the purchase or renewal action, obtain confirmation, and then submit with
+the displayed bundle revision and a stable request ID. Inspect the returned
+subscription separately from execution; buying a subscription does not run a
+SkillApp. For creators, follow `market.md` to manage automatic single-SkillApp
+bundles or create, configure, and publish manual bundles.
 
 ### Local Agent Skill
 
@@ -236,9 +260,9 @@ Determine the current platform only from the user's explicit selection or a succ
 4. **Confirm every run by default.** Show the current server-provided estimate and obtain explicit confirmation in the current conversation before creating a hosted run, except during an explicitly activated Test Execution Mode defined below.
 5. **Reconfirm changed input.** If input changes after validation, estimate, or confirmation, validate and estimate again and obtain a new confirmation. Tell the user that the changed input must be re-estimated and reconfirmed.
 6. **Use execution IDs safely.** Every newly confirmed execution gets a new `client-request-id`. Reuse one only for an identical retry of the same confirmed request after an ambiguous failure.
-7. **Do not bypass Market.** Execute a SkillBot through its Listing and public schema. Never expose or reconstruct hidden prompts, steps, mappings, TemplateSpec, or private execution logic.
+7. **Do not bypass Market.** Execute a SkillApp through its Listing and public schema. Never expose or reconstruct hidden prompts, steps, mappings, TemplateSpec, or private execution logic.
 8. **Respect order locking.** Market resolves the current sellable Listing Version when creating the order and locks that version and price for the order.
-9. **Confirm persistent changes.** Creating or versioning a template, publishing or changing a Listing, unlisting/relisting, and withdrawing review require explicit confirmation.
+9. **Confirm persistent changes.** Creating or versioning a template, publishing or changing a Listing, unlisting/relisting, withdrawing review, buying/renewing a subscription, and changing or publishing a subscription bundle require explicit confirmation.
 10. **Do not invent facts.** Never guess IDs, versions, flags, currency, fee fields, server state, hidden step IDs, settlement outcomes, or URLs.
 11. **Use current sources of truth.** Use CLI help for syntax, CLI-bundled TemplateSpec docs for the contract, downloaded workbooks for input shape, and returned service fields for state and IDs.
 12. **Keep technical details internal by default.** Translate raw JSON and backend fields into business language unless the user asks for CLI/API details.
@@ -275,8 +299,9 @@ The mode never covers persistent or high-impact operations: creating or versioni
 
 - [Setup and security](references/setup.md) — installation, `doctor`, credentials, platform messages, console, token/host safety.
 - [Template execution](references/execution.md) — official/private workbook and JSON flows, runs, results, artifacts, large files.
-- [Market and SkillBots](references/market.md) — Listings, public input, buyer and creator workflows, price/version changes.
+- [Market and SkillApps](references/market.md) — Listings, public input, buyer and creator workflows, price/version changes.
 - [Billing and confirmation](references/billing.md) — fee fields, currency, confirmation templates, settlement, earnings.
 - [Template authoring](references/template-spec.md) — TemplatePlan conversation, usage modes, TemplateSpec modeling and creation.
+- [Workflow viewing](references/workflow-preview.md) — optional live file previews, retained Agent sessions, saved-version links, authentication and cleanup.
 - [Agent Skill Packages](references/local-skills.md) — Agent-created private packages, public ZIP install/update, and package review binding.
 - [CLI and errors](references/cli.md) — syntax sources, ID chaining, recovery rules, complete capability inventory.

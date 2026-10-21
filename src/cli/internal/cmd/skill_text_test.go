@@ -477,6 +477,7 @@ func TestBundledSkillReferenceLayout(t *testing.T) {
 		"market.md",
 		"setup.md",
 		"template-spec.md",
+		"workflow-preview.md",
 	}
 	entries, err := os.ReadDir(filepath.Join(root, canonicalSkillReferencesDir))
 	if err != nil {

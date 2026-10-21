@@ -1,8 +1,8 @@
 # Agent Skill Packages
 
-Use this reference for a private template that needs local Agent capabilities, downloading private or creator Skill Package ZIPs, and when a user explicitly asks their current Agent to install or use an official template or Market SkillBot.
+Use this reference for a private template that needs local Agent capabilities, downloading private or creator Skill Package ZIPs, and when a user explicitly asks their current Agent to install or use an official template or Market SkillApp.
 
-Local package installation is not template execution. It must not create a run, quote/precheck execution cost, call a Market SkillBot, or create billable model/API usage.
+Local package installation is not template execution. It must not create a run, quote/precheck execution cost, call a Market SkillApp, or create billable model/API usage.
 
 ## Contents
 
@@ -75,7 +75,7 @@ Both commands only save the ZIP; they do not extract, install, or execute it. Fo
 
 ## Consumer: official-template and Market packages
 
-Requests to accomplish a task with an official template or Market SkillBot include its installation preparation. For example, "use this SkillBot to review my document" triggers installation once the target is identified. A request solely to browse, explain, or quote follows the discovery or quotation workflow.
+Requests to accomplish a task with an official template or Market SkillApp include its installation preparation. For example, "use this SkillApp to review my document" triggers installation once the target is identified. A request solely to browse, explain, or quote follows the discovery or quotation workflow.
 
 Determine the current Agent's Skill root from its runtime configuration or supported conventions. If the root cannot be determined, ask for that missing information. Run the appropriate command with this directory:
 

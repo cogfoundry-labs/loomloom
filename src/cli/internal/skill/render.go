@@ -44,7 +44,7 @@ func writeBody(b *bytes.Buffer, data TemplateData) {
 	_, _ = fmt.Fprintln(b, "## Source")
 	switch data.Metadata.SourceType {
 	case SourceMarketListing:
-		_, _ = fmt.Fprintf(b, "- Source type: Market SkillBot listing\n- Listing ID: `%s`\n- Installed listing version: `%s` (for traceability only)\n- Run-time behavior: always read the current listing before execution and use Market commands only.\n\n", data.Metadata.ListingID, data.Metadata.InstalledListingVersionID)
+		_, _ = fmt.Fprintf(b, "- Source type: Market SkillApp listing\n- Listing ID: `%s`\n- Installed listing version: `%s` (for traceability only)\n- Run-time behavior: always read the current listing before execution and use Market commands only.\n\n", data.Metadata.ListingID, data.Metadata.InstalledListingVersionID)
 	case SourceUserTemplate:
 		_, _ = fmt.Fprintf(b, "- Source type: private user template\n- Template ID: `%s`\n- Template version ID: `%s`\n- Run-time behavior: stay pinned to this exact template version unless the user explicitly upgrades the skill.\n\n", data.Metadata.TemplateID, data.Metadata.TemplateVersionID)
 	}
@@ -136,7 +136,7 @@ func writeExecution(b *bytes.Buffer, data TemplateData) {
 		_, _ = fmt.Fprintln(b, "- Market runs must use the Market path. Never call the underlying private template directly.")
 		_, _ = fmt.Fprintf(b, "- Before execution, run `loomloom market show %s` or rely on `market quote/run` to read the current Listing and current public schema.\n", listingID)
 		_, _ = fmt.Fprintf(b, "- Workbook flow: `loomloom market workbook download %s` -> fill/approve workbook -> `loomloom market workbook validate %s --file <xlsx>` -> `loomloom market workbook quote %s --file <xlsx>` -> confirmation -> `loomloom market workbook run %s --file <xlsx> --confirm --client-request-id <id>`.\n", listingID, listingID, listingID, listingID)
-		_, _ = fmt.Fprintf(b, "- JSON flow, only when explicitly requested: build public `inputRows` from current `inputSchemaSnapshot.fields[].key`, then `loomloom market quote %s --input-file <json>` -> confirmation -> `loomloom market run %s --input-file <json> --confirm --client-request-id <id>`.\n", listingID, listingID)
+		_, _ = fmt.Fprintf(b, "- JSON flow, only when explicitly requested: build public `inputRows` from current `input.fields[].key`, then `loomloom market quote %s --input-file <json>` -> confirmation -> `loomloom market run %s --input-file <json> --confirm --client-request-id <id>`.\n", listingID, listingID)
 		_, _ = fmt.Fprintln(b, "- Never send `taskInputs`, `workflowDefinition`, `templateSpec`, hidden step IDs, hidden prompts, or internal mappings to Market buyer endpoints.")
 	case SourceUserTemplate:
 		_, _ = fmt.Fprintln(b, "- Private template runs must stay pinned to the installed template version.")
@@ -154,7 +154,7 @@ func writeResults(b *bytes.Buffer, data TemplateData) {
 	}
 	_, _ = fmt.Fprintln(b, "- Useful commands: `loomloom run get <run-id>`, `loomloom run watch <run-id>`, `loomloom run result-rows <run-id>`, `loomloom run result-workbook <run-id>`, `loomloom artifact list <run-id>`, and `loomloom artifact download <run-id>`.")
 	_, _ = fmt.Fprintln(b, "- If a listing is unavailable, permission is denied, balance is insufficient, or a version cannot run, stop and explain the issue. Do not substitute another template or bypass Market.")
-	_, _ = fmt.Fprintln(b, "- When explaining CLI JSON or backend responses to the user, translate technical field names and enum values into plain user-facing wording. Do not expose developer field names such as `saleStatus`, `reviewStatus`, `executionAvailabilityStatus`, `executionBlockReason`, `forced_unlisted`, `inputSchemaSnapshot`, or `taskFixedFeeT` unless the user explicitly asks for raw JSON/API fields. For example, explain `forced_unlisted` as \"This SkillBot has been forcibly removed from the Market and cannot currently be listed or run\"; explain `reviewStatus=rejected` as \"the review was not approved\"; explain `executionAvailabilityStatus=blocked` as \"currently unavailable to run\".")
+	_, _ = fmt.Fprintln(b, "- When explaining CLI JSON or backend responses to the user, translate technical field names and enum values into plain user-facing wording. Do not expose developer field names such as `saleStatus`, `reviewStatus`, `executionAvailabilityStatus`, `executionBlockReason`, `forced_unlisted`, `inputSchemaSnapshot`, or `taskFixedFeeT` unless the user explicitly asks for raw JSON/API fields. For example, explain `forced_unlisted` as \"This SkillApp has been forcibly removed from the Market and cannot currently be listed or run\"; explain `reviewStatus=rejected` as \"the review was not approved\"; explain `executionAvailabilityStatus=blocked` as \"currently unavailable to run\".")
 	_, _ = fmt.Fprintln(b, "- When CLI output says `(currency unknown)` or a response lacks `currency`, tell the user the currency is unknown and preserve the raw T value. Do not show only a bare number and do not guess CNY or USD.")
 }
 

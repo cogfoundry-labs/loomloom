@@ -67,6 +67,7 @@ Keep raw field names for internal command chaining, not ordinary user summaries.
 - `loomloom login [--no-browser] [--login-timeout <duration>]`
 - `loomloom logout`
 - `loomloom doctor`
+- `loomloom balance`
 - `loomloom doctor --server <url> [--name <profile>] --output json`
 - `loomloom server list`
 - `loomloom server use <name-or-server>`
@@ -108,6 +109,8 @@ On successful `login --output json`, the `token` field is masked and is not a re
 - `loomloom template-spec get <template-id>`
 - `loomloom template-spec versions <template-id>`
 - `loomloom template-spec get-version <template-id> <version-id> [-f spec.json]`
+- `loomloom template-spec preview <spec.json> [--title <title>]`
+- `loomloom template-spec view-link <template-id> <version-id>`
 - `loomloom template-spec download-workbook <template-id> <version-id>`
 - `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx-path>`
 - `loomloom template-spec precheck-workbook <template-id> <version-id> <xlsx-path>`
@@ -122,6 +125,12 @@ and Fixed Model Contracts. A `supported` result describes TemplateSpec
 authoring eligibility, not balance, channel capacity, or instantaneous provider
 availability. Agents should use the returned match before choosing lower-level
 commands.
+
+`template-spec preview --output json` is a long-running NDJSON stream, not a
+single JSON response. Keep its process alive while editing; return `ready.viewUrl`
+before waiting for completion. It does not save or run the draft. Read
+[workflow-preview.md](workflow-preview.md) for lifecycle, errors, and cleanup.
+`view-link` returns one exact saved version's link and needs no active preview.
 
 `template-spec authoring-context` is the lower-level target-environment query
 for all Capability Profiles. For a dynamic Profile it returns the stable
@@ -169,12 +178,12 @@ the historical version.
 - `loomloom model list --step-type <step-type>`
 - `loomloom asset list`
 
-`asset list` aggregates private templates and Market SkillBots; it does not include official templates.
+`asset list` aggregates private templates and Market SkillApps; it does not include official templates.
 
 ### Market buyer and usage
 
-- `loomloom market list`
-- `loomloom market show <listing-id>`
+- `loomloom market list [--keyword <text>] [--category <code>] [--sort-by default|usage|newest] [--page <n>] [--page-size <1-15>]`
+- `loomloom market show <resource-id> [--source market|official]`
 - `loomloom market quote <listing-id> --input-file <request.json>`
 - `loomloom market run <listing-id> --input-file <request.json> --confirm --client-request-id <id>`
 - `loomloom market workbook download <listing-id> --output-file <xlsx>`
@@ -184,6 +193,31 @@ the historical version.
 - `loomloom usage list`
 - `loomloom usage get <run-transaction-id>`
 
+### Subscription buyers
+
+- `loomloom market bundle list [--creator-id <user-id>] [--name <name>]`
+- `loomloom market bundle show <bundle-id>`
+- `loomloom market bundle items <bundle-id>`
+- `loomloom market subscribe <listing-id> --tier monthly|yearly [--confirm --expected-revision <bundle-revision> --client-request-id <id>]`
+- `loomloom subscription list`
+- `loomloom subscription show <subscription-id>`
+- `loomloom subscription items <subscription-id> [--snapshot]`
+- `loomloom subscription buy <bundle-id> --tier monthly|yearly [--confirm --expected-revision <bundle-revision> --client-request-id <id>]`
+- `loomloom subscription renew <subscription-id> --tier monthly|yearly [--confirm --expected-revision <bundle-revision> --client-request-id <id>]`
+
+Without `--confirm`, purchase and renewal commands return the selected tier and
+bundle for price inspection without submitting a purchase. Read `market.md`
+and `billing.md` before confirming a purchase or renewal. Renewal takes a
+subscription ID, while purchase takes a bundle ID; `market subscribe` resolves
+the Listing's automatic bundle. `subscription items --snapshot` reads the
+immutable purchase membership rather than current bundle members.
+
+Subscription and bundle lists, `market bundle items`,
+`creator bundle list-available`, `creator bundle items`, and
+`subscription items` use `--page-size` (default 20,
+1–100) and `--page-token`. Read `nextPageToken` from the previous response;
+these commands do not use `market list`'s page-number pagination.
+
 ### Market creator
 
 - `loomloom listing publish <template-id> --template-version-id <id> --display-name <name> --task-fixed-fee <amount>`
@@ -192,10 +226,18 @@ the historical version.
 - `loomloom creator bundle list`
 - `loomloom creator bundle show <bundle-id>`
 - `loomloom creator bundle set-tier <bundle-id> --tier monthly|yearly --price <amount> --currency CNY --enabled=<bool> --expected-revision <bundle-revision>`
+- `loomloom creator bundle list-available`
+- `loomloom creator bundle create --name <name> --client-request-id <id> [--description <text>]`
+- `loomloom creator bundle items <bundle-id>`
+- `loomloom creator bundle update <bundle-id> --name <name> --expected-revision <bundle-revision> [--description <text>]`
+- `loomloom creator bundle add-item <bundle-id> --listing-id <listing-id> --expected-revision <bundle-revision>`
+- `loomloom creator bundle publish <bundle-id> --expected-revision <bundle-revision>`
+- `loomloom creator bundle unlist <bundle-id> --expected-revision <bundle-revision> [--reason <text>]`
 - `loomloom listing list`
 - `loomloom listing show <listing-id>`
 - `loomloom listing versions <listing-id>`
 - `loomloom listing download-skill-package <listing-id> --version-id <skill-package-version-id> --output-file <zip>`
+- `loomloom listing update-skill-package <listing-id> [--skill-package-archive-hash <hash> --skill-package-validation-id <id>] [--request-id <id>]`
 - `loomloom listing update <listing-id>`
 - `loomloom listing unlist <listing-id>`
 - `loomloom listing relist <listing-id>`
@@ -205,6 +247,21 @@ the historical version.
 - `loomloom creator review list`
 - `loomloom creator review get <review-request-id>`
 - `loomloom creator review withdraw <review-request-id>`
+
+`listing publish` and `listing update` accept `--category`, `--target-audience`,
+`--problem-solved`, repeatable `--scenario`, `--not-suitable-for`, and
+`--update-summary` for review. Read `market.md` for omission, clearing, merging,
+and the pending-category readback limitation.
+
+`creator bundle list` also accepts `--name` and `--status draft|published|unlisted`.
+Read current bundle revision before each mutation; it is distinct from the
+Listing's payment-settings revision. `add-item` accepts repeated `--listing-id`
+flags or comma-separated IDs and applies only to manual bundles. `update`
+requires a name and sends an empty description when `--description` is omitted;
+pass the current description explicitly to preserve it. Follow `market.md` for
+bundle creation, publication, and existing-subscription behavior. Read
+`local-skills.md` before `listing update-skill-package`; archive hash and
+validation ID must be supplied together, and omission selects `auto` mode.
 
 ### Local Agent Skills
 

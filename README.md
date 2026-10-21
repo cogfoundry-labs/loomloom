@@ -20,6 +20,9 @@
 
 ## What's new
 
+- Workflow inspection: [live local-file previews and saved-version Web links](docs/guides/workflow-preview.md)
+  are available in this source tree when supported by the selected Server.
+
 - 🖼️ [image-lab](examples/community/image-lab/) — a community skill: one image prompt → several alternatives across the best-fit models, behind one cost gate → [See the runs](#see-it-in-action)
 
 - 🎨 [redesign-lab](examples/community/redesign-lab/) — a community skill for exploring and building website redesigns → [See the runs](#see-it-in-action)
@@ -286,3 +289,5 @@ Organizations that prefer a production-ready implementation can also license the
 - Maintainers can push branches in the `loomloom` repository and merge pull requests into the `main` branch.
 - Help with managing issues, pull requests, and projects is greatly appreciated.
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
+
+The workflow Web interface opens a live draft or an exact saved version directly from a CLI link. `template-spec create` and `create-version` return `viewUrl` when available; if link lookup fails, the save remains successful and `view-link` can retrieve it later without repeating the save. See [workflow viewing](docs/guides/workflow-preview.md).

@@ -12,6 +12,7 @@ REFERENCE_FILES=(
   market.md
   setup.md
   template-spec.md
+  workflow-preview.md
 )
 
 usage() {

@@ -29,7 +29,7 @@ parallelism and gives back:
 
 - **one run id** and **one settled charge** (not N separate task costs)
 - **per-step status** and artifacts from one `run get`
-- a **reusable, versioned spec** that can be packaged as a SkillBot
+- a **reusable, versioned spec** that can be packaged as a SkillApp
 
 (Four identical branches here — the showcase demonstrates *dependencies*, not
 multi-model. When loomloom wraps more image models as contracts, this mirrors
