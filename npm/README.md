@@ -17,6 +17,12 @@ to the Agent's selected root, so it does not depend on a GitHub checkout after
 installation. Ordinary `npm install -g @cogfoundry/loomloom` remains CLI-only:
 it does not write to any Agent Skill directory.
 
+For a Beta, replace `<version>` with the exact requested Beta version (for
+example `0.6.2-beta.3`). `loomloom update --agent codex` follows stable `latest`;
+it does not select a Beta. Verify the installed Skill separately from
+`loomloom --version`. Local preview additionally requires an explicit viewer
+bootstrap URL; see [workflow preview](../docs/guides/workflow-preview.md).
+
 ## Prepare and verify
 
 Download one published stable or Beta release into `release/`, including

@@ -19,6 +19,38 @@ or open the complete link manually if the browser launcher fails. Keep this
 process running while editing. Refreshing retains the fragment and reconnects
 to the same process; restarting creates a new port/token.
 
+## Agent setup and draft review
+
+Installing only the npm CLI does not update an existing Agent Skill. To install
+this Beta and its matching guidance for Codex, use:
+
+```bash
+npx @cogfoundry/loomloom@0.6.2-beta.3 install --agent codex --yes
+```
+
+Choose the explicit target Agent for other tools. `loomloom update` follows
+stable latest, so use the exact Beta setup command when selecting a Beta.
+The viewer URL is separate from both installation and the cloud API profile.
+For the current ShengSuanYun test viewer, configure the preview process with:
+
+```bash
+export LOOMLOOM_VIEWER_BOOTSTRAP_URL='https://test.claw.shengsuanyun.com/zh/loomloom/workbench/viewer/v1/bootstrap.js'
+loomloom template-spec preview ./draft.json --no-open --output json
+```
+
+This is the test viewer, not a production default. For another deployment,
+provide its verified address; `--viewer-url` overrides the environment variable.
+For persistent configuration, set the variable in the appropriate shell setup
+only with the user's authorization. Existing API Keys and Servers are unchanged.
+
+The authoring handoff is: generate the local draft, start preview in a retained
+process, immediately return the complete `ready.viewUrl` as a clickable draft
+link, then review/edit, check, and save within the user's authorization. A user
+can decline review. On configuration or resource failure, explain the cause and
+resolve it or agree on local JSON review instead of silently saving remotely.
+`ready` confirms the local server started; it does not prove browser rendering.
+Return the saved-version link separately after a successful save.
+
 ## Data and lifecycle
 
 The CLI reads only the designated regular UTF-8 file, up to 1 MiB. The file can

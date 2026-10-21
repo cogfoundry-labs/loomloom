@@ -6,7 +6,7 @@ Use this reference when creating, modifying, versioning, or explaining a private
 
 - [Documentation sources](#documentation-sources)
 - [Conversation flow](#conversation-flow)
-- [Optional workflow viewing](#optional-workflow-viewing)
+- [Draft preview and review](#draft-preview-and-review)
 - [Usage mode](#usage-mode)
 - [TemplatePlan](#templateplan)
 - [Modeling and input rules](#modeling-and-input-rules)
@@ -61,31 +61,32 @@ When a user describes a reusable workflow:
 8. Draft a TemplatePlan first.
 9. Show the TemplatePlan and wait for confirmation.
 10. Generate TemplateSpec only after plan confirmation.
-11. Run `loomloom template-spec check <spec.json>` against the same selected
+11. Start local preview and return its draft link immediately, following
+    [workflow-preview.md](workflow-preview.md). Allow the user to review and edit
+    before saving; respect an explicit decision to skip review.
+12. Run `loomloom template-spec check <spec.json>` against the same selected
     Server where the version will be created. This is the server-authoritative
     contract check, not an offline schema check.
-12. Ask for a separate creation confirmation.
-13. Create only after explicit creation confirmation.
+13. Obtain creation authorization if it has not already been given.
+14. Create only within that authorization and return the saved-version link
+    separately from the local draft link.
 
 Offer options when asking questions and include a reasonable default.
 
-## Optional Workflow Viewing
+## Draft Preview And Review
 
-Read [workflow-preview.md](workflow-preview.md). Normally prepare a preview for
-new or modified private templates unless the user declines. After confirming the TemplatePlan, start
-`loomloom template-spec preview ./draft.json --output json` in a retained tool
-session. Give the user `ready.viewUrl` immediately and continue editing the same
-file while the process stays alive. Incomplete JSON can be synchronized.
-For edits to an existing private version, fetch that exact version to a local file first.
-The preview link works only on the CLI computer and does not require browser login.
-Viewing is optional; preview failure does not invalidate the local draft.
-Explain unsupported CLI/Server/tool limitations and continue normal local authoring;
-do not fabricate a link or switch the selected environment.
-Still run `check` and obtain the normal creation confirmation. After saving,
-call `template-spec view-link` with the returned exact template/version IDs
-and stop the retained watcher when editing is complete. Preview content is
-cleared on end/expiry. For an already saved version, use view-link directly:
-do not download and re-upload it merely to view it.
+The local draft link is part of the normal authoring handoff. Follow
+[workflow-preview.md](workflow-preview.md) for configuration, the retained
+`--no-open --output json` process, immediate link delivery, and failure handling.
+For edits to an existing private version, fetch that exact version to a local
+file first. Preview neither saves the draft nor validates model execution.
+
+After review, check against the intended Server and create within the user's
+authorization. Return the saved-version link with its exact IDs; it does not
+replace the earlier draft link. Stop the watcher when editing is complete.
+The preview stops accepting requests on exit; do not promise erasure of data
+already received by the browser. For an already saved version, use `view-link`
+directly without downloading and re-uploading it just to view it.
 
 ## Usage Mode
 

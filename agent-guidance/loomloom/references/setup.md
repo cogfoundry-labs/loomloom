@@ -25,11 +25,24 @@ Use this reference for installation, `doctor`, browser login, explicit API Token
   ```
 
   The npm setup command delegates the selected Agent's Skill root to the `skills` manager, copies the matching official Skill bundled in that npm package, and verifies that the selected Agent reports `loomloom`. In an Agent or non-interactive session, `--agent` is required; never ask the manager to install for every detected Agent.
+- For a specific Beta, install the CLI and matching Skill from the **same exact
+  version**, for example:
+
+  ```bash
+  npx @cogfoundry/loomloom@0.6.2-beta.3 install --agent codex --yes
+  ```
+
+  Use the explicitly selected Agent id. Verify the installed Skill includes
+  `references/workflow-preview.md`; the CLI version alone does not establish
+  the Skill version. A CLI-only `npm install -g` leaves existing Skills unchanged.
+  This setup does not configure a viewer address or change the API Key/Server.
+  Local draft viewing also needs the independent viewer configuration in
+  [workflow-preview.md](workflow-preview.md).
 - For an Agent previously installed by that npm setup command, update both the npm CLI and its matching copied Skill explicitly:
   ```bash
   loomloom update --agent <agent-id>
   ```
-  It only acts on a recorded npm setup receipt. It must not take over a shell, PowerShell, or Homebrew installation, and it must not guess an Agent directory.
+  This follows stable `latest`, not the Beta channel. It only acts on a recorded npm setup receipt. It must not take over a shell, PowerShell, or Homebrew installation, and it must not guess an Agent directory.
 - For shell or PowerShell installation, determine the current Agent's supported Skill root from its runtime configuration or official conventions. Use `<agent-skill-root>/loomloom` as the complete destination and pass it with `--skill-dir` or `-SkillDir`.
 - `--skill-dir` selects the Agent that receives the Skill; it is not the CLI binary directory. Do not use another Agent's directory as a fallback. In particular, `~/.codex/skills/loomloom` is for Codex only; a WorkBuddy target uses `~/.workbuddy/skills/loomloom`.
 - If the explicit-directory path's current Agent Skill root is unknown, ask the user for it. After installation, verify that `<agent-skill-root>/loomloom/SKILL.md` exists.
