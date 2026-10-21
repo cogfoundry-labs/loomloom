@@ -210,6 +210,8 @@ func newTemplateSpecCmd(opts *rootOptions) *cobra.Command {
 		newTemplateSpecGetCmd(opts),
 		newTemplateSpecVersionsCmd(opts),
 		newTemplateSpecGetVersionCmd(opts),
+		newTemplateSpecPreviewCmd(opts),
+		newTemplateSpecViewLinkCmd(opts),
 		newTemplateSpecCreateCmd(opts),
 		newTemplateSpecCreateVersionCmd(opts),
 		newTemplateSpecDownloadWorkbookCmd(opts),
@@ -634,6 +636,7 @@ func newTemplateSpecCreateCmd(opts *rootOptions) *cobra.Command {
 				"versionNumber":  int64(versionResp.VersionNumber),
 				"definitionHash": versionResp.DefinitionHash,
 			}
+			appendSavedVersionViewLink(cmd, opts, httpClient, result, createResp.TemplateID, versionResp.VersionID)
 			if opts.output == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
@@ -648,6 +651,11 @@ func newTemplateSpecCreateCmd(opts *rootOptions) *cobra.Command {
 				int64(versionResp.VersionNumber),
 				versionResp.DefinitionHash,
 			)
+			if err == nil {
+				if link, ok := result["viewUrl"].(string); ok {
+					_, err = fmt.Fprintf(cmd.OutOrStdout(), "view_url\t%s\n", link)
+				}
+			}
 			return err
 		},
 	}
@@ -695,6 +703,7 @@ func newTemplateSpecCreateVersionCmd(opts *rootOptions) *cobra.Command {
 				"versionNumber":  int64(versionResp.VersionNumber),
 				"definitionHash": versionResp.DefinitionHash,
 			}
+			appendSavedVersionViewLink(cmd, opts, httpClient, result, templateID, versionResp.VersionID)
 			if opts.output == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
@@ -708,6 +717,11 @@ func newTemplateSpecCreateVersionCmd(opts *rootOptions) *cobra.Command {
 				int64(versionResp.VersionNumber),
 				versionResp.DefinitionHash,
 			)
+			if err == nil {
+				if link, ok := result["viewUrl"].(string); ok {
+					_, err = fmt.Fprintf(cmd.OutOrStdout(), "view_url\t%s\n", link)
+				}
+			}
 			return err
 		},
 	}

@@ -98,6 +98,7 @@ require_cmd zip
 "$install_test_script"
 "$docs_script" prepare-checked
 "$references_script" check
+(cd "$repo_root/src/cli" && go test ./internal/viewerassets)
 "$uninstall_test_script"
 
 create_archive() (

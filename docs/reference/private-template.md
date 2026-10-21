@@ -30,6 +30,14 @@ The backend also supports unified rows shaped as `steps.<step-id>.executions[]` 
 
 ## Authoring flow
 
+For optional read-only inspection while authoring, run
+`loomloom template-spec preview ./my-template.spec.json` in a separate retained
+terminal/session before or during local edits. Return the emitted link immediately
+and keep the process alive. For a saved version, use
+`loomloom template-spec view-link <template-id> <version-id>`.
+See [workflow viewing](../guides/workflow-preview.md) for lifecycle and Agent usage.
+These steps do not replace validation, creation confirmation, or formal saving.
+
 A typical agent-assisted authoring flow:
 
 ```bash
@@ -96,3 +104,5 @@ loomloom template-spec precheck <template-id> --version-id <version-id> --input-
 # 4. Review the precheck, confirm, then run the version with that input
 loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <client-request-id>
 ```
+
+Successful `template-spec create` and `create-version` output includes the exact saved version `viewUrl`. Return that link directly. If `viewLinkError` is present, the version is already saved: retry only `template-spec view-link` with its returned IDs, never repeat the mutation to obtain a URL. The Web page opens details directly; there is no template catalog.

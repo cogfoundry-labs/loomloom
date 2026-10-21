@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `template-spec preview` embeds the shared workbench viewer and serves drafts on loopback, without Redis or draft uploads. Contract metadata is resolved through a stateless API.
+- `template-spec view-link` returns a Server-provided URL for one exact saved
+  private version without creating a temporary preview. Agent guidance explains
+  the separate viewing, validation, saving, and execution steps.
 - `listing publish` and `listing payment-settings` accept
   `--subscription-tiers-file` to send initial monthly/yearly prices atomically
   with subscription mode. Strict JSON and money validation preserves explicit
@@ -26,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for exact-model or dedicated-interface workflows.
 
 ### Changed
+- `template-spec create` and `create-version` include the exact saved-version
+  view link when available. Link lookup failures preserve save success and IDs,
+  so callers can retry only `view-link` without duplicating a version.
 - `creator earnings` now reads Billing-authoritative posted income, defaults to
   both pay-per-use and released subscription sources, and supports stable page
   tokens without switching to the subscription accrual endpoint.

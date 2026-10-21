@@ -52,7 +52,8 @@ Read every required reference for the current intent before answering with busin
 |---|---|
 | Install/configure LoomLoom; token, server, platform, balance, console, or `doctor` | [setup.md](references/setup.md), [cli.md](references/cli.md) |
 | Execute an official or private template; validate, precheck, run, monitor, or retrieve results | [execution.md](references/execution.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
-| Create, explain, or version a private template or TemplateSpec | [template-spec.md](references/template-spec.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
+| Create, explain, or version a private template or TemplateSpec | [template-spec.md](references/template-spec.md), [workflow-preview.md](references/workflow-preview.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
+| Show local workflow edits live, inspect a saved private version in the Web workbench, or return a viewing link | [workflow-preview.md](references/workflow-preview.md), [template-spec.md](references/template-spec.md), [cli.md](references/cli.md) |
 | Discover, quote, or execute a Market SkillApp | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Browse, buy, renew, or inspect subscriptions; create or manage subscription bundles | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Publish, change price/version/profile, list/unlist/relist, review, usage, settlement, or earnings | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
@@ -94,6 +95,19 @@ Download/prepare version-specific input → Validate → Precheck
 ```
 
 ### Private template authoring
+
+Read [workflow-preview.md](references/workflow-preview.md). For new or modified
+private templates, normally prepare a preview after confirming the plan:
+start `template-spec preview <spec.json>` in a retained tool session before or
+during writing, return its `viewUrl` promptly, and keep that session running while
+editing. Tell the user viewing is optional. Skip this step if the user declines;
+if the CLI or execution tool cannot support it, explain the limitation and
+continue normal local authoring without claiming there is a live preview.
+This step neither saves nor runs the draft. After saving, use
+the save result’s `viewUrl`; if unavailable, retry only
+`template-spec view-link <template-id> <version-id>` with the returned exact IDs;
+stop the retained preview when editing finishes. For viewing an already saved
+version, use view-link directly without a watcher.
 
 ```text
 Business conversation → inspect current LoomLoom Server capabilities
@@ -288,5 +302,6 @@ The mode never covers persistent or high-impact operations: creating or versioni
 - [Market and SkillApps](references/market.md) — Listings, public input, buyer and creator workflows, price/version changes.
 - [Billing and confirmation](references/billing.md) — fee fields, currency, confirmation templates, settlement, earnings.
 - [Template authoring](references/template-spec.md) — TemplatePlan conversation, usage modes, TemplateSpec modeling and creation.
+- [Workflow viewing](references/workflow-preview.md) — optional live file previews, retained Agent sessions, saved-version links, authentication and cleanup.
 - [Agent Skill Packages](references/local-skills.md) — Agent-created private packages, public ZIP install/update, and package review binding.
 - [CLI and errors](references/cli.md) — syntax sources, ID chaining, recovery rules, complete capability inventory.
