@@ -2,22 +2,19 @@ package workflowpreview
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
 )
 
-func watch(ctx context.Context, path string, current *state, jobs chan resolveJob, emit func(Event) error) error {
+func watch(ctx context.Context, path string, current *state, emit func(Event) error) error {
 	ticker := time.NewTicker(200 * time.Millisecond)
 	defer ticker.Stop()
 	var candidate, sent, problem string
 	var changed time.Time
 	var hasCandidate, hasSent bool
 	var sequence uint64
-	var previousKey [32]byte
-	var previousValid bool
 	for {
 		select {
 		case <-ctx.Done():
@@ -37,7 +34,12 @@ func watch(ctx context.Context, path string, current *state, jobs chan resolveJo
 			}
 			if problem != "" {
 				problem = ""
-				current.change(func(s *Snapshot) { s.Problem = "" })
+				current.change(func(s *Snapshot) {
+					s.Problem = ""
+					if s.Content != nil && !json.Valid([]byte(*s.Content)) {
+						s.Problem = "invalid_json"
+					}
+				})
 			}
 			if !hasCandidate || candidate != content {
 				candidate, changed, hasCandidate = content, now, true
@@ -52,28 +54,14 @@ func watch(ctx context.Context, path string, current *state, jobs chan resolveJo
 			sequence++
 			seq := strconv.FormatUint(sequence, 10)
 			sent, hasSent = candidate, true
-			var bindings Bindings
-			valid := json.Unmarshal([]byte(content), &bindings) == nil && bindings.Steps != nil && len(bindings.Steps) <= 200
-			raw, _ := json.Marshal(bindings)
-			valid = valid && len(raw) <= 128*1024
-			key := sha256.Sum256(raw)
 			current.change(func(s *Snapshot) {
 				s.Sequence = seq
 				s.Content = &content
 				s.Problem = ""
-				if !valid || !previousValid || previousKey != key {
-					s.Context = nil
+				if !json.Valid([]byte(content)) {
+					s.Problem = "invalid_json"
 				}
 			})
-			previousKey, previousValid = key, valid
-			if valid {
-				// The typed whitelist excludes prompts, inputs and workbook content.
-				select {
-				case <-jobs:
-				default:
-				}
-				jobs <- resolveJob{seq, bindings, key}
-			}
 
 			if err = emit(Event{Type: "synced", Sequence: seq}); err != nil {
 				return err

@@ -1,81 +1,84 @@
-# View a workflow while editing
+# View a local workflow while editing
 
-`template-spec preview` serves the bundled workbench viewer on this computer.
-The frontend repository owns the React UI; the CLI contains its compiled HTML,
-JS and CSS. Users do not need Node, Vite or a second frontend checkout.
+`template-spec preview` starts a tiny page and read-only data service on this
+computer. The browser loads the independently published Workbench viewer's
+JS/CSS directly over HTTPS. The CLI does not download, proxy, cache, decompress
+or embed those resources. Users need a browser, not Node or a frontend checkout.
+
+Configure `LOOMLOOM_VIEWER_BOOTSTRAP_URL` with the deployment's actual HTTPS
+`/viewer/v1/bootstrap.js` URL, or pass that URL using `--viewer-url`. No published
+URL is assumed. Then run:
 
 ```bash
 loomloom template-spec preview ./draft.json --title "Product workflow"
 ```
 
-Keep the command running while the Agent edits the file. It returns a URL on
-`127.0.0.1` with a random port and a per-process credential in the fragment.
-Open that complete URL on the same computer. No browser login is required.
-Other devices cannot use the link. Treat the complete link as private.
+The CLI opens the browser and prints a private `127.0.0.1` URL with a random
+port and a per-process credential in its fragment. Use `--no-open` for automation
+or open the complete link manually if the browser launcher fails. Keep this
+process running while editing. Refreshing retains the fragment and reconnects
+to the same process; restarting creates a new port/token.
 
-The file may not exist yet or contain incomplete JSON. The CLI reads a regular
-UTF-8 file up to 1 MiB, coalesces stable changes, and keeps the latest text in
-memory. Browser requests read this snapshot from the CLI. Draft text is never
-uploaded to the backend, stored in Redis, or persisted in browser storage.
-The configured API is used only for a read-only contract projection: step IDs,
-contract/profile identifiers and default model IDs. Prompts, input values and
-workbooks are excluded. If authentication or contract lookup is unavailable,
-the local viewer still opens and reports unresolved ports; it never invents them.
-Temporary authority failures, including partial responses, are retried without
-requiring another edit; available ports remain visible.
+## Data and lifecycle
 
-First content renders directly. Later edits use the shared JSON/node/edge
-animation controller. Missing, unreadable, invalid UTF-8 or oversized files
-leave the last readable snapshot visible with a warning. Incomplete JSON is
-shown as text with parse diagnostics. Neither case saves or runs a workflow.
+The CLI reads only the designated regular UTF-8 file, up to 1 MiB. The file can
+be missing initially. Stable file changes replace an in-memory snapshot; the
+browser polls same-origin `/api/snapshot` using Authorization and no-store.
+Draft text, prompts, input values, node metadata and session credentials never
+leave the computer. No API key, website login, contract query, Redis, database,
+extra draft copy or browser draft storage is required. Only public UI resources
+come from the configured static origin; no local file is uploaded there.
 
-Ctrl+C / SIGTERM closes the local service. The browser clears its graph and JSON
-when it detects disconnection. Restarting produces a new URL; refreshing works
-while the same process is alive. Multiple CLI processes use independent ports,
-credentials and in-memory snapshots. Closing a browser tab does not stop CLI.
+Local rendering follows declared nodes, bindings, step-output references and
+execution dependencies. Referenced ports are marked as coming from JSON, not
+certified model metadata. A graph does not prove validation or executability.
+Invalid JSON is shown with an explicit error; an unreadable file can leave the
+last readable snapshot visible, clearly labelled. No script or remote URL in
+the document is executed or automatically fetched.
 
-To edit an existing version, first use `get-version` to obtain a local file,
-then run `preview` on it. The original version remains unchanged. The removed
-`--source-template-id` / `--source-version-id` flags belonged to remote sessions.
+Ctrl+C / SIGTERM closes the service. The page reports disconnection and unmounts
+its viewer. This does not guarantee erasure of data the browser already received.
+Multiple processes have independent ports, tokens and snapshots. Links are local
+session capabilities, not cross-device links or website accounts.
 
-## Saved versions
+## Errors and compatibility
 
-```bash
-loomloom template-spec view-link <template-id> <version-id> --output json
-```
+The browser needs network access when public assets are not cached. An unavailable
+entry, stylesheet or module displays a load error; there is no embedded ZIP or
+CLI download fallback. A missing/invalid bootstrap URL fails at startup. The
+bootstrap uses anonymous CORS and the configured trusted origin; API requests
+stay on the local origin. Layout workers are created by browser code, not CLI.
 
-Saved versions still use the online workbench and require browser authentication
-as the owner. They can be viewed from other devices and do not require CLI to stay
-running. Existing check/create/create-version commands remain the persistence
-boundary. Successful save output includes `viewUrl` when link lookup succeeds.
-If it fails, the save is still successful with `viewLinkError: "view_link_unavailable"`;
-retry `view-link` using returned IDs, never repeat the mutation to obtain a link.
+The snapshot keeps `local-workflow-preview/v1`, decimal-string `sequence`,
+`title`, raw nullable `content`, and `problem`; `context` remains null for older
+v1 readers. Unauthorized requests cannot read content. A future incompatible
+protocol produces an explicit error. Compatible UI changes can be deployed
+independently; breaking protocol changes need a coordinated compatibility plan.
 
 ## Agent automation
 
-Use `preview --output json` in a retained process. NDJSON events are `ready`
-(with `viewUrl`), `synced` (local revision), `waiting` (file issue), and `ended`.
-Send the ready URL to the user before editing further; retain and stop only this
-process when finished. No full definition or remote credentials are printed.
-The local link necessarily contains its local access credential.
+Run `preview --no-open --output json` in a retained process. NDJSON events are
+`ready` (with private `viewUrl`), `synced` (local revision), `waiting` (file issue)
+and `ended`. Give the ready link to the user before editing; never place it in
+telemetry or diagnostics. Stop only that retained process when finished.
 
-Old remote preview links and writer/heartbeat/lease APIs are retired. Deploy the
-new read-only `/loom/v1/workflowViewerContext` contract endpoint before distributing
-this CLI. There is no draft persistence migration and unrelated Redis use remains.
+## Saved versions
 
-## Maintaining the bundled viewer
+`loomloom template-spec view-link <template-id> <version-id>` remains a separate,
+owner-authenticated online operation. Successful create/create-version responses
+can include `viewUrl`; link errors do not undo saves or justify retrying mutations.
+This online path is not used by local preview.
 
-In the workbench checkout run `pnpm install --frozen-lockfile` and
-`pnpm build:viewer`. In this repository run:
+## Workbench deployment
 
-```bash
-python3 scripts/package-viewer.py /path/to/workbench/dist-viewer
-```
+The frontend owns `pnpm build:viewer`, which emits a stable `bootstrap.js` and
+hashed assets. Deployment publishes them under the configured `/viewer/v1/`
+path, with anonymous CORS, revalidated bootstrap and immutable hashed resources.
+Retain assets referenced by older pages. The historical viewer.zip and its
+runtime consumers have been removed; the CLI distribution contains no viewer
+archive.
 
-Review the generated `src/cli/internal/viewerassets/viewer.zip` alongside frontend
-changes. It contains a protocol manifest and SHA-256 for each file; Go tests and
-runtime loading verify them. The deterministic archive is tracked so clean CLI
-builds and every release platform embed the same viewer without accessing a
-private frontend checkout. Never hand-edit its compiled JS or copy UI source into CLI.
-After updating, run CLI tests and the frontend tests; release packaging verifies
-the embedded viewer before cross-compiling. Update both artifacts as one release.
+Before selecting a viewer deployment, verify its actual HTTPS/CORS/cache behavior
+and protocol compatibility. The configured bootstrap is trusted executable code.
+A release of the public UI does not upload a local draft or publish a CLI version.
+Publishing the CLI beta follows the repository release/tag pipeline separately.

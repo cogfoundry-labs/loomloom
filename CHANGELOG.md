@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `template-spec preview` embeds the shared workbench viewer and serves drafts on loopback, without Redis or draft uploads. Contract metadata is resolved through a stateless API.
+- `template-spec preview` serves a tiny loopback page; the browser loads an independently published HTTPS viewer. Drafts and session credentials stay local, with no embedded UI package, cloud identity or contract lookup.
 - `template-spec view-link` returns a Server-provided URL for one exact saved
   private version without creating a temporary preview. Agent guidance explains
   the separate viewing, validation, saving, and execution steps.

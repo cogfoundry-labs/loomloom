@@ -191,7 +191,7 @@ For building your own private workflows.
 | `loomloom template-spec get <template-id>` | Show one private template and its versions. |
 | `loomloom template-spec versions <template-id>` | List versions of a private template. |
 | `loomloom template-spec get-version <template-id> <version-id> [-f spec.json]` | Read or export one owner-visible historical authoring spec. |
-| `loomloom template-spec preview <spec.json> [--title <title>]` | Open a bundled loopback viewer and watch the local file until stopped; no draft upload or browser login. `--output json` streams NDJSON events; this does not save or run a template. |
+| `loomloom template-spec preview <spec.json> [--viewer-url <HTTPS bootstrap>] [--no-open] [--title <title>]` | Open a loopback page loading public viewer JS/CSS directly in the browser and watch the local file until stopped; no draft upload or browser login. `--output json` streams NDJSON events; this does not save or run a template. |
 | `loomloom template-spec view-link <template-id> <version-id>` | Get the Server-provided workbench link for an exact saved private version; no watcher or file upload. |
 | `loomloom template-spec download-workbook <template-id> <version-id>` | Download a user-template workbook. |
 | `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx>` | Validate a user-template workbook. |

@@ -21,7 +21,7 @@
 ## What's new
 
 - Workflow inspection: [live local-file previews and saved-version Web links](docs/guides/workflow-preview.md)
-  are available in this source tree when supported by the selected Server.
+  are available in this source tree. Local preview requires a configured public viewer bootstrap, not a cloud Server or API key.
 
 - 🖼️ [image-lab](examples/community/image-lab/) — a community skill: one image prompt → several alternatives across the best-fit models, behind one cost gate → [See the runs](#see-it-in-action)
 

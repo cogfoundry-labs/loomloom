@@ -2,13 +2,16 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -139,5 +142,59 @@ func TestSavingReturnsExactViewLinkWithoutRepeatingMutations(t *testing.T) {
 				})
 			}
 		}
+	}
+}
+
+func TestLocalPreviewDoesNotUseCloudIdentityOrFetchViewer(t *testing.T) {
+	isolateCmdConfigHome(t)
+	requests := atomic.Int32{}
+	remote := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests.Add(1); w.WriteHeader(500) }))
+	defer remote.Close()
+	t.Setenv("LOOMLOOM_SERVER", "invalid-cloud-server")
+	t.Setenv("LOOMLOOM_TOKEN", "unbound-cloud-key")
+	file := filepath.Join(t.TempDir(), "draft.json")
+	if err := os.WriteFile(file, []byte(`{"steps":[]}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	command := NewRootCmd()
+	command.SetContext(ctx)
+	var output bytes.Buffer
+	command.SetOut(&output)
+	command.SetArgs([]string{"template-spec", "preview", file, "--no-open", "--output", "json", "--viewer-url", remote.URL + "/viewer/v1/bootstrap.js"})
+	if err := command.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if requests.Load() != 0 || !strings.Contains(output.String(), `"type":"ready"`) {
+		t.Fatal("local command depended on cloud or downloaded viewer resources")
+	}
+}
+
+func TestLocalPreviewOpensBrowserAndKeepsRunningOnFailure(t *testing.T) {
+	previous := openPreviewBrowser
+	defer func() { openPreviewBrowser = previous }()
+	called := false
+	openPreviewBrowser = func(target string) error {
+		u, err := url.Parse(target)
+		if err != nil || u.Hostname() != "127.0.0.1" || !strings.HasPrefix(u.Fragment, "token=") {
+			t.Fatal("unsafe browser target")
+		}
+		called = true
+		return fmt.Errorf("browser not available")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	command := newTemplateSpecPreviewCmd(&rootOptions{output: "json"})
+	command.SetContext(ctx)
+	var output, warnings bytes.Buffer
+	command.SetOut(&output)
+	command.SetErr(&warnings)
+	command.SetArgs([]string{filepath.Join(t.TempDir(), "draft.json"), "--viewer-url", "https://viewer.example/viewer/v1/bootstrap.js"})
+	if err := command.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !called || !strings.Contains(warnings.String(), "local viewUrl above") || !strings.Contains(output.String(), `"type":"ended"`) {
+		t.Fatal("browser fallback failed")
 	}
 }

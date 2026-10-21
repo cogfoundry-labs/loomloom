@@ -1,31 +1,32 @@
 # Workflow viewing
 
-For local draft edits, start `loomloom template-spec preview <spec.json> --output json`
-in a retained tool process. The file can be missing initially. Send the `ready`
-event's complete `viewUrl` to the user before editing; keep the process running
-so they see subsequent changes. This link works only on the CLI computer.
+Configure the deployment's real HTTPS bootstrap with
+`LOOMLOOM_VIEWER_BOOTSTRAP_URL` or `preview --viewer-url`. Do not invent a hosted
+address. For local edits, start `loomloom template-spec preview <spec.json>
+--no-open --output json` in a retained tool process. Give the user the complete
+ready.viewUrl and keep the process alive while editing. It works on that computer.
 
-The CLI embeds the workbench viewer and serves it on loopback. No browser login,
-Redis session, draft upload, template save, publication or model execution occurs.
-Only contract binding metadata is read from the configured API. Unavailable
-contracts show unresolved ports; do not claim formal validation succeeded.
+The CLI supplies only a tiny local startup page and a protected JSON snapshot.
+The browser loads public Workbench JS/CSS directly, then renders locally. The
+CLI never downloads or embeds the UI. Draft content, node information and local
+credentials are not sent to any remote API. No cloud token, login, contract query,
+Redis, upload, save or model execution occurs. Missing model metadata stays
+unverified; a diagram does not mean the workflow passed validation.
 
-Write normal UTF-8 JSON up to 1 MiB, preferably using atomic file replacement.
-The viewer supports incomplete JSON and uses progressive rendering for later
-changes. NDJSON events are ready, synced, waiting and ended. Synced means local
-snapshot updated, not that a private version was saved. Do not print file content
-or remote credentials to diagnose errors. The local URL itself grants local access.
+Use a regular UTF-8 file up to 1 MiB. Missing/incomplete files produce explicit
+waiting or parse states and recover on edits. NDJSON ready, synced, waiting and
+ended describe local preview only. Do not log draft text or the private local
+URL to telemetry. Closing a tab does not stop CLI; stop only this retained
+process when finished. The page detects disconnection, but do not promise that
+previously received browser data is erased. Refresh works with the original
+fragment while the CLI is alive; restarting needs the new link.
 
-Finish by stopping only the retained preview process. Closing a browser tab does
-not stop it; after CLI exits the page clears and the link no longer works.
-Restart generates a new port/token. Do not send local links as cross-device links.
-No heartbeat, writer secret, source-template-id or source-version-id flags remain.
+If public UI assets are unavailable, report the loading error; do not switch to
+an embedded resource package, cloud upload or automatic execution. No published
+viewer URL or fully offline operation is assumed.
 
-When the user asks to save, follow the normal validation and persistence policy.
-`create` / `create-version` return the exact online version `viewUrl` when available.
-A link error does not undo a successful save. Retry only
-`loomloom template-spec view-link <template-id> <version-id>` with the actual IDs.
-Saved-version links require the owner's website login and work without CLI running.
-
-If no preview command exists in the installed binary, explain that the CLI must
-be upgraded; never claim a source-only edit updates the installed binary.
+For saved versions, normal confirmation/validation/persistence rules still
+apply. Use `loomloom template-spec view-link <template-id> <version-id>` with
+exact IDs; its online link requires the owner to log in and is independent of
+local preview. A view-link failure never undoes a successful save; retry only
+the read, never the save mutation.

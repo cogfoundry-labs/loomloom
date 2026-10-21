@@ -11,13 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"testing/fstest"
 	"time"
 )
 
 func TestLocalHTTPBoundaries(t *testing.T) {
 	current := &state{snapshot: Snapshot{Protocol: Protocol, Sequence: "1"}}
-	h := handler("127.0.0.1:1234", "secret", fstest.MapFS{"viewer.html": {Data: []byte("viewer")}, "assets/a.js": {Data: []byte("asset")}}, current)
+	h := handler("127.0.0.1:1234", "secret", testViewer(t), current)
 	for _, tc := range []struct {
 		path, host, origin, token, method string
 		status                            int
@@ -58,7 +57,7 @@ func TestLocalHTTPBoundaries(t *testing.T) {
 	}
 }
 func TestExternalLinkCanNavigateButCannotReadDraft(t *testing.T) {
-	h := handler("127.0.0.1:1234", "secret", fstest.MapFS{"viewer.html": {Data: []byte("viewer")}}, &state{})
+	h := handler("127.0.0.1:1234", "secret", testViewer(t), &state{})
 	for _, path := range []string{"/", "/api/snapshot"} {
 		r := httptest.NewRequest("GET", "http://127.0.0.1:1234"+path, nil)
 		r.Header.Set("Sec-Fetch-Site", "cross-site")
@@ -77,19 +76,14 @@ func TestExternalLinkCanNavigateButCannotReadDraft(t *testing.T) {
 	}
 }
 
-func TestRunLocalDraftUpdatesAndNeverSendsContentToResolver(t *testing.T) {
+func TestRunLocalDraftUpdatesWithoutRemoteRequests(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "draft.json")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	events := make(chan Event, 20)
 	done := make(chan error, 1)
-	resolved := make(chan Bindings, 10)
-	resolve := func(ctx context.Context, b Bindings) (json.RawMessage, error) {
-		resolved <- b
-		return json.RawMessage(`{"schemaVersion":"workflow-viewer/v1","source":"preview","state":"resolved","steps":[]}`), nil
-	}
 	go func() {
-		done <- Run(ctx, fstest.MapFS{"viewer.html": {Data: []byte("viewer")}}, resolve, Options{File: path}, func(e Event) error { events <- e; return nil })
+		done <- Run(ctx, Options{File: path, ViewerURL: testViewer(t).String()}, func(e Event) error { events <- e; return nil })
 	}()
 	next := func(kind string) Event {
 		t.Helper()
@@ -135,11 +129,6 @@ func TestRunLocalDraftUpdatesAndNeverSendsContentToResolver(t *testing.T) {
 		t.Fatal(err)
 	}
 	next("synced")
-	b := <-resolved
-	encoded, _ := json.Marshal(b)
-	if strings.Contains(string(encoded), "PRIVATE") || strings.Contains(string(encoded), "inputBindings") {
-		t.Fatal("draft escaped metadata whitelist")
-	}
 	snap := fetch()
 	if snap.Content == nil || *snap.Content != raw || snap.Sequence != "1" {
 		t.Fatal("bad local snapshot")
@@ -151,10 +140,22 @@ func TestRunLocalDraftUpdatesAndNeverSendsContentToResolver(t *testing.T) {
 	if *fetch().Content != `{"steps":[` {
 		t.Fatal("incomplete JSON not preserved")
 	}
-	select {
-	case <-resolved:
-		t.Fatal("incomplete JSON triggered resolution")
-	default:
+	if fetch().Problem != "invalid_json" {
+		t.Fatal("missing structured JSON problem")
+	}
+	if err = os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	next("waiting")
+	if err = os.WriteFile(path, []byte(`{"steps":[`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for fetch().Problem != "invalid_json" {
+		if time.Now().After(deadline) {
+			t.Fatal("restored invalid file lost JSON problem")
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 	cancel()
 	select {
@@ -188,119 +189,30 @@ func TestReadFileRejectsUnsafeInput(t *testing.T) {
 	}
 }
 
-func TestLateContractResultCannotOverwriteNewDraft(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	current := &state{snapshot: Snapshot{Sequence: "1"}}
-	jobs := make(chan resolveJob, 1)
-	started := make(chan string, 2)
-	release := make(chan struct{}, 2)
-	done := make(chan struct{})
-	resolver := func(ctx context.Context, b Bindings) (json.RawMessage, error) {
-		id := b.Steps[0].StepID
-		started <- id
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-release:
-		}
-		return json.Marshal(map[string]string{"stepId": id})
+func testViewer(t *testing.T) *url.URL {
+	t.Helper()
+	u, err := validateViewerURL("https://viewer.example/workbench/viewer/v1/bootstrap.js")
+	if err != nil {
+		t.Fatal(err)
 	}
-	go func() { resolveLoop(ctx, resolver, jobs, current); close(done) }()
-	jobs <- resolveJob{sequence: "1", bindings: Bindings{Steps: []Step{{StepID: "old"}}}}
-	select {
-	case <-started:
-	case <-time.After(time.Second):
-		t.Fatal("resolver did not start")
-	}
-	current.change(func(s *Snapshot) { s.Sequence = "2" })
-	jobs <- resolveJob{sequence: "2", bindings: Bindings{Steps: []Step{{StepID: "new"}}}, key: [32]byte{1}}
-	release <- struct{}{}
-	select {
-	case id := <-started:
-		if id != "new" {
-			t.Fatal(id)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("new metadata was not resolved")
-	}
-	current.RLock()
-	value := string(current.snapshot.Context)
-	current.RUnlock()
-	if value != "" {
-		t.Fatal("stale metadata became visible", value)
-	}
-	release <- struct{}{}
-	deadline := time.Now().Add(time.Second)
-	for {
-		current.RLock()
-		value = string(current.snapshot.Context)
-		current.RUnlock()
-		if strings.Contains(value, "new") {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("new metadata not applied")
-		}
-		time.Sleep(time.Millisecond)
-	}
-	cancel()
-	select {
-	case <-done:
-	case <-time.After(time.Second):
-		t.Fatal("resolver did not stop")
-	}
+	return u
 }
 
-// No edit should be necessary to recover from an authority outage represented
-// as partial metadata rather than an HTTP error.
-func TestResolverRetriesTransientPartialContextWithoutEditing(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	current := &state{snapshot: Snapshot{Sequence: "1"}}
-	jobs := make(chan resolveJob, 1)
-	done := make(chan struct{})
-	calls := make(chan int, 2)
-	count := 0
-	partial := json.RawMessage(`{"state":"partial","steps":[{"stepId":"one","status":"unresolved","reason":"dependency_unavailable"}]}`)
-	resolved := json.RawMessage(`{"state":"resolved","steps":[{"stepId":"one","status":"resolved"}]}`)
-	go func() {
-		defer close(done)
-		resolveLoop(ctx, func(context.Context, Bindings) (json.RawMessage, error) {
-			count++
-			calls <- count
-			if count == 1 {
-				return partial, nil
-			}
-			return resolved, nil
-		}, jobs, current)
-	}()
-	defer func() { cancel(); <-done }()
-	jobs <- resolveJob{sequence: "1"}
-	for want := 1; want <= 2; want++ {
-		select {
-		case got := <-calls:
-			if got != want {
-				t.Fatalf("call %d, want %d", got, want)
-			}
-		case <-time.After(12 * time.Second):
-			t.Fatalf("missing authority call %d without a new edit", want)
-		}
-		expected := partial
-		if want == 2 {
-			expected = resolved
-		}
-		deadline := time.Now().Add(time.Second)
-		for {
-			current.RLock()
-			actual := string(current.snapshot.Context)
-			current.RUnlock()
-			if actual == string(expected) {
-				break
-			}
-			if time.Now().After(deadline) {
-				t.Fatalf("metadata not published: %s", actual)
-			}
-			time.Sleep(time.Millisecond)
+func TestBootstrapContainsOnlyPublicEntry(t *testing.T) {
+	content := "private draft text"
+	h := handler("127.0.0.1:1234", "private-session-token", testViewer(t), &state{snapshot: Snapshot{Content: &content}})
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "http://127.0.0.1:1234/", nil))
+	body := w.Body.String()
+	if strings.Contains(body, content) || strings.Contains(body, "private-session-token") || !strings.Contains(body, "/viewer/v1/bootstrap.js") || !strings.Contains(body, "anonymous") {
+		t.Fatal("unsafe startup page")
+	}
+	if !strings.Contains(w.Header().Get("Content-Security-Policy"), "connect-src 'self'") {
+		t.Fatal("snapshot connections must stay local")
+	}
+	for _, raw := range []string{"", "http://viewer.example/viewer/v1/bootstrap.js", "https://a:secret@viewer.example/viewer/v1/bootstrap.js", "https://viewer.example/viewer/v2/bootstrap.js", "https://viewer.example/viewer/v1/bootstrap.js?token=secret", "https://viewer.example/viewer/v1/bootstrap.js#secret"} {
+		if _, err := validateViewerURL(raw); err == nil {
+			t.Fatal("accepted invalid entry")
 		}
 	}
 }

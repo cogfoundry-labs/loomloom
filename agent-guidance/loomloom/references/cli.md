@@ -109,7 +109,7 @@ On successful `login --output json`, the `token` field is masked and is not a re
 - `loomloom template-spec get <template-id>`
 - `loomloom template-spec versions <template-id>`
 - `loomloom template-spec get-version <template-id> <version-id> [-f spec.json]`
-- `loomloom template-spec preview <spec.json> [--title <title>]`
+- `loomloom template-spec preview <spec.json> [--viewer-url <HTTPS bootstrap>] [--no-open] [--title <title>]`
 - `loomloom template-spec view-link <template-id> <version-id>`
 - `loomloom template-spec download-workbook <template-id> <version-id>`
 - `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx-path>`
