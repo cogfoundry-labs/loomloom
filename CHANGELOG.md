@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for exact-model or dedicated-interface workflows.
 
 ### Changed
+- Agent authoring now explicitly hands off the local draft preview link before
+  review and saving. Setup documents the separate viewer URL and same-version
+  CLI/Skill Beta installation; preview readiness is not browser rendering.
 - `template-spec create` and `create-version` include the exact saved-version
   view link when available. Link lookup failures preserve save success and IDs,
   so callers can retry only `view-link` without duplicating a version.

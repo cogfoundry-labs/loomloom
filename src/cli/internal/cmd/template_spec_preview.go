@@ -21,6 +21,9 @@ func newTemplateSpecPreviewCmd(opts *rootOptions) *cobra.Command {
 	var noOpen bool
 	command := &cobra.Command{Use: "preview <spec.json>", Short: "Watch a local draft using the independently published workflow viewer", Long: `Start a loopback-only page and watch one UTF-8 file (maximum 1 MiB).
 The browser loads public JS/CSS from --viewer-url (or LOOMLOOM_VIEWER_BOOTSTRAP_URL).
+This viewer setting is independent of --server and API credentials.
+For Agent use, keep the process alive and return ready.viewUrl immediately;
+ready confirms local startup, not browser resource loading or rendering.
 The CLI does not download UI resources. Draft text and session credentials stay
 on this computer; no API key, login, upload or remote contract lookup is used.
 Keep this process running while editing. Ctrl+C / SIGTERM closes the local

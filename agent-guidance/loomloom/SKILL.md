@@ -19,6 +19,12 @@ When asked to install or update LoomLoom:
 4. Do not guess a Skill root or fall back to another Agent's directory. If the current Agent or root is unknown, ask the user for it.
 5. Verify either the npm setup success result or `<agent-skill-root>/loomloom/SKILL.md` after the explicit-directory path.
 
+`npm install -g` updates only the CLI. When the user wants Agent authoring,
+install the matching Skill for the explicit Agent as well. For a Beta, use the
+exact requested version in the setup command; `loomloom update` follows stable
+`latest`. See [setup.md](references/setup.md) and
+[workflow-preview.md](references/workflow-preview.md) for viewer configuration.
+
 ## Core Objects
 
 Choose the product object before choosing a command:
@@ -96,23 +102,29 @@ Download/prepare version-specific input → Validate → Precheck
 
 ### Private template authoring
 
-Read [workflow-preview.md](references/workflow-preview.md). For new or modified
-private templates, normally prepare a preview after confirming the plan:
-start `template-spec preview <spec.json>` in a retained tool session before or
-during writing, return its `viewUrl` promptly, and keep that session running while
-editing. Tell the user viewing is optional. Skip this step if the user declines;
-if the CLI or execution tool cannot support it, explain the limitation and
-continue normal local authoring without claiming there is a live preview.
-This step neither saves nor runs the draft. After saving, use
-the save result’s `viewUrl`; if unavailable, retry only
-`template-spec view-link <template-id> <version-id>` with the returned exact IDs;
-stop the retained preview when editing finishes. For viewing an already saved
-version, use view-link directly without a watcher.
+Read [workflow-preview.md](references/workflow-preview.md). For a new or modified
+private template, generate the local draft, start `template-spec preview` in a
+retained process, and immediately return the complete `ready.viewUrl` as a
+clickable draft link before continuing validation or saving. Keep that process
+alive during review and edits. Check the viewer configuration first; an API Key
+and Server URL do not configure the independent viewer. `ready` confirms the
+local service started, not that the browser loaded or rendered the viewer.
+
+Offer draft review before creation; skip it when the user explicitly declines or
+has already authorized saving without review. If configuration or retained
+process support is missing, explain the specific limitation and resolve it or
+offer review of the local JSON; do not silently substitute a saved-version page
+or claim that a draft page exists. Preserve the user's existing authorization.
+After saving, return the separate saved-version link from the save result or
+retry only `template-spec view-link` with the exact returned IDs. For an already
+saved version, use view-link directly. Stop only the retained preview process
+when editing is finished.
 
 ```text
 Business conversation → inspect current LoomLoom Server capabilities
 → decide LoomLoom-only or Agent-assisted
-→ TemplatePlan → User confirms plan → Generate TemplateSpec
+→ TemplatePlan → User confirms plan → Generate local TemplateSpec draft
+→ Start local preview → Immediately return draft link → User reviews/edits
 → Check with the current LoomLoom Server → User confirms creation
 → Create or append a version
 → LoomLoom-only: continue normally; do not raise Skill Package with the creator
