@@ -119,7 +119,7 @@ func Login(ctx context.Context, cfg Config) (*Result, error) {
 	}
 	openURL := cfg.OpenURL
 	if openURL == nil {
-		openURL = openInBrowser
+		openURL = OpenBrowser
 	}
 	_ = openURL(authorizeURL)
 	if err := ctx.Err(); err != nil {
@@ -337,7 +337,8 @@ func randomToken(size int) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-func openInBrowser(target string) error {
+// OpenBrowser asks the operating system to open a URL in the default browser.
+func OpenBrowser(target string) error {
 	switch runtime.GOOS {
 	case "darwin":
 		return exec.Command("open", target).Start()

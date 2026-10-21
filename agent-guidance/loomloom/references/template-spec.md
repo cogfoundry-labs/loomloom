@@ -6,6 +6,7 @@ Use this reference when creating, modifying, versioning, or explaining a private
 
 - [Documentation sources](#documentation-sources)
 - [Conversation flow](#conversation-flow)
+- [Optional workflow viewing](#optional-workflow-viewing)
 - [Usage mode](#usage-mode)
 - [TemplatePlan](#templateplan)
 - [Modeling and input rules](#modeling-and-input-rules)
@@ -67,6 +68,24 @@ When a user describes a reusable workflow:
 13. Create only after explicit creation confirmation.
 
 Offer options when asking questions and include a reasonable default.
+
+## Optional Workflow Viewing
+
+Read [workflow-preview.md](workflow-preview.md). Normally prepare a preview for
+new or modified private templates unless the user declines. After confirming the TemplatePlan, start
+`loomloom template-spec preview ./draft.json --output json` in a retained tool
+session. Give the user `ready.viewUrl` immediately and continue editing the same
+file while the process stays alive. Incomplete JSON can be synchronized.
+For edits to an existing private version, fetch that exact version to a local file first.
+The preview link works only on the CLI computer and does not require browser login.
+Viewing is optional; preview failure does not invalidate the local draft.
+Explain unsupported CLI/Server/tool limitations and continue normal local authoring;
+do not fabricate a link or switch the selected environment.
+Still run `check` and obtain the normal creation confirmation. After saving,
+call `template-spec view-link` with the returned exact template/version IDs
+and stop the retained watcher when editing is complete. Preview content is
+cleared on end/expiry. For an already saved version, use view-link directly:
+do not download and re-upload it merely to view it.
 
 ## Usage Mode
 
