@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "name": "Text generation, Code judgement and bounded rework"
+  },
+  "templateInputs": {
+    "request": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "presentation": {
+        "label": "Generation request",
+        "order": 1
+      }
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_loop001",
+      "displayName": "At most three rework iterations",
+      "executionBinding": {
+        "kind": "loop"
+      },
+      "loop": {
+        "maxIterations": 11,
+        "deadlineSeconds": 180,
+        "body": [
+          {
+            "stepId": "stp_draft01",
+            "displayName": "Generate candidate",
+            "executionBinding": {
+              "kind": "capabilityProfile",
+              "profileId": "text.basic.openai-chat.v1"
+            },
+            "modelSelection": {
+              "source": "fixed",
+              "defaultModelId": "MODEL_ID_FROM_TARGET_AUTHORING_CONTEXT"
+            },
+            "inputBindings": {
+              "prompt": {
+                "source": "loopState",
+                "inputKey": "feedback"
+              }
+            }
+          },
+          {
+            "stepId": "stp_judge01",
+            "displayName": "stp_judge01",
+            "executionBinding": {
+              "kind": "codeProfile",
+              "profileId": "python-pure",
+              "profileRevision": "1"
+            },
+            "code": {
+              "language": "python",
+              "entrypoint": "main",
+              "source": "def main(inputs):\n    copy = inputs[\"copy\"].strip()\n    passed = copy == \"HELLO\"\n    return {\"copy\": copy, \"passed\": passed, \"feedback\": \"Reply exactly HELLO\"}\n",
+              "contractVersion": "2",
+              "outputs": {
+                "copy": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "passed": {
+                  "kind": "value",
+                  "valueType": "boolean",
+                  "schema": {
+                    "type": "boolean"
+                  }
+                },
+                "feedback": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              },
+              "inputs": {
+                "copy": {
+                  "valueType": "string",
+                  "required": true,
+                  "nullable": false,
+                  "schema": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                }
+              }
+            },
+            "inputBindings": {
+              "copy": {
+                "source": "stepOutput",
+                "stepId": "stp_draft01",
+                "portId": "output",
+                "valueType": "string"
+              }
+            },
+            "dependsOn": [
+              "stp_draft01"
+            ]
+          }
+        ],
+        "until": {
+          "stepId": "stp_judge01",
+          "portId": "passed"
+        },
+        "state": {
+          "feedback": {
+            "initial": {
+              "source": "templateInput",
+              "inputKey": "request"
+            },
+            "update": {
+              "stepId": "stp_judge01",
+              "portId": "feedback"
+            }
+          }
+        },
+        "outputs": {
+          "copy": {
+            "stepId": "stp_judge01",
+            "portId": "copy"
+          },
+          "passed": {
+            "stepId": "stp_judge01",
+            "portId": "passed"
+          }
+        }
+      }
+    },
+    {
+      "stepId": "stp_deliver1",
+      "displayName": "stp_deliver1",
+      "executionBinding": {
+        "kind": "codeProfile",
+        "profileId": "python-pure",
+        "profileRevision": "1"
+      },
+      "code": {
+        "language": "python",
+        "entrypoint": "main",
+        "source": "def main(inputs):\n    return {\"copy\": inputs[\"copy\"]}\n",
+        "contractVersion": "1",
+        "outputs": {
+          "copy": {
+            "kind": "value",
+            "valueType": "string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "inputBindings": {
+        "copy": {
+          "source": "stepOutput",
+          "stepId": "stp_loop001",
+          "portId": "copy"
+        }
+      },
+      "dependsOn": [
+        "stp_loop001"
+      ],
+      "when": {
+        "stepId": "stp_loop001",
+        "portId": "passed",
+        "equals": true
+      }
+    }
+  ],
+  "workbook": {
+    "sampleRows": [
+      {
+        "values": {
+          "request": "Reply exactly HELLO"
+        }
+      }
+    ]
+  }
+}
