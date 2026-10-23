@@ -50,6 +50,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `capability resolve` text output no longer appends an empty revision suffix to
   dynamic Profile IDs.
 
+### Security
+- Updated npm release tooling to npm 11.21.1 and replaced Verdaccio with a
+  loopback-only Registry fixture for offline distribution tests. CI and
+  publication use the same pinned npm version and retain the security audit.
+
 ## [0.3.3] - 2026-08-26
 
 ### Added

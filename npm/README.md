@@ -40,6 +40,27 @@ Generated public package roots live under `dist/npm/`; publishable tarballs
 and their frozen integrity manifest live under `dist/npm-tarballs/`. Both are
 ignored build outputs.
 
+Offline Registry tests use a loopback-only HTTP fixture in a Worker, accepting
+only the seven packages and immutable tarballs in the publication manifest.
+It has no upstream Registry, persistent storage, or Verdaccio dependency. These
+tests exercise the real npm client and publication script, including read-back,
+repeat publication, install, exec, npx, and uninstall; they do not validate
+production OIDC or npm Registry policy. CI retains `npm audit --audit-level=high`
+against the public Registry for the tooling dependencies.
+Test commands use a temporary working directory, npm configuration and cache,
+which are removed along with the fixture when the test finishes.
+
+The current npm 11.21.1 tarball still bundles `ip-address@10.7.2`, affected by
+[GHSA-rxp7-6hxx-x8q5](https://github.com/advisories/GHSA-rxp7-6hxx-x8q5).
+The checked npm 12.2.1 tarball also contains that version, and npm overrides do
+not replace bundled files. This remaining moderate advisory is reported by
+`npm audit`; it does not trip the existing high-severity gate. Update the pinned
+npm client when an upstream release includes the fixed dependency; do not hide
+the report or edit installed bundle contents to make the audit pass.
+The fixed dependency version is 10.7.4. The affected dependency is part of the
+private release tooling, not a dependency shipped in the LoomLoom npm packages
+or Go executable. Passing the CI gate does not mean the tooling is advisory-free.
+
 To inspect the official-registry repair plan without writing anything:
 
 ```sh
@@ -82,6 +103,6 @@ package with:
 - Allowed action: `npm publish`
 
 Only then may the `publish` action of the workflow be used. The workflow uses
-GitHub-hosted runners, Node 24, npm 11.19.1, and OIDC. The npm Registry may
+GitHub-hosted runners, Node 24, npm 11.21.1, and OIDC. The npm Registry may
 automatically create `latest` for a brand-new package even when publication
 uses another dist-tag; stable releases deliberately take ownership of `latest`.
