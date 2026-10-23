@@ -5,9 +5,11 @@ computer. The browser loads the independently published Workbench viewer's
 JS/CSS directly over HTTPS. The CLI does not download, proxy, cache, decompress
 or embed those resources. Users need a browser, not Node or a frontend checkout.
 
-Configure `LOOMLOOM_VIEWER_BOOTSTRAP_URL` with the deployment's actual HTTPS
-`/viewer/v1/bootstrap.js` URL, or pass that URL using `--viewer-url`. No published
-URL is assumed. Then run:
+The default viewer entry is the ShengSuanYun production URL:
+
+`https://www.shengsuanyun.com/zh/loomloom/workbench/viewer/v1/bootstrap.js`
+
+No viewer configuration is needed for the default. Run:
 
 ```bash
 loomloom template-spec preview ./draft.json --title "Product workflow"
@@ -31,17 +33,21 @@ npx @cogfoundry/loomloom@0.6.2-beta.3 install --agent codex --yes
 Choose the explicit target Agent for other tools. `loomloom update` follows
 stable latest, so use the exact Beta setup command when selecting a Beta.
 The viewer URL is separate from both installation and the cloud API profile.
-For the current ShengSuanYun test viewer, configure the preview process with:
+Resolution order is explicit `--viewer-url`, then a non-empty
+`LOOMLOOM_VIEWER_BOOTSTRAP_URL`, then the built-in production URL. An empty or
+whitespace-only environment value uses the default. Existing non-empty overrides
+remain effective; remove an old override to return to the production viewer.
+For another deployment, provide its published HTTPS entry:
 
 ```bash
-export LOOMLOOM_VIEWER_BOOTSTRAP_URL='https://test.claw.shengsuanyun.com/zh/loomloom/workbench/viewer/v1/bootstrap.js'
-loomloom template-spec preview ./draft.json --no-open --output json
+loomloom template-spec preview ./draft.json --no-open --output json \
+  --viewer-url 'https://viewer.example/workbench/viewer/v1/bootstrap.js'
 ```
 
-This is the test viewer, not a production default. For another deployment,
-provide its verified address; `--viewer-url` overrides the environment variable.
-For persistent configuration, set the variable in the appropriate shell setup
-only with the user's authorization. Existing API Keys and Servers are unchanged.
+Explicit invalid overrides fail rather than silently selecting a different
+viewer. For persistent configuration, set the variable in the appropriate shell
+setup only with the user's authorization. Existing API Keys and Servers are
+unchanged, and selecting an API Server does not select a different viewer.
 
 The authoring handoff is: generate the local draft, start preview in a retained
 process, immediately return the complete `ready.viewUrl` as a clickable draft
@@ -77,7 +83,9 @@ session capabilities, not cross-device links or website accounts.
 
 The browser needs network access when public assets are not cached. An unavailable
 entry, stylesheet or module displays a load error; there is no embedded ZIP or
-CLI download fallback. A missing/invalid bootstrap URL fails at startup. The
+CLI download fallback. An invalid explicit bootstrap URL fails at startup. A
+200 response containing HTML is not a working module: the deployment must serve
+JavaScript with a JavaScript MIME type and anonymous CORS. The
 bootstrap uses anonymous CORS and the configured trusted origin; API requests
 stay on the local origin. Layout workers are created by browser code, not CLI.
 

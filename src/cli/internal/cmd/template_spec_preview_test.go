@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -168,6 +169,82 @@ func TestLocalPreviewDoesNotUseCloudIdentityOrFetchViewer(t *testing.T) {
 	}
 	if requests.Load() != 0 || !strings.Contains(output.String(), `"type":"ready"`) {
 		t.Fatal("local command depended on cloud or downloaded viewer resources")
+	}
+}
+
+func TestLocalPreviewViewerSelection(t *testing.T) {
+	const productionURL = "https://www.shengsuanyun.com/zh/loomloom/workbench/viewer/v1/bootstrap.js"
+	const customURL = "https://viewer.example/workbench/viewer/v1/bootstrap.js"
+	const flagURL = "https://override.example/viewer/v1/bootstrap.js"
+	for _, tc := range []struct {
+		name, environment, want string
+		flags                   []string
+		invalid                 bool
+	}{
+		{name: "production default", want: productionURL},
+		{name: "blank environment uses production", environment: " \t ", want: productionURL},
+		{name: "environment override", environment: " " + customURL + " ", want: customURL},
+		{name: "flag override", flags: []string{"--viewer-url", flagURL}, want: flagURL},
+		{name: "flag overrides environment", environment: customURL, flags: []string{"--viewer-url", flagURL}, want: flagURL},
+		{name: "invalid environment fails", environment: "not-a-url", invalid: true},
+		{name: "empty flag does not fall back", environment: customURL, flags: []string{"--viewer-url", ""}, invalid: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateCmdConfigHome(t)
+			t.Setenv("LOOMLOOM_VIEWER_BOOTSTRAP_URL", tc.environment)
+			t.Setenv("LOOMLOOM_SERVER", "invalid-cloud-server")
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			previous := openPreviewBrowser
+			defer func() { openPreviewBrowser = previous }()
+			opened := false
+			openPreviewBrowser = func(target string) error {
+				defer cancel()
+				parsed, err := url.Parse(target)
+				if err != nil || parsed.Hostname() != "127.0.0.1" {
+					t.Fatalf("unexpected preview target: %s", target)
+				}
+				// Fetch only the local startup page, without executing remote code.
+				response, err := http.Get(target)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer response.Body.Close()
+				body, err := io.ReadAll(response.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if response.StatusCode != http.StatusOK || !strings.Contains(string(body), tc.want) {
+					t.Fatalf("local startup page does not load selected viewer %s", tc.want)
+				}
+				viewer, _ := url.Parse(tc.want)
+				if !strings.Contains(response.Header.Get("Content-Security-Policy"), viewer.Scheme+"://"+viewer.Host) {
+					t.Fatal("selected viewer origin is missing from CSP")
+				}
+				opened = true
+				return nil
+			}
+			command := NewRootCmd()
+			command.SetContext(ctx)
+			var output bytes.Buffer
+			command.SetOut(&output)
+			command.SetErr(&output)
+			args := []string{"template-spec", "preview", filepath.Join(t.TempDir(), "draft.json"), "--output", "json"}
+			command.SetArgs(append(args, tc.flags...))
+			err := command.Execute()
+			if tc.invalid {
+				if err == nil || opened || strings.Contains(output.String(), `"type":"ready"`) {
+					t.Fatal("invalid explicit viewer must fail before starting preview")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !opened || !strings.Contains(output.String(), `"type":"ready"`) {
+				t.Fatal("preview did not start with the selected viewer")
+			}
+		})
 	}
 }
 

@@ -106,13 +106,14 @@ Read [workflow-preview.md](references/workflow-preview.md). For a new or modifie
 private template, generate the local draft, start `template-spec preview` in a
 retained process, and immediately return the complete `ready.viewUrl` as a
 clickable draft link before continuing validation or saving. Keep that process
-alive during review and edits. Check the viewer configuration first; an API Key
-and Server URL do not configure the independent viewer. `ready` confirms the
-local service started, not that the browser loaded or rendered the viewer.
+alive during review and edits. Preview uses the ShengSuanYun production viewer
+by default; check any explicit override without changing the API Key or Server.
+`ready` confirms the local service started, not that the browser loaded or
+rendered the viewer.
 
 Offer draft review before creation; skip it when the user explicitly declines or
-has already authorized saving without review. If configuration or retained
-process support is missing, explain the specific limitation and resolve it or
+has already authorized saving without review. If the viewer cannot load or the
+tool cannot retain the preview process, explain the limitation and resolve it or
 offer review of the local JSON; do not silently substitute a saved-version page
 or claim that a draft page exists. Preserve the user's existing authorization.
 After saving, return the separate saved-version link from the save result or

@@ -35,9 +35,9 @@ Use this reference for installation, `doctor`, browser login, explicit API Token
   Use the explicitly selected Agent id. Verify the installed Skill includes
   `references/workflow-preview.md`; the CLI version alone does not establish
   the Skill version. A CLI-only `npm install -g` leaves existing Skills unchanged.
-  This setup does not configure a viewer address or change the API Key/Server.
-  Local draft viewing also needs the independent viewer configuration in
-  [workflow-preview.md](workflow-preview.md).
+  Local draft preview uses the built-in ShengSuanYun production viewer without
+  changing the API Key/Server. See [workflow-preview.md](workflow-preview.md)
+  for explicit viewer overrides and browser resource checks.
 - For an Agent previously installed by that npm setup command, update both the npm CLI and its matching copied Skill explicitly:
   ```bash
   loomloom update --agent <agent-id>

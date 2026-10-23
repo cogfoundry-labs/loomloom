@@ -16,11 +16,18 @@ import (
 
 var openPreviewBrowser = authflow.OpenBrowser
 
+const defaultViewerBootstrapURL = "https://www.shengsuanyun.com/zh/loomloom/workbench/viewer/v1/bootstrap.js"
+
 func newTemplateSpecPreviewCmd(opts *rootOptions) *cobra.Command {
 	var title, viewerURL string
 	var noOpen bool
+	configuredViewerURL := strings.TrimSpace(os.Getenv("LOOMLOOM_VIEWER_BOOTSTRAP_URL"))
+	if configuredViewerURL == "" {
+		configuredViewerURL = defaultViewerBootstrapURL
+	}
 	command := &cobra.Command{Use: "preview <spec.json>", Short: "Watch a local draft using the independently published workflow viewer", Long: `Start a loopback-only page and watch one UTF-8 file (maximum 1 MiB).
-The browser loads public JS/CSS from --viewer-url (or LOOMLOOM_VIEWER_BOOTSTRAP_URL).
+The browser loads public JS/CSS from the ShengSuanYun production viewer by default.
+Override it with --viewer-url or LOOMLOOM_VIEWER_BOOTSTRAP_URL; the flag takes precedence.
 This viewer setting is independent of --server and API credentials.
 For Agent use, keep the process alive and return ready.viewUrl immediately;
 ready confirms local startup, not browser resource loading or rendering.
@@ -69,7 +76,7 @@ service. --output json emits NDJSON events. Use --no-open for automation.`, Args
 		})
 	}}
 	command.Flags().StringVar(&title, "title", "", "Optional preview title (up to 256 UTF-8 bytes)")
-	command.Flags().StringVar(&viewerURL, "viewer-url", strings.TrimSpace(os.Getenv("LOOMLOOM_VIEWER_BOOTSTRAP_URL")), "HTTPS URL of the published viewer/v1/bootstrap.js")
+	command.Flags().StringVar(&viewerURL, "viewer-url", configuredViewerURL, "HTTPS viewer/v1/bootstrap.js URL (overrides LOOMLOOM_VIEWER_BOOTSTRAP_URL and the production default)")
 	command.Flags().BoolVar(&noOpen, "no-open", false, "Print the local link without opening a browser")
 	return command
 }

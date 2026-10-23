@@ -128,7 +128,9 @@ commands.
 
 `template-spec preview --output json` is a long-running NDJSON stream, not a
 single JSON response. Keep its process alive while editing; return `ready.viewUrl`
-before waiting for completion. It does not save or run the draft. Read
+before waiting for completion. Preview uses the ShengSuanYun production viewer
+by default; `--viewer-url` overrides `LOOMLOOM_VIEWER_BOOTSTRAP_URL`, which
+overrides that default. It does not save or run the draft. Read
 [workflow-preview.md](workflow-preview.md) for lifecycle, errors, and cleanup.
 `view-link` returns one exact saved version's link and needs no active preview.
 

@@ -21,7 +21,7 @@
 ## What's new
 
 - Workflow inspection: [live local-file previews and saved-version Web links](docs/guides/workflow-preview.md)
-  are available in this source tree. Local preview requires a configured public viewer bootstrap, not a cloud Server or API key.
+  are available in this source tree. Local preview uses the ShengSuanYun production viewer by default and needs no cloud Server or API key; an explicit viewer URL can override it.
 
 - 🖼️ [image-lab](examples/community/image-lab/) — a community skill: one image prompt → several alternatives across the best-fit models, behind one cost gate → [See the runs](#see-it-in-action)
 

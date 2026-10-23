@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for exact-model or dedicated-interface workflows.
 
 ### Changed
+- Local draft preview defaults to the ShengSuanYun production viewer. Explicit
+  `--viewer-url` overrides `LOOMLOOM_VIEWER_BOOTSTRAP_URL`, which overrides the
+  built-in default; cloud Server and API credentials remain independent.
 - Agent authoring now explicitly hands off the local draft preview link before
   review and saving. Setup documents the separate viewer URL and same-version
   CLI/Skill Beta installation; preview readiness is not browser rendering.

@@ -1,26 +1,25 @@
 # Workflow viewing
 
-## Configure the viewer before authoring
+## Viewer default and overrides
 
-Check `loomloom template-spec preview --help` and use the intended deployment's
-real HTTPS `/viewer/v1/bootstrap.js` URL. Resolution is explicit `--viewer-url`
-first, then `LOOMLOOM_VIEWER_BOOTSTRAP_URL`. There is no built-in default and no
-URL is inferred from the cloud Server, profile, login or API Key. These are
-separate settings. Do not invent an address or switch the selected Server.
+Preview defaults to the ShengSuanYun production viewer:
 
-For the ShengSuanYun **test viewer**, the published entry is:
+`https://www.shengsuanyun.com/zh/loomloom/workbench/viewer/v1/bootstrap.js`
 
-```bash
-export LOOMLOOM_VIEWER_BOOTSTRAP_URL='https://test.claw.shengsuanyun.com/zh/loomloom/workbench/viewer/v1/bootstrap.js'
-```
+No viewer configuration is required for this default. Resolution is explicit
+`--viewer-url` first, then a non-empty `LOOMLOOM_VIEWER_BOOTSTRAP_URL`, then the
+built-in production URL. Empty or whitespace-only environment values use the
+default; existing non-empty overrides remain effective. Explicit invalid
+overrides fail rather than silently choosing another viewer.
 
-Use this only when the intended viewer is that test deployment; it is not a
-production or CogFoundry default. For another deployment, obtain its published
-address. The viewer is trusted executable code: verify HTTPS access, anonymous
-CORS and compatibility before selecting it. If shell configuration must be
-changed, follow the user's authorization; otherwise pass `--viewer-url` per
-command. An exported value applies only to that shell and its children; make
-sure the retained preview process actually inherits it.
+The viewer setting is independent of the cloud Server, profile, login and API
+Key. The default does not switch the selected API platform. For another viewer
+deployment, obtain its published HTTPS `/viewer/v1/bootstrap.js` address and
+pass `--viewer-url`; do not infer one from the API Server. The viewer is trusted
+executable code: check JavaScript MIME type, anonymous CORS and compatibility
+when diagnosing resource failures. HTTP 200 containing HTML is not a working
+viewer. Changing persistent shell configuration still requires the user's
+authorization; exported overrides must reach the retained preview process.
 
 ## Hand off the local draft
 
@@ -32,9 +31,9 @@ sure the retained preview process actually inherits it.
    loomloom template-spec preview ./draft.json --no-open --output json
    ```
 
-   If the environment variable is not set, add `--viewer-url` with the verified
-   address. Keep the process alive; do not run it in a short-lived shell that
-   terminates child processes on return.
+   This uses the production viewer unless explicitly overridden. Keep the
+   process alive; do not run it in a short-lived shell that terminates child
+   processes on return.
 3. Wait for the NDJSON event whose `type` is `ready`. Immediately send its full
    `viewUrl`, including `#token=...`, as a clickable **local draft preview** link
    in the user-facing reply, before further validation or save operations. Do
@@ -48,10 +47,10 @@ sure the retained preview process actually inherits it.
    explicitly declined or saving without it was already authorized. Return the
    **saved-version page** separately. Stop only this preview process when done.
 
-If startup fails, return the specific cause promptly. A missing viewer setting
-requires the deployment URL; a newer CLI alone does not supply one. If assets
-fail to load, report that browser state. If the tool cannot retain a process,
-explain that a live link cannot be kept available. Resolve the issue or offer
+If startup fails, return the specific cause promptly. Check invalid overrides
+and CLI version when configuration differs from the documented default. If
+assets fail to load, report that browser state. If the tool cannot retain a
+process, explain that a live link cannot be kept available. Resolve the issue or offer
 local JSON review and obtain the user's decision before bypassing requested
 visual review. Do not create remotely just to obtain a link, invent a link, or
 silently replace a requested draft page with a saved-version page.
