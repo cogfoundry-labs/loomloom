@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
-import http from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
+import { startRegistry } from "../test/fixtures/registry.mjs";
 import {
   assertSafeGeneratedPath,
   npmCommand,
@@ -25,14 +25,18 @@ const manifest = JSON.parse(
   fs.readFileSync(path.join(tarballsDir, "publish-manifest.json"), "utf8"),
 );
 const testRoot = fs.mkdtempSync(path.join(os.tmpdir(), "loomloom-npm-registry-"));
-const configFile = path.join(testRoot, "verdaccio.yaml");
-let registryProcess;
-let registryOutput = "";
+const userConfig = path.join(testRoot, "npmrc");
+const npmEnv = {
+  ...process.env,
+  NPM_CONFIG_USERCONFIG: userConfig,
+  npm_config_cache: path.join(testRoot, "cache"),
+};
+let registryFixture;
 
 function run(command, commandArgs, options = {}) {
   const result = spawnSync(command, commandArgs, {
-    cwd: options.cwd,
-    env: options.env ?? process.env,
+    cwd: options.cwd ?? testRoot,
+    env: npmEnv,
     encoding: "utf8",
     stdio: options.capture ? ["ignore", "pipe", "pipe"] : "inherit",
     shell: requiresCommandShell(command),
@@ -44,80 +48,6 @@ function run(command, commandArgs, options = {}) {
     );
   }
   return result;
-}
-
-async function freePort() {
-  return new Promise((resolve, reject) => {
-    const server = http.createServer();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      server.close(() => resolve(address.port));
-    });
-  });
-}
-
-async function waitForRegistry(registry) {
-  let lastError;
-  for (let attempt = 0; attempt < 60; attempt += 1) {
-    try {
-      const response = await fetch(`${registry}/-/ping`);
-      if (response.ok) {
-        return;
-      }
-      lastError = new Error(`HTTP ${response.status}`);
-    } catch (error) {
-      lastError = error;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error(`Verdaccio did not become ready: ${lastError?.message}`);
-}
-
-async function createLocalUser(registry) {
-  const username = "loomloom-test";
-  const password = "local-only";
-  const email = "loomloom-test@example.invalid";
-  const response = await fetch(
-    `${registry}/-/user/org.couchdb.user:${encodeURIComponent(username)}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        _id: `org.couchdb.user:${username}`,
-        name: username,
-        password,
-        email,
-        type: "user",
-        roles: [],
-        date: new Date().toISOString(),
-      }),
-    },
-  );
-  const result = await response.json();
-  if (response.status !== 201 || typeof result.token !== "string" || !result.token) {
-    throw new Error(`local Registry user creation failed with HTTP ${response.status}`);
-  }
-  return result.token;
-}
-
-async function stopRegistry() {
-  if (!registryProcess || registryProcess.exitCode !== null) {
-    return;
-  }
-  const exited = new Promise((resolve) => registryProcess.once("exit", resolve));
-  registryProcess.kill("SIGTERM");
-  await Promise.race([
-    exited,
-    new Promise((resolve) => setTimeout(resolve, 5_000)),
-  ]);
-  if (registryProcess.exitCode === null) {
-    registryProcess.kill("SIGKILL");
-    await exited;
-  }
 }
 
 function installedCommand(prefix) {
@@ -145,65 +75,14 @@ try {
     ? "@cogfoundry/loomloom"
     : `@cogfoundry/loomloom@${mainPackage.publishTag}`;
 
-  const port = await freePort();
-  const registry = `http://127.0.0.1:${port}`;
-  fs.writeFileSync(
-    configFile,
-    [
-      `storage: ${JSON.stringify(path.join(testRoot, "storage"))}`,
-      "max_body_size: 30mb",
-      "auth:",
-      "  htpasswd:",
-      `    file: ${JSON.stringify(path.join(testRoot, "htpasswd"))}`,
-      "uplinks:",
-      "packages:",
-      "  '@*/*':",
-      "    access: $all",
-      "    publish: $authenticated",
-      "    unpublish: $authenticated",
-      "  '**':",
-      "    access: $all",
-      "    publish: $authenticated",
-      "    unpublish: $authenticated",
-      "security:",
-      "  api:",
-      "    jwt:",
-      "      sign:",
-      "        expiresIn: 1h",
-      "",
-    ].join("\n"),
-  );
-
-  registryProcess = spawn(
-    process.execPath,
-    [
-      path.join(npmRoot, "node_modules", "verdaccio", "bin", "verdaccio"),
-      "--config",
-      configFile,
-      "--listen",
-      `127.0.0.1:${port}`,
-    ],
-    { cwd: testRoot, stdio: ["ignore", "pipe", "pipe"] },
-  );
-  registryProcess.stdout.on("data", (chunk) => { registryOutput += chunk; });
-  registryProcess.stderr.on("data", (chunk) => { registryOutput += chunk; });
-  await waitForRegistry(registry);
-
-  const token = await createLocalUser(registry);
-  if (!token || /\s/.test(token)) {
-    throw new Error("local Registry authentication did not return one token");
-  }
-  const userConfig = path.join(testRoot, "npmrc");
+  registryFixture = await startRegistry(manifest.packages, tarballsDir);
+  const { url: registry, token } = registryFixture;
   fs.writeFileSync(
     userConfig,
     `registry=${registry}\n${registry.replace(/^https?:/, "")}/:_authToken=${token}\n`,
     { mode: 0o600 },
   );
-  const npmEnv = {
-    ...process.env,
-    NPM_CONFIG_USERCONFIG: userConfig,
-    npm_config_registry: registry,
-  };
+  npmEnv.npm_config_registry = registry;
 
   const firstPlatform = manifest.packages[0];
   run(
@@ -220,7 +99,6 @@ try {
       firstPlatform.publishTag,
       "--ignore-scripts",
     ],
-    { env: npmEnv },
   );
 
   const publishScript = path.join(npmRoot, "scripts", "publish-packages.mjs");
@@ -234,8 +112,8 @@ try {
     "--confirm-tag",
     manifest.releaseTag,
   ];
-  run(process.execPath, publishArgs, { env: npmEnv });
-  run(process.execPath, publishArgs, { env: npmEnv });
+  run(process.execPath, publishArgs);
+  run(process.execPath, publishArgs);
 
   const prefix = path.join(testRoot, "global");
   run(npmCommand, [
@@ -316,12 +194,7 @@ try {
   }
 
   console.log(`verified npm install, npm exec, npx, omitted optional dependency, and uninstall via ${registry}`);
-} catch (error) {
-  if (registryProcess && registryProcess.exitCode !== 0) {
-    console.error(`Verdaccio output:\n${registryOutput ?? ""}`);
-  }
-  throw error;
 } finally {
-  await stopRegistry();
+  await registryFixture?.close();
   fs.rmSync(testRoot, { recursive: true, force: true });
 }
