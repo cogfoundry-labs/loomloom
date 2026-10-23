@@ -19,6 +19,12 @@ When asked to install or update LoomLoom:
 4. Do not guess a Skill root or fall back to another Agent's directory. If the current Agent or root is unknown, ask the user for it.
 5. Verify either the npm setup success result or `<agent-skill-root>/loomloom/SKILL.md` after the explicit-directory path.
 
+`npm install -g` updates only the CLI. When the user wants Agent authoring,
+install the matching Skill for the explicit Agent as well. For a Beta, use the
+exact requested version in the setup command; `loomloom update` follows stable
+`latest`. See [setup.md](references/setup.md) and
+[workflow-preview.md](references/workflow-preview.md) for viewer configuration.
+
 ## Core Objects
 
 Choose the product object before choosing a command:
@@ -52,7 +58,8 @@ Read every required reference for the current intent before answering with busin
 |---|---|
 | Install/configure LoomLoom; token, server, platform, balance, console, or `doctor` | [setup.md](references/setup.md), [cli.md](references/cli.md) |
 | Execute an official or private template; validate, precheck, run, monitor, or retrieve results | [execution.md](references/execution.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
-| Create, explain, or version a private template or TemplateSpec | [template-spec.md](references/template-spec.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
+| Create, explain, or version a private template or TemplateSpec | [template-spec.md](references/template-spec.md), [workflow-preview.md](references/workflow-preview.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
+| Show local workflow edits live, inspect a saved private version in the Web workbench, or return a viewing link | [workflow-preview.md](references/workflow-preview.md), [template-spec.md](references/template-spec.md), [cli.md](references/cli.md) |
 | Discover, quote, or execute a Market SkillApp | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Browse, buy, renew, or inspect subscriptions; create or manage subscription bundles | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
 | Publish, change price/version/profile, list/unlist/relist, review, usage, settlement, or earnings | [market.md](references/market.md), [billing.md](references/billing.md), [cli.md](references/cli.md) |
@@ -95,10 +102,30 @@ Download/prepare version-specific input → Validate → Precheck
 
 ### Private template authoring
 
+Read [workflow-preview.md](references/workflow-preview.md). For a new or modified
+private template, generate the local draft, start `template-spec preview` in a
+retained process, and immediately return the complete `ready.viewUrl` as a
+clickable draft link before continuing validation or saving. Keep that process
+alive during review and edits. Preview uses the ShengSuanYun production viewer
+by default; check any explicit override without changing the API Key or Server.
+`ready` confirms the local service started, not that the browser loaded or
+rendered the viewer.
+
+Offer draft review before creation; skip it when the user explicitly declines or
+has already authorized saving without review. If the viewer cannot load or the
+tool cannot retain the preview process, explain the limitation and resolve it or
+offer review of the local JSON; do not silently substitute a saved-version page
+or claim that a draft page exists. Preserve the user's existing authorization.
+After saving, return the separate saved-version link from the save result or
+retry only `template-spec view-link` with the exact returned IDs. For an already
+saved version, use view-link directly. Stop only the retained preview process
+when editing is finished.
+
 ```text
 Business conversation → inspect current LoomLoom Server capabilities
 → decide LoomLoom-only or Agent-assisted
-→ TemplatePlan → User confirms plan → Generate TemplateSpec
+→ TemplatePlan → User confirms plan → Generate local TemplateSpec draft
+→ Start local preview → Immediately return draft link → User reviews/edits
 → Check with the current LoomLoom Server → User confirms creation
 → Create or append a version
 → LoomLoom-only: continue normally; do not raise Skill Package with the creator
@@ -288,5 +315,6 @@ The mode never covers persistent or high-impact operations: creating or versioni
 - [Market and SkillApps](references/market.md) — Listings, public input, buyer and creator workflows, price/version changes.
 - [Billing and confirmation](references/billing.md) — fee fields, currency, confirmation templates, settlement, earnings.
 - [Template authoring](references/template-spec.md) — TemplatePlan conversation, usage modes, TemplateSpec modeling and creation.
+- [Workflow viewing](references/workflow-preview.md) — optional live file previews, retained Agent sessions, saved-version links, authentication and cleanup.
 - [Agent Skill Packages](references/local-skills.md) — Agent-created private packages, public ZIP install/update, and package review binding.
 - [CLI and errors](references/cli.md) — syntax sources, ID chaining, recovery rules, complete capability inventory.

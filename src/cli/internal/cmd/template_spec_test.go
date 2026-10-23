@@ -659,6 +659,10 @@ func TestTemplateSpecCreateVersionPostsCanonicalSpecV2(t *testing.T) {
 	var payload map[string]any
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestedPaths = append(requestedPaths, r.URL.Path)
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/viewLink") {
+			_, _ = w.Write([]byte(`{"templateId":"tmpl_123","versionId":"ver_123","viewUrl":"https://work.example/templates/tmpl_123/versions/ver_123"}`))
+			return
+		}
 		var current map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&current); err != nil {
 			t.Fatalf("decode request: %v", err)
@@ -686,7 +690,7 @@ func TestTemplateSpecCreateVersionPostsCanonicalSpecV2(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("create-version command error = %v", err)
 	}
-	if len(requestedPaths) != 2 || requestedPaths[0] != "/loom/v1/templateSpecs:validate" || requestedPaths[1] != "/loom/v1/users/me/templates/tmpl_123/versions" {
+	if len(requestedPaths) != 3 || requestedPaths[0] != "/loom/v1/templateSpecs:validate" || requestedPaths[1] != "/loom/v1/users/me/templates/tmpl_123/versions" {
 		t.Fatalf("paths=%v", requestedPaths)
 	}
 	if payload["versionNote"] != "fix judge template" {

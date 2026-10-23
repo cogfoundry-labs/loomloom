@@ -185,12 +185,14 @@ For building your own private workflows.
 | `loomloom template-spec models <step-type>` | List models for a step type. |
 | `loomloom template-spec authoring-context` | Show current Capability Profiles, including fixed input/output interfaces, default-model availability, and the live eligible-model set. |
 | `loomloom template-spec contracts <model-id>` | List enabled TemplateSpec v2 contracts and their input ports for one model. |
-| `loomloom template-spec create <spec.json>` | Create a private template. |
-| `loomloom template-spec create-version <template-id> <spec.json>` | Add a new version to an existing private template. |
+| `loomloom template-spec create <spec.json>` | Create a private template; successful output includes its saved-version viewUrl when available. |
+| `loomloom template-spec create-version <template-id> <spec.json>` | Add an immutable version; successful output includes its viewUrl when available. |
 | `loomloom template-spec list` | List my private templates. |
 | `loomloom template-spec get <template-id>` | Show one private template and its versions. |
 | `loomloom template-spec versions <template-id>` | List versions of a private template. |
 | `loomloom template-spec get-version <template-id> <version-id> [-f spec.json]` | Read or export one owner-visible historical authoring spec. |
+| `loomloom template-spec preview <spec.json> [--viewer-url <HTTPS bootstrap>] [--no-open] [--title <title>]` | Watch a local file in a loopback page using the ShengSuanYun production viewer by default. Override order: `--viewer-url`, then `LOOMLOOM_VIEWER_BOOTSTRAP_URL`. No draft upload or browser login. `--output json` streams NDJSON events; this does not save or run a template. |
+| `loomloom template-spec view-link <template-id> <version-id>` | Get the Server-provided workbench link for an exact saved private version; no watcher or file upload. |
 | `loomloom template-spec download-workbook <template-id> <version-id>` | Download a user-template workbook. |
 | `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx>` | Validate a user-template workbook. |
 | `loomloom template-spec precheck-workbook <template-id> <version-id> <xlsx>` | Estimate cost and balance for a user-template workbook without submitting. |

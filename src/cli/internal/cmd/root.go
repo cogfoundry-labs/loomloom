@@ -55,6 +55,10 @@ func NewRootCmd() *cobra.Command {
 			if opts.output != "text" && opts.output != "json" {
 				return fmt.Errorf("unsupported output format %q; use text or json", opts.output)
 			}
+			// Local preview needs neither cloud identity nor update-cache writes.
+			if cmd.Name() == "preview" && cmd.Parent() != nil && cmd.Parent().Name() == "template-spec" {
+				return nil
+			}
 			if strings.TrimSpace(opts.server) != "" && cmd.Name() != "doctor" {
 				normalized, err := platform.NormalizeServer(opts.server)
 				if err != nil {
