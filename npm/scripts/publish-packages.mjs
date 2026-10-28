@@ -110,64 +110,88 @@ function sleep(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
 }
 
-function waitForRegistryMetadata(record) {
-  for (let attempt = 1; attempt <= readbackAttempts; attempt += 1) {
-    const metadata = registryMetadata(record, { freshCache: true });
-    if (metadata) {
-      return metadata;
+// waitForRegistryMetadata polls every pending record each round, so packages published together
+// propagate in parallel instead of one Registry wait per package.
+function waitForRegistryMetadata(records) {
+  let pending = records;
+  for (let attempt = 1; attempt <= readbackAttempts && pending.length > 0; attempt += 1) {
+    const stillPending = [];
+    for (const record of pending) {
+      const metadata = registryMetadata(record, { freshCache: true });
+      if (!metadata) {
+        stillPending.push(record);
+        continue;
+      }
+      if (!metadataMatches(record, metadata)) {
+        throw new Error(
+          `registry read-back did not match ${record.name}@${record.version}: ` +
+          `expected integrity=${record.integrity} shasum=${record.shasum}, ` +
+          `got integrity=${metadata.integrity} shasum=${metadata.shasum}`,
+        );
+      }
+      console.log(`published and verified ${record.name}@${record.version}`);
     }
-    if (attempt < readbackAttempts) {
+    pending = stillPending;
+    if (pending.length > 0 && attempt < readbackAttempts) {
       console.log(
-        `waiting for ${record.name}@${record.version} Registry metadata (${attempt}/${readbackAttempts})`,
+        `waiting for Registry metadata (${attempt}/${readbackAttempts}): ` +
+        pending.map((record) => record.name).join(", "),
       );
       sleep(readbackInterval);
     }
   }
-  return null;
-}
-
-for (const record of manifest.packages) {
-  const existing = registryMetadata(record, { freshCache: true });
-  if (existing) {
-    if (!metadataMatches(record, existing)) {
-      throw new Error(
-        `${record.name}@${record.version} already exists with different immutable tarball integrity; ` +
-        `expected integrity=${record.integrity} shasum=${record.shasum}, ` +
-        `got integrity=${existing.integrity} shasum=${existing.shasum}`,
-      );
-    }
-    console.log(`verified existing ${record.name}@${record.version}`);
-    continue;
-  }
-
-  if (!args.publish) {
-    console.log(`would publish ${record.name}@${record.version} with tag ${record.publishTag}`);
-    continue;
-  }
-
-  const tarball = path.join(tarballsDir, record.tarball);
-  const published = npm(
-    [
-      "publish",
-      tarball,
-      "--access",
-      "public",
-      "--tag",
-      record.publishTag,
-    ],
-    { timeout: publishTimeout },
-  );
-  if (published.status !== 0) {
-    throw new Error(`failed to publish ${record.name}@${record.version}`);
-  }
-  const verified = waitForRegistryMetadata(record);
-  if (!metadataMatches(record, verified)) {
+  if (pending.length > 0) {
     throw new Error(
-      `registry read-back did not match ${record.name}@${record.version} after ` +
-      `${readbackAttempts} attempts`,
+      `registry read-back did not find ${pending.map((record) => `${record.name}@${record.version}`).join(", ")} ` +
+      `after ${readbackAttempts} attempts`,
     );
   }
-  console.log(`published and verified ${record.name}@${record.version}`);
 }
+
+// publishGroup publishes the missing records of one group, then waits for all of them together.
+function publishGroup(records) {
+  const published = [];
+  for (const record of records) {
+    const existing = registryMetadata(record, { freshCache: true });
+    if (existing) {
+      if (!metadataMatches(record, existing)) {
+        throw new Error(
+          `${record.name}@${record.version} already exists with different immutable tarball integrity; ` +
+          `expected integrity=${record.integrity} shasum=${record.shasum}, ` +
+          `got integrity=${existing.integrity} shasum=${existing.shasum}`,
+        );
+      }
+      console.log(`verified existing ${record.name}@${record.version}`);
+      continue;
+    }
+
+    if (!args.publish) {
+      console.log(`would publish ${record.name}@${record.version} with tag ${record.publishTag}`);
+      continue;
+    }
+
+    const tarball = path.join(tarballsDir, record.tarball);
+    const result = npm(
+      [
+        "publish",
+        tarball,
+        "--access",
+        "public",
+        "--tag",
+        record.publishTag,
+      ],
+      { timeout: publishTimeout },
+    );
+    if (result.status !== 0) {
+      throw new Error(`failed to publish ${record.name}@${record.version}`);
+    }
+    published.push(record);
+  }
+  waitForRegistryMetadata(published);
+}
+
+// Platform packages first, all verified before the main package that depends on them is published.
+publishGroup(manifest.packages.filter((record) => record.role === "platform"));
+publishGroup(manifest.packages.filter((record) => record.role === "main"));
 
 console.log(args.publish ? "npm publication completed" : "npm publication plan completed without writes");
