@@ -43,62 +43,59 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(internal|beta|rc)\.[0-9]+)?$ ]]; then
-  echo "unsupported release tag: $TAG" >&2
+# Release model (see RELEASING.md):
+# - vX.Y.0-beta.N and vX.Y.0 are cut from main.
+# - vX.Y.Z-beta.N and vX.Y.Z with Z>0 are cut from release/X.Y, which receives only cherry-picked fixes.
+# - A stable vX.Y.Z must point at the same commit as its highest vX.Y.Z-beta.N.
+if [[ ! "$TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)(-beta\.([0-9]+))?$ ]]; then
+  echo "unsupported release tag: $TAG (expected vX.Y.Z or vX.Y.Z-beta.N)" >&2
   exit 1
 fi
+major="${BASH_REMATCH[1]}"
+minor="${BASH_REMATCH[2]}"
+patch="${BASH_REMATCH[3]}"
+version="v${major}.${minor}.${patch}"
 
-if [[ -z "$RELEASE_BRANCH" && "$TAG" == *-* ]]; then
-  RELEASE_BRANCH="release/${TAG%%-*}"
+if [[ -z "$RELEASE_BRANCH" ]]; then
+  if [[ "$patch" == "0" ]]; then
+    RELEASE_BRANCH="main"
+  else
+    RELEASE_BRANCH="release/${major}.${minor}"
+  fi
 fi
-
-git fetch --no-tags "$PRIMARY_REMOTE" \
-  "refs/heads/main:refs/remotes/${PRIMARY_REMOTE}/main"
 
 tag_sha="$(git rev-list -n 1 "refs/tags/${TAG}")"
-main_sha="$(git rev-parse "refs/remotes/${PRIMARY_REMOTE}/main")"
 
-if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  if [[ "$tag_sha" == "$main_sha" ]]; then
-    printf '%s\n' main
-    exit 0
+if [[ "$TAG" == "$version" ]]; then
+  latest_beta="$(git tag --list "${version}-beta.*" | sort -t. -k4,4n | tail -n 1)"
+  if [[ -z "$latest_beta" ]]; then
+    echo "stable release $TAG needs a published ${version}-beta.N first" >&2
+    exit 1
   fi
-  if [[ "$ALLOW_HISTORY" == "true" ]] && \
-    git merge-base --is-ancestor "$tag_sha" "$main_sha"; then
-    printf '%s\n' main
-    exit 0
+  if [[ "$(git rev-list -n 1 "refs/tags/${latest_beta}")" != "$tag_sha" ]]; then
+    echo "stable release $TAG must point at the same commit as ${latest_beta}" >&2
+    exit 1
   fi
-  echo "stable release tag must point at ${PRIMARY_REMOTE}/main HEAD: $TAG" >&2
-  exit 1
-fi
-
-if [[ "$tag_sha" == "$main_sha" ]]; then
-  printf '%s\n' main
-  exit 0
-fi
-if [[ "$ALLOW_HISTORY" == "true" ]] && \
-  git merge-base --is-ancestor "$tag_sha" "$main_sha"; then
-  printf '%s\n' main
-  exit 0
 fi
 
 git fetch --no-tags "$PRIMARY_REMOTE" \
   "refs/heads/${RELEASE_BRANCH}:refs/remotes/${PRIMARY_REMOTE}/${RELEASE_BRANCH}"
-release_sha="$(git rev-parse "refs/remotes/${PRIMARY_REMOTE}/${RELEASE_BRANCH}")"
+branch_sha="$(git rev-parse "refs/remotes/${PRIMARY_REMOTE}/${RELEASE_BRANCH}")"
 
-if [[ "$ALLOW_HISTORY" == "true" ]]; then
-  if git merge-base --is-ancestor "$tag_sha" "$release_sha"; then
-    printf '%s\n' "$RELEASE_BRANCH"
-    exit 0
-  fi
-
-  echo "prerelease tag must belong to ${PRIMARY_REMOTE}/main or ${PRIMARY_REMOTE}/${RELEASE_BRANCH}: $TAG" >&2
-  exit 1
-fi
-
-if [[ "$tag_sha" == "$release_sha" ]]; then
+if [[ "$tag_sha" == "$branch_sha" ]]; then
   printf '%s\n' "$RELEASE_BRANCH"
   exit 0
 fi
-echo "prerelease tag must point at ${PRIMARY_REMOTE}/main or ${PRIMARY_REMOTE}/${RELEASE_BRANCH} HEAD: $TAG" >&2
+if [[ "$ALLOW_HISTORY" == "true" ]] && \
+  git merge-base --is-ancestor "$tag_sha" "$branch_sha"; then
+  printf '%s\n' "$RELEASE_BRANCH"
+  exit 0
+fi
+# A stable release reuses its last beta commit, so the branch may have moved on since that beta.
+if [[ "$TAG" == "$version" ]] && git merge-base --is-ancestor "$tag_sha" "$branch_sha"; then
+  printf '%s\n' "$RELEASE_BRANCH"
+  exit 0
+fi
+
+echo "release tag $TAG must point at ${PRIMARY_REMOTE}/${RELEASE_BRANCH} HEAD" >&2
 exit 1
