@@ -175,6 +175,9 @@ jobs:
             --confirm-tag "$RELEASE_TAG" \
             --readback-attempts 180
 
+      - name: Promote beta to the stable release unless beta is newer
+        run: node npm/scripts/sync-beta.mjs
+
       - name: Verify the official Registry user path
         shell: bash
         run: |

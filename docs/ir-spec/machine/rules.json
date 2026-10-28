@@ -5,29 +5,97 @@
       "id": "TS-VERSION-002",
       "scope": "template",
       "severity": "error",
-      "enforcement": ["json_schema", "authoring_service"],
+      "enforcement": [
+        "json_schema",
+        "authoring_service"
+      ],
       "lifecycle": "new_authoring_only",
       "referenceId": "compatibility.write-version",
-      "validExamples": ["examples/valid/multi-step-fixed-model.json"],
-      "invalidExamples": ["examples/invalid/legacy-v1-shape.json"]
+      "validExamples": [
+        "examples/valid/multi-step-fixed-model.json"
+      ],
+      "invalidExamples": [
+        "examples/invalid/legacy-v1-shape.json"
+      ]
     },
     {
       "id": "TS-BINDING-002",
       "scope": "step",
       "severity": "error",
-      "enforcement": ["core_validator", "authoring_service"],
+      "enforcement": [
+        "core_validator",
+        "authoring_service"
+      ],
       "referenceId": "ports-and-bindings.step-output",
-      "validExamples": ["examples/valid/multi-step-fixed-model.json"],
-      "invalidExamples": ["examples/invalid/step-output-without-dependency.json"]
+      "validExamples": [
+        "examples/valid/multi-step-fixed-model.json"
+      ],
+      "invalidExamples": [
+        "examples/invalid/step-output-without-dependency.json"
+      ]
     },
     {
       "id": "TS-PROFILE-002",
       "scope": "step",
       "severity": "error",
-      "enforcement": ["core_validator", "authoring_service", "runtime_registry"],
+      "enforcement": [
+        "core_validator",
+        "authoring_service",
+        "runtime_registry"
+      ],
       "referenceId": "profiles.model-selection",
-      "validExamples": ["examples/valid/capability-profile.json"],
-      "invalidExamples": ["examples/invalid/profile-without-model-selection.json"]
+      "validExamples": [
+        "examples/valid/capability-profile.json"
+      ],
+      "invalidExamples": [
+        "examples/invalid/profile-without-model-selection.json"
+      ]
+    },
+    {
+      "id": "TS-CODE-001",
+      "scope": "step",
+      "severity": "error",
+      "enforcement": [
+        "json_schema",
+        "core_validator",
+        "authoring_service"
+      ],
+      "referenceId": "code.authoring",
+      "validExamples": [
+        "examples/valid/code-value-artifact.json",
+        "examples/valid/code-condition.json"
+      ],
+      "invalidExamples": [
+        "examples/invalid/code-nullable-input.json"
+      ]
+    },
+    {
+      "id": "TS-LOOP-001",
+      "scope": "step",
+      "severity": "error",
+      "enforcement": [
+        "json_schema",
+        "core_validator",
+        "authoring_service"
+      ],
+      "referenceId": "loop.scope",
+      "validExamples": [
+        "examples/valid/bounded-text-loop.json",
+        "examples/valid/loop-code-to-text-model.json",
+        "examples/valid/loop-conditional-delivery.json",
+        "examples/valid/loop-code-file-consumption.json",
+        "examples/valid/loop-code-file-export.json",
+        "examples/valid/loop-business-decision.json",
+        "examples/valid/loop-checkpoint.json",
+        "examples/valid/loop-model-artifact-merge.json",
+        "examples/valid/loop-vision-feedback.json"
+      ],
+      "invalidExamples": [
+        "examples/invalid/loop-unbounded.json",
+        "examples/invalid/loop-body-output-leak.json",
+        "examples/invalid/loop-conflicting-control.json",
+        "examples/invalid/loop-parallel-checkpoints.json"
+      ]
     }
   ]
 }

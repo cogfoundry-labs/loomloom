@@ -50,15 +50,21 @@ against the public Registry for the tooling dependencies.
 Test commands use a temporary working directory, npm configuration and cache,
 which are removed along with the fixture when the test finishes.
 
-The current npm 11.21.1 tarball still bundles `ip-address@10.7.2`, affected by
+The pinned npm 11.21.1 tarball still bundles `ip-address@10.7.2`, affected by
 [GHSA-rxp7-6hxx-x8q5](https://github.com/advisories/GHSA-rxp7-6hxx-x8q5).
 The checked npm 12.2.1 tarball also contains that version, and npm overrides do
 not replace bundled files. This remaining moderate advisory is reported by
 `npm audit`; it does not trip the existing high-severity gate. Update the pinned
 npm client when an upstream release includes the fixed dependency; do not hide
 the report or edit installed bundle contents to make the audit pass.
-The fixed dependency version is 10.7.4. The affected dependency is part of the
-private release tooling, not a dependency shipped in the LoomLoom npm packages
+The fixed dependency version is 10.7.4.
+
+The 2026-10-28 audit also reports high-severity advisories for bundled
+`undici@6.29.0` (fixed in 6.29.1). A clean install of the published npm 12.2.1
+still contains this version, so upgrading to that release does not fix the gate.
+CI remains blocked by the high-severity audit; do not lower the threshold or
+suppress the finding. Recheck upstream tarballs for a fixed release.
+These affected dependencies are part of the private release tooling, not a dependency shipped in the LoomLoom npm packages
 or Go executable. Passing the CI gate does not mean the tooling is advisory-free.
 
 To inspect the official-registry repair plan without writing anything:

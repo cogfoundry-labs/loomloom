@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Code and Loop authoring and run results: `template-spec docs code` walks
+  through hosted Code steps, conditions, and bounded Loop rework, with valid and
+  invalid examples; `run` reads Code values and Loop results. Previously only in
+  the 0.6.2 betas.
+- The bundled Agent Skill authors deterministic processing, conditions, and
+  bounded rework as hosted Code and Loop steps when the target Server accepts
+  them, instead of treating them as Agent-assisted local work.
 - `template-spec preview` serves a tiny loopback page; the browser loads an independently published HTTPS viewer. Drafts and session credentials stay local, with no embedded UI package, cloud identity or contract lookup.
 - `template-spec view-link` returns a Server-provided URL for one exact saved
   private version without creating a temporary preview. Agent guidance explains
@@ -30,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for exact-model or dedicated-interface workflows.
 
 ### Changed
+- Release model: only `vX.Y.Z` and `vX.Y.Z-beta.N` tags; minor releases are cut
+  from `main`, patch releases from `release/X.Y` with fixes cherry-picked from
+  `main`, and a stable tag must point at its highest beta. See
+  [RELEASING.md](RELEASING.md).
 - Local draft preview defaults to the ShengSuanYun production viewer. Explicit
   `--viewer-url` overrides `LOOMLOOM_VIEWER_BOOTSTRAP_URL`, which overrides the
   built-in default; cloud Server and API credentials remain independent.

@@ -10,6 +10,7 @@ Use this reference when creating, modifying, versioning, or explaining a private
 - [Usage mode](#usage-mode)
 - [TemplatePlan](#templateplan)
 - [Modeling and input rules](#modeling-and-input-rules)
+- [Code and Loop Steps](#code-and-loop-steps)
 - [Legacy v1 semantic preservation](#legacy-v1-semantic-preservation)
 - [Creation and versioning](#creation-and-versioning)
 
@@ -238,6 +239,41 @@ interface that no returned Profile represents. If `capability resolve` returns
 both a Profile and Fixed Model Contracts for the same standard capability,
 choose from the user's model policy rather than assuming multimedia always
 means fixed model.
+
+## Code And Loop Steps
+
+Use a hosted Code Step for deterministic work between model Steps: reshaping or
+validating values, computing fields, merging or splitting results, and producing
+or transforming files. Use `when` conditions for branches, and a Loop container
+for bounded quality rework (draft → check → revise until accepted or the limit is
+reached). Read the bundled contract and examples before writing them:
+
+```bash
+loomloom template-spec docs code --lang zh-CN
+loomloom template-spec docs steps
+loomloom template-spec docs examples
+```
+
+- Code: `executionBinding.kind=codeProfile` with inline Python `main(inputs)`.
+  Omit `profileId`/`profileRevision` to use the default Python 3.12
+  standard-library environment. Declare every input (`required=true`,
+  `nullable=false`) and at least one named output. Code has no network access;
+  work that needs external APIs, websites, or extra libraries stays
+  Agent-assisted.
+- Loop: `executionBinding` is only `{"kind":"loop"}`; set `maxIterations`
+  (1–10) and `deadlineSeconds` (1–1800), a non-empty `body`, and exactly one of
+  `until`, `decision`, or `control`. Never add back edges to `dependsOn`.
+- Start from the closest valid example (`code-value-artifact`,
+  `code-condition`, `bounded-text-loop`, `loop-checkpoint`,
+  `loop-business-decision`) and avoid the patterns in the invalid examples.
+- Availability is decided by the target Server, not by the docs: run
+  `loomloom template-spec check` against the Server you will save to. If it
+  rejects Code or Loop, report that the Server does not offer them yet and
+  offer a version without them or an Agent-assisted plan; do not fall back
+  silently.
+- Describe Code and Loop Steps in the TemplatePlan in business terms (what is
+  computed or checked, and how many rework rounds at most) so the creator can
+  confirm them.
 
 ## Legacy v1 Semantic Preservation
 

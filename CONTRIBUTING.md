@@ -50,6 +50,10 @@ A good bug report includes:
 - Your OS, and the loomloom version (`loomloom --version`).
 - Relevant error output (with any tokens or private data redacted).
 
+## Releases
+
+Maintainers cut releases as described in [RELEASING.md](RELEASING.md).
+
 ## Community
 
 - Questions and discussion: [Discord](https://discord.gg/cogfoundry)

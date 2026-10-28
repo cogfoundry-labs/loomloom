@@ -41,7 +41,7 @@ jobs:
       - name: Test npm distribution tooling
         run: |
           npm --prefix npm test
-          npm --prefix npm audit --audit-level=high
+          node npm/scripts/audit.mjs
 
       - name: Test CLI
         run: |
