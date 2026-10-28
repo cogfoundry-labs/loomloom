@@ -42,6 +42,8 @@ commit feature
 git -C "$test_root/work" tag v1.0.0-beta.1
 git -C "$test_root/work" push origin main v1.0.0-beta.1 >/dev/null
 expect main v1.0.0-beta.1
+LOOMLOOM_RELEASE_BRANCH=main expect main v1.0.0-beta.1
+LOOMLOOM_RELEASE_BRANCH=feature/other reject v1.0.0-beta.1
 reject v1.0.0
 git -C "$test_root/work" tag v1.0.0
 git -C "$test_root/work" push origin v1.0.0 >/dev/null
@@ -74,6 +76,8 @@ git -C "$test_root/work" switch main >/dev/null
 git -C "$test_root/work" tag v1.1.1-beta.1
 git -C "$test_root/work" push origin v1.1.1-beta.1 >/dev/null
 reject v1.1.1-beta.1
+LOOMLOOM_RELEASE_BRANCH=main reject v1.1.1-beta.1
+LOOMLOOM_RELEASE_BRANCH=main reject v1.1.1-beta.1 --allow-history
 
 # Only vX.Y.Z and vX.Y.Z-beta.N are release tags.
 git -C "$test_root/work" tag v1.2.0-internal.1

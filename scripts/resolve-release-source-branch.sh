@@ -56,13 +56,16 @@ minor="${BASH_REMATCH[2]}"
 patch="${BASH_REMATCH[3]}"
 version="v${major}.${minor}.${patch}"
 
-if [[ -z "$RELEASE_BRANCH" ]]; then
-  if [[ "$patch" == "0" ]]; then
-    RELEASE_BRANCH="main"
-  else
-    RELEASE_BRANCH="release/${major}.${minor}"
-  fi
+if [[ "$patch" == "0" ]]; then
+  expected_branch="main"
+else
+  expected_branch="release/${major}.${minor}"
 fi
+if [[ -n "$RELEASE_BRANCH" && "$RELEASE_BRANCH" != "$expected_branch" ]]; then
+  echo "release tag $TAG requires $expected_branch, not $RELEASE_BRANCH" >&2
+  exit 1
+fi
+RELEASE_BRANCH="$expected_branch"
 
 tag_sha="$(git rev-list -n 1 "refs/tags/${TAG}")"
 

@@ -44,8 +44,18 @@ created.
 - `release/X.Y` never merges back into `main`. It is deleted once the next minor
   release ships, after its tags preserve every released commit.
 
-Because fixes always reach `main` first, the `beta` channel is never older than
-`latest`.
+After publishing a stable version, the npm workflow promotes `beta` to that
+version unless `beta` already points to an equal or newer version. It verifies
+`latest` before promotion and reads `beta` back afterward. A permission or
+read-back failure fails the workflow; publication may already have completed,
+so repair the tag rather than republishing the immutable version.
+
+Before a stable publication, enable **Allow npm dist-tag** on the Trusted
+Publisher for `@cogfoundry/loomloom`, repository `cogfoundry-labs/loomloom`,
+workflow `npm-release.yml`, environment `npm-release`. Publishing permission
+alone does not grant dist-tag access. See the
+[npm Trusted Publisher documentation](https://docs.npmjs.com/trusted-publishers/#managing-dist-tags-with-trusted-publishing).
+This permission must be verified separately before release.
 
 ## Steps
 
