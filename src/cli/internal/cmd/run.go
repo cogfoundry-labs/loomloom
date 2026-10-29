@@ -28,6 +28,7 @@ func newRunCmd(opts *rootOptions) *cobra.Command {
 		newRunWatchCmd(opts),
 		newRunListCmd(opts),
 		newRunGetCmd(opts),
+		newRunStepExecutionsCmd(opts),
 		newRunResultRowsCmd(opts),
 		newRunResultWorkbookCmd(opts),
 	)
@@ -340,6 +341,52 @@ func newRunGetCmd(opts *rootOptions) *cobra.Command {
 			return writeIndentedJSON(cmd.OutOrStdout(), resp)
 		},
 	}
+}
+
+// newRunStepExecutionsCmd lists every node execution of the caller's own template Run: inputs, outputs,
+// Code errors with traceback and output tail, model usage, and per-round Loop state and decisions.
+func newRunStepExecutionsCmd(opts *rootOptions) *cobra.Command {
+	var (
+		taskID    string
+		pageSize  int
+		pageToken string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "step-executions <run-id>",
+		Short: "List node executions of your own template run for debugging Code and Loop steps",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+
+			query := url.Values{}
+			if strings.TrimSpace(taskID) != "" {
+				query.Set("taskId", strings.TrimSpace(taskID))
+			}
+			if pageSize > 0 {
+				query.Set("pageSize", fmt.Sprintf("%d", pageSize))
+			}
+			if strings.TrimSpace(pageToken) != "" {
+				query.Set("pageToken", strings.TrimSpace(pageToken))
+			}
+
+			var resp map[string]any
+			path := "/users/me/runs/" + url.PathEscape(strings.TrimSpace(args[0])) + "/stepExecutions"
+			if err := httpClient.GetProductJSONWithQuery(ctx, path, query, &resp); err != nil {
+				return err
+			}
+			return writeIndentedJSON(cmd.OutOrStdout(), resp)
+		},
+	}
+	cmd.Flags().StringVar(&taskID, "task-id", "", "Only this task (row)")
+	cmd.Flags().IntVar(&pageSize, "page-size", 20, "Page size (max 100)")
+	cmd.Flags().StringVar(&pageToken, "page-token", "", "Page token from nextPageToken")
+	return cmd
 }
 
 func newRunSubmitCmd(opts *rootOptions) *cobra.Command {

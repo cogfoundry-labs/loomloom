@@ -88,7 +88,8 @@
         "examples/valid/loop-business-decision.json",
         "examples/valid/loop-checkpoint.json",
         "examples/valid/loop-model-artifact-merge.json",
-        "examples/valid/loop-vision-feedback.json"
+        "examples/valid/loop-vision-feedback.json",
+        "examples/valid/loop-outer-read-conditional.json"
       ],
       "invalidExamples": [
         "examples/invalid/loop-unbounded.json",

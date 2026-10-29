@@ -356,7 +356,7 @@ func TestBundledSkillRequiresValidatedPackageForAgentAssistedTemplates(t *testin
 		"online search or current information",
 		"external websites or APIs",
 		"browser interaction",
-		"local tools or code that needs network access or non-standard libraries",
+		"local tools or code that needs network access or libraries beyond that bundled set",
 		"Hosted Code Steps and bounded Loops",
 		"before creating the private template",
 		"require `validationStatus=passed`",

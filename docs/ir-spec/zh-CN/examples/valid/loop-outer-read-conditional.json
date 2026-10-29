@@ -1,0 +1,214 @@
+{
+  "meta": {
+    "name": "Loop with a condition and an outer read"
+  },
+  "templateInputs": {
+    "request": {
+      "kind": "value",
+      "valueType": "string",
+      "required": true,
+      "blankPolicy": "error",
+      "presentation": {
+        "label": "Request",
+        "order": 1
+      }
+    }
+  },
+  "steps": [
+    {
+      "stepId": "stp_gate01",
+      "displayName": "stp_gate01",
+      "dependsOn": [],
+      "executionBinding": {
+        "kind": "codeProfile"
+      },
+      "code": {
+        "language": "python",
+        "entrypoint": "main",
+        "source": "def main(inputs):\n    return {'run': inputs['payload'] != 'skip', 'hint': 'HINT_' + inputs['payload']}\n",
+        "inputs": {
+          "payload": {
+            "kind": "value",
+            "valueType": "string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "outputs": {
+          "run": {
+            "kind": "value",
+            "valueType": "boolean",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          "hint": {
+            "kind": "value",
+            "valueType": "string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "inputBindings": {
+        "payload": {
+          "source": "templateInput",
+          "inputKey": "request"
+        }
+      }
+    },
+    {
+      "stepId": "stp_loop01",
+      "displayName": "Guarded rework",
+      "dependsOn": [
+        "stp_gate01"
+      ],
+      "executionBinding": {
+        "kind": "loop"
+      },
+      "loop": {
+        "maxIterations": 3,
+        "deadlineSeconds": 600,
+        "body": [
+          {
+            "stepId": "stp_judge01",
+            "displayName": "stp_judge01",
+            "dependsOn": [
+              "stp_gate01"
+            ],
+            "executionBinding": {
+              "kind": "codeProfile"
+            },
+            "code": {
+              "language": "python",
+              "entrypoint": "main",
+              "source": "def main(inputs):\n    done = inputs['payload'] == 'round2'\n    return {'action': 'accept' if done else 'continue', 'feedback': 'round2', 'answer': inputs['hint'] + (':2' if done else ':1')}\n",
+              "inputs": {
+                "payload": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "hint": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              },
+              "outputs": {
+                "action": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "feedback": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "answer": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "inputBindings": {
+              "payload": {
+                "source": "loopState",
+                "inputKey": "feedback"
+              },
+              "hint": {
+                "source": "stepOutput",
+                "stepId": "stp_gate01",
+                "portId": "hint"
+              }
+            }
+          }
+        ],
+        "control": {
+          "decision": {
+            "stepId": "stp_judge01",
+            "portId": "action"
+          }
+        },
+        "state": {
+          "feedback": {
+            "initial": {
+              "source": "templateInput",
+              "inputKey": "request"
+            },
+            "update": {
+              "stepId": "stp_judge01",
+              "portId": "feedback"
+            }
+          }
+        },
+        "outputs": {
+          "copy": {
+            "stepId": "stp_judge01",
+            "portId": "answer"
+          }
+        }
+      },
+      "when": {
+        "stepId": "stp_gate01",
+        "portId": "run",
+        "equals": true
+      }
+    },
+    {
+      "stepId": "stp_final01",
+      "displayName": "stp_final01",
+      "dependsOn": [
+        "stp_loop01"
+      ],
+      "executionBinding": {
+        "kind": "codeProfile"
+      },
+      "code": {
+        "language": "python",
+        "entrypoint": "main",
+        "source": "def main(inputs):\n    return {'result': inputs['copy'] + '!'}\n",
+        "inputs": {
+          "copy": {
+            "kind": "value",
+            "valueType": "string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "outputs": {
+          "result": {
+            "kind": "value",
+            "valueType": "string",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "inputBindings": {
+        "copy": {
+          "source": "stepOutput",
+          "stepId": "stp_loop01",
+          "portId": "copy"
+        }
+      }
+    }
+  ],
+  "workbook": {}
+}

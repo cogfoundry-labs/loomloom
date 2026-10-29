@@ -227,7 +227,6 @@
               "code": false,
               "modelSelection": false,
               "inputBindings": false,
-              "when": false,
               "triggerPolicy": {
                 "const": "require_all"
               }
@@ -351,6 +350,9 @@
             "profileRevision": {
               "type": "string",
               "minLength": 1
+            },
+            "resourceClass": {
+              "enum": ["standard", "large"]
             }
           }
         },
@@ -594,8 +596,6 @@
     "code": {
       "type": "object",
       "required": [
-        "language",
-        "entrypoint",
         "source",
         "outputs",
         "inputs"
@@ -644,9 +644,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "kind",
-        "required",
-        "nullable"
+        "kind"
       ],
       "properties": {
         "kind": {
@@ -656,9 +654,11 @@
           ]
         },
         "required": {
+          "description": "Deprecated and optional: every Code input is required.",
           "const": true
         },
         "nullable": {
+          "description": "Deprecated and optional: every Code input is non-nullable.",
           "const": false
         },
         "valueType": {
@@ -827,13 +827,9 @@
         "maxIterations",
         "deadlineSeconds",
         "body",
+        "control",
         "state",
         "outputs"
-      ],
-      "oneOf": [
-        {"required": ["until"], "not": {"anyOf": [{"required": ["decision"]}, {"required": ["control"]}]}},
-        {"required": ["decision"], "not": {"anyOf": [{"required": ["until"]}, {"required": ["control"]}]}},
-        {"required": ["control"], "not": {"anyOf": [{"required": ["until"]}, {"required": ["decision"]}]}}
       ],
       "additionalProperties": false,
       "properties": {
@@ -853,12 +849,6 @@
           "items": {
             "$ref": "#/$defs/loopBodyStep"
           }
-        },
-        "until": {
-          "$ref": "#/$defs/loopSelector"
-        },
-        "decision": {
-          "$ref": "#/$defs/loopSelector"
         },
         "control": {"$ref": "#/$defs/loopControl"},
         "state": {
@@ -884,7 +874,7 @@
     },
     "loopControl": {
       "type": "object",
-      "required": ["decision", "checkpoints"],
+      "required": ["decision"],
       "additionalProperties": false,
       "properties": {
         "decision": {"$ref": "#/$defs/loopSelector"},
@@ -1030,6 +1020,9 @@
                 "profileRevision": {
                   "type": "string",
                   "minLength": 1
+                },
+                "resourceClass": {
+                  "enum": ["standard", "large"]
                 }
               }
             }

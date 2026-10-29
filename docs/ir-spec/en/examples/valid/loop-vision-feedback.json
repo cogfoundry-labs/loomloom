@@ -9,7 +9,7 @@
       "required": true,
       "blankPolicy": "error",
       "presentation": {
-        "label": "Generation requirements",
+        "label": "Request",
         "order": 1
       }
     },
@@ -33,7 +33,7 @@
   "steps": [
     {
       "stepId": "stp_loop001",
-      "displayName": "Rework for up to three rounds",
+      "displayName": "At most three rounds",
       "executionBinding": {
         "kind": "loop"
       },
@@ -70,9 +70,7 @@
               "kind": "codeProfile"
             },
             "code": {
-              "language": "python",
-              "entrypoint": "main",
-              "source": "def main(inputs):\n    copy = inputs[\"copy\"].strip()\n    passed = copy == \"HELLO\"\n    return {\"copy\": copy, \"passed\": passed, \"feedback\": \"Reply exactly HELLO\"}\n",
+              "source": "def main(inputs):\n    copy = inputs[\"copy\"].strip()\n    passed = copy == \"HELLO\"\n    action = \"accept\" if passed else \"continue\"\n    return {\"copy\": copy, \"passed\": passed, \"action\": action, \"feedback\": \"Reply exactly HELLO\"}\n",
               "outputs": {
                 "copy": {
                   "kind": "value",
@@ -88,6 +86,18 @@
                     "type": "boolean"
                   }
                 },
+                "action": {
+                  "kind": "value",
+                  "valueType": "string",
+                  "schema": {
+                    "type": "string",
+                    "enum": [
+                      "continue",
+                      "accept",
+                      "reject"
+                    ]
+                  }
+                },
                 "feedback": {
                   "kind": "value",
                   "valueType": "string",
@@ -99,8 +109,6 @@
               "inputs": {
                 "copy": {
                   "valueType": "string",
-                  "required": true,
-                  "nullable": false,
                   "schema": {
                     "type": "string",
                     "maxLength": 1000
@@ -121,9 +129,11 @@
             ]
           }
         ],
-        "until": {
-          "stepId": "stp_judge01",
-          "portId": "passed"
+        "control": {
+          "decision": {
+            "stepId": "stp_judge01",
+            "portId": "action"
+          }
         },
         "state": {
           "feedback": {
@@ -156,8 +166,6 @@
         "kind": "codeProfile"
       },
       "code": {
-        "language": "python",
-        "entrypoint": "main",
         "source": "def main(inputs):\n    return {\"copy\": inputs[\"copy\"]}\n",
         "outputs": {
           "copy": {
@@ -171,9 +179,7 @@
         "inputs": {
           "copy": {
             "kind": "value",
-            "valueType": "string",
-            "required": true,
-            "nullable": false
+            "valueType": "string"
           }
         }
       },
