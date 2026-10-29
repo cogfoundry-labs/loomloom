@@ -18,6 +18,7 @@ JSONL 运行使用与版本匹配的字段 key。先上传 orchestration input�
 - `run watch`：等待终态。
 - `run get`：查看运行与 task 摘要。
 - `run result-rows`：读取结构化结果。
+- `run step-executions`：作者调试自己的模板：逐节点的输入、输出、错误（Code traceback 与输出尾部）、模型用量，以及 Loop 每轮的初始 state 与判断。只对自己模板的 Run 可用，Market 买家与其他作者被拒绝。
 - `run result-workbook`：下载服务端对齐后的结果工作簿。
 - `artifact list/download`：访问单个产物。
 

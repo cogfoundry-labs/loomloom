@@ -255,17 +255,27 @@ loomloom template-spec docs examples
 ```
 
 - Code: `executionBinding.kind=codeProfile` with inline Python `main(inputs)`.
-  Omit `profileId`/`profileRevision` to use the default Python 3.12
-  standard-library environment. Declare every input (`required=true`,
-  `nullable=false`) and at least one named output. Code has no network access;
-  work that needs external APIs, websites, or extra libraries stays
-  Agent-assisted.
-- Loop: `executionBinding` is only `{"kind":"loop"}`; set `maxIterations`
-  (1–10) and `deadlineSeconds` (1–1800), a non-empty `body`, and exactly one of
-  `until`, `decision`, or `control`. Never add back edges to `dependsOn`.
+  Omit `profileId`/`profileRevision` (and `language`/`entrypoint`); the Server
+  freezes `python@1`: Python 3.12 with the standard library plus Pillow, numpy,
+  pydantic, jinja2, and PyAV. The retired `python-pure@1` and
+  `python-image@...` profiles are rejected. Set
+  `executionBinding.resourceClass` to `large` only when `standard` (30 s,
+  1 GiB) is not enough (120 s, 4 GiB). Declare every input (all are required
+  and non-null; omit `required`/`nullable`) and at least one named output. Code
+  has no network access; work that needs external APIs, websites, or other
+  libraries stays Agent-assisted.
+- Loop: `executionBinding` is `{"kind":"loop"}` (plus an optional `when`); set
+  `maxIterations` (1–10), `deadlineSeconds` (1–1800), a non-empty `body`,
+  `state`, `outputs`, and `control`. `control.decision` is required and selects
+  a body Code string output returning `continue`, `accept`, or `reject`;
+  `control.checkpoints` is optional for ending a round early. Never write the
+  retired top-level `until` or `decision`; the Server rejects them. Never add
+  back edges to `dependsOn`.
+- After a test run, read failures and Loop rounds with
+  `loomloom run step-executions <run-id>` (own templates only).
 - Start from the closest valid example (`code-value-artifact`,
   `code-condition`, `bounded-text-loop`, `loop-checkpoint`,
-  `loop-business-decision`) and avoid the patterns in the invalid examples.
+  `loop-business-decision`, `loop-outer-read-conditional`) and avoid the patterns in the invalid examples.
 - Availability is decided by the target Server, not by the docs: run
   `loomloom template-spec check` against the Server you will save to. If it
   rejects Code or Loop, report that the Server does not offer them yet and

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `run step-executions <run-id>` lists each node execution of your own
+  template's Run: inputs, outputs, Code error tracebacks, model usage, and every
+  Loop round's state and decision.
 - Code and Loop authoring and run results: `template-spec docs code` walks
   through hosted Code steps, conditions, and bounded Loop rework, with valid and
   invalid examples; `run` reads Code values and Loop results. Previously only in
@@ -60,6 +63,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   retaining the existing identity and legacy contract columns.
 - `capability resolve` text output no longer appends an empty revision suffix to
   dynamic Profile IDs.
+
+### Fixed
+- TemplateSpec docs, examples, and the bundled Skill now match the Server's
+  Loop contract: `control` with a required `control.decision` is the only exit
+  form, and the retired top-level `until`/`decision` are rejected. Code docs
+  describe the single `python@1` runtime (Pillow, numpy, pydantic, jinja2,
+  PyAV), `resourceClass`, Loop `when`, and outer-step reads. 0.7.0-beta.1
+  still documented `until`/`decision`.
 
 ### Security
 - Updated npm release tooling to npm 11.21.1 and replaced Verdaccio with a

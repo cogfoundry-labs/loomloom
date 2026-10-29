@@ -866,3 +866,36 @@ func TestRunGetCmdUsesProductRunDetailEndpoint(t *testing.T) {
 		t.Fatalf("unexpected output: %s", out.String())
 	}
 }
+
+func TestRunStepExecutionsListsOwnRunNodes(t *testing.T) {
+	var gotPath, gotQuery string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"items":[{"stepId":"stp_judge01","status":"failed"}],"loopIterations":[{"iteration":1}],"nextPageToken":"p2","totalCount":3}`))
+	}))
+	defer server.Close()
+
+	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
+	cmd := newRunStepExecutionsCmd(opts)
+	cmd.SilenceUsage = true
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"run-1", "--task-id", "task-7", "--page-size", "50", "--page-token", "p1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("run step-executions: %v", err)
+	}
+	if gotPath != "/loom/v1/users/me/runs/run-1/stepExecutions" {
+		t.Fatalf("path=%s", gotPath)
+	}
+	if gotQuery != "pageSize=50&pageToken=p1&taskId=task-7" {
+		t.Fatalf("query=%s", gotQuery)
+	}
+	var result map[string]any
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil {
+		t.Fatalf("decode output: %v\noutput=%s", err, out.String())
+	}
+	if result["nextPageToken"] != "p2" || len(result["loopIterations"].([]any)) != 1 {
+		t.Fatalf("result=%v", result)
+	}
+}

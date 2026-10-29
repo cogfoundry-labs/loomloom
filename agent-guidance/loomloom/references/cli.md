@@ -37,7 +37,7 @@ Treat CLI help and returned service data as authoritative for syntax, IDs, state
 Preserve exact values:
 
 - `orchestration-input upload` → `inputFileId` → private precheck/run `--input-file-id`
-- hosted submission → `runId` → `run watch`, `run get`, `run result-rows`, `run result-workbook`
+- hosted submission → `runId` → `run watch`, `run get`, `run result-rows`, `run result-workbook`; author debugging → `run step-executions`
 - `listing publish` → `reviewRequestId` → creator review commands
 - `market run` / `market workbook run` → `runTransactionId` and `runId` → usage/run/result commands
 
@@ -169,6 +169,7 @@ the historical version.
 - `loomloom run execute <template-id> -f <rows.json-or-jsonl> --client-request-id <id>`
 - `loomloom run list`
 - `loomloom run get <run-id>`
+- `loomloom run step-executions <run-id> [--task-id <id>] [--page-size <n>] [--page-token <token>]` (own template runs only: node inputs/outputs, Code error traceback, Loop rounds)
 - `loomloom run watch <run-id>`
 - `loomloom run result-rows <run-id>`
 - `loomloom run result-workbook <run-id>`

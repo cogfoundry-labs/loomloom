@@ -149,6 +149,7 @@ Use these commands for programmatic official-template JSON or JSONL input and fo
 | `loomloom run execute <template-id> -f <rows.json-or-jsonl> --client-request-id <id>` | Submit prechecked rows after confirmation. |
 | `loomloom run list` | List runs with optional Market context. |
 | `loomloom run get <run-id>` | Show one run's detail. |
+| `loomloom run step-executions <run-id>` | Debug your own template run: each node's inputs, outputs, Code errors with traceback, model usage, and every Loop round's state and decision. Market buyers cannot read it. |
 | `loomloom run watch <run-id>` | Watch run progress until a terminal state. |
 | `loomloom run result-rows <run-id>` | Show aligned input rows and results. |
 | `loomloom run result-workbook <run-id>` | Download a server-generated result workbook. |

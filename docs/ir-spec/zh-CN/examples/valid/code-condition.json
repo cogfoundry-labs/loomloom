@@ -22,8 +22,6 @@
         "kind": "codeProfile"
       },
       "code": {
-        "language": "python",
-        "entrypoint": "main",
         "source": "import json\nfrom pathlib import Path\n\ndef main(inputs):\n    text = inputs[\"text\"].strip()\n    Path(\"result.json\").write_text(json.dumps({\"text\": text}, ensure_ascii=False), encoding=\"utf-8\")\n    return {\"text\": text, \"passed\": bool(text) and text != \"REJECT\", \"file\": \"result.json\"}\n",
         "outputs": {
           "text": {
@@ -48,8 +46,6 @@
         "inputs": {
           "text": {
             "valueType": "string",
-            "required": true,
-            "nullable": false,
             "schema": {
               "type": "string",
               "maxLength": 1000
@@ -72,8 +68,6 @@
         "kind": "codeProfile"
       },
       "code": {
-        "language": "python",
-        "entrypoint": "main",
         "source": "def main(inputs):\n    return {\"copy\": inputs[\"text\"].upper()}\n",
         "outputs": {
           "copy": {
@@ -87,9 +81,7 @@
         "inputs": {
           "text": {
             "kind": "value",
-            "valueType": "string",
-            "required": true,
-            "nullable": false
+            "valueType": "string"
           }
         }
       },

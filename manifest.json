@@ -20,6 +20,7 @@
       "run.submit",
       "run.list",
       "run.get",
+      "run.step-executions",
       "run.watch",
       "run.result-rows",
       "run.result-workbook",
