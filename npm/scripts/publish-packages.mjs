@@ -3,7 +3,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { runConcurrent } from "./run-concurrent.mjs";
 import {
   assertSafeGeneratedPath,
   releaseVersion,
@@ -149,8 +150,8 @@ function waitForRegistryMetadata(records) {
 }
 
 // publishGroup publishes the missing records of one group, then waits for all of them together.
-function publishGroup(records) {
-  const published = [];
+async function publishGroup(records) {
+  const missing = [];
   for (const record of records) {
     const existing = registryMetadata(record, { freshCache: true });
     if (existing) {
@@ -170,28 +171,23 @@ function publishGroup(records) {
       continue;
     }
 
-    const tarball = path.join(tarballsDir, record.tarball);
-    const result = npm(
-      [
-        "publish",
-        tarball,
-        "--access",
-        "public",
-        "--tag",
-        record.publishTag,
-      ],
-      { timeout: publishTimeout },
-    );
-    if (result.status !== 0) {
-      throw new Error(`failed to publish ${record.name}@${record.version}`);
-    }
-    published.push(record);
+    missing.push(record);
   }
-  waitForRegistryMetadata(published);
+  await runConcurrent(missing, 3, (record) => new Promise((resolve, reject) => {
+    const child = spawn(npmCommand, [...npmCommandArgs, "publish", path.join(tarballsDir, record.tarball),
+      "--access", "public", "--tag", record.publishTag, "--registry", args.registry],
+    { stdio: "inherit", timeout: publishTimeout });
+    let processError;
+    child.once("error", (error) => { processError = error; });
+    child.once("close", (code) => code === 0 && !processError
+      ? resolve()
+      : reject(new Error(`failed to publish ${record.name}@${record.version}`, { cause: processError })));
+  }));
+  waitForRegistryMetadata(missing);
 }
 
 // Platform packages first, all verified before the main package that depends on them is published.
-publishGroup(manifest.packages.filter((record) => record.role === "platform"));
-publishGroup(manifest.packages.filter((record) => record.role === "main"));
+await publishGroup(manifest.packages.filter((record) => record.role === "platform"));
+await publishGroup(manifest.packages.filter((record) => record.role === "main"));
 
 console.log(args.publish ? "npm publication completed" : "npm publication plan completed without writes");
