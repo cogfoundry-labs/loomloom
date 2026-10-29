@@ -65,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dynamic Profile IDs.
 
 ### Fixed
+- npm release uploads platform packages concurrently, retries stale dist-tag
+  reads, and reuses the correct artifact when failed jobs are rerun.
 - TemplateSpec docs, examples, and the bundled Skill now match the Server's
   Loop contract: `control` with a required `control.decision` is the only exit
   form, and the retired top-level `until`/`decision` are rejected. Code docs

@@ -31,6 +31,8 @@ jobs:
   package:
     if: github.event_name == 'workflow_dispatch' || contains(github.ref_name, '-beta.') || !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
+    outputs:
+      artifact_name: ${{ steps.artifact_name.outputs.name }}
     permissions:
       contents: read
     steps:
@@ -95,9 +97,13 @@ jobs:
           npx --yes skills add "$source" --skill loomloom --global --agent codex --yes --copy
           npx --yes skills ls --global --agent codex --json | grep -F '"loomloom"'
 
+      - name: Record artifact name for downstream and partial reruns
+        id: artifact_name
+        run: echo "name=npm-tarballs-${RELEASE_TAG}-attempt-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: npm-tarballs-${{ env.RELEASE_TAG }}-attempt-${{ github.run_attempt }}
+          name: ${{ steps.artifact_name.outputs.name }}
           path: dist/npm-tarballs/*
 
   local_registry:
@@ -130,7 +136,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: npm-tarballs-${{ env.RELEASE_TAG }}-attempt-${{ github.run_attempt }}
+          name: ${{ needs.package.outputs.artifact_name }}
           path: dist/npm-tarballs
 
       - name: Verify through an offline local Registry
@@ -165,7 +171,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: npm-tarballs-${{ env.RELEASE_TAG }}-attempt-${{ github.run_attempt }}
+          name: ${{ needs.package.outputs.artifact_name }}
           path: dist/npm-tarballs
 
       - name: Publish missing packages and verify immutable reruns
