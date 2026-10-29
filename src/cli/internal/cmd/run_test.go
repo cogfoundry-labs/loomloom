@@ -10,11 +10,9 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/cogfoundry-labs/loomloom/src/cli/internal/platform"
 )
 
-func TestRunCommandsExposeSplitFlowAndLegacySubmit(t *testing.T) {
+func TestRunCommandsExposeSplitFlowWithoutLegacySubmit(t *testing.T) {
 	cmd := newRunCmd(&rootOptions{})
 	for _, name := range []string{"validate", "precheck", "execute"} {
 		found, _, err := cmd.Find([]string{name})
@@ -25,12 +23,11 @@ func TestRunCommandsExposeSplitFlowAndLegacySubmit(t *testing.T) {
 			t.Fatalf("run %s must be visible", name)
 		}
 	}
-	legacy, _, err := cmd.Find([]string{"submit"})
-	if err != nil || legacy.Name() != "submit" {
-		t.Fatalf("legacy run submit compatibility command missing: found=%v err=%v", legacy, err)
-	}
-	if !legacy.Hidden {
-		t.Fatal("legacy run submit must be hidden")
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+	cmd.SetArgs([]string{"submit", "text-v1", "--file", "rows.json"})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), `unknown command "submit"`) {
+		t.Fatalf("removed run submit error = %v, want unknown command", err)
 	}
 }
 
@@ -375,208 +372,6 @@ func TestRunExecutePrintsGeneratedClientRequestIDBeforeFailure(t *testing.T) {
 	}
 	if strings.Join(paths, ",") != strings.Join(wantPaths, ",") {
 		t.Fatalf("paths=%v want %v", paths, wantPaths)
-	}
-}
-
-func TestRunSubmitSendsFlatRowsAndClientRequestID(t *testing.T) {
-	var validateBody map[string]any
-	var precheckBody map[string]any
-	var runBody map[string]any
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/loom/v1/officialTemplates/text-v1/schema":
-			_, _ = w.Write([]byte(`{
-				"templateId":"text-v1",
-				"columns":[
-					{"fieldKey":"text_prompts","headerLabel":"文本提示词","order":1},
-					{"fieldKey":"writing_requirements","headerLabel":"写作要求","order":2}
-				]
-			}`))
-		case "/loom/v1/officialTemplates/text-v1:validateRows":
-			if err := json.NewDecoder(r.Body).Decode(&validateBody); err != nil {
-				t.Fatalf("decode validate body: %v", err)
-			}
-			_, _ = w.Write([]byte(`{"valid":true}`))
-		case "/loom/v1/officialTemplates/text-v1:precheckRows":
-			if err := json.NewDecoder(r.Body).Decode(&precheckBody); err != nil {
-				t.Fatalf("decode precheck body: %v", err)
-			}
-			_, _ = w.Write([]byte(`{"estimatedTotalCostT":0,"estimatedTotalCost":{"amount":"0.0000000","currency":"CNY"}}`))
-		case "/loom/v1/officialTemplates/text-v1:runRows":
-			if err := json.NewDecoder(r.Body).Decode(&runBody); err != nil {
-				t.Fatalf("decode run body: %v", err)
-			}
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"runId":"run-1","status":"pending","acceptedAtUnix":1782180000}`))
-		default:
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-	}))
-	defer server.Close()
-
-	inputPath := filepath.Join(t.TempDir(), "rows.json")
-	if err := os.WriteFile(inputPath, []byte(`[{"text_prompts":"hello","writing_requirements":"short"}]`), 0o644); err != nil {
-		t.Fatalf("write rows file: %v", err)
-	}
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"}
-	cmd := newRunSubmitCmd(opts)
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"text-v1", "--file", inputPath, "--client-request-id", "req-1"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("run submit command error = %v", err)
-	}
-	assertContainsAll(t, out.String(), `"estimatedTotalCost": {`, `"amount": "0"`, `"currency": "CNY"`)
-	assertContainsNone(t, out.String(), `"estimatedTotalCostT"`, `"availableBalanceT"`)
-	for name, body := range map[string]map[string]any{
-		"validate": validateBody,
-		"precheck": precheckBody,
-		"run":      runBody,
-	} {
-		rows, ok := body["rows"].([]any)
-		if !ok || len(rows) != 1 {
-			t.Fatalf("%s rows=%#v want one row", name, body["rows"])
-		}
-		row, ok := rows[0].(map[string]any)
-		if !ok {
-			t.Fatalf("%s row=%#v want object", name, rows[0])
-		}
-		if _, ok := row["values"]; ok {
-			t.Fatalf("%s row should not contain values wrapper: %#v", name, row)
-		}
-		if row["文本提示词"] != "hello" || row["写作要求"] != "short" {
-			t.Fatalf("%s row=%#v want remapped header labels", name, row)
-		}
-		if body["clientRequestId"] != "req-1" {
-			t.Fatalf("%s clientRequestId=%v want req-1", name, body["clientRequestId"])
-		}
-	}
-}
-
-func TestRunSubmitPrintsGeneratedClientRequestIDBeforeRunFailure(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/loom/v1/officialTemplates/text-v1/schema":
-			_, _ = w.Write([]byte(`{"templateId":"text-v1"}`))
-		case "/loom/v1/officialTemplates/text-v1:validateRows":
-			_, _ = w.Write([]byte(`{"valid":true}`))
-		case "/loom/v1/officialTemplates/text-v1:precheckRows":
-			_, _ = w.Write([]byte(`{"estimatedTotalCostT":0}`))
-		case "/loom/v1/officialTemplates/text-v1:runRows":
-			http.Error(w, `{"error":"temporary failure"}`, http.StatusServiceUnavailable)
-		default:
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-	}))
-	defer server.Close()
-
-	inputPath := filepath.Join(t.TempDir(), "rows.json")
-	if err := os.WriteFile(inputPath, []byte(`[{"prompt":"hello"}]`), 0o644); err != nil {
-		t.Fatalf("write rows file: %v", err)
-	}
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newRunSubmitCmd(opts)
-	var stderr bytes.Buffer
-	cmd.SetErr(&stderr)
-	cmd.SetArgs([]string{"text-v1", "--file", inputPath})
-
-	if err := cmd.Execute(); err == nil {
-		t.Fatal("run submit error = nil, want request failure")
-	}
-	if !strings.Contains(stderr.String(), "clientRequestId: loomloom-cli-") {
-		t.Fatalf("stderr=%q want generated clientRequestId before request failure", stderr.String())
-	}
-}
-
-func TestRunSubmitSettledSnapshotDoesNotBlockGatewayAdmission(t *testing.T) {
-	isolateCmdConfigHome(t)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/loom/v1/officialTemplates/text-v1/schema":
-			_, _ = w.Write([]byte(`{"templateId":"text-v1"}`))
-		case "/loom/v1/officialTemplates/text-v1:validateRows":
-			_, _ = w.Write([]byte(`{"valid":true}`))
-		case "/loom/v1/officialTemplates/text-v1:precheckRows":
-			_, _ = w.Write([]byte(`{
-				"estimatedTotalCostT":119350,
-				"balanceCheck":{
-					"currency":"CNY",
-					"availableBalance":1000,
-					"availability":"settled_only",
-					"finalAdmission":"gateway",
-					"isSufficient":false
-				}
-			}`))
-		case "/loom/v1/officialTemplates/text-v1:runRows":
-			_, _ = w.Write([]byte(`{"runId":"run-1","status":"queued"}`))
-		default:
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-	}))
-	defer server.Close()
-
-	inputPath := filepath.Join(t.TempDir(), "rows.json")
-	if err := os.WriteFile(inputPath, []byte(`[{"prompt":"hello"}]`), 0o644); err != nil {
-		t.Fatalf("write rows file: %v", err)
-	}
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newRunSubmitCmd(opts)
-	cmd.SetArgs([]string{"text-v1", "--file", inputPath})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("run submit error = %v", err)
-	}
-}
-
-func TestRunSubmitSettledSnapshotDoesNotUsePlatformBalanceMessage(t *testing.T) {
-	isolateCmdConfigHome(t)
-	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun}); err != nil {
-		t.Fatalf("SaveState error=%v", err)
-	}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/loom/v1/officialTemplates/text-v1/schema":
-			_, _ = w.Write([]byte(`{"templateId":"text-v1"}`))
-		case "/loom/v1/officialTemplates/text-v1:validateRows":
-			_, _ = w.Write([]byte(`{"valid":true}`))
-		case "/loom/v1/officialTemplates/text-v1:precheckRows":
-			_, _ = w.Write([]byte(`{
-				"estimatedTotalCostT":119350,
-				"balanceCheck":{
-					"currency":"CNY",
-					"availableBalance":1000,
-					"availability":"settled_only",
-					"finalAdmission":"gateway",
-					"isSufficient":false
-				}
-			}`))
-		case "/loom/v1/officialTemplates/text-v1:runRows":
-			_, _ = w.Write([]byte(`{"runId":"run-1","status":"queued"}`))
-		default:
-			t.Fatalf("unexpected path: %s", r.URL.Path)
-		}
-	}))
-	defer server.Close()
-
-	inputPath := filepath.Join(t.TempDir(), "rows.json")
-	if err := os.WriteFile(inputPath, []byte(`[{"prompt":"hello"}]`), 0o644); err != nil {
-		t.Fatalf("write rows file: %v", err)
-	}
-
-	opts := &rootOptions{server: server.URL + "/loom/v1", timeout: time.Second}
-	cmd := newRunSubmitCmd(opts)
-	cmd.SetArgs([]string{"text-v1", "--file", inputPath})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("run submit error = %v", err)
 	}
 }
 

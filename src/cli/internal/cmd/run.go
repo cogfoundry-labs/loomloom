@@ -24,7 +24,6 @@ func newRunCmd(opts *rootOptions) *cobra.Command {
 		newRunValidateCmd(opts),
 		newRunPrecheckCmd(opts),
 		newRunExecuteCmd(opts),
-		newRunSubmitCmd(opts),
 		newRunWatchCmd(opts),
 		newRunListCmd(opts),
 		newRunGetCmd(opts),
@@ -386,119 +385,6 @@ func newRunStepExecutionsCmd(opts *rootOptions) *cobra.Command {
 	cmd.Flags().StringVar(&taskID, "task-id", "", "Only this task (row)")
 	cmd.Flags().IntVar(&pageSize, "page-size", 20, "Page size (max 100)")
 	cmd.Flags().StringVar(&pageToken, "page-token", "", "Page token from nextPageToken")
-	return cmd
-}
-
-func newRunSubmitCmd(opts *rootOptions) *cobra.Command {
-	var (
-		inputPath       string
-		callbackURL     string
-		clientRequestID string
-	)
-
-	cmd := &cobra.Command{
-		Use:    "submit <template-id>",
-		Short:  "Legacy combined validate, precheck, and submit flow for official template rows",
-		Hidden: true,
-		Args:   cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if inputPath == "" {
-				return fmt.Errorf("--file is required")
-			}
-
-			rows, err := loadTemplateRows(inputPath)
-			if err != nil {
-				return err
-			}
-
-			httpClient, err := newHTTPClient(opts)
-			if err != nil {
-				return err
-			}
-			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
-			defer cancel()
-
-			var schemaResp templateSchemaResponse
-			if err := httpClient.GetJSON(ctx, "/officialTemplates/"+args[0]+"/schema", &schemaResp); err != nil {
-				return err
-			}
-			rows = remapRowsToHeaderLabels(rows, schemaResp)
-
-			requestID, generatedRequestID := effectiveClientRequestID(clientRequestID)
-			payload := map[string]any{
-				"rows":            templateRowsPayload(rows),
-				"clientRequestId": requestID,
-			}
-			if callbackURL != "" {
-				payload["callbackUrl"] = callbackURL
-			}
-
-			var validateResp validateTemplateRowsResponse
-			if err := httpClient.PostJSON(ctx, "/officialTemplates/"+args[0]+":validateRows", payload, &validateResp); err != nil {
-				return err
-			}
-			if !validateResp.Valid {
-				if opts.output == "json" {
-					enc := json.NewEncoder(cmd.OutOrStdout())
-					enc.SetIndent("", "  ")
-					_ = enc.Encode(map[string]any{
-						"templateId": args[0],
-						"inputPath":  inputPath,
-						"validation": validateResp,
-					})
-				}
-				return validationError(validateResp)
-			}
-
-			var precheckResp precheckTemplateRowsResponse
-			if err := httpClient.PostJSON(ctx, "/officialTemplates/"+args[0]+":precheckRows", payload, &precheckResp); err != nil {
-				return err
-			}
-			printGeneratedClientRequestID(cmd, requestID, generatedRequestID)
-			var submitResp submitTemplateRowsResponse
-			if err := httpClient.PostJSON(ctx, "/officialTemplates/"+args[0]+":runRows", payload, &submitResp); err != nil {
-				return err
-			}
-			opts.debugf("official template run: submitted template_id=%s run_id=%s row_count=%d", args[0], submitResp.RunID, len(rows))
-
-			result := map[string]any{
-				"templateId":      args[0],
-				"inputPath":       inputPath,
-				"rowCount":        len(rows),
-				"clientRequestId": requestID,
-				"runId":           submitResp.RunID,
-				"status":          submitResp.Status,
-				"acceptedAt":      int64(submitResp.AcceptedAt),
-			}
-			for key, value := range precheckJSONPayload(precheckResp) {
-				result[key] = value
-			}
-
-			if opts.output == "json" {
-				return writeIndentedJSON(cmd.OutOrStdout(), result)
-			}
-
-			if err := printPrecheck(cmd.OutOrStdout(), precheckResp); err != nil {
-				return err
-			}
-			_, err = fmt.Fprintf(
-				cmd.OutOrStdout(),
-				"template_id\t%s\ninput_path\t%s\nrow_count\t%d\nrun_id\t%s\nstatus\t%s\naccepted_at\t%s\n",
-				args[0],
-				inputPath,
-				len(rows),
-				submitResp.RunID,
-				submitResp.Status,
-				formatUnix(int64(submitResp.AcceptedAt)),
-			)
-			return err
-		},
-	}
-	cmd.Flags().StringVarP(&inputPath, "file", "f", "", "Input file in JSON array or JSONL format")
-	cmd.Flags().StringVar(&callbackURL, "callback-url", "", "Optional callback URL")
-	cmd.Flags().StringVar(&clientRequestID, "client-request-id", "", "Stable idempotency key for retrying the same rows submission")
-	cmd.Flags().StringVar(&clientRequestID, "idempotency-key", "", "Deprecated alias for --client-request-id")
-	_ = cmd.Flags().MarkDeprecated("idempotency-key", "use --client-request-id")
 	return cmd
 }
 
