@@ -72,7 +72,7 @@ personal entitlement. Preserve `subscriptionOffersStatus` (`available`,
 `unavailable`, or `notApplicable`) and nullable `payPerUseEnabled`; null does not
 mean payment is disabled. Subscription purchase waives creator call fees,
 while model fees remain billed by actual usage. Use `market quote` or workbook
-quote for the actual user's execution estimate.
+quote for the applicable call fee, payment mode, and version.
 
 ## Buyer Flow
 

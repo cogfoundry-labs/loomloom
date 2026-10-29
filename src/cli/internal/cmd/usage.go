@@ -72,7 +72,7 @@ func newUsageListCmd(opts *rootOptions) *cobra.Command {
 				return err
 			}
 			if opts.output == "json" {
-				return writeIndentedJSON(cmd.OutOrStdout(), raw)
+				return writeExecutionJSON(cmd.OutOrStdout(), raw)
 			}
 			resp, err := decodeJSONValue[marketUsagesListResponse](raw)
 			if err != nil {
@@ -104,7 +104,7 @@ func newUsageGetCmd(opts *rootOptions) *cobra.Command {
 				return err
 			}
 			if opts.output == "json" {
-				return writeIndentedJSON(cmd.OutOrStdout(), raw)
+				return writeExecutionJSON(cmd.OutOrStdout(), raw)
 			}
 			resp, err := decodeJSONValue[marketUsageSummary](raw)
 			if err != nil {
@@ -154,6 +154,10 @@ func printUsageList(w io.Writer, resp marketUsagesListResponse) error {
 }
 
 func printUsageDetail(w io.Writer, usage marketUsageSummary) error {
+	usage, err := executionDisplayCopy(usage)
+	if err != nil {
+		return err
+	}
 	tw := newTabWriter(w)
 	for _, row := range [][2]string{
 		{"run_transaction_id", usage.RunTransactionID},
@@ -171,16 +175,20 @@ func printUsageDetail(w io.Writer, usage marketUsageSummary) error {
 		}
 	}
 	for _, field := range []struct {
-		label  string
-		money  *moneyResponse
-		amount *flexInt64
+		label    string
+		money    *moneyResponse
+		amount   *flexInt64
+		optional bool
 	}{
-		{"task_fixed_fee", usage.TaskFixedFee, usage.TaskFixedFeeT},
-		{"estimated_execution_cost", usage.EstimatedExecutionCost, usage.EstimatedExecutionCostT},
-		{"estimated_payable", usage.EstimatedBuyerPayable, usage.EstimatedBuyerPayableT},
-		{"actual_execution_cost", usage.ActualExecutionCost, usage.ActualExecutionCostT},
-		{"final_payable", usage.FinalBuyerPayable, usage.FinalBuyerPayableT},
+		{"task_fixed_fee", usage.TaskFixedFee, usage.TaskFixedFeeT, false},
+		{"estimated_execution_cost", usage.EstimatedExecutionCost, usage.EstimatedExecutionCostT, true},
+		{"estimated_payable", usage.EstimatedBuyerPayable, usage.EstimatedBuyerPayableT, true},
+		{"actual_execution_cost", usage.ActualExecutionCost, usage.ActualExecutionCostT, false},
+		{"final_payable", usage.FinalBuyerPayable, usage.FinalBuyerPayableT, false},
 	} {
+		if field.optional && field.money == nil && field.amount == nil {
+			continue
+		}
 		rendered, err := formatResponseMoney(field.money, field.amount, usage.Currency)
 		if err != nil {
 			return fmt.Errorf("usage %s %s contract error: %w", usage.RunTransactionID, field.label, err)

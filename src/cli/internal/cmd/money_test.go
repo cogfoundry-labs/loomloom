@@ -176,7 +176,8 @@ func TestPrintPrecheckAndRunSummaryUseMoney(t *testing.T) {
 		if err != nil {
 			t.Fatalf("printPrecheck() error=%v", err)
 		}
-		for _, want := range []string{"estimated_cost", "CNY 1.702792", "available_balance", "CNY 2", "sufficient"} {
+		assertContainsNone(t, out.String(), "estimated_cost", "1.702792")
+		for _, want := range []string{"available_balance", "CNY 2", "sufficient"} {
 			if !strings.Contains(out.String(), want) {
 				t.Fatalf("output=%q missing %q", out.String(), want)
 			}

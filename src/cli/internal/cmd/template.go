@@ -401,7 +401,7 @@ func newTemplatePrecheckFileCmd(opts *rootOptions) *cobra.Command {
 			if err := maybeMapInsufficientBalanceError(opts, resp); err != nil {
 				return err
 			}
-			return writeIndentedJSON(cmd.OutOrStdout(), resp)
+			return writeExecutionJSON(cmd.OutOrStdout(), resp)
 		},
 	}
 }

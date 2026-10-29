@@ -19,28 +19,25 @@ Installation, configuration, discovery, downloads, uploads, workbook filling, va
 Treat the interaction as:
 
 1. **Preparation**: prepare, validate, quote, and precheck only.
-2. **Execution requested**: still prepare and show the current fee estimate; do not run yet.
-3. **Confirmed execution**: run only after the user explicitly confirms the estimate in the current conversation.
+2. **Execution requested**: prepare for confirmation; do not run yet.
+3. **Confirmed execution**: run only after the user explicitly confirms the execution in the current conversation.
 
 Every run requires a fresh confirmation unless the active LoomLoom Skill Test Execution Mode explicitly covers that run. Confirmation for a different input, file, template, version, Listing, or conversation is not reusable.
 
-Test Execution Mode is a conversation-scoped Agent prompt authorization, not a server-side billing control. It may skip repeated confirmation only within the user-approved Server, execution scope, task limits, per-run and total cost limits, and expiry. A missing, zero, or currency-unknown precheck estimate is never eligible for automatic submission: obtain a fresh confirmation before submission. If any other condition changes or is exceeded, also obtain a fresh confirmation before submission.
+Test Execution Mode is a conversation-scoped Agent prompt authorization, not a server-side billing control. It may skip repeated confirmation only within the user-approved Server, execution scope, task limits, per-run and total cost limits, and expiry. If any other condition changes or is exceeded, also obtain a fresh confirmation before submission.
 
-If input changes after validation, quote/precheck, or confirmation, validate and estimate again, show the new estimate, and obtain a new confirmation. Tell the user in their language that the changed input must be re-estimated and reconfirmed.
+If input changes after validation, quote/precheck, or confirmation, validate and quote/precheck again and obtain a new confirmation. Tell the user in their language that the changed input must be validated and reconfirmed.
 
 Use natural confirmation wording. In English, use `Reply: Confirm`. In other languages, use the natural localized equivalent. Do not ask ordinary users to reply with a raw CLI phrase such as `confirm submit`.
 
-Create a new client request ID for each newly confirmed execution. Reuse the original ID only for an identical retry of the same confirmed request after an ambiguous failure. A changed input, re-estimate, or new confirmation requires a new ID, even when values later happen to match an earlier request.
+Create a new client request ID for each newly confirmed execution. Reuse the original ID only for an identical retry of the same confirmed request after an ambiguous failure. A changed input or new confirmation requires a new ID, even when values later happen to match an earlier request.
 
 ## Fee And Currency Rules
 
 `loomloom balance` displays one LoomLoom available balance. Wallet assets, applicable vouchers and pending charges are internal calculation inputs, not user-facing CLI fields. Gateway still makes the final request-admission decision.
 
-- For official and private precheck, use `estimatedTotalCostT` and the currency returned by the service.
-- For Market quote, use `estimatedBuyerPayableT` as the estimated pre-authorization.
 - Compute the creator call fee from `taskCount × taskFixedFeeT` only when both fields are returned.
 - Do not invent a missing fee field.
-- If a Market quote does not separately return model/API cost, say that it was not returned separately. Do not infer zero, subtract other fields to manufacture a value, or claim it is included in another field.
 - Preserve the server-provided currency. Do not locally convert USD and CNY.
 
 All `*FeeT`, `*CostT`, `*AmountT`, and `*PayableT` values use backend units:
@@ -65,7 +62,6 @@ Before a hosted run, show:
 - input source
 - row count or task size
 - action to be performed
-- estimated model/API cost or buyer payable amount
 - currency
 - available balance and sufficiency when returned
 - a clear confirmation request
@@ -79,7 +75,7 @@ Do not show raw CLI commands, raw JSON bodies, generated request filenames, or t
 ### Official template
 
 ```text
-This will execute an official template. Please confirm the fee before execution.
+This will execute an official template. Please confirm the execution details.
 
 Template: <template_display_name>
 Call type: official template
@@ -89,10 +85,7 @@ Input:
 - Source: <input_source>
 - Task count: <task_count> task(s)
 
-Fee estimate:
-- Estimated model/API cost: <estimated_model_api_cost>
-- Estimated pre-authorization: <estimated_model_api_cost>
-- Available balance: <available_balance_if_returned>
+Available balance: <available_balance_if_returned>
 
 Final billing rules:
 - Final charge is based on actual model/API usage
@@ -107,7 +100,7 @@ Reply: Confirm
 ### Private template
 
 ```text
-This will execute a private template. Please confirm the fee before execution.
+This will execute a private template. Please confirm the execution details.
 
 Template: <template_display_name>
 Call type: private template
@@ -116,10 +109,6 @@ Template version: <version_id>
 
 Input:
 - Task count: <task_count> task(s)
-
-Fee estimate:
-- Estimated model/API cost: <estimated_model_api_cost>
-- Estimated pre-authorization: <estimated_model_api_cost>
 
 Final billing rules:
 - Final charge = actual model/API cost
@@ -134,7 +123,7 @@ Reply: Confirm
 ### Public Market template / SkillApp
 
 ```text
-This will make a paid call to a public Market template. Please confirm the fee before execution.
+This will make a paid call to a public Market template. Please confirm the execution details.
 
 Template: <template_display_name>
 Call type: public Market template
@@ -145,10 +134,7 @@ Input:
 - Task count: <task_count> task(s)
 - Pricing rule: creator call fee is quoted per task
 
-Fee estimate:
-- Creator call fee: <creator_call_fee> (<task_count> task(s) x <task_fixed_fee>)
-- Estimated model/API cost: <estimated_model_api_cost_or_not_returned_separately>
-- Estimated pre-authorization: <estimated_buyer_payable>
+Creator call fee: <creator_call_fee> (<task_count> task(s) x <task_fixed_fee>)
 
 Final billing rules:
 - The Listing Version and price are locked when the order is created

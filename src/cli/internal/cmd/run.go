@@ -126,7 +126,7 @@ func newRunPrecheckCmd(opts *rootOptions) *cobra.Command {
 				result["templateId"] = templateID
 				result["inputPath"] = strings.TrimSpace(inputPath)
 				result["rowCount"] = len(rows)
-				return writeIndentedJSON(cmd.OutOrStdout(), result)
+				return writeExecutionJSON(cmd.OutOrStdout(), result)
 			}
 			if _, err := fmt.Fprintf(
 				cmd.OutOrStdout(),
@@ -291,7 +291,7 @@ func newRunListCmd(opts *rootOptions) *cobra.Command {
 			if err := httpClient.GetProductJSONWithQuery(ctx, "/users/me/runs", query, &resp); err != nil {
 				return err
 			}
-			return writeIndentedJSON(cmd.OutOrStdout(), resp)
+			return writeExecutionJSON(cmd.OutOrStdout(), resp)
 		},
 	}
 	cmd.Flags().StringVar(&status, "status", "", "Run status filter")
@@ -337,7 +337,7 @@ func newRunGetCmd(opts *rootOptions) *cobra.Command {
 			if err := httpClient.GetProductJSONWithQuery(ctx, path, query, &resp); err != nil {
 				return err
 			}
-			return writeIndentedJSON(cmd.OutOrStdout(), resp)
+			return writeExecutionJSON(cmd.OutOrStdout(), resp)
 		},
 	}
 }
@@ -441,7 +441,7 @@ func newRunWatchCmd(opts *rootOptions) *cobra.Command {
 
 				if isTerminalRunStatus(latest.Status) {
 					if opts.output == "json" {
-						return writeIndentedJSON(cmd.OutOrStdout(), latest)
+						return writeExecutionJSON(cmd.OutOrStdout(), latest)
 					}
 					return printRunSummary(cmd.OutOrStdout(), latest)
 				}

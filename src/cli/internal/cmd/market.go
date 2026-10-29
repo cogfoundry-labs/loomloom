@@ -97,7 +97,7 @@ func newMarketQuoteCmd(opts *rootOptions) *cobra.Command {
 				return err
 			}
 			if opts.output == "json" {
-				return writeIndentedJSON(cmd.OutOrStdout(), resp)
+				return writeExecutionJSON(cmd.OutOrStdout(), resp)
 			}
 			return printMarketQuote(cmd.OutOrStdout(), resp)
 		},
@@ -207,7 +207,7 @@ func newMarketRunCmd(opts *rootOptions) *cobra.Command {
 			}
 			if !confirm {
 				if opts.output == "json" {
-					return writeIndentedJSON(cmd.OutOrStdout(), map[string]any{
+					return writeExecutionJSON(cmd.OutOrStdout(), map[string]any{
 						"quote":     quoteResp,
 						"confirmed": false,
 					})
@@ -234,7 +234,7 @@ func newMarketRunCmd(opts *rootOptions) *cobra.Command {
 				stringMapValue(resp, "runTransactionId"),
 			)
 			if opts.output == "json" {
-				return writeIndentedJSON(cmd.OutOrStdout(), resp)
+				return writeExecutionJSON(cmd.OutOrStdout(), resp)
 			}
 			return printMarketExecution(cmd.OutOrStdout(), resp)
 		},
@@ -366,7 +366,7 @@ func newMarketWorkbookQuoteCmd(opts *rootOptions) *cobra.Command {
 				return err
 			}
 			if opts.output == "json" {
-				return writeIndentedJSON(cmd.OutOrStdout(), resp)
+				return writeExecutionJSON(cmd.OutOrStdout(), resp)
 			}
 			return printMarketQuote(cmd.OutOrStdout(), resp)
 		},
@@ -428,7 +428,7 @@ func newMarketWorkbookRunCmd(opts *rootOptions) *cobra.Command {
 			}
 			if !confirm {
 				if opts.output == "json" {
-					return writeIndentedJSON(cmd.OutOrStdout(), map[string]any{
+					return writeExecutionJSON(cmd.OutOrStdout(), map[string]any{
 						"quote":     quoteResp,
 						"confirmed": false,
 					})
@@ -460,7 +460,7 @@ func newMarketWorkbookRunCmd(opts *rootOptions) *cobra.Command {
 				stringMapValue(resp, "runTransactionId"),
 			)
 			if opts.output == "json" {
-				return writeIndentedJSON(cmd.OutOrStdout(), resp)
+				return writeExecutionJSON(cmd.OutOrStdout(), resp)
 			}
 			return printMarketExecution(cmd.OutOrStdout(), resp)
 		},
@@ -955,7 +955,7 @@ func validateMarketLookupListing(listingID string, lookup marketTransactionLooku
 
 func printMarketCommandResponse(cmd *cobra.Command, opts *rootOptions, response map[string]any) error {
 	if opts.output == "json" {
-		return writeIndentedJSON(cmd.OutOrStdout(), response)
+		return writeExecutionJSON(cmd.OutOrStdout(), response)
 	}
 	return printMarketExecution(cmd.OutOrStdout(), response)
 }
@@ -1001,6 +1001,10 @@ func postMarketWorkbook[T any](ctx context.Context, opts *rootOptions, listingID
 }
 
 func printMarketQuote(w io.Writer, resp map[string]any) error {
+	resp, err := executionDisplayCopy(resp)
+	if err != nil {
+		return err
+	}
 	currency := stringMapValue(resp, "currency")
 	if currency == "-" {
 		currency = ""
@@ -1037,6 +1041,10 @@ func printMarketQuote(w io.Writer, resp map[string]any) error {
 }
 
 func printMarketExecution(w io.Writer, resp map[string]any) error {
+	resp, err := executionDisplayCopy(resp)
+	if err != nil {
+		return err
+	}
 	currency := stringMapValue(resp, "currency")
 	if currency == "-" {
 		currency = ""

@@ -172,7 +172,7 @@ func TestRunValidateFailureReturnsNestedRowErrors(t *testing.T) {
 	}
 }
 
-func TestRunPrecheckOnlyEstimatesRows(t *testing.T) {
+func TestRunPrecheckKeepsChecksWithoutDisplayingEstimate(t *testing.T) {
 	var paths []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		paths = append(paths, r.URL.Path)
@@ -223,13 +223,11 @@ func TestRunPrecheckOnlyEstimatesRows(t *testing.T) {
 	assertContainsAll(
 		t,
 		out.String(),
-		`"estimatedTotalCost": {`,
-		`"amount": "0.011935"`,
 		`"availableBalance": {`,
 		`"amount": "0.02"`,
 		`"currency": "CNY"`,
 	)
-	assertContainsNone(t, out.String(), `"runId"`, `"estimatedTotalCostT"`)
+	assertContainsNone(t, out.String(), `"runId"`, `"estimatedTotalCost`, "0.011935", "119350")
 }
 
 func TestRunPrecheckSettledSnapshotDoesNotBlockGatewayAdmission(t *testing.T) {

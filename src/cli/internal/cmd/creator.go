@@ -214,7 +214,7 @@ func newCreatorTransactionsCmd(opts *rootOptions) *cobra.Command {
 				return writeIndentedJSON(cmd.OutOrStdout(), raw)
 			}
 			if opts.output == "json" {
-				return writeIndentedJSON(cmd.OutOrStdout(), raw)
+				return writeExecutionJSON(cmd.OutOrStdout(), raw)
 			}
 			resp, err := decodeJSONValue[creatorTransactionsListResponse](raw)
 			if err != nil {
