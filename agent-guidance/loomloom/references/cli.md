@@ -187,6 +187,7 @@ the historical version.
 - `loomloom market list [--keyword <text>] [--category <code>] [--sort-by default|usage|newest] [--page <n>] [--page-size <1-15>]`
 - `loomloom market show <resource-id> [--source market|official]`
 - `loomloom market quote <listing-id> --input-file <request.json>`
+- `loomloom market check-balance --call-fee <amount> --currency <currency>`
 - `loomloom market run <listing-id> --input-file <request.json> --confirm --client-request-id <id>`
 - `loomloom market workbook download <listing-id> --output-file <xlsx>`
 - `loomloom market workbook validate <listing-id> --file <xlsx>`

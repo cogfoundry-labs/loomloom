@@ -24,7 +24,7 @@ Treat the interaction as:
 
 Every run requires a fresh confirmation unless the active LoomLoom Skill Test Execution Mode explicitly covers that run. Confirmation for a different input, file, template, version, Listing, or conversation is not reusable.
 
-Test Execution Mode is a conversation-scoped Agent prompt authorization, not a server-side billing control. It may skip repeated confirmation only within the user-approved Server, execution scope, task limits, per-run and total cost limits, and expiry. If any other condition changes or is exceeded, also obtain a fresh confirmation before submission.
+Test Execution Mode is a conversation-scoped Agent prompt authorization, not a server-side billing control. It may skip repeated confirmation only within the user-approved Server, execution scope, task limits, per-run and total creator call fee limits, and expiry. If any other condition changes or is exceeded, also obtain a fresh confirmation before submission.
 
 If input changes after validation, quote/precheck, or confirmation, validate and quote/precheck again and obtain a new confirmation. Tell the user in their language that the changed input must be validated and reconfirmed.
 
@@ -36,7 +36,7 @@ Create a new client request ID for each newly confirmed execution. Reuse the ori
 
 `loomloom balance` displays one LoomLoom available balance. Wallet assets, applicable vouchers and pending charges are internal calculation inputs, not user-facing CLI fields. Gateway still makes the final request-admission decision.
 
-- Compute the creator call fee from `taskCount × taskFixedFeeT` only when both fields are returned.
+- Use the quote's `effectiveCreatorFee` as the total call fee; it accounts for the applicable payment mode, including subscription coverage. Pass its amount and currency to `market check-balance` before Market confirmation.
 - Do not invent a missing fee field.
 - Preserve the server-provided currency. Do not locally convert USD and CNY.
 

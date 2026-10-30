@@ -114,8 +114,9 @@ Do not show raw request JSON unless the user explicitly asks for JSON/API detail
 2. Collect input through an Excel-style experience or the user's natural-language values.
 3. Build public `inputRows` internally.
 4. `loomloom market quote <listing-id> --input-file <request.json>`
-5. Show the Market confirmation template and wait for explicit confirmation.
-6. `loomloom market run <listing-id> --input-file <request.json> --confirm --client-request-id <id>`
+5. `loomloom market check-balance --call-fee <effectiveCreatorFee.amount> --currency <effectiveCreatorFee.currency>` using the quote's total applicable call fee.
+6. If the balance check succeeds, show the Market confirmation template and wait for explicit confirmation.
+7. `loomloom market run <listing-id> --input-file <request.json> --confirm --client-request-id <id>`
 
 ### Workbook flow
 
@@ -124,8 +125,24 @@ Do not show raw request JSON unless the user explicitly asks for JSON/API detail
 3. Let the user fill or approve the workbook.
 4. `loomloom market workbook validate <listing-id> --file <xlsx>`
 5. `loomloom market workbook quote <listing-id> --file <xlsx>`
-6. Show the Market confirmation template and wait for explicit confirmation.
-7. `loomloom market workbook run <listing-id> --file <xlsx> --confirm --client-request-id <id>`
+6. `loomloom market check-balance --call-fee <effectiveCreatorFee.amount> --currency <effectiveCreatorFee.currency>` using the workbook quote's total applicable call fee.
+7. If the balance check succeeds, show the Market confirmation template and wait for explicit confirmation.
+8. `loomloom market workbook run <listing-id> --file <xlsx> --confirm --client-request-id <id>`
+
+If `check-balance` fails, stop before confirmation and submission. For insufficient
+balance, show the returned balance, call fee, shortfall, and recharge guidance;
+include `rechargeUrl` as a clickable recharge link for the current platform:
+
+- ShengSuanYun: https://console.shengsuanyun.com/user/recharge
+- CogFoundry: https://console.cogfoundry.ai/credits
+
+Use the platform selected by the CLI Server, not the currency or the user's
+language. If a custom Server returns no recharge link, ask its provider for the
+recharge entry instead of choosing one of these platforms. Do not submit even
+if the user insists. After recharge, run `check-balance` again before continuing.
+For a failed balance query, report the
+error and retry the check before proceeding. If inputs, version, or payment mode
+change, obtain a fresh quote and repeat the balance check and confirmation.
 
 Use `usage list` and `usage get <run-transaction-id>` for the buyer's own calls and settlement.
 
