@@ -8,6 +8,7 @@ Use this reference whenever a task involves precheck, quote, balance, currency, 
 - [Fee and currency rules](#fee-and-currency-rules)
 - [Confirmation content](#confirmation-content)
 - [Confirmation templates](#confirmation-templates)
+- [Actual fees after execution](#actual-fees-after-execution)
 - [Market settlement](#market-settlement)
 - [Persistent remote changes](#persistent-remote-changes)
 - [Creator earnings](#creator-earnings)
@@ -63,7 +64,7 @@ Before a hosted run, show:
 - row count or task size
 - action to be performed
 - currency
-- available balance and sufficiency when returned
+- creator call fee, model fee pending settlement, and current available balance in the three-line format below
 - a clear confirmation request
 
 Show the buyer-facing Market fee summary only. Do not show platform commission, creator net earnings, or revenue-sharing details to a buyer.
@@ -71,6 +72,8 @@ Show the buyer-facing Market fee summary only. Do not show platform commission, 
 Do not show raw CLI commands, raw JSON bodies, generated request filenames, or terse developer fields unless the user explicitly asks for CLI/API details.
 
 ## Confirmation Templates
+
+Present these templates in the user's language. For official/private templates, use the precheck's available balance; if absent, query `loomloom balance` before confirmation. For Market, use the call fee and balance returned by `market check-balance` after a successful check.
 
 ### Official template
 
@@ -80,12 +83,15 @@ This will execute an official template. Please confirm the execution details.
 Template: <template_display_name>
 Call type: official template
 Template ID: <template_id>
+Template version: <version>
 
 Input:
 - Source: <input_source>
 - Task count: <task_count> task(s)
 
-Available balance: <available_balance_if_returned>
+1. Creator call fee: None
+2. Model fee: Pending settlement; historical model fee per task: <minModelFee>–<maxModelFee> (reference only; actual usage applies)
+3. Current balance: <available_balance>
 
 Final billing rules:
 - Final charge is based on actual model/API usage
@@ -96,6 +102,8 @@ Final billing rules:
 Please confirm whether to execute.
 Reply: Confirm
 ```
+
+Use the returned official-template range when `availability` is `available`. For `no_data` or a failed lookup, show "Model fee: Pending settlement; no historical data available for reference" and continue confirmation.
 
 ### Private template
 
@@ -109,6 +117,10 @@ Template version: <version_id>
 
 Input:
 - Task count: <task_count> task(s)
+
+1. Creator call fee: None
+2. Model fee: Pending settlement
+3. Current balance: <available_balance>
 
 Final billing rules:
 - Final charge = actual model/API cost
@@ -134,25 +146,43 @@ Input:
 - Task count: <task_count> task(s)
 - Pricing rule: creator call fee is quoted per task
 
-Creator call fee: <creator_call_fee> (<task_count> task(s) x <task_fixed_fee>)
+1. Creator call fee: <creator_call_fee> (<task_count> task(s) x <task_fixed_fee>)
+2. Model fee: Pending settlement; historical actual model fee per task for this SkillApp: <minModelFee>–<maxModelFee> (reference only; billed by actual usage, which may exceed this range)
+3. Current balance: <available_balance>
 
 Final billing rules:
 - The Listing Version and price are locked when the order is created
 - For a completed run, final charge = applicable creator call fee + actual model/API cost
-- For a failed or cancelled run, the buyer's final charge is zero, the reserved amount is released, and the creator receives no earning
-- For a partially failed or partially cancelled run, the current implementation leaves the reserved amount and creator settlement pending resolution
+- Use the returned transaction amounts for failed, cancelled, or partially completed runs; a run's status alone does not determine its final charge
 
 Please confirm whether to execute.
 Reply: Confirm
 ```
 
+For Market, take `effectiveCreatorFee` from the output of `market quote` or `market workbook quote`. Include the task-count calculation only when it matches that total. When subscription coverage applies, show the returned applicable call fee and explain the coverage.
+
+Read the historical range with `market model-cost-range <listing-id> --listing-version-id <quote.listingVersionId>`. Use `minModelFee` and `maxModelFee` when `availability` is `available`. For `no_data` or a failed lookup, replace line 2 with "Model fee: Pending settlement; no historical data available for reference" and continue confirmation. If the quoted version changes, query that version again. Historical fees are per-task reference only; balance checks and Test Execution Mode limits use creator call fees.
+
+## Actual Fees After Execution
+
+For Market, use `usage get <run-transaction-id>` (`usage list` for history) and present in the user's language:
+
+```text
+Actual amount: <finalBuyerPayable>
+Creator call fee: <actualCreatorFee>
+Model fee: <actualExecutionCost>
+```
+
+For `feeStatus: pending`, show "Pending settlement". For `unavailable`, show known amounts and mark missing ones as unavailable; never substitute zero.
+
+For official/private templates, use the actual cost from `run get` or the final `run watch` result for both total and model fee; creator call fee is "None". If absent, show "Pending settlement".
+
 ## Market Settlement
 
 Interpret Market settlement from the returned transaction state:
 
-- **Completed**: settle the buyer's actual model/API cost plus the applicable creator call fee, and credit the creator.
-- **Failed or cancelled**: buyer final charge is zero, reserved amount is released, and creator earning is zero.
-- **Partially failed or partially cancelled**: the current implementation does not capture or release the reserved amount and does not credit the creator; the transaction remains pending resolution.
+- **Succeeded, failed, or cancelled transaction**: use the actual amounts returned by the usage record. Partial completion can still incur model and creator call fees; do not infer zero from cancellation alone.
+- **Transaction still running or awaiting resolution**: fees are pending settlement, even if the run has finished.
 
 Do not claim that a human or manual review process exists unless the service explicitly reports one.
 

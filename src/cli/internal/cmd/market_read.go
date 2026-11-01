@@ -92,6 +92,106 @@ type skillCatalogDetail struct {
 	Pricing          skillCatalogPricing `json:"pricing"`
 }
 
+type marketModelCostRangeResponse struct {
+	ListingVersionID string         `json:"listingVersionId"`
+	Availability     string         `json:"availability"`
+	MinModelFee      *moneyResponse `json:"minModelFee"`
+	MaxModelFee      *moneyResponse `json:"maxModelFee"`
+}
+
+func newMarketModelCostRangeCmd(opts *rootOptions) *cobra.Command {
+	var versionID string
+	cmd := &cobra.Command{
+		Use:   "model-cost-range <listing-id>",
+		Short: "Read a SkillApp version's historical actual model fee range per task",
+		Long: "Read historical actual model fees per completed task, excluding creator call fees. " +
+			"Use the listingVersionId from the quote for confirmation. Omit --listing-version-id to query the current published version. " +
+			"The range is for reference; actual usage may exceed it. This command does not submit a run.",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			listingID := strings.TrimSpace(args[0])
+			versionID = strings.TrimSpace(versionID)
+			if listingID == "" || listingID == "." || listingID == ".." || strings.ContainsAny(listingID, "/\x00") {
+				return fmt.Errorf("listing ID must be a non-empty ID without slash or NUL")
+			}
+			if strings.ContainsRune(versionID, 0) || (cmd.Flags().Changed("listing-version-id") && versionID == "") {
+				return fmt.Errorf("--listing-version-id must be a non-empty version ID without NUL")
+			}
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			query := url.Values{}
+			if versionID != "" {
+				query.Set("listingVersionId", versionID)
+			}
+			var response marketModelCostRangeResponse
+			if err := httpClient.GetProductJSONWithQuery(ctx, "/marketListings/"+url.PathEscape(listingID)+"/modelCostRange", query, &response); err != nil {
+				return err
+			}
+			if strings.TrimSpace(response.ListingVersionID) == "" || (versionID != "" && response.ListingVersionID != versionID) {
+				return fmt.Errorf("historical model fee range returned a missing or mismatched listingVersionId")
+			}
+			minFee, maxFee, err := formatHistoricalModelFeeRange(response.Availability, response.MinModelFee, response.MaxModelFee)
+			if err != nil {
+				return err
+			}
+			if opts.output == "json" {
+				return writeIndentedJSON(cmd.OutOrStdout(), response)
+			}
+			tw := newTabWriter(cmd.OutOrStdout())
+			if _, err := fmt.Fprintf(tw, "listing_version_id\t%s\navailability\t%s\n", response.ListingVersionID, response.Availability); err != nil {
+				return err
+			}
+			if response.Availability == "available" {
+				_, err = fmt.Fprintf(tw, "min_model_fee\t%s\nmax_model_fee\t%s\nreference\tHistorical actual model fees per task; actual usage may exceed this range.\n", minFee, maxFee)
+			} else {
+				_, err = fmt.Fprintln(tw, "historical_model_fee\tNo historical data available for reference.")
+			}
+			if err != nil {
+				return err
+			}
+			return tw.Flush()
+		},
+	}
+	cmd.Flags().StringVar(&versionID, "listing-version-id", "", "listingVersionId from the quote; defaults to the current published version")
+	return cmd
+}
+
+func formatHistoricalModelFeeRange(availability string, min, max *moneyResponse) (string, string, error) {
+	if availability == "no_data" {
+		if min != nil || max != nil {
+			return "", "", fmt.Errorf("historical model fee range with no_data must have null amounts")
+		}
+		return "", "", nil
+	}
+	if availability != "available" {
+		return "", "", fmt.Errorf("invalid historical model fee availability %q", availability)
+	}
+	if min == nil || max == nil {
+		return "", "", fmt.Errorf("available historical model fee range is missing amounts")
+	}
+	minT, err := parseMoneyAmountT(min.Amount)
+	if err != nil {
+		return "", "", fmt.Errorf("invalid minModelFee: %w", err)
+	}
+	maxT, err := parseMoneyAmountT(max.Amount)
+	if err != nil {
+		return "", "", fmt.Errorf("invalid maxModelFee: %w", err)
+	}
+	if maxT < minT {
+		return "", "", fmt.Errorf("historical model fee range maximum is below minimum")
+	}
+	minFee, err := formatResponseMoney(min, nil, "")
+	if err != nil {
+		return "", "", err
+	}
+	maxFee, err := formatResponseMoney(max, nil, min.Currency)
+	return minFee, maxFee, err
+}
+
 func newMarketListCmd(opts *rootOptions) *cobra.Command {
 	var keyword, category, sortBy string
 	var page int64

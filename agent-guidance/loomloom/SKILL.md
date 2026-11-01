@@ -226,7 +226,7 @@ a new immutable version only after explicit confirmation. Do not promise a lossl
 ```text
 Discover Listing → Inspect public schema → Select Listing → Explicit use request
 → Check/install public Skill Package → Prepare public input → Quote
-→ Show Market fee confirmation
+→ Check call-fee balance → Read historical model fee range → Show Market fee confirmation
 → User confirms → Run through Listing → Usage/results
 ```
 

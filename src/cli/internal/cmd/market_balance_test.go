@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/cogfoundry-labs/loomloom/src/cli/internal/client"
-	"github.com/cogfoundry-labs/loomloom/src/cli/internal/platform"
 )
 
 type marketBalanceTransport func(*http.Request) (*http.Response, error)
@@ -22,16 +21,14 @@ func (f marketBalanceTransport) RoundTrip(req *http.Request) (*http.Response, er
 	return f(req)
 }
 
-func TestMarketCheckBalanceRechargeLinkMatchesServer(t *testing.T) {
+func TestMarketCheckBalanceOmitsRechargeLinks(t *testing.T) {
 	isolateCmdConfigHome(t)
-	// A saved platform must not override an explicit Server from the other one.
-	saveTestProfile(t, "https://loomloom.shengsuanyun.com/loom/v1", platform.ShengSuanYun, "")
 	for _, tt := range []struct {
-		name, server, wantURL string
+		name, server string
 	}{
-		{"shengsuanyun", "https://loomloom.shengsuanyun.com/loom/v1", "https://console.shengsuanyun.com/user/recharge"},
-		{"cogfoundry", "https://loomloom.cogfoundry.ai/loom/v1", "https://console.cogfoundry.ai/credits"},
-		{"custom", "https://loom.example/loom/v1", ""},
+		{"shengsuanyun", "https://loomloom.shengsuanyun.com/loom/v1"},
+		{"cogfoundry", "https://loomloom.cogfoundry.ai/loom/v1"},
+		{"custom", "https://loom.example/loom/v1"},
 	} {
 		for _, output := range []string{"text", "json"} {
 			for _, available := range []string{"4", "6"} {
@@ -44,7 +41,6 @@ func TestMarketCheckBalanceRechargeLinkMatchesServer(t *testing.T) {
 						if req.Method != http.MethodGet || req.URL.String() != tt.server+"/users/me/balance" {
 							t.Fatalf("unexpected request: %s %s", req.Method, req.URL)
 						}
-						// Both platforms deliberately use CNY: routing must depend on Server.
 						body := fmt.Sprintf(`{"currency":"CNY","availableBalance":{"amount":%q,"currency":"CNY"}}`, available)
 						return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body)), Request: req}, nil
 					})
@@ -58,30 +54,19 @@ func TestMarketCheckBalanceRechargeLinkMatchesServer(t *testing.T) {
 					if (err != nil) != insufficient || calls != 1 {
 						t.Fatalf("error=%v, calls=%d", err, calls)
 					}
-					wantURL := ""
-					if insufficient {
-						wantURL = tt.wantURL
-					}
 					if output == "json" {
 						var result marketBalanceCheckResult
 						if err := json.Unmarshal(out.Bytes(), &result); err != nil {
 							t.Fatal(err)
 						}
-						if result.RechargeURL != wantURL {
-							t.Fatalf("rechargeUrl=%q, want %q", result.RechargeURL, wantURL)
+						if result.IsSufficient == insufficient || result.CallFee.Amount != "6" || result.AvailableBalance.Amount != available {
+							t.Fatalf("unexpected balance result: %+v", result)
 						}
 					}
-					if wantURL != "" {
-						assertContainsAll(t, out.String(), wantURL)
-						assertContainsAll(t, err.Error(), wantURL)
-					} else {
-						assertContainsNone(t, out.String(), "recharge_url", "rechargeUrl", "console.shengsuanyun.com", "console.cogfoundry.ai")
+					if insufficient {
+						assertContainsAll(t, err.Error(), "insufficient balance for call fee", "available CNY 4", "call fee CNY 6", "shortfall CNY 2")
 					}
-					for _, otherURL := range []string{"https://console.shengsuanyun.com/user/recharge", "https://console.cogfoundry.ai/credits"} {
-						if otherURL != wantURL {
-							assertContainsNone(t, out.String()+fmt.Sprint(err), otherURL)
-						}
-					}
+					assertContainsNone(t, out.String()+fmt.Sprint(err), "recharge_url", "rechargeUrl", "rechargeHint", "http://", "https://")
 				})
 			}
 		}

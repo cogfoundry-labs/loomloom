@@ -420,7 +420,7 @@ func newRunWatchCmd(opts *rootOptions) *cobra.Command {
 				latest := wrap.Run
 
 				if opts.output != "json" {
-					actualCost, err := formatResponseMoney(latest.ActualCost, latest.ActualCostT, "")
+					actualCost, err := formatRunActualCost(latest)
 					if err != nil {
 						return err
 					}

@@ -33,6 +33,8 @@ Tell the user in their language that the changed input must be checked and recon
 
 Use official templates unless the user explicitly asks to create or execute their own private template.
 
+Before fee confirmation, run `loomloom template model-cost-range <template-id> --version <schema.version>` using the version returned by `template schema`. Show the per-task history as described in `billing.md`; missing history or a failed lookup does not block confirmation. Refresh the lookup and confirmation if the template version changes.
+
 Discover and inspect:
 
 ```bash

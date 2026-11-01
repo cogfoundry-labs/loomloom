@@ -704,6 +704,13 @@ func moneyJSONValue(money *moneyResponse, amountT *flexInt64, fallbackCurrency s
 	return &moneyResponse{Amount: decimalAmountT(int64(*amountT)), Currency: currency}
 }
 
+func formatRunActualCost(resp runStatusResponse) (string, error) {
+	if resp.ActualCost == nil && resp.ActualCostT == nil {
+		return "pending settlement", nil
+	}
+	return formatResponseMoney(resp.ActualCost, resp.ActualCostT, "")
+}
+
 func printRunSummary(w io.Writer, resp runStatusResponse) error {
 	resp, err := executionDisplayCopy(resp)
 	if err != nil {
@@ -731,7 +738,7 @@ func printRunSummary(w io.Writer, resp runStatusResponse) error {
 	if _, err := fmt.Fprintln(tw, "total\tcompleted\tfailed\tcancelled\tcost\tstarted_at\tcompleted_at\tduration"); err != nil {
 		return err
 	}
-	actualCost, err := formatResponseMoney(resp.ActualCost, resp.ActualCostT, "")
+	actualCost, err := formatRunActualCost(resp)
 	if err != nil {
 		return err
 	}

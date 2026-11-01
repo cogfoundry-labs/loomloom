@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -157,6 +159,7 @@ func newTemplateCmd(opts *rootOptions) *cobra.Command {
 	cmd.AddCommand(
 		newTemplateListCmd(opts),
 		newTemplateSchemaCmd(opts),
+		newTemplateModelCostRangeCmd(opts),
 		newTemplateDownloadCmd(opts),
 		newTemplateBackfillResultsCmd(opts),
 		newTemplateValidateFileCmd(opts),
@@ -199,6 +202,80 @@ func newTemplateListCmd(opts *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
+}
+
+type officialModelCostRangeResponse struct {
+	Version      string         `json:"version"`
+	Availability string         `json:"availability"`
+	MinModelFee  *moneyResponse `json:"minModelFee"`
+	MaxModelFee  *moneyResponse `json:"maxModelFee"`
+}
+
+func validOfficialTemplateVersion(version string) bool {
+	if !strings.HasPrefix(version, "v") {
+		return false
+	}
+	number, err := strconv.ParseInt(version[1:], 10, 64)
+	return err == nil && number > 0 && version == fmt.Sprintf("v%d", number)
+}
+
+func newTemplateModelCostRangeCmd(opts *rootOptions) *cobra.Command {
+	var version string
+	cmd := &cobra.Command{
+		Use:   "model-cost-range <template-id>",
+		Short: "Read an official template version's historical actual model fee range per task",
+		Long:  "Read historical actual model fees per completed task. Omit --version to query the current published version. The range is for reference; actual usage may exceed it.",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			id := strings.TrimSpace(args[0])
+			version = strings.TrimSpace(version)
+			if id == "" || id == "." || id == ".." || strings.ContainsAny(id, "/\x00") {
+				return fmt.Errorf("template ID must be a non-empty ID without slash or NUL")
+			}
+			if (cmd.Flags().Changed("version") || version != "") && !validOfficialTemplateVersion(version) {
+				return fmt.Errorf("--version must be v followed by a positive integer, for example v4")
+			}
+			httpClient, err := newHTTPClient(opts)
+			if err != nil {
+				return err
+			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
+			defer cancel()
+			query := url.Values{}
+			if version != "" {
+				query.Set("version", version)
+			}
+			var response officialModelCostRangeResponse
+			if err := httpClient.GetProductJSONWithQuery(ctx, "/officialTemplates/"+url.PathEscape(id)+"/modelCostRange", query, &response); err != nil {
+				return err
+			}
+			if !validOfficialTemplateVersion(response.Version) || (version != "" && response.Version != version) {
+				return fmt.Errorf("historical model fee range returned a missing or mismatched version")
+			}
+			min, max, err := formatHistoricalModelFeeRange(response.Availability, response.MinModelFee, response.MaxModelFee)
+			if err != nil {
+				return err
+			}
+			if opts.output == "json" {
+				return writeIndentedJSON(cmd.OutOrStdout(), response)
+			}
+			tw := newTabWriter(cmd.OutOrStdout())
+			if _, err = fmt.Fprintf(tw, "version\t%s\navailability\t%s\n", response.Version, response.Availability); err != nil {
+				return err
+			}
+			if response.Availability == "available" {
+				_, err = fmt.Fprintf(tw, "min_model_fee\t%s\nmax_model_fee\t%s\nreference\tHistorical actual model fees per task; actual usage may exceed this range.\n", min, max)
+			} else {
+				_, err = fmt.Fprintln(tw, "historical_model_fee\tNo historical data available for reference.")
+			}
+			if err != nil {
+				return err
+			}
+			return tw.Flush()
+		},
+	}
+	cmd.Flags().StringVar(&version, "version", "", "Official template version, for example v4; defaults to the current published version")
+	return cmd
 }
 
 func newTemplateSchemaCmd(opts *rootOptions) *cobra.Command {

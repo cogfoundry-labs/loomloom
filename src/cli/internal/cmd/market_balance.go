@@ -17,8 +17,6 @@ type marketBalanceCheckResult struct {
 	AvailableBalance moneyResponse `json:"availableBalance"`
 	IsSufficient     bool          `json:"isSufficient"`
 	Shortfall        moneyResponse `json:"shortfall"`
-	RechargeURL      string        `json:"rechargeUrl,omitempty"`
-	RechargeHint     string        `json:"rechargeHint,omitempty"`
 }
 
 func newMarketCheckBalanceCmd(opts *rootOptions) *cobra.Command {
@@ -66,12 +64,6 @@ func newMarketCheckBalanceCmd(opts *rootOptions) *cobra.Command {
 				IsSufficient:     sufficient,
 				Shortfall:        marketBalanceMoney(shortfall, currency),
 			}
-			if !sufficient {
-				if currentPlatform, err := resolvePlatform(opts); err == nil {
-					result.RechargeURL = currentPlatform.RechargeURL
-				}
-				result.RechargeHint = insufficientBalanceMessage(opts)
-			}
 			if opts.output == "json" {
 				if err := writeIndentedJSON(cmd.OutOrStdout(), result); err != nil {
 					return err
@@ -83,11 +75,6 @@ func newMarketCheckBalanceCmd(opts *rootOptions) *cobra.Command {
 					sufficient, currency, result.Shortfall.Amount); err != nil {
 					return err
 				}
-				if result.RechargeURL != "" {
-					if _, err := fmt.Fprintf(tw, "recharge_url\t%s\n", result.RechargeURL); err != nil {
-						return err
-					}
-				}
 				if err := tw.Flush(); err != nil {
 					return err
 				}
@@ -95,9 +82,6 @@ func newMarketCheckBalanceCmd(opts *rootOptions) *cobra.Command {
 			if !sufficient {
 				message := fmt.Sprintf("insufficient balance for call fee: available %s %s, call fee %s %s, shortfall %s %s; recharge before execution",
 					currency, result.AvailableBalance.Amount, currency, result.CallFee.Amount, currency, result.Shortfall.Amount)
-				if result.RechargeHint != "" {
-					message += "\n" + result.RechargeHint
-				}
 				return errors.New(message)
 			}
 			return nil

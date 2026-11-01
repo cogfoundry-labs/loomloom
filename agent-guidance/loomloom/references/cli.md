@@ -47,6 +47,7 @@ For execution commands, pass an explicit `--client-request-id`. Reuse it only fo
 
 ## Error Recovery
 
+- Failed `market model-cost-range` lookup: use the unavailable-history fallback in `billing.md` and continue confirmation.
 - Local flag, file, JSON, workbook, or schema error: correct the input and retry; do not run `doctor` automatically.
 - Authentication, endpoint, network, service-version, or unexpected service error: run `loomloom doctor`.
 - Ambiguous paid or remote-state-changing failure: query the relevant run, Listing, usage transaction, or review state before retrying.
@@ -87,6 +88,7 @@ On successful `login --output json`, the `token` field is masked and is not a re
 
 - `loomloom template list`
 - `loomloom template schema <template-id>`
+- `loomloom template model-cost-range <template-id> [--version <vN>]`
 - `loomloom template download <template-id>`
 - `loomloom template validate-file <template-id> <xlsx-path>`
 - `loomloom template precheck-file <template-id> <xlsx-path>`
@@ -188,6 +190,7 @@ the historical version.
 - `loomloom market show <resource-id> [--source market|official]`
 - `loomloom market quote <listing-id> --input-file <request.json>`
 - `loomloom market check-balance --call-fee <amount> --currency <currency>`
+- `loomloom market model-cost-range <listing-id> [--listing-version-id <version-id>]`
 - `loomloom market run <listing-id> --input-file <request.json> --confirm --client-request-id <id>`
 - `loomloom market workbook download <listing-id> --output-file <xlsx>`
 - `loomloom market workbook validate <listing-id> --file <xlsx>`

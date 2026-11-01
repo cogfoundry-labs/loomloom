@@ -115,8 +115,9 @@ Do not show raw request JSON unless the user explicitly asks for JSON/API detail
 3. Build public `inputRows` internally.
 4. `loomloom market quote <listing-id> --input-file <request.json>`
 5. `loomloom market check-balance --call-fee <effectiveCreatorFee.amount> --currency <effectiveCreatorFee.currency>` using the quote's total applicable call fee.
-6. If the balance check succeeds, show the Market confirmation template and wait for explicit confirmation.
-7. `loomloom market run <listing-id> --input-file <request.json> --confirm --client-request-id <id>`
+6. If the balance check succeeds, run `loomloom market model-cost-range <listing-id> --listing-version-id <quote.listingVersionId>`.
+7. Show the Market confirmation template using the historical range or unavailable-history fallback in `billing.md`, then wait for explicit confirmation.
+8. `loomloom market run <listing-id> --input-file <request.json> --confirm --client-request-id <id>`
 
 ### Workbook flow
 
@@ -126,19 +127,13 @@ Do not show raw request JSON unless the user explicitly asks for JSON/API detail
 4. `loomloom market workbook validate <listing-id> --file <xlsx>`
 5. `loomloom market workbook quote <listing-id> --file <xlsx>`
 6. `loomloom market check-balance --call-fee <effectiveCreatorFee.amount> --currency <effectiveCreatorFee.currency>` using the workbook quote's total applicable call fee.
-7. If the balance check succeeds, show the Market confirmation template and wait for explicit confirmation.
-8. `loomloom market workbook run <listing-id> --file <xlsx> --confirm --client-request-id <id>`
+7. If the balance check succeeds, run `loomloom market model-cost-range <listing-id> --listing-version-id <quote.listingVersionId>` using the workbook quote's version.
+8. Show the Market confirmation template using the historical range or unavailable-history fallback in `billing.md`, then wait for explicit confirmation.
+9. `loomloom market workbook run <listing-id> --file <xlsx> --confirm --client-request-id <id>`
 
 If `check-balance` fails, stop before confirmation and submission. For insufficient
-balance, show the returned balance, call fee, shortfall, and recharge guidance;
-include `rechargeUrl` as a clickable recharge link for the current platform:
-
-- ShengSuanYun: https://console.shengsuanyun.com/user/recharge
-- CogFoundry: https://console.cogfoundry.ai/credits
-
-Use the platform selected by the CLI Server, not the currency or the user's
-language. If a custom Server returns no recharge link, ask its provider for the
-recharge entry instead of choosing one of these platforms. Do not submit even
+balance, show the returned balance, call fee, and shortfall, and provide a clickable
+recharge link following the platform guidance in `setup.md`. Do not submit even
 if the user insists. After recharge, run `check-balance` again before continuing.
 For a failed balance query, report the
 error and retry the check before proceeding. If inputs, version, or payment mode

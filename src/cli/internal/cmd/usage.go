@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -37,6 +39,16 @@ type marketUsagesListResponse struct {
 	TotalCount int                  `json:"totalCount"`
 }
 
+// Keep raw amounts exact while preserving unknown response fields for JSON
+// output. Converting through float64 can corrupt the derived creator call fee.
+type usageResponse map[string]any
+
+func (r *usageResponse) UnmarshalJSON(data []byte) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	return decoder.Decode((*map[string]any)(r))
+}
+
 func newUsageCmd(opts *rootOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "usage",
@@ -67,11 +79,24 @@ func newUsageListCmd(opts *rootOptions) *cobra.Command {
 				query.Set("pageSize", fmt.Sprintf("%d", pageSize))
 			}
 
-			var raw map[string]any
+			var raw usageResponse
 			if err := httpClient.GetProductJSONWithQuery(ctx, "/users/me/marketUsages", query, &raw); err != nil {
 				return err
 			}
 			if opts.output == "json" {
+				if items, ok := raw["items"].([]any); ok {
+					for i, item := range items {
+						record, ok := item.(map[string]any)
+						if !ok {
+							return fmt.Errorf("invalid usage record at index %d", i)
+						}
+						display, err := usageDisplayPayload(record)
+						if err != nil {
+							return err
+						}
+						items[i] = display
+					}
+				}
 				return writeExecutionJSON(cmd.OutOrStdout(), raw)
 			}
 			resp, err := decodeJSONValue[marketUsagesListResponse](raw)
@@ -99,12 +124,16 @@ func newUsageGetCmd(opts *rootOptions) *cobra.Command {
 			defer cancel()
 
 			path := "/users/me/marketUsages/" + url.PathEscape(strings.TrimSpace(args[0]))
-			var raw map[string]any
+			var raw usageResponse
 			if err := httpClient.GetProductJSON(ctx, path, &raw); err != nil {
 				return err
 			}
 			if opts.output == "json" {
-				return writeExecutionJSON(cmd.OutOrStdout(), raw)
+				display, err := usageDisplayPayload(raw)
+				if err != nil {
+					return err
+				}
+				return writeExecutionJSON(cmd.OutOrStdout(), display)
 			}
 			resp, err := decodeJSONValue[marketUsageSummary](raw)
 			if err != nil {
@@ -121,26 +150,23 @@ func printUsageList(w io.Writer, resp marketUsagesListResponse) error {
 		return err
 	}
 	tw := newTabWriter(w)
-	if _, err := fmt.Fprintln(tw, "run_transaction_id\tlisting_id\tskill_name\ttask_fixed_fee\tfinal_payable\tstatus"); err != nil {
+	if _, err := fmt.Fprintln(tw, "run_transaction_id\tlisting_id\tskill_name\tactual_amount\tcreator_call_fee\tmodel_fee\tstatus"); err != nil {
 		return err
 	}
 	for _, item := range resp.Items {
-		taskFixedFee, err := formatResponseMoney(item.TaskFixedFee, item.TaskFixedFeeT, item.Currency)
+		fees, err := usageActualFees(item)
 		if err != nil {
-			return fmt.Errorf("usage %s taskFixedFee contract error: %w", item.RunTransactionID, err)
-		}
-		finalBuyerPayable, err := formatResponseMoney(item.FinalBuyerPayable, item.FinalBuyerPayableT, item.Currency)
-		if err != nil {
-			return fmt.Errorf("usage %s finalBuyerPayable contract error: %w", item.RunTransactionID, err)
+			return err
 		}
 		if _, err := fmt.Fprintf(
 			tw,
-			"%s\t%s\t%s\t%s\t%s\t%s\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.RunTransactionID,
 			item.ListingID,
 			oneLine(item.SkillName),
-			taskFixedFee,
-			finalBuyerPayable,
+			fees.format(fees.total),
+			fees.format(fees.creator),
+			fees.format(fees.model),
 			oneLine(item.TransactionStatus),
 		); err != nil {
 			return err
@@ -154,7 +180,7 @@ func printUsageList(w io.Writer, resp marketUsagesListResponse) error {
 }
 
 func printUsageDetail(w io.Writer, usage marketUsageSummary) error {
-	usage, err := executionDisplayCopy(usage)
+	fees, err := usageActualFees(usage)
 	if err != nil {
 		return err
 	}
@@ -174,26 +200,12 @@ func printUsageDetail(w io.Writer, usage marketUsageSummary) error {
 			return err
 		}
 	}
-	for _, field := range []struct {
-		label    string
-		money    *moneyResponse
-		amount   *flexInt64
-		optional bool
-	}{
-		{"task_fixed_fee", usage.TaskFixedFee, usage.TaskFixedFeeT, false},
-		{"estimated_execution_cost", usage.EstimatedExecutionCost, usage.EstimatedExecutionCostT, true},
-		{"estimated_payable", usage.EstimatedBuyerPayable, usage.EstimatedBuyerPayableT, true},
-		{"actual_execution_cost", usage.ActualExecutionCost, usage.ActualExecutionCostT, false},
-		{"final_payable", usage.FinalBuyerPayable, usage.FinalBuyerPayableT, false},
+	for _, row := range [][2]string{
+		{"actual_amount", fees.format(fees.total)},
+		{"creator_call_fee", fees.format(fees.creator)},
+		{"model_fee", fees.format(fees.model)},
 	} {
-		if field.optional && field.money == nil && field.amount == nil {
-			continue
-		}
-		rendered, err := formatResponseMoney(field.money, field.amount, usage.Currency)
-		if err != nil {
-			return fmt.Errorf("usage %s %s contract error: %w", usage.RunTransactionID, field.label, err)
-		}
-		if _, err := fmt.Fprintf(tw, "%s\t%s\n", field.label, rendered); err != nil {
+		if _, err := fmt.Fprintf(tw, "%s\t%s\n", row[0], row[1]); err != nil {
 			return err
 		}
 	}
@@ -203,4 +215,105 @@ func printUsageDetail(w io.Writer, usage marketUsageSummary) error {
 		}
 	}
 	return tw.Flush()
+}
+
+type usageFees struct {
+	status  string
+	total   *moneyResponse
+	creator *moneyResponse
+	model   *moneyResponse
+}
+
+func (f usageFees) format(money *moneyResponse) string {
+	if money != nil {
+		return money.Currency + " " + money.Amount
+	}
+	if f.status == "pending" {
+		return "pending settlement"
+	}
+	return "unavailable"
+}
+
+func usageActualFees(usage marketUsageSummary) (usageFees, error) {
+	fees := usageFees{status: "pending"}
+	switch strings.ToLower(strings.TrimSpace(usage.TransactionStatus)) {
+	case "succeeded", "failed", "cancelled", "settled":
+		// Only a terminal transaction has final amounts. A terminal run alone
+		// is insufficient: the Market worker may not have reconciled it yet.
+	default:
+		return fees, nil
+	}
+	fees.status = "unavailable"
+	total, totalT, err := usageMoney(usage.FinalBuyerPayable, usage.FinalBuyerPayableT, usage.Currency)
+	if err != nil {
+		return fees, fmt.Errorf("usage %s finalBuyerPayable contract error: %w", usage.RunTransactionID, err)
+	}
+	model, modelT, err := usageMoney(usage.ActualExecutionCost, usage.ActualExecutionCostT, usage.Currency)
+	if err != nil {
+		return fees, fmt.Errorf("usage %s actualExecutionCost contract error: %w", usage.RunTransactionID, err)
+	}
+	fees.total, fees.model = total, model
+	if total == nil || model == nil {
+		return fees, nil
+	}
+	if total.Currency != model.Currency {
+		return fees, fmt.Errorf("usage %s actual fee currencies do not match", usage.RunTransactionID)
+	}
+	if totalT < modelT {
+		return fees, fmt.Errorf("usage %s final payable is less than actual model cost", usage.RunTransactionID)
+	}
+	// Market fulfillment persists final payable = actual model cost + creator
+	// call fee for completed tasks. Do not multiply the quoted per-task rate:
+	// subscription coverage and partial completion can change the charged fee.
+	fees.creator = &moneyResponse{Amount: decimalAmountT(totalT - modelT), Currency: total.Currency}
+	fees.status = "available"
+	return fees, nil
+}
+
+func usageMoney(money *moneyResponse, raw *flexInt64, currency string) (*moneyResponse, int64, error) {
+	if money == nil && raw == nil {
+		return nil, 0, nil
+	}
+	if _, err := formatResponseMoney(money, raw, currency); err != nil {
+		return nil, 0, err
+	}
+	var amountT int64
+	if money != nil {
+		amountT, _ = parseMoneyAmountT(money.Amount) // Validated by formatResponseMoney.
+		currency = money.Currency
+	} else {
+		amountT = int64(*raw)
+	}
+	if amountT < 0 {
+		return nil, 0, fmt.Errorf("actual fee must be non-negative")
+	}
+	currency = strings.ToUpper(strings.TrimSpace(currency))
+	if !isCurrencyCode(currency) {
+		return nil, 0, nil
+	}
+	return &moneyResponse{Amount: decimalAmountT(amountT), Currency: currency}, amountT, nil
+}
+
+func usageDisplayPayload(raw map[string]any) (map[string]any, error) {
+	usage, err := decodeJSONValue[marketUsageSummary](raw)
+	if err != nil {
+		return nil, err
+	}
+	fees, err := usageActualFees(usage)
+	if err != nil {
+		return nil, err
+	}
+	display := make(map[string]any, len(raw)+2)
+	for key, value := range raw {
+		display[key] = value
+	}
+	// Preserve the receiving DTO and unknown metadata; only reshape user output.
+	for _, key := range []string{"taskFixedFee", "taskFixedFeeT", "actualExecutionCostT", "finalBuyerPayableT"} {
+		delete(display, key)
+	}
+	display["feeStatus"] = fees.status
+	display["finalBuyerPayable"] = fees.total
+	display["actualCreatorFee"] = fees.creator
+	display["actualExecutionCost"] = fees.model
+	return display, nil
 }

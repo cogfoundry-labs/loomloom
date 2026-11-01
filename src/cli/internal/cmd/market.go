@@ -36,6 +36,7 @@ func newMarketCmd(opts *rootOptions) *cobra.Command {
 		newMarketShowCmd(opts),
 		newMarketQuoteCmd(opts),
 		newMarketCheckBalanceCmd(opts),
+		newMarketModelCostRangeCmd(opts),
 		newMarketRunCmd(opts),
 		newMarketWorkbookCmd(opts),
 		newDeprecatedMarketRelistCmd(opts),

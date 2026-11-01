@@ -138,7 +138,7 @@ func TestExecutionJSONDoesNotMutateQuoteOrUserData(t *testing.T) {
 }
 
 func TestTextOutputFiltersCopiesOfCompleteResponses(t *testing.T) {
-	const body = `{` + hiddenEstimateFields + `,"runId":"run-1","currency":"CNY","taskCount":9007199254740993,"taskFixedFee":{"amount":"0.5","currency":"CNY"},"actualCost":{"amount":"0.25","currency":"CNY"},"actualExecutionCost":{"amount":"0.25","currency":"CNY"},"balanceCheck":{"currency":"CNY","availableBalance":10000000,"isSufficient":false},"errorMessage":"insufficient balance: required 98.7654321 CNY"}`
+	const body = `{` + hiddenEstimateFields + `,"runId":"run-1","transactionStatus":"succeeded","finalBuyerPayable":{"amount":"0.75","currency":"CNY"},"currency":"CNY","taskCount":9007199254740993,"taskFixedFee":{"amount":"0.5","currency":"CNY"},"actualCost":{"amount":"0.25","currency":"CNY"},"actualExecutionCost":{"amount":"0.25","currency":"CNY"},"balanceCheck":{"currency":"CNY","availableBalance":10000000,"isSufficient":false},"errorMessage":"insufficient balance: required 98.7654321 CNY"}`
 	var precheck precheckTemplateRowsResponse
 	var run runStatusResponse
 	var usage marketUsageSummary

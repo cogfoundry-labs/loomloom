@@ -199,3 +199,21 @@ func TestPrintPrecheckAndRunSummaryUseMoney(t *testing.T) {
 		}
 	})
 }
+
+func TestRunSummaryMissingActualCostIsNotZero(t *testing.T) {
+	var out bytes.Buffer
+	if err := printRunSummary(&out, runStatusResponse{RunID: "run-1", Status: "completed"}); err != nil {
+		t.Fatal(err)
+	}
+	assertContainsAll(t, out.String(), "pending settlement")
+	assertContainsNone(t, out.String(), "(currency unknown) 0")
+
+	out.Reset()
+	if err := printRunSummary(&out, runStatusResponse{
+		RunID: "run-1", Status: "completed", ActualCost: &moneyResponse{Amount: "0", Currency: "CNY"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	assertContainsAll(t, out.String(), "CNY 0")
+	assertContainsNone(t, out.String(), "pending settlement")
+}
