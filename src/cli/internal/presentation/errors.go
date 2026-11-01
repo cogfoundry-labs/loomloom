@@ -28,6 +28,9 @@ func ErrorBody(body string) string {
 	decoder := json.NewDecoder(strings.NewReader(body))
 	decoder.UseNumber()
 	if !json.Valid([]byte(body)) || decoder.Decode(&response) != nil || response == nil {
+		if balanceError.MatchString(body) {
+			return body
+		}
 		return ErrorMessage(body)
 	}
 	original, _ := json.Marshal(response)
@@ -37,23 +40,14 @@ func ErrorBody(body string) string {
 	}
 	code, _ := response["code"].(string)
 	if strings.EqualFold(code, "insufficient_balance") || balanceError.MatchString(message) {
-		// Balance-error details may repeat the required estimated amount under
-		// generic keys. Preserve the error identity, not the monetary payload.
-		filtered := map[string]any{"error": insufficientBalance}
-		for _, key := range []string{"code", "requestId", "traceId"} {
-			if value, ok := response[key]; ok {
-				filtered[key] = value
-			}
-		}
-		response = filtered
-	} else {
-		HideEstimates(response)
-		if message, ok := response["message"].(string); ok {
-			response["message"] = ErrorMessage(message)
-		}
-		if details, ok := response["details"]; ok {
-			HideEstimates(details)
-		}
+		return body
+	}
+	HideEstimates(response)
+	if message, ok := response["message"].(string); ok {
+		response["message"] = ErrorMessage(message)
+	}
+	if details, ok := response["details"]; ok {
+		HideEstimates(details)
 	}
 	encoded, err := json.Marshal(response)
 	if err != nil {

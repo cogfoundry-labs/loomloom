@@ -37,6 +37,8 @@ Create a new client request ID for each newly confirmed execution. Reuse the ori
 
 `loomloom balance` displays one LoomLoom available balance. Wallet assets, applicable vouchers and pending charges are internal calculation inputs, not user-facing CLI fields. Gateway still makes the final request-admission decision.
 
+If a backend check or submission returns `insufficient_balance` or an explicit insufficient-balance message, stop execution, convey the backend message in the user's language, and add the platform recharge link from `setup.md`. An HTTP status alone does not establish insufficient balance; report other errors normally.
+
 - Use the quote's `effectiveCreatorFee` as the total call fee; it accounts for the applicable payment mode, including subscription coverage. Pass its amount and currency to `market check-balance` before Market confirmation.
 - Do not invent a missing fee field.
 - Preserve the server-provided currency. Do not locally convert USD and CNY.

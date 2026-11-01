@@ -176,7 +176,7 @@ func TestBundledSkillsUseDoctorPlatformFacts(t *testing.T) {
 		"https://loomloom.cogfoundry.ai/loom/v1",
 		"https://console.cogfoundry.ai/api-keys",
 		"https://console.cogfoundry.ai/credits",
-		"The current CogFoundry account has insufficient balance",
+		"Your balance is insufficient to continue this execution. Please recharge and retry.",
 		"ShengSuanYun and CogFoundry are preset platforms, not a whitelist",
 		"treat that as a request to register and activate that Server",
 		"loomloom doctor --server <exact-server> --token <exact-token> --output json",

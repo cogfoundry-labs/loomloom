@@ -39,9 +39,6 @@ func TestErrorBodyHidesAmountsAndPreservesFailureDetails(t *testing.T) {
 		name, body   string
 		hidden, kept []string
 	}{
-		{"coded balance", `{"code":"insufficient_balance","error":"need 88.123 CNY","details":{"required":88.123},"requestId":"req-42"}`, []string{"88.123", "required"}, []string{"insufficient_balance", "req-42", "recharge"}},
-		{"legacy balance", `{"error":"insufficient balance: current 1.0000 CNY, required 88.1230 CNY"}`, []string{"88.1230", "required"}, []string{"insufficient balance"}},
-		{"plain balance", `submit: insufficient balance: current 1.0000 CNY, required 88.1230 CNY`, []string{"88.1230"}, []string{"insufficient balance"}},
 		{"structured estimate", `{"code":"estimate_failed","error":"service unavailable","estimatedTotalCostT":881230000,"details":{"estimatedCost":{"amount":"88.123","currency":"CNY"},"stepId":"step-42"}}`, []string{"881230000", "88.123"}, []string{"estimate_failed", "service unavailable", "step-42"}},
 		{"labelled amount", `{"error":"step 42: estimated cost CNY 88.123 exceeds limit"}`, []string{"88.123"}, []string{"step 42", "exceeds limit"}},
 		{"camel amount", `{"error":"estimatedTotalCostT=881230000; HTTP 503"}`, []string{"881230000"}, []string{"HTTP 503"}},
@@ -62,6 +59,10 @@ func TestErrorBodyHidesAmountsAndPreservesFailureDetails(t *testing.T) {
 		})
 	}
 	for _, body := range []string{
+		`{ "code": "insufficient_balance", "error": "Insufficient balance to continue this execution. Please recharge and retry.", "requestId": "req-42" }`,
+		`{"code":"insufficient_balance","message":"Please recharge and retry.","traceId":"trace-42"}`,
+		`{"error":"insufficient balance: current 1.0000 CNY, required 88.1230 CNY"}`,
+		`submit: insufficient balance: current 1.0000 CNY, required 88.1230 CNY`,
 		`{ "error": "row 12: image returned HTTP 404", "code": "invalid_input" }`,
 		`{"error":"estimate step 42: model pricing unavailable","code":"pricing_unavailable"}`,
 		`{"error":"permission denied","code":"forbidden"}`,

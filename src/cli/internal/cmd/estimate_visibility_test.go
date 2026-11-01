@@ -203,7 +203,7 @@ func TestTextOutputFiltersCopiesOfCompleteResponses(t *testing.T) {
 
 func TestSubmissionBalanceErrorRemainsFailureWithoutEstimate(t *testing.T) {
 	isolateCmdConfigHome(t)
-	const body = `{"code":"insufficient_balance","error":"insufficient balance: current 1.0000 CNY, required 98.7654 CNY"}`
+	const body = `{"code":"insufficient_balance","error":"Insufficient balance to continue this execution. Please recharge and retry."}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/schema") {
 			_, _ = w.Write([]byte(`{"templateId":"text-v1"}`))
@@ -227,6 +227,6 @@ func TestSubmissionBalanceErrorRemainsFailureWithoutEstimate(t *testing.T) {
 	if requestErr.Body != body {
 		t.Fatal("raw error changed")
 	}
-	assertContainsAll(t, err.Error(), "insufficient balance", "insufficient_balance", "402")
+	assertContainsAll(t, err.Error(), body, "402")
 	assertContainsNone(t, err.Error()+out.String()+stderr.String(), "98.7654", "required", "run_id")
 }

@@ -273,13 +273,13 @@ Reported names are cleanup candidates and may not currently be configured. Do no
 When ShengSuanYun reports insufficient balance, convey:
 
 ```text
-The current ShengSuanYun account has insufficient balance. Recharge in the ShengSuanYun console before continuing:
-https://console.shengsuanyun.com/user/recharge
+Your balance is insufficient to continue this execution. Please recharge and retry.
+[Recharge in ShengSuanYun](https://console.shengsuanyun.com/user/recharge)
 ```
 
 When CogFoundry reports insufficient balance, convey:
 
 ```text
-The current CogFoundry account has insufficient balance. Recharge in the CogFoundry console before continuing:
-https://console.cogfoundry.ai/credits
+Your balance is insufficient to continue this execution. Please recharge and retry.
+[Recharge in CogFoundry](https://console.cogfoundry.ai/credits)
 ```
