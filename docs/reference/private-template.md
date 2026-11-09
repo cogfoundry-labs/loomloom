@@ -63,7 +63,7 @@ loomloom template-spec create-version <template-id> ./my-template.spec.json
 loomloom template-spec download-workbook <template-id> <version-id> --output-file ./input.xlsx
 loomloom template-spec validate-workbook <template-id> <version-id> ./input.xlsx
 loomloom template-spec precheck-workbook <template-id> <version-id> ./input.xlsx
-# Review the estimate and confirm before submitting.
+# Confirm before submitting.
 loomloom template-spec submit-workbook <template-id> <version-id> ./input.xlsx --client-request-id <client-request-id>
 ```
 
@@ -81,8 +81,7 @@ Notes:
 - Use `loomloom template-spec docs examples` for patterns.
 - Use `loomloom template-spec docs conversation` for agent-assisted conversational authoring.
 - Template changes require downloading a new workbook.
-- Run `precheck-workbook` before submitting when you want to estimate model/API cost and balance; precheck does not create a run or execute tasks.
-- Precheck text output includes `estimated_cost`, `available_balance`, and `sufficient`; JSON output uses `estimatedTotalCostT`.
+- Run `precheck-workbook` before submitting to check inputs and balance; precheck does not create a run or execute tasks.
 - `submit-workbook` creates a real hosted run; agents should ask for explicit confirmation before submitting.
 - `template-spec run` also creates a real hosted run and requires the same confirmation.
 - Use a new `--client-request-id` for every newly confirmed `submit-workbook` or `template-spec run` execution. Reuse it only for an identical retry of the same confirmed request after an ambiguous failure.
@@ -95,13 +94,10 @@ You can also run a private template version directly from flat JSONL rows, witho
 # 1. Upload the rows and capture the returned input_file_id
 loomloom orchestration-input upload ./rows.jsonl
 
-# 2. Optional fast budget reference; this does not validate referenced resources
-loomloom template-spec estimate <template-id> --version-id <version-id> --input-file-id <input_file_id>
-
-# 3. Required full input precheck, cost estimate, and balance status
+# 2. Required full input precheck and balance status
 loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>
 
-# 4. Review the precheck, confirm, then run the version with that input
+# 3. Review the precheck, confirm, then run the version with that input
 loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <client-request-id>
 ```
 

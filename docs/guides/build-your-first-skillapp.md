@@ -65,13 +65,13 @@ loomloom market list --keyword "tweet" --sort-by usage --page 1 --page-size 15
 loomloom market show <template-slug> --source official
 loomloom market show <listing-id>
 
-# 2A. JSON input: estimate cost from input data
+# 2A. JSON input: get the quote
 loomloom market quote <listing-id> --input-file ./request.json
 
 # 3A. JSON input: review the quote, confirm, and run
 loomloom market run <listing-id> --input-file ./request.json --confirm --client-request-id <client-request-id>
 
-# 2B. Workbook input: download, fill, validate, and estimate cost
+# 2B. Workbook input: download, fill, validate, and get the quote
 loomloom market workbook download <listing-id> --output-file ./market-input.xlsx
 loomloom market workbook validate <listing-id> --file ./market-input.xlsx
 loomloom market workbook quote <listing-id> --file ./market-input.xlsx
@@ -115,7 +115,7 @@ The commands below remain available for the older local-wrapper workflow. They g
 
 These wrappers teach Codex, Claude Code, or OpenClaw how to use a specific template or SkillApp.
 
-They define when to use it, what inputs to collect, how to estimate cost, and how to submit executions only after explicit confirmation. They do **not** include server-side execution logic, hidden prompts, model settings, credentials, or Market internals.
+They define when to use it, what inputs to collect, and how to submit executions only after explicit confirmation. They do **not** include server-side execution logic, hidden prompts, model settings, credentials, or Market internals.
 
 
 ```bash
@@ -158,7 +158,7 @@ Notes:
 - `listing publish` and `listing update` submit changes for review; they do not take effect until approved.
 - `listing publish --listing-id <listing-id>` submits a new version for the existing listing. The currently published version stays active until the new review is approved.
 - `listing update`, `listing unlist`, `listing relist`, and review withdrawal change remote state. Agents should summarize the action and ask for explicit confirmation before invoking them.
-- For Market SkillApps, `market quote` estimates the buyer payable amount before execution. The platform takes 10% from each call fee; creator net earnings are 90% of the call fee.
+- The platform takes 10% from each call fee; creator net earnings are 90% of the call fee.
 - Use a new `--client-request-id` for every newly confirmed Market execution. Reuse it only for an identical retry of the same confirmed request after an ambiguous failure.
 - Workbook `content` is sent as Base64 inside JSON requests; do not print the full Base64. `accessUrl` values in result rows are temporary signed URLs; do not put them in long-lived logs or docs.
 - User-facing monetary inputs and default text output use normal currency units, for example `--task-fixed-fee 0.1` and `CNY 0.1000000`. JSON output preserves raw `*FeeT` / `*AmountT` / `*PayableT` API fields where 10,000,000 units equal 1 currency unit.

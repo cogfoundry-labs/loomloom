@@ -134,18 +134,18 @@ This is the **recommended starting point for most users**.
 | `loomloom template schema <id>` | Show template input schema. |
 | `loomloom template download <id>` | Download Excel workbook template. |
 | `loomloom template validate-file <id> <xlsx>` | Validate workbook input. |
-| `loomloom template precheck-file <id> <xlsx>` | Estimate cost without execution. |
+| `loomloom template precheck-file <id> <xlsx>` | Check workbook input and balance without execution. |
 | `loomloom template submit-file <id> <xlsx> --client-request-id <id>` | Execute template from workbook after confirmation. |
 | `loomloom template backfill-results <run-id> <xlsx>` | Backfill results into a local workbook (legacy). |
 
 ## 4. Runs
 
-Use these commands for programmatic official-template JSON or JSONL input and for monitoring hosted runs. Validate and precheck the input, show the estimate, obtain confirmation, and then execute.
+Use these commands for programmatic official-template JSON or JSONL input and for monitoring hosted runs. Validate and precheck the input, obtain confirmation, and then execute.
 
 | Command | Description |
 |---|---|
 | `loomloom run validate <template-id> -f <rows.json-or-jsonl>` | Validate official-template rows without submitting. |
-| `loomloom run precheck <template-id> -f <rows.json-or-jsonl>` | Estimate official-template row cost without submitting. |
+| `loomloom run precheck <template-id> -f <rows.json-or-jsonl>` | Check official-template rows and balance without submitting. |
 | `loomloom run execute <template-id> -f <rows.json-or-jsonl> --client-request-id <id>` | Submit prechecked rows after confirmation. |
 | `loomloom run list` | List runs with optional Market context. |
 | `loomloom run get <run-id>` | Show one run's detail. |
@@ -196,13 +196,12 @@ For building your own private workflows.
 | `loomloom template-spec view-link <template-id> <version-id>` | Get the Server-provided workbench link for an exact saved private version; no watcher or file upload. |
 | `loomloom template-spec download-workbook <template-id> <version-id>` | Download a user-template workbook. |
 | `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx>` | Validate a user-template workbook. |
-| `loomloom template-spec precheck-workbook <template-id> <version-id> <xlsx>` | Estimate cost and balance for a user-template workbook without submitting. |
+| `loomloom template-spec precheck-workbook <template-id> <version-id> <xlsx>` | Check a user-template workbook and balance without submitting. |
 | `loomloom template-spec submit-workbook <template-id> <version-id> <xlsx> --client-request-id <id>` | Submit a user-template workbook after confirmation. |
-| `loomloom template-spec estimate <template-id> --version-id <id> --input-file-id <id>` | Fast JSONL cost estimate without referenced-resource validation or balance lookup. |
-| `loomloom template-spec precheck <template-id> --version-id <id> --input-file-id <id>` | Estimate cost and balance for an uploaded JSONL input without submitting. |
+| `loomloom template-spec precheck <template-id> --version-id <id> --input-file-id <id>` | Check uploaded JSONL input and balance without submitting. |
 | `loomloom template-spec run <template-id> --version-id <id> --input-file-id <id> --client-request-id <id>` | Run a private template version from an uploaded JSONL input after confirmation. |
 
-CLI money output uses currency-unit Money objects such as `{"amount":"2000","currency":"CNY"}`. Raw `T` fields (ten-millionths of one currency unit) remain an internal/API precision detail and are not emitted by estimate, precheck, or balance CLI JSON.
+CLI money output uses currency-unit Money objects such as `{"amount":"2000","currency":"CNY"}`. Raw `T` fields (ten-millionths of one currency unit) remain an internal/API precision detail and are not emitted by precheck or balance CLI JSON.
 
 ## 8. Local agent skills
 
@@ -255,11 +254,11 @@ Typical flow
 |---|---|
 | `loomloom market list [--keyword <text>] [--category <code>] [--sort-by default\|usage\|newest] [--page <n>] [--page-size <1-15>]` | Browse the unified official-template and Market SkillApp catalog, including dynamic category options. |
 | `loomloom market show <resource-id> [--source market\|official]` | Show public inputs, outputs, and prices. Defaults to Market; use `official` for an official-template slug. |
-| `loomloom market quote <listing-id> --input-file <json>` | Estimate execution cost. |
+| `loomloom market quote <listing-id> --input-file <json>` | Read call fees and payment details. |
 | `loomloom market run <listing-id> --input-file <json> --confirm --client-request-id <id>` | Execute a SkillApp from JSON input rows (paid). |
 | `loomloom market workbook download <listing-id> --output-file <xlsx>` | Download a Market workbook template. |
 | `loomloom market workbook validate <listing-id> --file <xlsx>` | Validate a filled Market workbook. |
-| `loomloom market workbook quote <listing-id> --file <xlsx>` | Estimate execution cost for a workbook. |
+| `loomloom market workbook quote <listing-id> --file <xlsx>` | Read call fees and payment details for a workbook. |
 | `loomloom market workbook run <listing-id> --file <xlsx> --confirm --client-request-id <id>` | Execute a SkillApp from a workbook (paid). |
 | `loomloom usage list` | List my Market SkillApp usage records. |
 | `loomloom usage get <run-transaction-id>` | Show one usage record. |
@@ -423,7 +422,7 @@ When building multi-step workflows, agents must treat CLI commands as a determin
 - Use returned identifiers exactly as provided by the CLI
 
 ### 1. TemplateSpec execution flow
-> orchestration-input upload → inputFileId → optional template-spec estimate → required template-spec precheck → confirm → template-spec run
+> orchestration-input upload → inputFileId → required template-spec precheck → confirm → template-spec run
 
 ### 2. Run lifecycle flow
 > confirmed template-spec run / run execute → runId → run watch / result commands
