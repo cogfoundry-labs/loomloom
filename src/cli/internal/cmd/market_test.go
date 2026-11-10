@@ -734,8 +734,6 @@ func TestMarketQuoteTextShowsFormattedAmounts(t *testing.T) {
 	}
 	assertContainsAll(t, out.String(),
 		"CNY 0.5",
-		"CNY 1.00693",
-		"CNY 0.00693",
 	)
 	assertContainsNone(t, out.String(),
 		"task_fixed_fee_t",
@@ -808,15 +806,13 @@ func TestMarketQuoteJSONPreservesRawFields(t *testing.T) {
 	for _, want := range []string{
 		`"currency": "CNY"`,
 		`"taskFixedFee": {`,
-		`"estimatedBuyerPayable": {`,
 		`"amount": "0.5"`,
-		`"amount": "0.50693"`,
 	} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("output=%s missing %q", out.String(), want)
 		}
 	}
-	assertContainsNone(t, out.String(), "taskFixedFeeT", "estimatedBuyerPayableT")
+	assertContainsNone(t, out.String(), "taskFixedFeeT", "estimatedBuyerPayable", "0.50693")
 	if strings.Contains(out.String(), "CNY ") {
 		t.Fatalf("output=%s json mode must not format money", out.String())
 	}
@@ -864,10 +860,9 @@ func TestMarketRunExecutionTextShowsFormattedAmounts(t *testing.T) {
 	}
 	assertContainsAll(t, out.String(),
 		"USD 0.5",
-		"USD 0.50693",
 		"currency",
 	)
-	assertContainsNone(t, out.String(), "estimated_payable_t", "task_fixed_fee_t")
+	assertContainsNone(t, out.String(), "estimated_payable", "estimated_execution_cost", "task_fixed_fee_t")
 	// An empty skillName from the backend must not leave a blank row.
 	if strings.Contains(out.String(), "skillName") {
 		t.Fatalf("output=%s should omit empty skillName row", out.String())
@@ -1476,7 +1471,8 @@ func TestMarketWorkbookRunQuotesThenExecutes(t *testing.T) {
 	if executeRequest.MaxCreatorFee["amount"] != "0.0000000" || executeRequest.MaxCreatorFee["currency"] != "CNY" {
 		t.Fatalf("maxCreatorFee=%#v want quoted zero Money object", executeRequest.MaxCreatorFee)
 	}
-	assertContainsAll(t, out.String(), "CNY 0.5", "CNY 0.50693", "currency")
+	assertContainsAll(t, out.String(), "CNY 0.5", "currency")
+	assertContainsNone(t, out.String(), "estimated_payable", "estimated_execution_cost", "0.50693")
 	assertContainsNone(t, out.String(), "task_fixed_fee_t", "estimated_payable_t")
 	if strings.Contains(logs.String(), "eGxzeCBieXRlcw==") {
 		t.Fatalf("logs should not contain workbook base64: %s", logs.String())

@@ -2,14 +2,170 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/cogfoundry-labs/loomloom/src/cli/internal/client"
 )
+
+func TestMarketModelCostRangeContract(t *testing.T) {
+	for _, tc := range []struct {
+		name, version, availability, min, max, currency string
+	}{
+		{"current version", "", "available", "0.3000000", "1.8000000", "CNY"},
+		{"quoted version", "quoted-version", "available", "1", "3", "CNY"},
+		{"single amount", "quoted-version", "available", "3", "3", "CNY"},
+		{"real zero", "quoted-version", "available", "0.0000000", "0.0000000", "CNY"},
+		{"no data", "quoted-version", "no_data", "", "", ""},
+		{"precision", "quoted-version", "available", "900719925.4740993", "900719925.4740994", "USD"},
+	} {
+		for _, output := range []string{"text", "json"} {
+			t.Run(tc.name+"/"+output, func(t *testing.T) {
+				selectedVersion := tc.version
+				if selectedVersion == "" {
+					selectedVersion = "published-version"
+				}
+				response := marketModelCostRangeResponse{ListingVersionID: selectedVersion, Availability: tc.availability}
+				if tc.availability == "available" {
+					response.MinModelFee = &moneyResponse{Amount: tc.min, Currency: tc.currency}
+					response.MaxModelFee = &moneyResponse{Amount: tc.max, Currency: tc.currency}
+				}
+				requests := 0
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					requests++
+					if r.Method != http.MethodGet || r.URL.EscapedPath() != "/loom/v1/marketListings/listing%3F%231/modelCostRange" {
+						t.Errorf("unexpected request %s %s", r.Method, r.URL)
+					}
+					if r.URL.Query().Get("listingVersionId") != tc.version || (tc.version == "" && r.URL.RawQuery != "") {
+						t.Errorf("unexpected query: %s", r.URL.RawQuery)
+					}
+					_ = json.NewEncoder(w).Encode(response)
+				}))
+				defer server.Close()
+				cmd := newMarketCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: output})
+				var out bytes.Buffer
+				cmd.SetOut(&out)
+				cmd.SetErr(new(bytes.Buffer))
+				args := []string{"model-cost-range", " listing?#1 "}
+				if tc.version != "" {
+					args = append(args, "--listing-version-id", tc.version)
+				}
+				cmd.SetArgs(args)
+				if err := cmd.Execute(); err != nil {
+					t.Fatal(err)
+				}
+				if requests != 1 {
+					t.Fatalf("got %d requests; expected only one history GET", requests)
+				}
+				if output == "json" {
+					var got marketModelCostRangeResponse
+					if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+						t.Fatal(err)
+					}
+					if got.ListingVersionID != selectedVersion || got.Availability != tc.availability {
+						t.Fatalf("unexpected response: %s", out.String())
+					}
+					if tc.availability == "no_data" {
+						assertContainsAll(t, out.String(), `"minModelFee": null`, `"maxModelFee": null`)
+					} else if got.MinModelFee == nil || got.MaxModelFee == nil || got.MinModelFee.Amount != trimDisplayDecimal(tc.min) || got.MaxModelFee.Amount != trimDisplayDecimal(tc.max) || got.MinModelFee.Currency != tc.currency || got.MaxModelFee.Currency != tc.currency {
+						t.Fatalf("historical money was lost or changed: %s", out.String())
+					}
+				} else {
+					assertContainsAll(t, out.String(), "listing_version_id", selectedVersion, "availability", tc.availability)
+					if tc.availability == "no_data" {
+						assertContainsAll(t, out.String(), "No historical data available for reference")
+						assertContainsNone(t, out.String(), "min_model_fee", "max_model_fee", "CNY", "USD")
+					} else {
+						assertContainsAll(t, out.String(), tc.currency+" "+trimDisplayDecimal(tc.min), tc.currency+" "+trimDisplayDecimal(tc.max), "per task", "actual usage may exceed")
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestMarketModelCostRangeRejectsInvalidResponse(t *testing.T) {
+	for _, body := range []string{
+		`{}`, `null`, `not json`,
+		`{"listingVersionId":"other","availability":"no_data"}`,
+		`{"listingVersionId":"v1","availability":"unknown"}`,
+		`{"listingVersionId":"v1","availability":"available","minModelFee":null,"maxModelFee":null}`,
+		`{"listingVersionId":"v1","availability":"no_data","minModelFee":{"amount":"0","currency":"CNY"}}`,
+		`{"listingVersionId":"v1","availability":"available","minModelFee":{"amount":"3","currency":"CNY"},"maxModelFee":{"amount":"1","currency":"CNY"}}`,
+		`{"listingVersionId":"v1","availability":"available","minModelFee":{"amount":"-1","currency":"CNY"},"maxModelFee":{"amount":"3","currency":"CNY"}}`,
+		`{"listingVersionId":"v1","availability":"available","minModelFee":{"amount":"0","currency":"CNY"},"maxModelFee":{"amount":"3","currency":"USD"}}`,
+		`{"listingVersionId":"v1","availability":"available","minModelFee":{"amount":"0","currency":""},"maxModelFee":{"amount":"3","currency":""}}`,
+		`{"listingVersionId":"v1","availability":"available","minModelFee":{"amount":"0","currency":"CNY"},"maxModelFee":{"amount":"invalid","currency":"CNY"}}`,
+	} {
+		t.Run(body, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = fmt.Fprint(w, body) }))
+			defer server.Close()
+			cmd := newMarketModelCostRangeCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"})
+			cmd.SilenceUsage, cmd.SilenceErrors = true, true
+			var out bytes.Buffer
+			cmd.SetOut(&out)
+			cmd.SetArgs([]string{"listing-1", "--listing-version-id", "v1"})
+			if err := cmd.Execute(); err == nil || out.Len() != 0 {
+				t.Fatalf("invalid response must fail without amounts: err=%v output=%s", err, out.String())
+			}
+		})
+	}
+}
+
+func TestMarketModelCostRangeRejectsInvalidInputBeforeHTTP(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) { t.Errorf("unexpected request: %s", r.URL) }))
+	defer server.Close()
+	for _, args := range [][]string{{}, {""}, {"bad/id"}, {".."}, {"bad\x00id"}, {"listing", "extra"}, {"listing", "--listing-version-id", " "}, {"listing", "--listing-version-id", "v\x00id"}} {
+		cmd := newMarketModelCostRangeCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second})
+		cmd.SilenceUsage, cmd.SilenceErrors = true, true
+		cmd.SetOut(new(bytes.Buffer))
+		cmd.SetArgs(args)
+		if err := cmd.Execute(); err == nil {
+			t.Fatalf("expected invalid input error: %q", args)
+		}
+	}
+}
+
+func TestMarketModelCostRangeFailureDoesNotFabricateData(t *testing.T) {
+	for _, code := range []int{http.StatusUnauthorized, http.StatusNotFound, http.StatusServiceUnavailable} {
+		t.Run(fmt.Sprint(code), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(code)
+				_, _ = fmt.Fprint(w, `{"error":"history unavailable"}`)
+			}))
+			defer server.Close()
+			cmd := newMarketModelCostRangeCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: time.Second, output: "json"})
+			cmd.SilenceUsage, cmd.SilenceErrors = true, true
+			var out bytes.Buffer
+			cmd.SetOut(&out)
+			cmd.SetArgs([]string{"listing-1"})
+			err := cmd.Execute()
+			var requestErr client.RequestError
+			if !errors.As(err, &requestErr) || requestErr.StatusCode != code || out.Len() != 0 {
+				t.Fatalf("error=%v output=%s", err, out.String())
+			}
+		})
+	}
+	t.Run("timeout", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) { <-r.Context().Done() }))
+		defer server.Close()
+		cmd := newMarketModelCostRangeCmd(&rootOptions{server: server.URL + "/loom/v1", timeout: 50 * time.Millisecond})
+		cmd.SilenceUsage, cmd.SilenceErrors = true, true
+		var out bytes.Buffer
+		cmd.SetOut(&out)
+		cmd.SetArgs([]string{"listing-1"})
+		if err := cmd.Execute(); !errors.Is(err, context.DeadlineExceeded) || out.Len() != 0 {
+			t.Fatalf("error=%v output=%s", err, out.String())
+		}
+	})
+}
 
 // Fixture follows skill_catalog_http.go's public HTTP projection, not the
 // internal gRPC message (which contains raw T amounts and creator user IDs).

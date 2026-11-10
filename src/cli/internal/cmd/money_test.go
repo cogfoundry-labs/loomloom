@@ -176,7 +176,8 @@ func TestPrintPrecheckAndRunSummaryUseMoney(t *testing.T) {
 		if err != nil {
 			t.Fatalf("printPrecheck() error=%v", err)
 		}
-		for _, want := range []string{"estimated_cost", "CNY 1.702792", "available_balance", "CNY 2", "sufficient"} {
+		assertContainsNone(t, out.String(), "estimated_cost", "1.702792")
+		for _, want := range []string{"available_balance", "CNY 2", "sufficient"} {
 			if !strings.Contains(out.String(), want) {
 				t.Fatalf("output=%q missing %q", out.String(), want)
 			}
@@ -197,4 +198,22 @@ func TestPrintPrecheckAndRunSummaryUseMoney(t *testing.T) {
 			t.Fatalf("output=%q want Money amount", out.String())
 		}
 	})
+}
+
+func TestRunSummaryMissingActualCostIsNotZero(t *testing.T) {
+	var out bytes.Buffer
+	if err := printRunSummary(&out, runStatusResponse{RunID: "run-1", Status: "completed"}); err != nil {
+		t.Fatal(err)
+	}
+	assertContainsAll(t, out.String(), "pending settlement")
+	assertContainsNone(t, out.String(), "(currency unknown) 0")
+
+	out.Reset()
+	if err := printRunSummary(&out, runStatusResponse{
+		RunID: "run-1", Status: "completed", ActualCost: &moneyResponse{Amount: "0", Currency: "CNY"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	assertContainsAll(t, out.String(), "CNY 0")
+	assertContainsNone(t, out.String(), "pending settlement")
 }

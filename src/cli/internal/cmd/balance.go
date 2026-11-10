@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cogfoundry-labs/loomloom/src/cli/internal/client"
 	"github.com/spf13/cobra"
 )
 
@@ -20,8 +21,8 @@ func newBalanceCmd(opts *rootOptions) *cobra.Command {
 			}
 			ctx, cancel := context.WithTimeout(cmd.Context(), opts.timeout)
 			defer cancel()
-			var resp userBalanceSnapshotResponse
-			if err := httpClient.GetJSON(ctx, "/users/me/balance", &resp); err != nil {
+			resp, err := fetchUserBalance(ctx, httpClient)
+			if err != nil {
 				return err
 			}
 			if opts.output == "json" {
@@ -41,6 +42,12 @@ func newBalanceCmd(opts *rootOptions) *cobra.Command {
 			return tw.Flush()
 		},
 	}
+}
+
+func fetchUserBalance(ctx context.Context, httpClient *client.Client) (userBalanceSnapshotResponse, error) {
+	var resp userBalanceSnapshotResponse
+	err := httpClient.GetJSON(ctx, "/users/me/balance", &resp)
+	return resp, err
 }
 
 func formatSignedBalanceMoney(money *moneyResponse, amountT *flexInt64, currency string) (string, error) {

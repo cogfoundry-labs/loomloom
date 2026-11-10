@@ -958,8 +958,6 @@ func TestTemplateSpecPrecheckUsesProductAPI(t *testing.T) {
 		t.Fatalf("inputFileId=%v want uploaded input file id", request["inputFileId"])
 	}
 	for _, want := range []string{
-		"estimated_cost",
-		"CNY 0.0119",
 		"available_balance",
 		"CNY 99.9262",
 		"sufficient",
@@ -994,8 +992,8 @@ func TestTemplateSpecPrecheckJSONUsesCurrencyAmountWithoutRawT(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("template-spec precheck command error = %v", err)
 	}
-	assertContainsAll(t, out.String(), `"estimatedTotalCost": {`, `"amount": "0.011935"`, `"currency": "CNY"`)
-	assertContainsNone(t, out.String(), `"estimatedTotalCostT"`)
+	assertContainsAll(t, out.String(), `"availableBalance": {`, `"currency": "CNY"`)
+	assertContainsNone(t, out.String(), "estimatedTotalCost", "0.011935", "119350")
 }
 
 func TestTemplateSpecPrecheckInsufficientBalanceUsesBoundPlatformMessage(t *testing.T) {
@@ -1027,9 +1025,8 @@ func TestTemplateSpecPrecheckInsufficientBalanceUsesBoundPlatformMessage(t *test
 	if err != nil {
 		t.Fatalf("error=%v want successful precheck", err)
 	}
-	if !strings.Contains(out.String(), "estimated_cost") || !strings.Contains(out.String(), "sufficient         false") {
-		t.Fatalf("output=%q want estimate and insufficient balance", out.String())
-	}
+	assertContainsAll(t, out.String(), "sufficient", "false")
+	assertContainsNone(t, out.String(), "estimated_cost", "0.011935", "119350")
 	if !strings.Contains(stderr.String(), insufficientShengSuanYunBalanceMessage) {
 		t.Fatalf("stderr=%q want recharge hint", stderr.String())
 	}
@@ -1166,12 +1163,11 @@ func TestTemplateSpecPrecheckWorkbookUsesProductAPI(t *testing.T) {
 	if !bytes.Equal(request.Content, []byte("xlsx bytes")) {
 		t.Fatalf("content=%q want workbook bytes", string(request.Content))
 	}
-	if !strings.Contains(out.String(), "estimated_cost") || !strings.Contains(out.String(), "CNY 0.0119") {
-		t.Fatalf("output=%q want formatted estimated cost", out.String())
-	}
+	assertContainsAll(t, out.String(), "available_balance", "CNY 99.9262")
+	assertContainsNone(t, out.String(), "estimated_cost", "0.011935", "119350")
 }
 
-func TestTemplateSpecPrecheckWorkbookPrintsEstimateWhenBalanceIsInsufficient(t *testing.T) {
+func TestTemplateSpecPrecheckWorkbookPreservesInsufficientBalanceHint(t *testing.T) {
 	isolateCmdConfigHome(t)
 	if err := platform.SaveState(platform.State{Platform: platform.ShengSuanYun}); err != nil {
 		t.Fatal(err)
@@ -1194,7 +1190,8 @@ func TestTemplateSpecPrecheckWorkbookPrintsEstimateWhenBalanceIsInsufficient(t *
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	assertContainsAll(t, out.String(), "estimated_cost", "sufficient         false")
+	assertContainsAll(t, out.String(), "sufficient", "false")
+	assertContainsNone(t, out.String(), "estimated_cost", "0.011935", "119350")
 	if !strings.Contains(stderr.String(), insufficientShengSuanYunBalanceMessage) {
 		t.Fatalf("stderr=%q", stderr.String())
 	}

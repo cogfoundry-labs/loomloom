@@ -20,6 +20,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/cogfoundry-labs/loomloom/src/cli/internal/presentation"
 	"github.com/spf13/cobra"
 )
 
@@ -201,20 +202,55 @@ func newTabWriter(w io.Writer) *tabwriter.Writer {
 }
 
 func writeIndentedJSON(w io.Writer, value any) error {
-	payload, err := json.Marshal(value)
+	return writeDisplayJSON(w, value, false)
+}
+
+func writeExecutionJSON(w io.Writer, value any) error {
+	return writeDisplayJSON(w, value, true)
+}
+
+func writeDisplayJSON(w io.Writer, value any, hideEstimates bool) error {
+	normalized, err := prepareDisplayValue(value, hideEstimates)
 	if err != nil {
-		return err
-	}
-	decoder := json.NewDecoder(bytes.NewReader(payload))
-	decoder.UseNumber()
-	var normalized any
-	if err := decoder.Decode(&normalized); err != nil {
 		return err
 	}
 	normalizeCLIJSONMoney(normalized, "")
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(normalized)
+}
+
+// prepareDisplayValue copies the response before applying presentation rules.
+// Execution decisions must continue to use the original response.
+func prepareDisplayValue(value any, hideEstimates bool) (any, error) {
+	payload, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	decoder.UseNumber()
+	var normalized any
+	if err := decoder.Decode(&normalized); err != nil {
+		return nil, err
+	}
+	if hideEstimates {
+		presentation.HideEstimates(normalized)
+	}
+	return normalized, nil
+}
+
+// executionDisplayCopy gives text renderers the same filtered data as JSON
+// output, while retaining the response type expected by each renderer.
+func executionDisplayCopy[T any](value T) (T, error) {
+	var result T
+	display, err := prepareDisplayValue(value, true)
+	if err != nil {
+		return result, err
+	}
+	if typed, ok := display.(T); ok {
+		return typed, nil
+	}
+	return decodeJSONValue[T](display)
 }
 
 var rawMoneyTJSONFields = map[string]string{
@@ -598,17 +634,27 @@ func printTemplateFileValidation(w io.Writer, resp validateTemplateFileResponse)
 }
 
 func printPrecheck(w io.Writer, resp precheckTemplateRowsResponse) error {
+	display, err := executionDisplayCopy(resp)
+	if err != nil {
+		return err
+	}
+	return printPrecheckResult(w, display)
+}
+
+func printPrecheckResult(w io.Writer, resp precheckTemplateRowsResponse) error {
 	currency := ""
 	if resp.BalanceCheck != nil && strings.TrimSpace(resp.BalanceCheck.Currency) != "" {
 		currency = resp.BalanceCheck.Currency
 	}
 	tw := newTabWriter(w)
-	estimatedCost, err := formatResponseMoney(resp.EstimatedTotalCost, resp.EstimatedTotalCostT, currency)
-	if err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintf(tw, "estimated_cost\t%s\n", estimatedCost); err != nil {
-		return err
+	if resp.EstimatedTotalCost != nil || resp.EstimatedTotalCostT != nil {
+		estimatedCost, err := formatResponseMoney(resp.EstimatedTotalCost, resp.EstimatedTotalCostT, currency)
+		if err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(tw, "estimated_cost\t%s\n", estimatedCost); err != nil {
+			return err
+		}
 	}
 	if resp.BalanceCheck == nil {
 		return tw.Flush()
@@ -658,7 +704,18 @@ func moneyJSONValue(money *moneyResponse, amountT *flexInt64, fallbackCurrency s
 	return &moneyResponse{Amount: decimalAmountT(int64(*amountT)), Currency: currency}
 }
 
+func formatRunActualCost(resp runStatusResponse) (string, error) {
+	if resp.ActualCost == nil && resp.ActualCostT == nil {
+		return "pending settlement", nil
+	}
+	return formatResponseMoney(resp.ActualCost, resp.ActualCostT, "")
+}
+
 func printRunSummary(w io.Writer, resp runStatusResponse) error {
+	resp, err := executionDisplayCopy(resp)
+	if err != nil {
+		return err
+	}
 	if _, err := fmt.Fprintf(w, "run_id\t%s\nstatus\t%s\n", resp.RunID, resp.Status); err != nil {
 		return err
 	}
@@ -681,7 +738,7 @@ func printRunSummary(w io.Writer, resp runStatusResponse) error {
 	if _, err := fmt.Fprintln(tw, "total\tcompleted\tfailed\tcancelled\tcost\tstarted_at\tcompleted_at\tduration"); err != nil {
 		return err
 	}
-	actualCost, err := formatResponseMoney(resp.ActualCost, resp.ActualCostT, "")
+	actualCost, err := formatRunActualCost(resp)
 	if err != nil {
 		return err
 	}

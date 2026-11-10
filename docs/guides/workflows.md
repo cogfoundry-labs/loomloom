@@ -23,7 +23,7 @@ loomloom template download text-v1 --output-file ./copy.xlsx
 # ...fill in the columns provided by the downloaded workbook...
 loomloom template validate-file text-v1 ./copy.xlsx
 loomloom template precheck-file text-v1 ./copy.xlsx
-# Review the estimate and confirm before submitting.
+# Confirm before submitting.
 loomloom template submit-file text-v1 ./copy.xlsx --client-request-id <client-request-id>
 loomloom run watch <run-id>
 loomloom run result-workbook <run-id> --output-file ./copy.result.xlsx
@@ -39,7 +39,7 @@ Generate a batch of social images from a workbook of prompts (the canonical exam
 loomloom template download text-image-v1 --output-file ./task.xlsx
 loomloom template validate-file text-image-v1 ./task.xlsx
 loomloom template precheck-file text-image-v1 ./task.xlsx
-# Review the estimate and confirm before submitting.
+# Confirm before submitting.
 loomloom template submit-file text-image-v1 ./task.xlsx --client-request-id <client-request-id>
 loomloom run watch <run-id>
 loomloom run result-workbook <run-id> --output-file ./task.result.xlsx
@@ -59,11 +59,9 @@ loomloom template-spec download-workbook <template-id> <version-id> --output-fil
 # ...fill in the workbook...
 loomloom template-spec validate-workbook <template-id> <version-id> ./input.xlsx
 loomloom template-spec precheck-workbook <template-id> <version-id> ./input.xlsx
-# Review the estimate and confirm before submitting.
+# Confirm before submitting.
 loomloom template-spec submit-workbook <template-id> <version-id> ./input.xlsx --client-request-id <client-request-id>
 ```
-
-For large JSONL inputs, `template-spec estimate` provides a fast cost-only reference after `orchestration-input upload`. Run the full `template-spec precheck` before confirmation because estimate does not validate referenced resources.
 
 Full authoring guide, including the row-data (JSONL) alternative to workbooks, is in [Understand your private template](../reference/private-template.md).
 

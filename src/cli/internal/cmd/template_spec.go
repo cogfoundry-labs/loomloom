@@ -853,9 +853,7 @@ func newTemplateSpecPrecheckWorkbookCmd(opts *rootOptions) *cobra.Command {
 				return err
 			}
 			if opts.output == "json" {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				if err := enc.Encode(map[string]any{
+				if err := writeExecutionJSON(cmd.OutOrStdout(), map[string]any{
 					"templateId": templateID,
 					"versionId":  versionID,
 					"file":       args[2],
@@ -1203,9 +1201,7 @@ func newTemplateSpecPrecheckCmd(opts *rootOptions) *cobra.Command {
 				return err
 			}
 			if opts.output == "json" {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				if err := enc.Encode(map[string]any{
+				if err := writeExecutionJSON(cmd.OutOrStdout(), map[string]any{
 					"templateId":  templateID,
 					"versionId":   trimmedVersionID,
 					"inputFileId": trimmedInputFileID,
@@ -1263,7 +1259,7 @@ func newTemplateSpecEstimateCmd(opts *rootOptions) *cobra.Command {
 			if _, err := fmt.Fprintln(cmd.OutOrStdout(), "resources_validated\tfalse"); err != nil {
 				return err
 			}
-			return printPrecheck(cmd.OutOrStdout(), resp)
+			return printPrecheckResult(cmd.OutOrStdout(), resp)
 		},
 	}
 	cmd.Flags().StringVar(&versionID, "version-id", "", "Template version ID to estimate")
@@ -1342,7 +1338,7 @@ func newTemplateSpecRunCmd(opts *rootOptions) *cobra.Command {
 				trimmedInputFileID,
 				stringMapValue(resp, "runId"),
 			)
-			return writeIndentedJSON(cmd.OutOrStdout(), resp)
+			return writeExecutionJSON(cmd.OutOrStdout(), resp)
 		},
 	}
 	cmd.Flags().StringVar(&versionID, "version-id", "", "Template version ID to run")

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/cogfoundry-labs/loomloom/src/cli/internal/platform"
+	"github.com/cogfoundry-labs/loomloom/src/cli/internal/presentation"
 )
 
 type Config struct {
@@ -39,7 +40,7 @@ type RequestError struct {
 }
 
 func (e RequestError) Error() string {
-	return fmt.Sprintf("request failed: status=%d body=%s", e.StatusCode, e.Body)
+	return fmt.Sprintf("request failed: status=%d body=%s", e.StatusCode, presentation.ErrorBody(e.Body))
 }
 
 type Client struct {

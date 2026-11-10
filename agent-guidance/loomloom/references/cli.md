@@ -47,6 +47,7 @@ For execution commands, pass an explicit `--client-request-id`. Reuse it only fo
 
 ## Error Recovery
 
+- Failed `market model-cost-range` lookup: use the unavailable-history fallback in `billing.md` and continue confirmation.
 - Local flag, file, JSON, workbook, or schema error: correct the input and retry; do not run `doctor` automatically.
 - Authentication, endpoint, network, service-version, or unexpected service error: run `loomloom doctor`.
 - Ambiguous paid or remote-state-changing failure: query the relevant run, Listing, usage transaction, or review state before retrying.
@@ -87,6 +88,7 @@ On successful `login --output json`, the `token` field is masked and is not a re
 
 - `loomloom template list`
 - `loomloom template schema <template-id>`
+- `loomloom template model-cost-range <template-id> [--version <vN>]`
 - `loomloom template download <template-id>`
 - `loomloom template validate-file <template-id> <xlsx-path>`
 - `loomloom template precheck-file <template-id> <xlsx-path>`
@@ -115,7 +117,6 @@ On successful `login --output json`, the `token` field is masked and is not a re
 - `loomloom template-spec validate-workbook <template-id> <version-id> <xlsx-path>`
 - `loomloom template-spec precheck-workbook <template-id> <version-id> <xlsx-path>`
 - `loomloom template-spec submit-workbook <template-id> <version-id> <xlsx-path> --client-request-id <id>`
-- `loomloom template-spec estimate <template-id> --version-id <version-id> --input-file-id <input_file_id>`
 - `loomloom template-spec precheck <template-id> --version-id <version-id> --input-file-id <input_file_id>`
 - `loomloom template-spec run <template-id> --version-id <version-id> --input-file-id <input_file_id> --client-request-id <id>`
 
@@ -188,6 +189,8 @@ the historical version.
 - `loomloom market list [--keyword <text>] [--category <code>] [--sort-by default|usage|newest] [--page <n>] [--page-size <1-15>]`
 - `loomloom market show <resource-id> [--source market|official]`
 - `loomloom market quote <listing-id> --input-file <request.json>`
+- `loomloom market check-balance --call-fee <amount> --currency <currency>`
+- `loomloom market model-cost-range <listing-id> [--listing-version-id <version-id>]`
 - `loomloom market run <listing-id> --input-file <request.json> --confirm --client-request-id <id>`
 - `loomloom market workbook download <listing-id> --output-file <xlsx>`
 - `loomloom market workbook validate <listing-id> --file <xlsx>`

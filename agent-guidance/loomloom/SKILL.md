@@ -74,7 +74,7 @@ When the user asks to accomplish a task with a Market SkillApp or official templ
 
 ### Official template
 
-When the user requests use of an official template, identify the target and automatically install its Skill Package into the current Agent's Skill root. For template execution, prepare and validate the input, obtain the current estimate through precheck, and present the estimated cost for confirmation before submission, following `billing.md`. Briefly explain any installation failure.
+When the user requests use of an official template, identify the target and automatically install its Skill Package into the current Agent's Skill root. For template execution, prepare and validate the input, run precheck, and obtain confirmation before submission, following `billing.md`. Briefly explain any installation failure.
 
 Default workbook flow:
 
@@ -226,11 +226,11 @@ a new immutable version only after explicit confirmation. Do not promise a lossl
 ```text
 Discover Listing → Inspect public schema → Select Listing → Explicit use request
 → Check/install public Skill Package → Prepare public input → Quote
-→ Show Market fee confirmation
+→ Check call-fee balance → Read historical model fee range → Show Market fee confirmation
 → User confirms → Run through Listing → Usage/results
 ```
 
-When the user requests use of a Market SkillApp, identify the Listing and automatically install its Skill Package into the current Agent's Skill root. For Market execution, prepare input according to the Listing's public schema, obtain a quote, and present the estimated cost for confirmation before running through the Listing, following `billing.md`. Briefly explain any installation failure.
+When the user requests use of a Market SkillApp, identify the Listing and automatically install its Skill Package into the current Agent's Skill root. For Market execution, prepare input according to the Listing's public schema, obtain a quote, and obtain confirmation before running through the Listing, following `billing.md`. Briefly explain any installation failure.
 
 ### Market creator
 
@@ -270,8 +270,8 @@ Determine the current platform only from the user's explicit selection or a succ
 1. **Protect credentials.** Send a token only over HTTPS to the explicitly configured host. Never expose it, follow it across domains, or reuse it across platforms/environments.
 2. **Default to Excel.** Use JSON/JSONL only when the user explicitly requests programmatic input or supplies a compatible request file.
 3. **Separate preparation from execution.** Downloads, uploads, validation, quote, and precheck do not authorize a hosted run.
-4. **Confirm every run by default.** Show the current server-provided estimate and obtain explicit confirmation in the current conversation before creating a hosted run, except during an explicitly activated Test Execution Mode defined below.
-5. **Reconfirm changed input.** If input changes after validation, estimate, or confirmation, validate and estimate again and obtain a new confirmation. Tell the user that the changed input must be re-estimated and reconfirmed.
+4. **Confirm every run by default.** Obtain explicit confirmation in the current conversation before creating a hosted run, except during an explicitly activated Test Execution Mode defined below.
+5. **Reconfirm changed input.** If input changes after validation or confirmation, validate again and obtain a new confirmation. Tell the user that the changed input must be validated and reconfirmed.
 6. **Use execution IDs safely.** Every newly confirmed execution gets a new `client-request-id`. Reuse one only for an identical retry of the same confirmed request after an ambiguous failure.
 7. **Do not bypass Market.** Execute a SkillApp through its Listing and public schema. Never expose or reconstruct hidden prompts, steps, mappings, TemplateSpec, or private execution logic.
 8. **Respect order locking.** Market resolves the current sellable Listing Version when creating the order and locks that version and price for the order.
@@ -299,10 +299,10 @@ Activate it only when the user explicitly says they do not need a confirmation b
 - target environment / Server;
 - permitted template, private-template version, or Listing scope;
 - maximum tasks per run;
-- maximum cost per run and total cost, with currency;
+- maximum creator call fee per run and total creator call fees, with currency;
 - expiry (default: the current conversation only).
 
-On activation, restate the limits once and record that Test Execution Mode is active. Within those exact limits, the Agent may validate, precheck, submit, watch, and retrieve results without requesting another per-run confirmation. However, a missing, zero, or currency-unknown precheck estimate is not eligible for automatic submission: stop and obtain a fresh explicit confirmation before creating that run. Each run must still use a new `client-request-id` and report its run ID, status, and actual cost when returned.
+On activation, restate the limits once, explain that model fees are pending settlement and excluded from these limits, and record that Test Execution Mode is active. Within those exact limits, the Agent may validate, precheck, submit, watch, and retrieve results without requesting another per-run confirmation. Each run must still use a new `client-request-id` and report its run ID, status, and actual cost when returned.
 
 Test Execution Mode immediately stops and normal per-run confirmation resumes when any limit is exceeded, the input scope changes, the Server/platform changes, the mode expires, or the user withdraws it. Never infer activation from a testing context or from an earlier conversation.
 
