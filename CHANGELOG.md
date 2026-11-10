@@ -79,6 +79,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   loopback-only Registry fixture for offline distribution tests. CI and
   publication use the same pinned npm version and retain the security audit.
 
+## [0.8.0-beta.1] - 2026-11-10
+
+### Added
+- `market check-balance` checks the current balance against the creator call fee.
+- `market model-cost-range` and `template model-cost-range` query historical
+  per-task model fee ranges for Market SkillApps and official templates.
+
+### Changed
+- Market usage output shows actual creator call fees, model fees, the final
+  payable amount, and settlement status.
+- Updated the bundled Agent Skill's confirmation flow, balance checks, and
+  platform-specific recharge guidance.
+
+### Removed
+- The legacy `run submit` command. Use `run validate`, `run precheck`, and
+  `run execute` for validation, precheck, and submission respectively.
+
 ## [0.3.3] - 2026-08-26
 
 ### Added
@@ -199,6 +216,7 @@ Initial release.
 - Market pricing shown in user-facing money units.
 
 [Unreleased]: https://github.com/cogfoundry-labs/loomloom/compare/v0.3.3...HEAD
+[0.8.0-beta.1]: https://github.com/cogfoundry-labs/loomloom/releases/tag/v0.8.0-beta.1
 [0.3.3]: https://github.com/cogfoundry-labs/loomloom/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/cogfoundry-labs/loomloom/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/cogfoundry-labs/loomloom/compare/v0.3.0...v0.3.1
