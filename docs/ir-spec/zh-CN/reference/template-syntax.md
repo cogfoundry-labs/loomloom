@@ -10,6 +10,7 @@
 | `templateInputs` | 否 | 以 input key 为键的模板输入 map |
 | `steps` | 是 | 至少一个 Step 的 DAG |
 | `workbook` | 是 | 填写说明与样例行 |
+| `deliveryOutputs` | 否 | 显式声明最终交付的根步骤输出端口 |
 
 ## 身份规则
 
@@ -72,3 +73,15 @@ map key 是目标合同输入端口。source 支持：
 ## 未知字段
 
 公开对象采用严格解码；拼错字段名会失败，不会静默忽略。精确结构见 [JSON Schema](../../machine/template-spec.schema.json)。
+
+
+<a id="ref-delivery-outputs-declaration"></a>
+## 最终交付声明
+
+`deliveryOutputs` 是可选声明，使用 `schemaVersion: 1` 和有序的 `items`，每项包含稳定 `key`、用户可见 `label`、根步骤 `stepId` 与其 `portId`。示例见 [Code 最终交付](../examples/valid/delivery-code-outputs.json)。一个端口有多个文件时，声明覆盖该端口的完整文件集合；不得挑选其中一个文件。允许 Code 文件、Code 结构化值、模型输出以及 Loop 容器公开导出别名，不允许引用 Loop body 内部步骤、调试信息或输入附件。
+
+`items` 必须包含 1 至 128 项；key 和来源端口不能重复，label 为 1 至 128 字符且不能含控制字符。保存时按确切合同验证端口并冻结逻辑端口与实际输出载体的映射。声明进入版本哈希和 Run 冻结定义；修改声明需保存新版本，已创建 Run 的下载不读取最新模板。
+
+省略该字段保持历史语义和原哈希，表示“未定义最终交付”，不推测最后一步或第一份文件。历史 Run 仍可查看全部已产生的产物；结果范围明确报告未定义。`workbook` 只提供填写说明与样例，不能代替交付声明；原 resultWorkbook XLSX 接口保持原用途。
+
+交付声明作为可选字段随版本保存正常支持，无需额外启用开关；填写后必须通过校验并冻结到对应版本，不得静默丢弃。未填写时保留历史模板语义，普通下载默认包含全部步骤的可见产物。

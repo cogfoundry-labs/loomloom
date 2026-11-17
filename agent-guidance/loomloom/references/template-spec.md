@@ -10,6 +10,7 @@ Use this reference when creating, modifying, versioning, or explaining a private
 - [Usage mode](#usage-mode)
 - [TemplatePlan](#templateplan)
 - [Modeling and input rules](#modeling-and-input-rules)
+- [Final delivery outputs](#final-delivery-outputs)
 - [Code and Loop Steps](#code-and-loop-steps)
 - [Legacy v1 semantic preservation](#legacy-v1-semantic-preservation)
 - [Creation and versioning](#creation-and-versioning)
@@ -239,6 +240,35 @@ interface that no returned Profile represents. If `capability resolve` returns
 both a Profile and Fixed Model Contracts for the same standard capability,
 choose from the user's model policy rather than assuming multimedia always
 means fixed model.
+
+## Final Delivery Outputs
+
+When the author wants to identify final deliverables, add the optional top-level
+`deliveryOutputs` declaration. Use `schemaVersion: 1` and an ordered, non-empty
+`items` list (at most 128). Each item has a unique stable `key`, a user-visible
+`label` (1–128 characters without control characters), and a root `stepId` plus
+its exact output `portId`. Source ports must also be unique. Select the complete
+port, including all its files; never invent file selectors or Artifact IDs.
+Read `template-spec docs spec` and the bundled `delivery-code-outputs.json`
+example before drafting.
+
+Use `steps[].displayName` for step names. Final delivery labels name the chosen
+business results, not every intermediate output. Code file/value outputs, model
+outputs, and public Loop export aliases are allowed; Loop body Steps, private
+iterations, diagnostics, and input attachments are not. Resolve actual model
+ports from the target Server's contracts rather than guessing them.
+
+Omit the field when no final delivery is intended; do not send an empty object
+or empty items, and do not infer the final result from the last Step. Preserve
+the declaration when exporting, previewing, editing, and creating another
+version. Changes require a new immutable version and do not alter existing
+Runs. Run `template-spec check` against the intended Server before saving;
+server validation owns port and contract checks.
+
+This author declaration adds no required input for ordinary template execution.
+Local preview serves the JSON draft and does not provide a delivery editor.
+`run result-rows`, `run result-workbook` (XLSX), and `artifact` commands retain
+their existing behavior; Console download scopes are a separate interface.
 
 ## Code And Loop Steps
 

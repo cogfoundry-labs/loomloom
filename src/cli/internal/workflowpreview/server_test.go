@@ -124,7 +124,7 @@ func TestRunLocalDraftUpdatesWithoutRemoteRequests(t *testing.T) {
 	if fetch().Content != nil {
 		t.Fatal("missing file exposed content")
 	}
-	raw := `{"steps":[{"stepId":"s1","executionBinding":{"kind":"capabilityProfile","profileId":"text"},"inputBindings":{"prompt":{"source":"literal","value":"PRIVATE PROMPT"}}}],"workbook":{"secret":"PRIVATE WORKBOOK"}}`
+	raw := `{"steps":[{"stepId":"s1","executionBinding":{"kind":"capabilityProfile","profileId":"text"},"inputBindings":{"prompt":{"source":"literal","value":"PRIVATE PROMPT"}}}],"workbook":{"secret":"PRIVATE WORKBOOK"},"deliveryOutputs":{"schemaVersion":1,"items":[{"key":"result","label":"最终结果","stepId":"s1","portId":"output"}]}}`
 	if err = os.WriteFile(path, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
 	}

@@ -97,6 +97,23 @@
         "examples/invalid/loop-conflicting-control.json",
         "examples/invalid/loop-parallel-checkpoints.json"
       ]
+    },
+    {
+      "id": "TS-DELIVERY-001",
+      "scope": "template",
+      "severity": "error",
+      "enforcement": [
+        "json_schema",
+        "core_validator",
+        "authoring_service"
+      ],
+      "referenceId": "delivery.outputs-declaration",
+      "validExamples": [
+        "examples/valid/delivery-code-outputs.json"
+      ],
+      "invalidExamples": [
+        "examples/invalid/delivery-empty.json"
+      ]
     }
   ]
 }
