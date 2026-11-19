@@ -79,6 +79,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   loopback-only Registry fixture for offline distribution tests. CI and
   publication use the same pinned npm version and retain the security audit.
 
+## [0.8.0-beta.2] - 2026-11-19
+
+### Added
+- TemplateSpec documentation, examples, and the bundled Agent Skill now cover
+  optional `deliveryOutputs`: authors can name final deliverables by selecting
+  a root step and its output port. Templates without this declaration remain
+  supported; changing the selection requires a new template version.
+- Regression coverage verifies that validation, creation, export, editing,
+  version saving, and local preview preserve the declaration. Opt-in integration
+  tests cover server authoring and declared-output execution.
+
 ## [0.8.0-beta.1] - 2026-11-10
 
 ### Added
