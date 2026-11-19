@@ -1,9 +1,9 @@
 {
   "owner": "loomloom-docs",
-  "source_revision": "sha256:8d104c44bfbde2633253c603a05c4757597ea177f2f9a0e3c1339169858c44ae",
-  "english_revision": "sha256:e5c245d58487c402adce6dfee19a91dfbc73bb6b2e1a00f5601ffbf2764a2a50",
-  "chinese_revision": "sha256:267a22379fd25b0bed48e9ceb592cc1c164951a079e24f1e01df9cf4d6b2e129",
-  "generated_revision": "sha256:680eb5d48a3eced3713c2bfb00b999d994e3017d5ba745f769fc4d4caceb76db",
+  "source_revision": "sha256:788d8b68841b46d41e181f4906d29048d9856a1d5eac67988392e53fb329e120",
+  "english_revision": "sha256:75a8792a96526a22fc7a7c9bab1aa2867711969c0380de852cc595617e36248c",
+  "chinese_revision": "sha256:a03e3771e719280107142cee38b87bbfff994ac021cbc824c1726c408cf46e3c",
+  "generated_revision": "sha256:824af9307d8e226b6084fb670f19cbd52d76d4ffea56e93204c9f78542e798a8",
   "generator": "loomloom-template-docs/v2",
   "default_language": "en",
   "languages": [

@@ -324,6 +324,9 @@ normalize_example() {
             )
           else . end
       )
+    | if has("deliveryOutputs") then
+        .deliveryOutputs.items |= map(redact("label"))
+      else . end
     | .workbook |= redact_array("instructions")
     | if .workbook | has("sampleRows") then
         .workbook.sampleRows |= map(

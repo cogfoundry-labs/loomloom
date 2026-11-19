@@ -8,6 +8,7 @@ Public fields use lowerCamel. New version writes declare `specVersion=template-s
 | `templateInputs` | no | Map keyed by stable input identity |
 | `steps` | yes | Non-empty workflow DAG |
 | `workbook` | yes | Instructions and sample rows |
+| `deliveryOutputs` | no | Explicit final delivery ports from root Steps |
 
 Template Input keys and port IDs match `^[a-z][A-Za-z0-9_]{0,63}$`. Step IDs match `stp_` plus 6-10 lowercase letters or digits. A Step input identity is `<stepId>.<portId>`.
 
@@ -55,8 +56,6 @@ also expose fixed contracts.
 
 ## inputBindings
 
-`executionBinding.kind=codeProfile` requires `profileId`, `profileRevision`, and `code`, without `modelSelection`. A `loop` binding requires `loop`, without ordinary input bindings, Code, or model selection. See the [Step reference](steps.md) for fields and initial support.
-
 The map key is the target contract input port. Sources are:
 
 - `templateInput`
@@ -73,3 +72,28 @@ One target port permits one binding. Express multiple sources within one `merge`
 ## Unknown fields
 
 Public objects use strict decoding. Misspelled fields fail rather than being silently ignored. See the exact [JSON Schema](../../machine/template-spec.schema.json).
+
+<a id="ref-delivery-outputs-declaration"></a>
+## Final delivery declaration
+
+`deliveryOutputs` is optional. Set `schemaVersion: 1` and an ordered `items`
+list; each item contains a stable `key`, a user-visible `label`, a root
+`stepId`, and its `portId`. See [Code final delivery](../examples/valid/delivery-code-outputs.json).
+A declaration selects the complete output port, including every file when it
+produces multiple files; it cannot select just one file. Code files, Code
+structured values, model outputs, and public Loop container export aliases are
+supported. Loop body Steps, diagnostics, and input attachments cannot be selected.
+
+Declare 1–128 items, with unique keys and source ports. Labels contain 1–128
+characters without control characters. Saving validates ports against the exact
+contract and freezes the mapping between logical ports and stored outputs.
+The declaration contributes to the version hash and the Run's frozen definition.
+Changing it requires a new version; existing Runs never read the latest template
+for their delivery selection.
+
+Omitting the field preserves historical semantics and the original hash: final
+delivery is undefined, rather than inferred from the last Step or first file.
+Historical Runs still expose all produced artifacts; the results scope reports
+that no final delivery is defined. `workbook` contains filling instructions and
+sample rows, not a delivery declaration. The existing `resultWorkbook` endpoint
+continues to return its original workbook.

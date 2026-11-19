@@ -58,6 +58,11 @@
       "generated_sha256": "3b65ff140c5a22f45815b66708a7a0bdd8e030e0a4a46bca0a7d593abace1b9f"
     },
     {
+      "path": "examples/invalid/delivery-empty.json",
+      "source_sha256": "f170914fa8240f8604f413a223928caa8eb676ef1c3210e7bdc611aeb8b3cb91",
+      "generated_sha256": "87edc614bfaa5e4b259b319dcdb9a39b0121a56d72e9fd3d94f9f47803d4cbb6"
+    },
+    {
       "path": "examples/invalid/legacy-v1-shape.json",
       "source_sha256": "e85a154edebe6e008b452636a2fa91f8231f7316cd0db737bbe20f5d6149f149",
       "generated_sha256": "dd6ba987fd2b73b873afb548bbf7db6d726074badb047a8c428998168454d375"
@@ -131,6 +136,11 @@
       "path": "examples/valid/content-sequence.json",
       "source_sha256": "7d808239e8fa8240c15108d93583c865ae27d856cbf87910a27ebf7b85883489",
       "generated_sha256": "58cd43f22ac8d132b66747f269581cc96f9db9431b1e25d5644939e54557be97"
+    },
+    {
+      "path": "examples/valid/delivery-code-outputs.json",
+      "source_sha256": "838db3bbc981e98f45801bc5d8fb4a48a7913d3b65d72713b0c10e320db64e83",
+      "generated_sha256": "1e676026a01d47d9d1a9ff332f6abfb1664410b7a3833208cb0d1af35f92f67a"
     },
     {
       "path": "examples/valid/loop-business-decision.json",
@@ -284,8 +294,8 @@
     },
     {
       "path": "reference/template-syntax.md",
-      "source_sha256": "5a761f889b7036bb138854f585c7a97f5d348f00c8313010dd65641be0471e7a",
-      "generated_sha256": "e6d53387dcaf982754fdd601f5e5655735d514bb47c7d1c92f8f91b687fc2f43"
+      "source_sha256": "f69e7d31b7ca500d821ccfb9b71bafc009c0b4443167300e9e89fdd77fb0d936",
+      "generated_sha256": "9ecae4dfe0b6a0fcecd7d3ba6675997b2c038aefb667dbae9ae0221e1f4a668a"
     },
     {
       "path": "reference/validation-errors.md",
