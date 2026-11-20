@@ -833,7 +833,16 @@ func loadTemplateRows(path string) ([]templateDisplayRow, error) {
 	}
 	if trimmed[0] == '[' {
 		var rows []map[string]any
-		if err := json.Unmarshal(trimmed, &rows); err != nil {
+		decoder := json.NewDecoder(bytes.NewReader(trimmed))
+		decoder.UseNumber()
+		if err := decoder.Decode(&rows); err != nil {
+			return nil, fmt.Errorf("parse json array: %w", err)
+		}
+		var trailing any
+		if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+			if err == nil {
+				return nil, errors.New("parse json array: expected exactly one JSON value")
+			}
 			return nil, fmt.Errorf("parse json array: %w", err)
 		}
 		return normalizeRows(rows)
@@ -848,7 +857,16 @@ func loadTemplateRows(path string) ([]templateDisplayRow, error) {
 			continue
 		}
 		var row map[string]any
-		if err := json.Unmarshal(scanner.Bytes(), &row); err != nil {
+		decoder := json.NewDecoder(bytes.NewReader(scanner.Bytes()))
+		decoder.UseNumber()
+		if err := decoder.Decode(&row); err != nil {
+			return nil, fmt.Errorf("parse jsonl line %d: %w", line, err)
+		}
+		var trailing any
+		if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+			if err == nil {
+				return nil, fmt.Errorf("parse jsonl line %d: expected exactly one JSON value", line)
+			}
 			return nil, fmt.Errorf("parse jsonl line %d: %w", line, err)
 		}
 		rows = append(rows, row)
@@ -926,6 +944,8 @@ func scalarToString(value any) (string, error) {
 		return "", nil
 	case string:
 		return v, nil
+	case json.Number:
+		return v.String(), nil
 	case bool, float64, float32, int, int64, int32, int16, int8, uint, uint64, uint32, uint16, uint8:
 		return fmt.Sprint(v), nil
 	default:
