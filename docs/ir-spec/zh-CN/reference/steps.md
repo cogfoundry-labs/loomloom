@@ -30,7 +30,7 @@
 
 ## TS-CODE-001：Code 节点
 
-`executionBinding.kind=codeProfile` 时必须提供 `code`；作者无需填写 `profileId`、`profileRevision`。两者均省略时，Core 在校验及创建模板版本时补齐并冻结唯一的运行环境 `python@1`（CPython 3.12，标准库加 Pillow、numpy、pydantic、jinja2、PyAV）。显式提供时必须是 `python` / `1`；已退役的 `python-pure@1`、`python-image@pillow-12.3.0-1` 会被拒绝并提示省略这两个字段，未知环境不会回退。`executionBinding.resourceClass` 可选 `standard`（默认）或 `large`，档位随版本冻结（standard：30 秒、1 GiB 内存；large：120 秒、4 GiB）。可读取的输入文件为文本、JSON、PNG/JPEG/WebP 与 MP4/WebM/QuickTime。不允许作者在执行时安装依赖、访问网络或取得平台 Secret。用户异常的完整消息和 traceback 只在作者执行明细（`loomloom run step-executions`）中显示，Run 与结果行只显示异常类型。
+`executionBinding.kind=codeProfile` 时必须提供 `code`；作者无需填写 `profileId`、`profileRevision`。两者均省略时，Core 在校验及创建模板版本时补齐并冻结唯一的运行环境 `python@1`（CPython 3.12，标准库加 Pillow、numpy、pydantic、jinja2、PyAV，并内置 `ffmpeg`、`loomloom_vad` 与 `NotoSansCJKsc` 中文字体）。显式提供时必须是 `python` / `1`；已退役的 `python-pure@1`、`python-image@pillow-12.3.0-1` 会被拒绝并提示省略这两个字段，未知环境不会回退。`executionBinding.resourceClass` 可选 `standard`（默认）或 `large`，档位随版本冻结（standard：30 秒、1 GiB 内存、最多 16 个输入文件、16 MiB 输出；large：240 秒、4 GiB 内存、PID 128、最多 64 个输入文件、2 GiB 输入、256 MiB 输出）。可读取的输入文件为文本、JSON、PNG/JPEG/WebP、MP4/WebM/QuickTime 与 WAV/MP3/M4A/OGG 音频（单音频上限 50 MiB）。不允许作者在执行时安装依赖、访问网络或取得平台 Secret。用户异常的完整消息和 traceback 只在作者执行明细（`loomloom run step-executions`）中显示，Run 与结果行只显示异常类型。
 
 | `code` 字段 | 合同 |
 | --- | --- |
@@ -39,12 +39,12 @@
 | `inputs` | 全部端口显式声明；无输入填写 `{}`。kind=value 支持文本及 JSON，kind=artifact 接收文件列表；全部输入都是必填、非 null，不需要也不建议再写 required/nullable（写 `required: true`、`nullable: false` 仍可接受，其他值拒绝） |
 | `outputs` | 至少一个命名输出；`main` 返回对象的 key 与声明端口对应 |
 
-输入 key 与 inputBindings 一一对应。Value 声明 valueType（string、boolean、integer、number、array、object），可声明对象形式的 schema；禁止外部 Schema 引用，不隐式转换类型或生成默认值。文件声明 acceptedMimeTypes、minItems、maxItems，满足 1 <= minItems <= maxItems <= 16；实际文件还受冻结运行环境约束。输入解析或运行结果不符时，在 Code 派发前拒绝。普通含 Code 工作流不设额外节点数量上限。
+输入 key 与 inputBindings 一一对应。Value 声明 valueType（string、boolean、integer、number、array、object），可声明对象形式的 schema；禁止外部 Schema 引用，不隐式转换类型或生成默认值。文件声明 acceptedMimeTypes、minItems、maxItems，满足 1 <= minItems <= maxItems <= 64（并受所选档位总输入文件上限约束：standard 16、large 64）；实际文件还受冻结运行环境约束。输入解析或运行结果不符时，在 Code 派发前拒绝。普通含 Code 工作流不设额外节点数量上限。
 
 输出分为两种：
 
 - `kind=value`：声明 `valueType` 和对象形式 `schema`，支持 string、boolean、integer、number、array、object；运行时按平台支持的 Schema 子集验证，不能把任意 JSON Schema 方言都视为可用。
-- `kind=artifact`：声明具体 `mimeType`；返回在本次工作目录内创建的相对文件路径。平台验证文件、大小和类型后发布 Artifact，不返回任意本机文件或外部 URL。
+- `kind=artifact`：声明具体 `mimeType`；未声明 `maxItems` 时为单文件模式，返回本次工作目录内单个相对文件路径。声明可选 `minItems`（允许 `0`）与 `maxItems`（`1 <= maxItems <= 64` 且 `minItems <= maxItems`）时为变长序列模式 `Artifact[]`，`main(inputs)` 返回工作目录内有序相对文件路径列表 `list[str]`（允许空列表 `[]`），可直接绑定下游多图/多模态模型或 Code 列表输入端口。平台验证文件、数量、大小和类型后发布 Artifact，不返回任意本机文件或外部 URL。
 
 所有输出验证通过后才发布，非法或缺失输出不会作为成功结果传给下游。完整可复制示例见 [Code Value 与 JSON 文件](../examples/valid/code-value-artifact.json)。保存后源码、运行环境与输入/输出合同冻结；修改代码要创建新模板版本。
 
