@@ -257,13 +257,19 @@ loomloom template-spec docs examples
 - Code: `executionBinding.kind=codeProfile` with inline Python `main(inputs)`.
   Omit `profileId`/`profileRevision` (and `language`/`entrypoint`); the Server
   freezes `python@1`: Python 3.12 with the standard library plus Pillow, numpy,
-  pydantic, jinja2, and PyAV. The retired `python-pure@1` and
-  `python-image@...` profiles are rejected. Set
-  `executionBinding.resourceClass` to `large` only when `standard` (30 s,
-  1 GiB) is not enough (120 s, 4 GiB). Declare every input (all are required
-  and non-null; omit `required`/`nullable`) and at least one named output. Code
-  has no network access; work that needs external APIs, websites, or other
-  libraries stays Agent-assisted.
+  pydantic, jinja2, PyAV, and bundled `ffmpeg`, `loomloom_vad`, and
+  `NotoSansCJKsc` fonts. The retired `python-pure@1` and `python-image@...`
+  profiles are rejected. Set `executionBinding.resourceClass` to `large` only
+  when `standard` (30 s, 1 GiB, 16 input files, 16 MiB output) is not enough
+  (240 s, 4 GiB, PID 128, 64 input files, 2 GiB input, 256 MiB output). Code
+  accepts text, JSON, image, video, and audio (`audio/wav`, `audio/mpeg`,
+  `audio/mp4`, `audio/ogg`, up to 50 MiB each) inputs. Declare every input (all
+  are required and non-null; omit `required`/`nullable`) and at least one named
+  output; an `artifact` output may declare optional `minItems` (`>= 0`) and
+  `maxItems` (`1..64`) and return `list[str]` to publish a variable-length
+  `Artifact[]` sequence (for example, extracted video keyframes). Code has no
+  network access; work that needs external APIs, websites, or other libraries
+  stays Agent-assisted.
 - Loop: `executionBinding` is `{"kind":"loop"}` (plus an optional `when`); set
   `maxIterations` (1–10), `deadlineSeconds` (1–1800), a non-empty `body`,
   `state`, `outputs`, and `control`. `control.decision` is required and selects

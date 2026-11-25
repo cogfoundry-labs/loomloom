@@ -688,7 +688,7 @@
         "maxItems": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 16
+          "maximum": 64
         }
       },
       "allOf": [
@@ -818,7 +818,22 @@
         "mimeType": {
           "type": "string",
           "pattern": "^[^/\\s*]+/[^/\\s*]+$"
+        },
+        "minItems": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "maxItems": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
         }
+      },
+      "dependentRequired": {
+        "minItems": [
+          "maxItems"
+        ]
       }
     },
     "loop": {

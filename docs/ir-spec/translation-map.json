@@ -279,8 +279,8 @@
     },
     {
       "path": "reference/steps.md",
-      "source_sha256": "c247ac4a26cd5ba5f9dd2725ecac44c4c208e4b72de8bfd5b9397f37bd9a1c5a",
-      "generated_sha256": "2eaec8cabd645cc0ce0d7094304a630f0b4d327532a81fbf5b3c762cb6b5ff7c"
+      "source_sha256": "8ab1ad5eed8b495a8931c4ee8e696e18a4cd7f98601df98a58fe645476807d86",
+      "generated_sha256": "7a6e655968f6192327d5ca809fafb4c1226c06493de11dfeae6d4a4c01ea2b13"
     },
     {
       "path": "reference/template-syntax.md",
