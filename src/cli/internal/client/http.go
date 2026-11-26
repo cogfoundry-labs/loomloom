@@ -3,6 +3,8 @@ package client
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -330,6 +332,90 @@ func (c *Client) multipartFile(ctx context.Context, method string, path string, 
 		return err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Accept", "application/json")
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if err := decodeResponse(resp, out); err != nil {
+		return err
+	}
+	c.notifySuccess(req)
+	return nil
+}
+
+// StreamUploadOptions configures headers for streaming raw file uploads.
+type StreamUploadOptions struct {
+	Filename        string
+	ContentType     string
+	SHA256          string
+	ClientRequestID string
+}
+
+// PostStreamFile streams a local file as raw bytes without JSON or Base64 encoding.
+func (c *Client) PostStreamFile(ctx context.Context, path string, filePath string, opts StreamUploadOptions, out any) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("open file: %w", err)
+	}
+	defer func() { _ = file.Close() }()
+
+	info, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("stat file: %w", err)
+	}
+	if info.IsDir() {
+		return fmt.Errorf("input path %q is a directory", filePath)
+	}
+	sizeBytes := info.Size()
+	if sizeBytes <= 0 {
+		return fmt.Errorf("input file %q is empty", filePath)
+	}
+
+	checksum := strings.ToLower(strings.TrimSpace(opts.SHA256))
+	if checksum == "" {
+		hasher := sha256.New()
+		written, err := io.Copy(hasher, file)
+		if err != nil {
+			return fmt.Errorf("hash file content: %w", err)
+		}
+		if written != sizeBytes {
+			return fmt.Errorf("input file %q changed size during upload", filePath)
+		}
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			return fmt.Errorf("rewind file: %w", err)
+		}
+		checksum = hex.EncodeToString(hasher.Sum(nil))
+	}
+
+	filename := strings.TrimSpace(opts.Filename)
+	if filename == "" {
+		filename = filepath.Base(filePath)
+	}
+	contentType := strings.TrimSpace(opts.ContentType)
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	body := io.NopCloser(io.LimitReader(file, sizeBytes))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint(path), body)
+	if err != nil {
+		return err
+	}
+	req.ContentLength = sizeBytes
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("X-Filename", url.PathEscape(filename))
+	if checksum != "" {
+		req.Header.Set("X-Content-SHA256", checksum)
+	}
+	if requestID := strings.TrimSpace(opts.ClientRequestID); requestID != "" {
+		req.Header.Set("X-Client-Request-Id", requestID)
+	}
 	req.Header.Set("Accept", "application/json")
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
