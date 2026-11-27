@@ -19,11 +19,12 @@ import (
 const defaultInputAssetUploadTimeout = 65 * time.Minute
 
 type uploadInputAssetResponse struct {
-	InputAssetID string    `json:"inputAssetId"`
-	Filename     string    `json:"filename"`
-	MimeType     string    `json:"mimeType"`
-	SizeBytes    flexInt64 `json:"sizeBytes"`
-	UploadedAt   flexInt64 `json:"uploadedAt"`
+	InputAssetID string          `json:"inputAssetId"`
+	Filename     string          `json:"filename"`
+	MimeType     string          `json:"mimeType"`
+	SizeBytes    flexInt64       `json:"sizeBytes"`
+	UploadedAt   flexInt64       `json:"uploadedAt"`
+	ExpiresAt    json.RawMessage `json:"expiresAt,omitempty"`
 }
 
 func newInputAssetCmd(opts *rootOptions) *cobra.Command {
@@ -59,13 +60,13 @@ func newInputAssetUploadCmd(opts *rootOptions) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			opts.debugf("input asset upload: streaming filename=%s content_type=%s", filename, resolvedContentType)
+			opts.debugf("input asset upload: authorizing filename=%s content_type=%s", filename, resolvedContentType)
 
 			ctx, cancel := context.WithTimeout(cmd.Context(), uploadOpts.timeout)
 			defer cancel()
 
 			var resp uploadInputAssetResponse
-			if err := httpClient.PostStreamFile(ctx, "/inputAssets:uploadStream", path, client.StreamUploadOptions{
+			if err := httpClient.UploadInputAsset(ctx, path, client.StreamUploadOptions{
 				Filename:    filename,
 				ContentType: resolvedContentType,
 			}, &resp); err != nil {

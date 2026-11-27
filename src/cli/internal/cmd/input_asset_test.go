@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func TestInputAssetUploadUsesStreamEndpoint(t *testing.T) {
+func TestInputAssetUploadFallsBackToStreamEndpoint(t *testing.T) {
 	payload := []byte("\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom-sample-video-bytes")
 	sum := sha256.Sum256(payload)
 	wantSHA := hex.EncodeToString(sum[:])
@@ -32,6 +32,11 @@ func TestInputAssetUploadUsesStreamEndpoint(t *testing.T) {
 	var gotBody []byte
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/loom/v1/inputAssets:initDirectUpload" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		gotPath = r.URL.Path
 		gotContentType = r.Header.Get("Content-Type")
 		gotFilename = r.Header.Get("X-Filename")
@@ -148,6 +153,11 @@ func TestInputAssetUploadTextOutput(t *testing.T) {
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/loom/v1/inputAssets:initDirectUpload" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		if r.URL.Path != "/loom/v1/inputAssets:uploadStream" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}

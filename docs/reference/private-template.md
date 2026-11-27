@@ -19,6 +19,10 @@ loomloom input-asset upload ./brief.txt --content-type text/plain
 loomloom input-asset upload ./diagram.png --content-type image/png
 ```
 
+The upload command now requests a short-lived authorization and sends the file directly to object storage, then asks the backend to verify and register it. It falls back to the existing streaming upload only when the authorization endpoint is unavailable or direct upload is explicitly disabled. Each command invocation uploads the file; an existing `input_asset_id` can be reused in task inputs without uploading again.
+
+New registrations return `expiresAt: null` for no fixed execution deadline. Historical assets keep their original deadline; uploading again does not renew an old record. Completion retries reuse the same upload ticket and never submit a task. If completion remains unconfirmed, rerun the upload command; no resumable upload session is stored locally.
+
 An orchestration input file is JSONL. For the common single-root workflow, each non-empty line can be a flat JSON object whose values are strings:
 
 ```json
